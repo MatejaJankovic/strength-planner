@@ -1,0 +1,11 @@
+.git/
+.vs/
+.agents/
+.claude/
+.config/
+**/bin/
+**/obj/
+**/*.user
+*.log
+tests/
+strength-planner-web/
