@@ -1,0 +1,238 @@
+@if (loading()) {
+  <app-loading label="Učitavam trening…" />
+} @else if (error(); as message) {
+  <section class="panel">
+    <p class="panel__error" role="alert">
+      <mat-icon aria-hidden="true">cloud_off</mat-icon>
+      <span>{{ message }}</span>
+    </p>
+    <button class="retry" type="button" (click)="load()">
+      <mat-icon aria-hidden="true">refresh</mat-icon>
+      Pokušaj ponovo
+    </button>
+  </section>
+} @else if (session(); as ws) {
+  <header class="wk-header">
+    <button class="back" type="button" (click)="back()" aria-label="Nazad na plan">
+      <mat-icon aria-hidden="true">arrow_back</mat-icon>
+    </button>
+    <div>
+      <p class="eyebrow">Nedelja {{ ws.weekNumber }}{{ ws.isDeload ? ' · Deload' : '' }}</p>
+      <h1>{{ ws.dayLabel }}</h1>
+    </div>
+  </header>
+
+  @if (summary(); as result) {
+    <section class="summary">
+      <div class="summary__head">
+        <mat-icon aria-hidden="true">verified</mat-icon>
+        <h2>Trening završen</h2>
+      </div>
+      <ul class="summary__list">
+        @for (ex of result.exercises; track ex.exercisePlanId) {
+          <li class="summary__item">
+            <span class="summary__name">{{ ex.exerciseName }}</span>
+            <div class="summary__chips">
+              @if (ex.e1Rm != null) {
+                <app-stat-chip label="e1RM" [value]="(ex.e1Rm | number: '1.0-1') + ' kg'" />
+              }
+              @if (ex.isPr) {
+                <app-stat-chip label="PR" tone="accent" />
+              }
+              @if (ex.nextWeightKg != null) {
+                <app-stat-chip
+                  label="Sledeće"
+                  [value]="(ex.nextWeightKg | number: '1.0-1') + ' kg' + (ex.weightIncreased ? ' ↑' : '')"
+                  tone="accent"
+                />
+              }
+            </div>
+          </li>
+        }
+      </ul>
+    </section>
+  } @else if (isCompleted()) {
+    <p class="done-note" role="status">
+      <mat-icon aria-hidden="true">verified</mat-icon>
+      Ovaj trening je završen. Prikaz je samo za pregled.
+    </p>
+  }
+
+  @if (isPlanned()) {
+    <button class="cta" type="button" [disabled]="starting()" (click)="start()">
+      @if (starting()) {
+        <span class="cta__spinner" aria-hidden="true"></span>
+        Započinjem…
+      } @else {
+        <mat-icon aria-hidden="true">play_arrow</mat-icon>
+        Započni trening
+      }
+    </button>
+  }
+
+  @if (actionError(); as message) {
+    <p class="panel__error" role="alert">
+      <mat-icon aria-hidden="true">error_outline</mat-icon>
+      <span>{{ message }}</span>
+    </p>
+  }
+
+  <div class="cards">
+    @for (plan of ws.exercisePlans; track plan.id) {
+      @let draft = draftOf(plan.id);
+      <section class="card">
+        <div class="card__head">
+          <h2 class="card__name">{{ plan.exerciseName }}</h2>
+          <div class="card__chips">
+            <app-stat-chip label="Opseg" [value]="plan.repRangeMin + '–' + plan.repRangeMax" />
+            <app-stat-chip label="RIR cilj" [value]="plan.targetRir" />
+          </div>
+        </div>
+
+        <app-weight-stepper
+          label="Težina serije"
+          [value]="draft.weightKg"
+          [step]="2.5"
+          [disabled]="!isInProgress()"
+          (valueChange)="setWeight(plan.id, $event)"
+        />
+
+        @if (plan.targetWeightKg == null) {
+          <p class="card__hint">Nema 1RM za ovu vežbu — unesi težinu po osećaju.</p>
+        }
+
+        @if (isInProgress()) {
+          <div class="entry">
+            <div class="entry__field">
+              <span class="entry__label">Ponavljanja</span>
+              <div class="reps">
+                <button
+                  class="reps__btn"
+                  type="button"
+                  aria-label="Manje ponavljanja"
+                  [disabled]="draft.reps <= 1"
+                  (click)="stepReps(plan.id, -1)"
+                >
+                  −
+                </button>
+                <input
+                  class="reps__input numeric"
+                  type="number"
+                  inputmode="numeric"
+                  min="1"
+                  max="100"
+                  [value]="draft.reps"
+                  [attr.aria-label]="'Ponavljanja za ' + plan.exerciseName"
+                  (change)="setReps(plan.id, $any($event.target).value)"
+                />
+                <button
+                  class="reps__btn"
+                  type="button"
+                  aria-label="Više ponavljanja"
+                  (click)="stepReps(plan.id, 1)"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            <div class="entry__field">
+              <span class="entry__label">RIR</span>
+              <div class="rir" role="group" [attr.aria-label]="'RIR za ' + plan.exerciseName">
+                @for (value of rirOptions; track value) {
+                  <button
+                    class="rir__btn numeric"
+                    type="button"
+                    [class.is-active]="draft.rir === value"
+                    [attr.aria-pressed]="draft.rir === value"
+                    (click)="setRir(plan.id, value)"
+                  >
+                    {{ value }}
+                  </button>
+                }
+              </div>
+            </div>
+
+            <div class="entry__actions">
+              <button
+                class="entry__add"
+                type="button"
+                [disabled]="!canSubmitSet(plan.id)"
+                (click)="submitSet(plan)"
+              >
+                {{ editingId(plan.id) ? 'Sačuvaj izmenu' : 'Dodaj seriju' }}
+              </button>
+              @if (editingId(plan.id)) {
+                <button class="entry__cancel" type="button" (click)="cancelEdit(plan.id)">
+                  Otkaži
+                </button>
+              }
+            </div>
+          </div>
+        }
+
+        @if (plan.setLogs.length > 0) {
+          <ul class="sets">
+            @for (set of plan.setLogs; track set.id) {
+              <li class="set" [class.is-editing]="editingId(plan.id) === set.id">
+                <span class="set__index numeric">{{ set.setNumber }}</span>
+                <span class="set__value numeric">
+                  {{ set.weightKg | number: '1.0-1' }} kg × {{ set.reps }}
+                </span>
+                <span class="set__rir numeric">RIR {{ set.rir }}</span>
+                @if (isInProgress()) {
+                  <span class="set__actions">
+                    <button
+                      class="iconbtn"
+                      type="button"
+                      aria-label="Izmeni seriju"
+                      (click)="editSet(plan.id, set)"
+                    >
+                      <mat-icon aria-hidden="true">edit</mat-icon>
+                    </button>
+                    <button
+                      class="iconbtn iconbtn--danger"
+                      type="button"
+                      aria-label="Obriši seriju"
+                      (click)="deleteSet(plan.id, set)"
+                    >
+                      <mat-icon aria-hidden="true">delete_outline</mat-icon>
+                    </button>
+                  </span>
+                }
+              </li>
+            }
+          </ul>
+        } @else if (isInProgress()) {
+          <p class="card__hint">Još nema serija — dodaj prvu iznad.</p>
+        }
+      </section>
+    }
+  </div>
+
+  @if (isInProgress()) {
+    <button class="cta cta--finish" type="button" [disabled]="completing()" (click)="complete()">
+      @if (completing()) {
+        <span class="cta__spinner" aria-hidden="true"></span>
+        Završavam…
+      } @else {
+        Završi trening
+      }
+    </button>
+  }
+} @else {
+  <app-empty-state
+    icon="fitness_center"
+    title="Trening nije pronađen"
+    message="Vrati se na plan i izaberi sesiju iz aktivnog mezociklusa."
+    action="Nazad na plan"
+    (actionClick)="back()"
+  />
+}
+
+@if (toast(); as message) {
+  <div class="toast" role="status" aria-live="polite">
+    <mat-icon aria-hidden="true">check_circle</mat-icon>
+    {{ message }}
+  </div>
+}

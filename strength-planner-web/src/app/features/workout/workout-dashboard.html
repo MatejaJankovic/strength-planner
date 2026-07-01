@@ -1,0 +1,105 @@
+@if (loading()) {
+  <app-loading label="Učitavam plan…" />
+} @else if (error(); as message) {
+  <section class="panel">
+    <p class="panel__error" role="alert">
+      <mat-icon aria-hidden="true">cloud_off</mat-icon>
+      <span>{{ message }}</span>
+    </p>
+    <button class="retry" type="button" (click)="load()">
+      <mat-icon aria-hidden="true">refresh</mat-icon>
+      Pokušaj ponovo
+    </button>
+  </section>
+} @else if (mesocycle(); as plan) {
+  <header class="feature-header">
+    <p class="eyebrow">Aktivni plan</p>
+    <h1>{{ plan.name }}</h1>
+  </header>
+
+  <div class="plan-bar">
+    <div class="plan-bar__chips">
+      <app-stat-chip label="Cilj" [value]="goalLabel(plan.goal)" tone="accent" />
+      <app-stat-chip label="Početak" [value]="plan.startDate | date: 'd. M. y.'" />
+      <app-stat-chip label="Trajanje" [value]="plan.durationWeeks + ' ned.'" />
+    </div>
+
+    <div class="plan-bar__delete">
+      @if (confirmingDelete()) {
+        <span class="confirm">
+          <span class="confirm__label">Obrisati plan?</span>
+          <button
+            class="linkbtn linkbtn--danger"
+            type="button"
+            [disabled]="deleting()"
+            (click)="confirmDelete()"
+          >
+            {{ deleting() ? 'Brišem…' : 'Potvrdi' }}
+          </button>
+          <button class="linkbtn" type="button" [disabled]="deleting()" (click)="cancelDelete()">
+            Odustani
+          </button>
+        </span>
+      } @else {
+        <button class="linkbtn" type="button" (click)="requestDelete()">
+          <mat-icon aria-hidden="true">delete_outline</mat-icon>
+          Obriši plan
+        </button>
+      }
+    </div>
+  </div>
+
+  <div class="weeks">
+    @for (week of plan.weeks; track week.id) {
+      <section class="week" [class.week--deload]="week.isDeload">
+        <div class="week__head">
+          <h2 class="week__title">Nedelja {{ week.weekNumber }}</h2>
+          @if (week.isDeload) {
+            <span class="badge">
+              <mat-icon aria-hidden="true">bedtime</mat-icon>
+              Deload
+            </span>
+          }
+        </div>
+
+        <ul class="sessions">
+          @for (session of week.sessions; track session.id) {
+            @let meta = statusMeta(session.status);
+            <li>
+              <a
+                class="session"
+                [class.session--next]="session.id === nextSessionId()"
+                [routerLink]="['/session', session.id]"
+              >
+                <div class="session__info">
+                  <span class="session__day">{{ session.dayLabel }}</span>
+                  <span class="session__count numeric">{{ session.exercisePlans.length }} vežbi</span>
+                </div>
+                <div class="session__right">
+                  @if (session.id === nextSessionId()) {
+                    <app-stat-chip label="Sledeći trening" tone="accent" />
+                  }
+                  <app-stat-chip [label]="meta.label" [tone]="meta.tone" />
+                  <mat-icon class="session__chevron" aria-hidden="true">chevron_right</mat-icon>
+                </div>
+              </a>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+  </div>
+} @else {
+  <header class="feature-header">
+    <p class="eyebrow">Trening</p>
+    <h1>Nema aktivnog plana</h1>
+  </header>
+
+  <app-empty-state
+    icon="calendar_month"
+    title="Još nemaš aktivan mezociklus"
+    message="Napravi četvoronedeljni plan sa šablonom i ciljem, pa počni da loguješ treninge."
+    action="Napravi plan"
+    (actionClick)="openCreate()"
+  />
+}

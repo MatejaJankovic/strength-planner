@@ -1,0 +1,259 @@
+:host {
+  display: grid;
+  gap: 1.25rem;
+}
+
+form {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.block {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.block__title {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  margin: 0;
+}
+
+// Template cards
+.templates {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.template {
+  background: var(--color-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 0.65rem;
+  cursor: pointer;
+  display: grid;
+  gap: 0.6rem;
+  padding: 1rem 1rem 1rem 1.1rem;
+  position: relative;
+  text-align: left;
+}
+
+.template.is-selected {
+  border-color: var(--color-primary);
+  box-shadow: inset 0.35rem 0 0 0 var(--color-primary);
+}
+
+.template__head {
+  align-items: baseline;
+  display: flex;
+  gap: 0.6rem;
+  justify-content: space-between;
+}
+
+.template__name {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.template__count {
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.template__days {
+  display: grid;
+  gap: 0.45rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.template__day {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.template__day-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.template__day-exercises {
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.template__check {
+  color: var(--color-primary);
+  opacity: 0;
+  position: absolute;
+  right: 0.85rem;
+  top: 0.85rem;
+}
+
+.template.is-selected .template__check {
+  opacity: 1;
+}
+
+// Goal selector
+.goals {
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: 1fr 1fr;
+}
+
+.goal {
+  background: var(--color-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 0.6rem;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-weight: 700;
+  min-height: 52px;
+  padding: 0 1rem;
+}
+
+.goal.is-selected {
+  background: color-mix(in srgb, var(--color-primary) 12%, white);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.goals__detail {
+  color: var(--color-muted);
+  font-size: 0.88rem;
+  margin: 0;
+}
+
+// Fields
+.field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.field + .field {
+  margin-top: 0.9rem;
+}
+
+.field__label {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.control {
+  appearance: none;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 0.55rem;
+  color: var(--color-ink);
+  min-height: 46px;
+  padding: 0 0.8rem;
+  width: 100%;
+}
+
+.control--invalid {
+  border-color: var(--volume-above);
+}
+
+.field__error {
+  color: #8a2f18;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+// Panels / errors / submit
+.panel {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.panel__error {
+  align-items: center;
+  background: color-mix(in srgb, var(--volume-above) 12%, white);
+  border: 1px solid color-mix(in srgb, var(--volume-above) 45%, white);
+  border-radius: 0.55rem;
+  color: #8a2f18;
+  display: flex;
+  font-size: 0.88rem;
+  font-weight: 600;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.7rem 0.8rem;
+}
+
+.panel__error mat-icon {
+  flex: none;
+  font-size: 1.2rem;
+  height: 1.2rem;
+  width: 1.2rem;
+}
+
+.retry {
+  align-items: center;
+  background: var(--color-primary);
+  border: 0;
+  border-radius: 0.5rem;
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  font-weight: 800;
+  gap: 0.3rem;
+  justify-self: start;
+  min-height: 44px;
+  padding: 0 1.1rem;
+}
+
+.retry mat-icon {
+  font-size: 1.15rem;
+  height: 1.15rem;
+  width: 1.15rem;
+}
+
+.submit {
+  align-items: center;
+  background: var(--color-accent);
+  border: 0;
+  border-radius: 0.6rem;
+  color: #3d2c00;
+  cursor: pointer;
+  display: inline-flex;
+  font-weight: 800;
+  gap: 0.4rem;
+  justify-content: center;
+  min-height: 52px;
+  width: 100%;
+}
+
+.submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.submit mat-icon {
+  font-size: 1.25rem;
+  height: 1.25rem;
+  width: 1.25rem;
+}
+
+.submit__spinner {
+  animation: meso-spin 0.7s linear infinite;
+  border: 2px solid rgb(61 44 0 / 35%);
+  border-radius: 50%;
+  border-top-color: #3d2c00;
+  height: 1.1rem;
+  width: 1.1rem;
+}
+
+@keyframes meso-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 380px) {
+  .goals {
+    grid-template-columns: 1fr;
+  }
+}

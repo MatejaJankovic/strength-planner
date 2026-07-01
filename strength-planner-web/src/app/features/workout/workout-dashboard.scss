@@ -1,0 +1,217 @@
+:host {
+  display: grid;
+  gap: 1rem;
+}
+
+// Loading / error
+.panel {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.panel__error {
+  align-items: center;
+  background: color-mix(in srgb, var(--volume-above) 12%, white);
+  border: 1px solid color-mix(in srgb, var(--volume-above) 45%, white);
+  border-radius: 0.55rem;
+  color: #8a2f18;
+  display: flex;
+  font-size: 0.88rem;
+  font-weight: 600;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.7rem 0.8rem;
+}
+
+.panel__error mat-icon {
+  flex: none;
+  font-size: 1.2rem;
+  height: 1.2rem;
+  width: 1.2rem;
+}
+
+.retry {
+  align-items: center;
+  background: var(--color-primary);
+  border: 0;
+  border-radius: 0.5rem;
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  font-weight: 800;
+  gap: 0.3rem;
+  justify-self: start;
+  min-height: 44px;
+  padding: 0 1.1rem;
+}
+
+.retry mat-icon {
+  font-size: 1.15rem;
+  height: 1.15rem;
+  width: 1.15rem;
+}
+
+// Plan summary bar
+.plan-bar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  justify-content: space-between;
+}
+
+.plan-bar__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.confirm {
+  align-items: center;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.confirm__label {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.linkbtn {
+  align-items: center;
+  background: none;
+  border: 0;
+  color: var(--color-muted);
+  cursor: pointer;
+  display: inline-flex;
+  font-weight: 700;
+  gap: 0.25rem;
+  min-height: 44px;
+  padding: 0 0.25rem;
+}
+
+.linkbtn mat-icon {
+  font-size: 1.1rem;
+  height: 1.1rem;
+  width: 1.1rem;
+}
+
+.linkbtn--danger {
+  color: var(--volume-above);
+}
+
+.linkbtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+// Weeks
+.weeks {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.week {
+  background: var(--color-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 0.65rem;
+  overflow: hidden;
+}
+
+.week__head {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-primary) 6%, white);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  gap: 0.6rem;
+  justify-content: space-between;
+  padding: 0.7rem 0.9rem;
+}
+
+.week--deload .week__head {
+  background: color-mix(in srgb, var(--color-accent) 16%, white);
+}
+
+.week__title {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  margin: 0;
+}
+
+.badge {
+  align-items: center;
+  background: var(--color-accent);
+  border-radius: 999px;
+  color: #3d2c00;
+  display: inline-flex;
+  font-size: 0.76rem;
+  font-weight: 800;
+  gap: 0.25rem;
+  padding: 0.2rem 0.6rem;
+  text-transform: uppercase;
+}
+
+.badge mat-icon {
+  font-size: 0.95rem;
+  height: 0.95rem;
+  width: 0.95rem;
+}
+
+.sessions {
+  display: grid;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sessions li + li .session {
+  border-top: 1px solid var(--color-border);
+}
+
+.session {
+  align-items: center;
+  color: inherit;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  min-height: 56px;
+  padding: 0.7rem 0.9rem;
+  text-decoration: none;
+}
+
+.session--next {
+  background: color-mix(in srgb, var(--color-accent) 9%, white);
+  box-shadow: inset 0.28rem 0 0 0 var(--color-accent);
+}
+
+.session__info {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.session__day {
+  font-family: var(--font-display);
+  font-size: 0.98rem;
+  font-weight: 700;
+}
+
+.session__count {
+  color: var(--color-muted);
+  font-size: 0.8rem;
+}
+
+.session__right {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: flex-end;
+}
+
+.session__chevron {
+  color: var(--color-muted);
+  font-size: 1.2rem;
+  height: 1.2rem;
+  width: 1.2rem;
+}
