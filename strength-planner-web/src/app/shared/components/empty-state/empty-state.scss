@@ -1,0 +1,48 @@
+.empty-state {
+  align-items: start;
+  background: var(--color-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 44px 1fr;
+  padding: 1rem;
+}
+
+.empty-state mat-icon {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-primary) 12%, white);
+  border-radius: 0.5rem;
+  color: var(--color-primary);
+  display: inline-flex;
+  height: 44px;
+  justify-content: center;
+  width: 44px;
+}
+
+.empty-state h2 {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  line-height: 1.15;
+  margin: 0 0 0.35rem;
+}
+
+.empty-state p {
+  color: var(--color-muted);
+  margin: 0;
+}
+
+.empty-state__action {
+  align-items: center;
+  background: var(--color-primary);
+  border: 0;
+  border-radius: 0.5rem;
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  font-weight: 800;
+  grid-column: 1 / -1;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 1rem;
+}

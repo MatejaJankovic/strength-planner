@@ -1,0 +1,123 @@
+@use '@angular/material' as mat;
+
+:root {
+  --color-ink: #14151a;
+  --color-surface: #f4f5f7;
+  --color-elevated: #ffffff;
+  --color-primary: #0e5c63;
+  --color-accent: #f2a900;
+  --color-muted: #66707c;
+  --color-border: #dce1e6;
+  --volume-below: #5b8def;
+  --volume-optimal: #1f9e8a;
+  --volume-above: #e4572e;
+  --focus-ring: #0e5c63;
+  --font-display: 'Space Grotesk', Inter, system-ui, sans-serif;
+  --font-body: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  --mat-sys-primary: var(--color-primary);
+  --mat-sys-on-primary: #ffffff;
+  --mat-sys-primary-container: #cceff1;
+  --mat-sys-on-primary-container: #093a3f;
+  --mat-sys-secondary: var(--color-accent);
+  --mat-sys-tertiary: var(--color-accent);
+  --mat-sys-surface: var(--color-surface);
+  --mat-sys-on-surface: var(--color-ink);
+  --mat-sys-outline: var(--color-border);
+}
+
+html {
+  color-scheme: light;
+  min-width: 320px;
+
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$cyan-palette,
+        tertiary: mat.$yellow-palette,
+      ),
+      typography: (
+        plain-family: var(--font-body),
+        brand-family: var(--font-display),
+        regular-weight: 400,
+        medium-weight: 700,
+        bold-weight: 800,
+      ),
+      density: 0,
+    )
+  );
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-feature-settings: 'tnum' 0;
+  margin: 0;
+  min-height: 100%;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--focus-ring) 72%, white);
+  outline-offset: 3px;
+}
+
+.numeric,
+[data-numeric='true'] {
+  font-feature-settings: 'tnum' 1;
+  font-variant-numeric: tabular-nums;
+}
+
+// Shared feature-screen header (eyebrow + display title + lead paragraph).
+.feature-header {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.feature-header h1 {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 12vw, 3rem);
+  line-height: 0.96;
+  margin: 0;
+}
+
+.feature-header p {
+  color: var(--color-muted);
+  margin: 0;
+}
+
+.eyebrow {
+  color: var(--color-primary);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
+}

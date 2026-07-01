@@ -1,0 +1,6 @@
+<span class="stat-chip" [class]="'stat-chip stat-chip--' + tone()">
+  <span>{{ label() }}</span>
+  @if (value() !== null) {
+    <strong class="numeric">{{ value() }}</strong>
+  }
+</span>

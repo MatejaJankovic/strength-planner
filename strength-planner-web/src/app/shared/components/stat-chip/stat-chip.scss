@@ -1,0 +1,36 @@
+.stat-chip {
+  align-items: center;
+  background: #e8ecef;
+  border-radius: 999px;
+  color: var(--color-ink);
+  display: inline-flex;
+  font-size: 0.82rem;
+  font-weight: 700;
+  gap: 0.4rem;
+  min-height: 32px;
+  padding: 0.35rem 0.7rem;
+}
+
+.stat-chip strong {
+  font-family: var(--font-display);
+}
+
+.stat-chip--below {
+  background: color-mix(in srgb, var(--volume-below) 16%, white);
+  color: #244675;
+}
+
+.stat-chip--optimal {
+  background: color-mix(in srgb, var(--volume-optimal) 16%, white);
+  color: #126c60;
+}
+
+.stat-chip--above {
+  background: color-mix(in srgb, var(--volume-above) 16%, white);
+  color: #97371f;
+}
+
+.stat-chip--accent {
+  background: color-mix(in srgb, var(--color-accent) 24%, white);
+  color: #5d4200;
+}

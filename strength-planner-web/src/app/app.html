@@ -1,0 +1,33 @@
+<div class="app-shell" [class.app-shell--bare]="isAuthRoute()">
+  @if (!isAuthRoute()) {
+    <header class="topbar">
+      <a class="brand" routerLink="/workout" aria-label="Strength Planner početna">
+        <span class="brand__mark">SP</span>
+        <span>
+          <strong>Strength Planner</strong>
+          <small>Planiraj mirno. Napreduj tačno.</small>
+        </span>
+      </a>
+    </header>
+  }
+
+  <main class="app-main" id="main-content">
+    <router-outlet />
+  </main>
+
+  @if (!isAuthRoute()) {
+    <nav class="bottom-nav" aria-label="Glavna navigacija">
+      @for (item of navItems; track item.route) {
+        <a
+          class="bottom-nav__item"
+          [routerLink]="item.route"
+          routerLinkActive="is-active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          <mat-icon aria-hidden="true">{{ item.icon }}</mat-icon>
+          <span>{{ item.label }}</span>
+        </a>
+      }
+    </nav>
+  }
+</div>
