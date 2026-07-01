@@ -1,0 +1,221 @@
+// Shared layout for the login and register screens. Included via `@use` in each
+// component stylesheet so the rules stay colocated with the auth feature and are
+// scoped per component (no global leakage).
+
+.auth {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  min-height: calc(100dvh - 3rem);
+  padding: 1.5rem 0 2.5rem;
+}
+
+.auth__card {
+  background: var(--color-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 0.85rem;
+  box-shadow: 0 18px 44px rgb(20 21 26 / 7%);
+  padding: 1.6rem 1.4rem;
+  width: min(100%, 27rem);
+}
+
+.auth__brand {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.6rem;
+  margin-bottom: 1.4rem;
+}
+
+.auth__mark {
+  align-items: center;
+  background: var(--color-primary);
+  border-radius: 0.5rem;
+  color: #fff;
+  display: inline-flex;
+  font-family: var(--font-display);
+  font-weight: 800;
+  height: 40px;
+  justify-content: center;
+  width: 40px;
+}
+
+.auth__brand-name {
+  font-family: var(--font-display);
+  font-weight: 800;
+}
+
+.auth__eyebrow {
+  color: var(--color-primary);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  margin: 0 0 0.25rem;
+  text-transform: uppercase;
+}
+
+.auth__title {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 6vw, 1.85rem);
+  line-height: 1.05;
+  margin: 0 0 0.35rem;
+}
+
+.auth__subtitle {
+  color: var(--color-muted);
+  margin: 0 0 1.35rem;
+}
+
+.auth__error {
+  align-items: start;
+  background: color-mix(in srgb, var(--volume-above) 12%, white);
+  border: 1px solid color-mix(in srgb, var(--volume-above) 45%, white);
+  border-radius: 0.55rem;
+  color: #8a2f18;
+  display: flex;
+  font-size: 0.88rem;
+  font-weight: 600;
+  gap: 0.5rem;
+  margin-bottom: 1.1rem;
+  padding: 0.7rem 0.8rem;
+}
+
+.auth__error mat-icon {
+  flex: none;
+  font-size: 1.2rem;
+  height: 1.2rem;
+  width: 1.2rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.field__label {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.field__optional {
+  color: var(--color-muted);
+  font-weight: 500;
+}
+
+.control {
+  appearance: none;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 0.55rem;
+  color: var(--color-ink);
+  min-height: 46px;
+  padding: 0 0.8rem;
+  width: 100%;
+}
+
+.control:hover {
+  border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
+}
+
+.control--invalid {
+  border-color: var(--volume-above);
+}
+
+.field__hint {
+  color: var(--color-muted);
+  font-size: 0.78rem;
+}
+
+.field__error {
+  color: #8a2f18;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.password {
+  align-items: center;
+  display: flex;
+  gap: 0.4rem;
+}
+
+.password .control {
+  flex: 1;
+}
+
+.password__toggle {
+  align-items: center;
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 0.55rem;
+  color: var(--color-muted);
+  cursor: pointer;
+  display: inline-flex;
+  height: 46px;
+  justify-content: center;
+  width: 46px;
+}
+
+.grid-2 {
+  display: grid;
+  gap: 0 0.9rem;
+  grid-template-columns: 1fr 1fr;
+}
+
+.auth__submit {
+  align-items: center;
+  background: var(--color-primary);
+  border: 0;
+  border-radius: 0.6rem;
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  font-weight: 800;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: 0.35rem;
+  min-height: 50px;
+  width: 100%;
+}
+
+.auth__submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.auth__spinner {
+  animation: auth-spin 0.7s linear infinite;
+  border: 2px solid rgb(255 255 255 / 45%);
+  border-radius: 50%;
+  border-top-color: #fff;
+  height: 1.1rem;
+  width: 1.1rem;
+}
+
+.auth__alt {
+  color: var(--color-muted);
+  font-size: 0.9rem;
+  margin: 1.25rem 0 0;
+  text-align: center;
+}
+
+.auth__alt a {
+  color: var(--color-primary);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.auth__alt a:hover {
+  text-decoration: underline;
+}
+
+@keyframes auth-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 400px) {
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
