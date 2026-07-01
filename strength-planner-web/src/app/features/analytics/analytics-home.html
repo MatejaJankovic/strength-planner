@@ -1,0 +1,47 @@
+<header class="feature-header">
+  <p class="eyebrow">Analitika</p>
+  <h1>Napredak i volumen</h1>
+  <p>e1RM raste, volumen ostaje u zoni — backend računa, ovde vidiš rezultat.</p>
+</header>
+
+@if (loading()) {
+  <app-loading label="Učitavam analitiku…" />
+} @else if (error(); as message) {
+  <section class="panel">
+    <p class="panel__error" role="alert">
+      <mat-icon aria-hidden="true">cloud_off</mat-icon>
+      <span>{{ message }}</span>
+    </p>
+    <button class="retry" type="button" (click)="load()">
+      <mat-icon aria-hidden="true">refresh</mat-icon>
+      Pokušaj ponovo
+    </button>
+  </section>
+} @else if (isEmpty()) {
+  <app-empty-state
+    icon="monitoring"
+    title="Još nema podataka za analitiku"
+    message="Napravi plan i završi trening — pojaviće se e1RM trend, volumen po mišićnim grupama i rekordi."
+    action="Idi na trening"
+    (actionClick)="goToWorkout()"
+  />
+} @else {
+  <section class="a-section">
+    <h2 class="a-section__title">e1RM trend</h2>
+    <div class="a-card">
+      <app-e1rm-trend />
+    </div>
+  </section>
+
+  <section class="a-section">
+    <h2 class="a-section__title">Nedeljni volumen</h2>
+    <div class="a-card">
+      <app-volume [mesocycles]="mesocycles()" />
+    </div>
+  </section>
+
+  <section class="a-section">
+    <h2 class="a-section__title">Lični rekordi</h2>
+    <app-pr-list [records]="prs()" />
+  </section>
+}

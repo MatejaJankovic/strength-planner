@@ -1,0 +1,44 @@
+@if (exercisesError(); as message) {
+  <p class="trend-note trend-note--error" role="alert">{{ message }}</p>
+} @else {
+  <div class="control">
+    <label class="control__label" for="trend-exercise">Vežba</label>
+    <select
+      id="trend-exercise"
+      class="control__select"
+      [value]="selectedId()"
+      [disabled]="loadingExercises()"
+      (change)="select($any($event.target).value)"
+    >
+      @for (exercise of exercises(); track exercise.id) {
+        <option [value]="exercise.id">{{ exercise.name }}</option>
+      }
+    </select>
+  </div>
+
+  @if (loading()) {
+    <p class="trend-note">Učitavam trend…</p>
+  } @else if (error(); as message) {
+    <p class="trend-note trend-note--error" role="alert">{{ message }}</p>
+  } @else if (!hasData()) {
+    <p class="trend-note">Nema procena za ovu vežbu — završi trening sa njom (serije do 10 ponavljanja).</p>
+  } @else {
+    <div class="trend-summary">
+      <div class="trend-summary__last">
+        <span class="trend-summary__label">Poslednji e1RM</span>
+        <span class="trend-summary__value numeric">{{ last() }} kg</span>
+      </div>
+      @if (delta(); as d) {
+        <span
+          class="trend-summary__delta numeric"
+          [class.is-up]="d > 0"
+          [class.is-down]="d < 0"
+        >
+          {{ d > 0 ? '↑ +' : '↓ ' }}{{ d }} kg
+        </span>
+      }
+    </div>
+
+    <app-line-chart [labels]="labels()" [values]="values()" seriesLabel="e1RM (kg)" />
+  }
+}

@@ -1,0 +1,80 @@
+:host {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.control {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.control__label {
+  color: var(--color-muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.control__select {
+  appearance: none;
+  background: var(--color-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  color: var(--color-ink);
+  min-height: 44px;
+  padding: 0 0.7rem;
+  width: 100%;
+}
+
+.trend-note {
+  color: var(--color-muted);
+  margin: 0;
+}
+
+.trend-note--error {
+  color: #8a2f18;
+  font-weight: 600;
+}
+
+.trend-summary {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+}
+
+.trend-summary__last {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.trend-summary__label {
+  color: var(--color-muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.trend-summary__value {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.trend-summary__delta {
+  border-radius: 999px;
+  font-weight: 700;
+  padding: 0.25rem 0.6rem;
+}
+
+.trend-summary__delta.is-up {
+  background: color-mix(in srgb, var(--volume-optimal) 16%, white);
+  color: #126c60;
+}
+
+.trend-summary__delta.is-down {
+  background: color-mix(in srgb, var(--volume-above) 16%, white);
+  color: #97371f;
+}

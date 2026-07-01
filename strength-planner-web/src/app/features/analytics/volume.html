@@ -1,0 +1,72 @@
+<div class="controls">
+  <div class="control">
+    <label class="control__label" for="vol-meso">Mezociklus</label>
+    <select
+      id="vol-meso"
+      class="control__select"
+      [value]="selectedMesoId()"
+      (change)="selectMeso($any($event.target).value)"
+    >
+      @for (meso of mesocycles(); track meso.id) {
+        <option [value]="meso.id">{{ meso.name }}</option>
+      }
+    </select>
+  </div>
+
+  <div class="control">
+    <span class="control__label">Nedelja</span>
+    <div class="weeks" role="group" aria-label="Izbor nedelje">
+      @for (w of weeks; track w) {
+        <button
+          class="weeks__btn numeric"
+          type="button"
+          [class.is-active]="week() === w"
+          [attr.aria-pressed]="week() === w"
+          (click)="selectWeek(w)"
+        >
+          {{ w }}
+        </button>
+      }
+    </div>
+  </div>
+</div>
+
+@if (loading()) {
+  <p class="vol-note">Učitavam volumen…</p>
+} @else if (error(); as message) {
+  <p class="vol-note vol-note--error" role="alert">{{ message }}</p>
+} @else if (rows().length === 0) {
+  <p class="vol-note">Nema volumena za izabranu nedelju.</p>
+} @else {
+  <ul class="vrows">
+    @for (row of rows(); track row.muscle) {
+      <li class="vrow">
+        <div class="vrow__head">
+          <span class="vrow__muscle">{{ row.muscle }}</span>
+          <span class="vrow__sets numeric">{{ row.sets | number: '1.0-1' }} serija</span>
+        </div>
+        <div class="track">
+          <div
+            class="track__bar"
+            [class]="'track__bar bar--' + row.status"
+            [style.width.%]="row.barPct"
+          ></div>
+          <span class="marker marker--mev" [style.left.%]="row.mevPct" aria-hidden="true"></span>
+          <span class="marker marker--mrv" [style.left.%]="row.mrvPct" aria-hidden="true"></span>
+        </div>
+        <p class="vrow__meta numeric">MEV {{ row.mev }} · MRV {{ row.mrv }}</p>
+      </li>
+    }
+  </ul>
+
+  <div class="legend">
+    <div class="legend__chips">
+      <span class="legend__chip"><span class="dot dot--below"></span> ispod</span>
+      <span class="legend__chip"><span class="dot dot--optimal"></span> optimalno</span>
+      <span class="legend__chip"><span class="dot dot--above"></span> iznad</span>
+    </div>
+    <p class="legend__note">
+      MEV = minimalni efektivni volumen, MRV = maksimalni oporavljivi volumen; cilj je biti između.
+    </p>
+  </div>
+}
