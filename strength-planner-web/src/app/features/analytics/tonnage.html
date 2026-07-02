@@ -1,0 +1,46 @@
+<div class="controls">
+  <div class="control">
+    <label class="control__label" for="ton-meso">Mezociklus</label>
+    <select
+      id="ton-meso"
+      class="control__select"
+      [value]="selectedMesoId()"
+      (change)="selectMeso($any($event.target).value)"
+    >
+      @for (meso of mesocycles(); track meso.id) {
+        <option [value]="meso.id">{{ meso.name }}</option>
+      }
+    </select>
+  </div>
+</div>
+
+@if (loading()) {
+  <p class="ton-note">Učitavam tonažu…</p>
+} @else if (error(); as message) {
+  <p class="ton-note ton-note--error" role="alert">{{ message }}</p>
+} @else if (!hasAnyTonnage()) {
+  <p class="ton-note">Još nema logovanih serija u ovom mezociklusu.</p>
+} @else {
+  <ul class="trows">
+    @for (row of rows(); track row.weekNumber) {
+      <li class="trow">
+        <div class="trow__head">
+          <span class="trow__week">
+            Nedelja {{ row.weekNumber }}
+            @if (row.isDeload) {
+              <span class="trow__deload">Deload</span>
+            }
+          </span>
+          <span class="trow__value numeric">{{ row.tonnageKg | number: '1.0-0' }} kg</span>
+        </div>
+        <div class="track">
+          <div class="track__bar" [style.width.%]="row.barPct"></div>
+        </div>
+      </li>
+    }
+  </ul>
+
+  <p class="ton-total">
+    Ukupno: <span class="numeric">{{ total() | number: '1.0-0' }} kg</span>
+  </p>
+}

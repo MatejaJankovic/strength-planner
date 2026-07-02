@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
 import { Observable, of, shareReplay, tap } from 'rxjs';
 import { API_BASE_URL } from './api-base';
-import { ExerciseDto } from '../models/training.models';
+import { CreateExerciseRequest, ExerciseDto } from '../models/training.models';
 
 @Injectable({ providedIn: 'root' })
 export class ExerciseService {
@@ -29,5 +29,19 @@ export class ExerciseService {
     );
 
     return this.request;
+  }
+
+  muscleGroups(): Observable<string[]> {
+    return this.http.get<string[]>(`${this.apiUrl}/exercises/muscle-groups`);
+  }
+
+  createCustom(request: CreateExerciseRequest): Observable<ExerciseDto> {
+    return this.http.post<ExerciseDto>(`${this.apiUrl}/exercises`, request).pipe(
+      tap((exercise) =>
+        this.exercisesSignal.update((exercises) =>
+          [...exercises, exercise].sort((a, b) => a.name.localeCompare(b.name)),
+        ),
+      ),
+    );
   }
 }

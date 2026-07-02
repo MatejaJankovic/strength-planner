@@ -21,7 +21,7 @@ export interface AuthResponseDto {
 }
 
 export interface CurrentUserDto {
-  userId: string;
+  id: string;
   email: string;
   sex?: string | null;
   age?: number | null;
@@ -34,4 +34,12 @@ export enum ExperienceLevel {
   Beginner = 0,
   Intermediate = 1,
   Advanced = 2,
+}
+
+export interface UpdateProfileDto {
+  sex?: string | null;
+  age: number;
+  bodyweightKg: number;
+  experienceLevel: ExperienceLevel;
+  trainingDaysPerWeek: number;
 }

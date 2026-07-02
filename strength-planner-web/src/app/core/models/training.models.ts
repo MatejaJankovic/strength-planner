@@ -27,6 +27,13 @@ export interface ExerciseDto {
   muscles: MuscleContributionDto[];
 }
 
+export interface CreateExerciseRequest {
+  name: string;
+  type: string;
+  equipment: string;
+  muscles: MuscleContributionDto[];
+}
+
 export interface WorkoutTemplateDayDto {
   name: string;
   exercises: string[];

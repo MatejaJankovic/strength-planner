@@ -1,10 +1,235 @@
-import { Component } from '@angular/core';
-import { EmptyState } from '../../shared/components/empty-state/empty-state';
+import { Component, computed, inject, signal } from '@angular/core';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MatIconModule } from '@angular/material/icon';
+import { forkJoin } from 'rxjs';
+import { extractErrorMessage } from '../../core/api/http-error';
+import { ExerciseService } from '../../core/api/exercise.service';
+import { AuthService } from '../../core/auth/auth.service';
+import { ExperienceLevel, UpdateProfileDto } from '../../core/models/auth.models';
+import { CreateExerciseRequest } from '../../core/models/training.models';
+import { Loading } from '../../shared/components/loading/loading';
 
 @Component({
   selector: 'app-profile-home',
-  imports: [EmptyState],
+  imports: [ReactiveFormsModule, MatIconModule, Loading],
   templateUrl: './profile-home.html',
   styleUrl: './profile-home.scss',
 })
-export class ProfileHome {}
+export class ProfileHome {
+  private readonly fb = inject(FormBuilder);
+  private readonly auth = inject(AuthService);
+  private readonly exerciseService = inject(ExerciseService);
+
+  protected readonly loading = signal(true);
+  protected readonly error = signal<string | null>(null);
+
+  protected readonly user = this.auth.currentUser;
+
+  // --- profil ----------------------------------------------------------------
+
+  protected readonly savingProfile = signal(false);
+  protected readonly profileError = signal<string | null>(null);
+  protected readonly profileSaved = signal(false);
+
+  protected readonly experienceOptions = [
+    { value: ExperienceLevel.Beginner, label: 'Početnik' },
+    { value: ExperienceLevel.Intermediate, label: 'Srednji nivo' },
+    { value: ExperienceLevel.Advanced, label: 'Napredni' },
+  ];
+
+  protected readonly dayOptions = [2, 3, 4, 5, 6];
+
+  protected readonly profileForm = this.fb.nonNullable.group({
+    sex: [''],
+    age: ['', [Validators.required, Validators.min(14), Validators.max(90)]],
+    bodyweightKg: ['', [Validators.required, Validators.min(30), Validators.max(300)]],
+    experienceLevel: ['', [Validators.required]],
+    trainingDaysPerWeek: ['3', [Validators.required]],
+  });
+
+  // --- custom vežbe ------------------------------------------------------------
+
+  protected readonly muscleGroups = signal<string[]>([]);
+  protected readonly savingExercise = signal(false);
+  protected readonly exerciseError = signal<string | null>(null);
+  protected readonly exerciseSaved = signal<string | null>(null);
+
+  protected readonly customExercises = computed(() =>
+    this.exerciseService.exercises().filter((exercise) => exercise.isCustom),
+  );
+
+  protected readonly typeOptions = [
+    { value: 'Compound', label: 'Složena' },
+    { value: 'Isolation', label: 'Izolaciona' },
+  ];
+
+  protected readonly equipmentOptions = ['Barbell', 'Dumbbell', 'Machine', 'Cable', 'Bodyweight'];
+
+  protected readonly exerciseForm = this.fb.nonNullable.group({
+    name: ['', [Validators.required, Validators.maxLength(128)]],
+    type: ['Compound', [Validators.required]],
+    equipment: ['Barbell', [Validators.required]],
+    primaryMuscle: ['', [Validators.required]],
+  });
+
+  private readonly secondarySelection = signal<Set<string>>(new Set());
+
+  constructor() {
+    this.load();
+  }
+
+  protected load(): void {
+    this.loading.set(true);
+    this.error.set(null);
+
+    forkJoin({
+      me: this.auth.loadMe(),
+      muscles: this.exerciseService.muscleGroups(),
+      exercises: this.exerciseService.load(),
+    }).subscribe({
+      next: ({ me, muscles }) => {
+        this.muscleGroups.set(muscles);
+        this.profileForm.patchValue({
+          sex: me.sex ?? '',
+          age: me.age != null ? String(me.age) : '',
+          bodyweightKg: me.bodyweightKg != null ? String(me.bodyweightKg) : '',
+          experienceLevel: this.experienceLevelToValue(me.experienceLevel),
+          trainingDaysPerWeek:
+            me.trainingDaysPerWeek != null ? String(me.trainingDaysPerWeek) : '3',
+        });
+        this.loading.set(false);
+      },
+      error: (err: unknown) => {
+        this.loading.set(false);
+        this.error.set(
+          extractErrorMessage(err, 'Ne mogu da učitam profil. Proveri vezu i pokušaj ponovo.'),
+        );
+      },
+    });
+  }
+
+  protected saveProfile(): void {
+    if (this.savingProfile()) {
+      return;
+    }
+
+    if (this.profileForm.invalid) {
+      this.profileForm.markAllAsTouched();
+      return;
+    }
+
+    const raw = this.profileForm.getRawValue();
+    const dto: UpdateProfileDto = {
+      sex: raw.sex ? raw.sex : null,
+      age: Number(raw.age),
+      bodyweightKg: Number(raw.bodyweightKg),
+      experienceLevel: Number(raw.experienceLevel) as ExperienceLevel,
+      trainingDaysPerWeek: Number(raw.trainingDaysPerWeek),
+    };
+
+    this.savingProfile.set(true);
+    this.profileError.set(null);
+    this.profileSaved.set(false);
+
+    this.auth.updateProfile(dto).subscribe({
+      next: () => {
+        this.savingProfile.set(false);
+        this.profileSaved.set(true);
+        setTimeout(() => this.profileSaved.set(false), 3200);
+      },
+      error: (err: unknown) => {
+        this.savingProfile.set(false);
+        this.profileError.set(
+          extractErrorMessage(err, 'Izmena profila nije sačuvana. Pokušaj ponovo.'),
+        );
+      },
+    });
+  }
+
+  protected isSecondary(muscle: string): boolean {
+    return this.secondarySelection().has(muscle);
+  }
+
+  protected toggleSecondary(muscle: string): void {
+    this.secondarySelection.update((selection) => {
+      const next = new Set(selection);
+      if (next.has(muscle)) {
+        next.delete(muscle);
+      } else {
+        next.add(muscle);
+      }
+      return next;
+    });
+  }
+
+  protected saveExercise(): void {
+    if (this.savingExercise()) {
+      return;
+    }
+
+    if (this.exerciseForm.invalid) {
+      this.exerciseForm.markAllAsTouched();
+      return;
+    }
+
+    const raw = this.exerciseForm.getRawValue();
+    const secondary = [...this.secondarySelection()].filter(
+      (muscle) => muscle !== raw.primaryMuscle,
+    );
+    const request: CreateExerciseRequest = {
+      name: raw.name.trim(),
+      type: raw.type,
+      equipment: raw.equipment,
+      muscles: [
+        { muscleGroup: raw.primaryMuscle, contribution: 1.0 },
+        ...secondary.map((muscle) => ({ muscleGroup: muscle, contribution: 0.5 })),
+      ],
+    };
+
+    this.savingExercise.set(true);
+    this.exerciseError.set(null);
+    this.exerciseSaved.set(null);
+
+    this.exerciseService.createCustom(request).subscribe({
+      next: (exercise) => {
+        this.savingExercise.set(false);
+        this.exerciseSaved.set(`Vežba "${exercise.name}" je dodata u katalog.`);
+        this.exerciseForm.reset({
+          name: '',
+          type: 'Compound',
+          equipment: 'Barbell',
+          primaryMuscle: '',
+        });
+        this.secondarySelection.set(new Set());
+        setTimeout(() => this.exerciseSaved.set(null), 4000);
+      },
+      error: (err: unknown) => {
+        this.savingExercise.set(false);
+        this.exerciseError.set(
+          extractErrorMessage(err, 'Vežba nije sačuvana. Proveri podatke i pokušaj ponovo.'),
+        );
+      },
+    });
+  }
+
+  protected logout(): void {
+    this.auth.logout();
+  }
+
+  private experienceLevelToValue(level?: string | number | null): string {
+    // Backend serijalizuje enum kao broj; string imena su fallback.
+    switch (level) {
+      case ExperienceLevel.Beginner:
+      case 'Beginner':
+        return String(ExperienceLevel.Beginner);
+      case ExperienceLevel.Intermediate:
+      case 'Intermediate':
+        return String(ExperienceLevel.Intermediate);
+      case ExperienceLevel.Advanced:
+      case 'Advanced':
+        return String(ExperienceLevel.Advanced);
+      default:
+        return '';
+    }
+  }
+}

@@ -89,10 +89,13 @@ export class WorkoutSession {
   private initDrafts(session: WorkoutSessionDto): void {
     const drafts: Record<string, SetDraft> = {};
     for (const plan of session.exercisePlans) {
+      // Double progression: cilj je postepeno +1 ka vrhu opsega, pa je default
+      // poslednja odrađena serija (ili donja granica opsega), a ne rep-max.
+      const lastLog = plan.setLogs[plan.setLogs.length - 1];
       drafts[plan.id] = {
-        weightKg: plan.targetWeightKg ?? 0,
-        reps: plan.repRangeMax,
-        rir: plan.targetRir,
+        weightKg: lastLog?.weightKg ?? plan.targetWeightKg ?? 0,
+        reps: lastLog?.reps ?? plan.repRangeMin,
+        rir: lastLog?.rir ?? plan.targetRir,
       };
     }
     this.drafts.set(drafts);

@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_BASE_URL } from './api-base';
-import { E1rmPointDto, PersonalRecordDto, VolumeItemDto } from '../models/analytics.models';
+import { E1rmPointDto, PersonalRecordDto, VolumeItemDto, WeeklyTonnageDto } from '../models/analytics.models';
 
 @Injectable({ providedIn: 'root' })
 export class AnalyticsService {
@@ -20,5 +20,10 @@ export class AnalyticsService {
 
   personalRecords(): Observable<PersonalRecordDto[]> {
     return this.http.get<PersonalRecordDto[]>(`${this.apiUrl}/analytics/prs`);
+  }
+
+  tonnage(mesocycleId: string): Observable<WeeklyTonnageDto[]> {
+    const params = new HttpParams().set('mesocycleId', mesocycleId);
+    return this.http.get<WeeklyTonnageDto[]>(`${this.apiUrl}/analytics/tonnage`, { params });
   }
 }

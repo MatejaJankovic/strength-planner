@@ -1,12 +1,241 @@
 <header class="feature-header">
   <p class="eyebrow">Profil</p>
-  <h1>Postavke rada</h1>
-  <p>Cilj, iskustvo i dani treninga oblikuju plan, ali algoritmi ostaju na backendu.</p>
+  <h1>Postavke</h1>
+  @if (user(); as currentUser) {
+    <p class="numeric">{{ currentUser.email }}</p>
+  }
 </header>
 
-<app-empty-state
-  icon="person"
-  title="Profil još nije povezan"
-  message="Kada se poveže auth tok, ovde se prikazuju korisnik, cilj i osnovni podaci profila."
-  action="Otvori prijavu"
-/>
+@if (loading()) {
+  <app-loading label="Učitavam profil…" />
+} @else if (error(); as message) {
+  <section class="panel">
+    <p class="panel__error" role="alert">
+      <mat-icon aria-hidden="true">cloud_off</mat-icon>
+      <span>{{ message }}</span>
+    </p>
+    <button class="retry" type="button" (click)="load()">
+      <mat-icon aria-hidden="true">refresh</mat-icon>
+      Pokušaj ponovo
+    </button>
+  </section>
+} @else {
+  <section class="card">
+    <h2 class="card__title">Osnovni podaci</h2>
+    <p class="card__hint">Telesna masa i iskustvo se menjaju — drži ih ažurnim.</p>
+
+    @if (profileError(); as message) {
+      <p class="alert alert--error" role="alert">
+        <mat-icon aria-hidden="true">error_outline</mat-icon>
+        <span>{{ message }}</span>
+      </p>
+    }
+    @if (profileSaved()) {
+      <p class="alert alert--ok" role="status">
+        <mat-icon aria-hidden="true">check_circle</mat-icon>
+        <span>Profil sačuvan.</span>
+      </p>
+    }
+
+    <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" novalidate>
+      <div class="grid">
+        <div class="field">
+          <label class="field__label" for="pf-sex">Pol</label>
+          <select id="pf-sex" class="control" formControlName="sex">
+            <option value="">Ne želim da navedem</option>
+            <option value="M">Muški</option>
+            <option value="F">Ženski</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="pf-age">Uzrast</label>
+          <input
+            id="pf-age"
+            class="control numeric"
+            type="number"
+            inputmode="numeric"
+            formControlName="age"
+            [class.control--invalid]="profileForm.controls.age.invalid && profileForm.controls.age.touched"
+          />
+          @if (profileForm.controls.age.touched && profileForm.controls.age.invalid) {
+            <p class="field__error">Unesi uzrast (14–90).</p>
+          }
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="pf-weight">Telesna masa (kg)</label>
+          <input
+            id="pf-weight"
+            class="control numeric"
+            type="number"
+            inputmode="decimal"
+            step="0.5"
+            formControlName="bodyweightKg"
+            [class.control--invalid]="
+              profileForm.controls.bodyweightKg.invalid && profileForm.controls.bodyweightKg.touched
+            "
+          />
+          @if (profileForm.controls.bodyweightKg.touched && profileForm.controls.bodyweightKg.invalid) {
+            <p class="field__error">Unesi telesnu masu (30–300 kg).</p>
+          }
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="pf-exp">Nivo iskustva</label>
+          <select
+            id="pf-exp"
+            class="control"
+            formControlName="experienceLevel"
+            [class.control--invalid]="
+              profileForm.controls.experienceLevel.invalid && profileForm.controls.experienceLevel.touched
+            "
+          >
+            <option value="" disabled>Izaberi nivo</option>
+            @for (option of experienceOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="pf-days">Treninga nedeljno</label>
+          <select id="pf-days" class="control" formControlName="trainingDaysPerWeek">
+            @for (day of dayOptions; track day) {
+              <option [value]="day">{{ day }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <button class="btn btn--primary" type="submit" [disabled]="savingProfile()">
+        {{ savingProfile() ? 'Čuvam…' : 'Sačuvaj profil' }}
+      </button>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2 class="card__title">Moje vežbe</h2>
+    <p class="card__hint">
+      Dodaj vežbu koje nema u katalogu — ulazi u analitiku volumena preko izabranih mišićnih grupa.
+    </p>
+
+    @if (customExercises().length > 0) {
+      <ul class="exlist">
+        @for (exercise of customExercises(); track exercise.id) {
+          <li class="exlist__item">
+            <span class="exlist__name">{{ exercise.name }}</span>
+            <span class="exlist__meta">
+              {{ exercise.equipment }} ·
+              @for (muscle of exercise.muscles; track muscle.muscleGroup; let last = $last) {
+                {{ muscle.muscleGroup }}{{ last ? '' : ', ' }}
+              }
+            </span>
+          </li>
+        }
+      </ul>
+    }
+
+    @if (exerciseError(); as message) {
+      <p class="alert alert--error" role="alert">
+        <mat-icon aria-hidden="true">error_outline</mat-icon>
+        <span>{{ message }}</span>
+      </p>
+    }
+    @if (exerciseSaved(); as message) {
+      <p class="alert alert--ok" role="status">
+        <mat-icon aria-hidden="true">check_circle</mat-icon>
+        <span>{{ message }}</span>
+      </p>
+    }
+
+    <form [formGroup]="exerciseForm" (ngSubmit)="saveExercise()" novalidate>
+      <div class="grid">
+        <div class="field field--wide">
+          <label class="field__label" for="ex-name">Naziv vežbe</label>
+          <input
+            id="ex-name"
+            class="control"
+            type="text"
+            formControlName="name"
+            placeholder="npr. Hack Squat"
+            [class.control--invalid]="
+              exerciseForm.controls.name.invalid && exerciseForm.controls.name.touched
+            "
+          />
+          @if (exerciseForm.controls.name.touched && exerciseForm.controls.name.invalid) {
+            <p class="field__error">Unesi naziv vežbe.</p>
+          }
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="ex-type">Tip</label>
+          <select id="ex-type" class="control" formControlName="type">
+            @for (option of typeOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="ex-equipment">Oprema</label>
+          <select id="ex-equipment" class="control" formControlName="equipment">
+            @for (equipment of equipmentOptions; track equipment) {
+              <option [value]="equipment">{{ equipment }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="ex-primary">Primarna mišićna grupa</label>
+          <select
+            id="ex-primary"
+            class="control"
+            formControlName="primaryMuscle"
+            [class.control--invalid]="
+              exerciseForm.controls.primaryMuscle.invalid && exerciseForm.controls.primaryMuscle.touched
+            "
+          >
+            <option value="" disabled>Izaberi grupu</option>
+            @for (muscle of muscleGroups(); track muscle) {
+              <option [value]="muscle">{{ muscle }}</option>
+            }
+          </select>
+          @if (exerciseForm.controls.primaryMuscle.touched && exerciseForm.controls.primaryMuscle.invalid) {
+            <p class="field__error">Izaberi primarnu mišićnu grupu.</p>
+          }
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="field__label">Sekundarne grupe (0.5 serije u volumenu)</span>
+        <div class="chips" role="group" aria-label="Sekundarne mišićne grupe">
+          @for (muscle of muscleGroups(); track muscle) {
+            @if (muscle !== exerciseForm.controls.primaryMuscle.value) {
+              <button
+                class="chip"
+                type="button"
+                [class.is-active]="isSecondary(muscle)"
+                [attr.aria-pressed]="isSecondary(muscle)"
+                (click)="toggleSecondary(muscle)"
+              >
+                {{ muscle }}
+              </button>
+            }
+          }
+        </div>
+      </div>
+
+      <button class="btn btn--primary" type="submit" [disabled]="savingExercise()">
+        {{ savingExercise() ? 'Čuvam…' : 'Dodaj vežbu' }}
+      </button>
+    </form>
+  </section>
+
+  <section class="card card--logout">
+    <button class="btn btn--ghost" type="button" (click)="logout()">
+      <mat-icon aria-hidden="true">logout</mat-icon>
+      Odjavi se
+    </button>
+  </section>
+}

@@ -41,6 +41,13 @@
   </section>
 
   <section class="a-section">
+    <h2 class="a-section__title">Nedeljna tonaža</h2>
+    <div class="a-card">
+      <app-tonnage [mesocycles]="mesocycles()" />
+    </div>
+  </section>
+
+  <section class="a-section">
     <h2 class="a-section__title">Lični rekordi</h2>
     <app-pr-list [records]="prs()" />
   </section>

@@ -32,3 +32,9 @@ export interface CreateOneRepMaxRequest {
   exerciseId: string;
   valueKg: number;
 }
+
+export interface WeeklyTonnageDto {
+  weekNumber: number;
+  isDeload: boolean;
+  tonnageKg: number;
+}

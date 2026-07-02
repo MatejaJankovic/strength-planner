@@ -12,10 +12,11 @@ import { Loading } from '../../shared/components/loading/loading';
 import { E1rmTrend } from './e1rm-trend';
 import { Volume } from './volume';
 import { PrList } from './pr-list';
+import { Tonnage } from './tonnage';
 
 @Component({
   selector: 'app-analytics-home',
-  imports: [MatIconModule, EmptyState, Loading, E1rmTrend, Volume, PrList],
+  imports: [MatIconModule, EmptyState, Loading, E1rmTrend, Volume, PrList, Tonnage],
   templateUrl: './analytics-home.html',
   styleUrl: './analytics-home.scss',
 })

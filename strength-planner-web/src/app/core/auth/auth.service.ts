@@ -3,7 +3,7 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 import { API_BASE_URL } from '../api/api-base';
-import { AuthResponseDto, CurrentUserDto, LoginDto, RegisterDto } from '../models/auth.models';
+import { AuthResponseDto, CurrentUserDto, LoginDto, RegisterDto, UpdateProfileDto } from '../models/auth.models';
 import { AuthTokenStorage } from './auth-token-storage';
 
 @Injectable({ providedIn: 'root' })
@@ -38,6 +38,12 @@ export class AuthService {
       .pipe(tap((user) => this.currentUserSignal.set(user)));
   }
 
+  updateProfile(dto: UpdateProfileDto): Observable<CurrentUserDto> {
+    return this.http
+      .put<CurrentUserDto>(`${this.apiUrl}/auth/profile`, dto)
+      .pipe(tap((user) => this.currentUserSignal.set(user)));
+  }
+
   logout(): void {
     this.tokenStorage.clear();
     this.currentUserSignal.set(null);
@@ -46,6 +52,6 @@ export class AuthService {
 
   private handleAuthenticated(response: AuthResponseDto): void {
     this.tokenStorage.setToken(response.token);
-    this.currentUserSignal.set({ userId: response.userId, email: response.email });
+    this.currentUserSignal.set({ id: response.userId, email: response.email });
   }
 }
