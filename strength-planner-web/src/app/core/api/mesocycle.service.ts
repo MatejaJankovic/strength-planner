@@ -19,6 +19,11 @@ export class MesocycleService {
 
   private templatesRequest?: Observable<WorkoutTemplateDto[]>;
 
+  /** Prazni korisnički keš (aktivni plan) — šabloni su globalni pa ostaju. */
+  reset(): void {
+    this.activeSignal.set(null);
+  }
+
   /** Built-in workout templates; cached for the session (they never change). */
   templates(): Observable<WorkoutTemplateDto[]> {
     this.templatesRequest ??= this.http

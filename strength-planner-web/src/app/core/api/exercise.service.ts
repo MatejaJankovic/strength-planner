@@ -31,6 +31,12 @@ export class ExerciseService {
     return this.request;
   }
 
+  /** Prazni keš — poziva se pri prijavi/odjavi da podaci ne procure između naloga. */
+  reset(): void {
+    this.exercisesSignal.set([]);
+    this.request = undefined;
+  }
+
   muscleGroups(): Observable<string[]> {
     return this.http.get<string[]>(`${this.apiUrl}/exercises/muscle-groups`);
   }

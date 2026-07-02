@@ -3,6 +3,8 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 import { API_BASE_URL } from '../api/api-base';
+import { ExerciseService } from '../api/exercise.service';
+import { MesocycleService } from '../api/mesocycle.service';
 import { AuthResponseDto, CurrentUserDto, LoginDto, RegisterDto, UpdateProfileDto } from '../models/auth.models';
 import { AuthTokenStorage } from './auth-token-storage';
 
@@ -12,6 +14,8 @@ export class AuthService {
   private readonly apiUrl = inject(API_BASE_URL);
   private readonly tokenStorage = inject(AuthTokenStorage);
   private readonly router = inject(Router);
+  private readonly exerciseService = inject(ExerciseService);
+  private readonly mesocycleService = inject(MesocycleService);
 
   readonly token = this.tokenStorage.token;
 
@@ -47,11 +51,19 @@ export class AuthService {
   logout(): void {
     this.tokenStorage.clear();
     this.currentUserSignal.set(null);
+    this.resetUserCaches();
     void this.router.navigate(['/login']);
   }
 
   private handleAuthenticated(response: AuthResponseDto): void {
     this.tokenStorage.setToken(response.token);
     this.currentUserSignal.set({ id: response.userId, email: response.email });
+    // Novi identitet — keširani podaci prethodnog korisnika ne smeju da procure.
+    this.resetUserCaches();
+  }
+
+  private resetUserCaches(): void {
+    this.exerciseService.reset();
+    this.mesocycleService.reset();
   }
 }
