@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using StrengthPlanner.Application.DTOs.Analytics;
+using StrengthPlanner.Application.Exceptions;
 using StrengthPlanner.Application.Interfaces;
 using StrengthPlanner.Infrastructure.Persistence;
 
@@ -94,6 +95,48 @@ public class AnalyticsService : IAnalyticsService
                 };
             })
             .OrderBy(record => record.Exercise)
+            .ToList();
+    }
+
+    public async Task<IReadOnlyList<WeeklyTonnageDto>> GetWeeklyTonnageAsync(
+        Guid userId,
+        Guid mesocycleId,
+        CancellationToken cancellationToken = default)
+    {
+        var mesocycleExists = await _db.Mesocycles.AnyAsync(
+            mesocycle => mesocycle.Id == mesocycleId && mesocycle.UserId == userId,
+            cancellationToken);
+
+        if (!mesocycleExists)
+        {
+            throw new TrainingLogException(TrainingLogErrorType.NotFound, "Mesocycle was not found.");
+        }
+
+        var tonnageByWeek = await _db.SetLogs
+            .AsNoTracking()
+            .Where(set => set.ExercisePlan.WorkoutSession.TrainingWeek.MesocycleId == mesocycleId)
+            .GroupBy(set => set.ExercisePlan.WorkoutSession.TrainingWeek.WeekNumber)
+            .Select(group => new
+            {
+                WeekNumber = group.Key,
+                TonnageKg = group.Sum(set => set.WeightKg * set.Reps)
+            })
+            .ToDictionaryAsync(item => item.WeekNumber, item => item.TonnageKg, cancellationToken);
+
+        var weeks = await _db.TrainingWeeks
+            .AsNoTracking()
+            .Where(week => week.MesocycleId == mesocycleId)
+            .OrderBy(week => week.WeekNumber)
+            .Select(week => new { week.WeekNumber, week.IsDeload })
+            .ToListAsync(cancellationToken);
+
+        return weeks
+            .Select(week => new WeeklyTonnageDto
+            {
+                WeekNumber = week.WeekNumber,
+                IsDeload = week.IsDeload,
+                TonnageKg = tonnageByWeek.GetValueOrDefault(week.WeekNumber)
+            })
             .ToList();
     }
 

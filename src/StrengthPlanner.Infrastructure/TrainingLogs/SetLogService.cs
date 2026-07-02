@@ -3,6 +3,7 @@ using StrengthPlanner.Application.DTOs.SetLogs;
 using StrengthPlanner.Application.Exceptions;
 using StrengthPlanner.Application.Interfaces;
 using StrengthPlanner.Domain.Entities;
+using StrengthPlanner.Domain.Enums;
 using StrengthPlanner.Infrastructure.Persistence;
 
 namespace StrengthPlanner.Infrastructure.TrainingLogs;
@@ -25,15 +26,18 @@ public class SetLogService : ISetLogService
         ArgumentNullException.ThrowIfNull(request);
         ValidateSetInput(request.WeightKg, request.Reps, request.Rir);
 
-        var planExists = await _db.ExercisePlans.AnyAsync(
-            plan => plan.Id == exercisePlanId
-                    && plan.WorkoutSession.TrainingWeek.Mesocycle.UserId == userId,
-            cancellationToken);
+        var planInfo = await _db.ExercisePlans
+            .Where(plan => plan.Id == exercisePlanId
+                           && plan.WorkoutSession.TrainingWeek.Mesocycle.UserId == userId)
+            .Select(plan => new { plan.WorkoutSession.Status })
+            .FirstOrDefaultAsync(cancellationToken);
 
-        if (!planExists)
+        if (planInfo is null)
         {
             throw new TrainingLogException(TrainingLogErrorType.NotFound, "Exercise plan was not found.");
         }
+
+        EnsureSessionIsEditable(planInfo.Status);
 
         var lastSetNumber = await _db.SetLogs
             .Where(set => set.ExercisePlanId == exercisePlanId)
@@ -67,6 +71,7 @@ public class SetLogService : ISetLogService
         ValidateSetInput(request.WeightKg, request.Reps, request.Rir);
 
         var setLog = await _db.SetLogs
+            .Include(set => set.ExercisePlan.WorkoutSession)
             .FirstOrDefaultAsync(
                 set => set.Id == setLogId
                        && set.ExercisePlan.WorkoutSession.TrainingWeek.Mesocycle.UserId == userId,
@@ -76,6 +81,8 @@ public class SetLogService : ISetLogService
         {
             throw new TrainingLogException(TrainingLogErrorType.NotFound, "Set log was not found.");
         }
+
+        EnsureSessionIsEditable(setLog.ExercisePlan.WorkoutSession.Status);
 
         setLog.WeightKg = request.WeightKg;
         setLog.Reps = request.Reps;
@@ -92,6 +99,7 @@ public class SetLogService : ISetLogService
         CancellationToken cancellationToken = default)
     {
         var setLog = await _db.SetLogs
+            .Include(set => set.ExercisePlan.WorkoutSession)
             .FirstOrDefaultAsync(
                 set => set.Id == setLogId
                        && set.ExercisePlan.WorkoutSession.TrainingWeek.Mesocycle.UserId == userId,
@@ -102,8 +110,24 @@ public class SetLogService : ISetLogService
             throw new TrainingLogException(TrainingLogErrorType.NotFound, "Set log was not found.");
         }
 
+        EnsureSessionIsEditable(setLog.ExercisePlan.WorkoutSession.Status);
+
         _db.SetLogs.Remove(setLog);
         await _db.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Serije se ne mogu menjati kad je sesija završena — progresija je već
+    /// izračunata i naknadne izmene bi narušile istoriju.
+    /// </summary>
+    private static void EnsureSessionIsEditable(SessionStatus status)
+    {
+        if (status == SessionStatus.Completed)
+        {
+            throw new TrainingLogException(
+                TrainingLogErrorType.Conflict,
+                "Completed workout sessions cannot be modified.");
+        }
     }
 
     private static void ValidateSetInput(decimal weightKg, int reps, int rir)

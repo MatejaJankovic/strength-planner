@@ -12,4 +12,7 @@ public interface IAuthService
 
     /// <summary>Vraća trenutnog korisnika po Id-u iz tokena (null ako ne postoji).</summary>
     Task<CurrentUserDto?> GetCurrentUserAsync(Guid userId);
+
+    /// <summary>Menja profil ulogovanog korisnika i vraća ažurirano stanje.</summary>
+    Task<CurrentUserDto> UpdateProfileAsync(Guid userId, UpdateProfileDto dto);
 }

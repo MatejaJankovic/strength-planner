@@ -62,4 +62,18 @@ public class AuthController : ControllerBase
         var user = await _authService.GetCurrentUserAsync(userId);
         return user is null ? NotFound() : Ok(user);
     }
+
+    /// <summary>Menja profil ulogovanog korisnika.</summary>
+    [HttpPut("profile")]
+    public async Task<IActionResult> UpdateProfile(UpdateProfileDto dto)
+    {
+        var sub = User.FindFirstValue(JwtRegisteredClaimNames.Sub)
+                  ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (!Guid.TryParse(sub, out var userId))
+            return Unauthorized();
+
+        var user = await _authService.UpdateProfileAsync(userId, dto);
+        return Ok(user);
+    }
 }

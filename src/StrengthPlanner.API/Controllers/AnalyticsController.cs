@@ -42,6 +42,18 @@ public class AnalyticsController : AuthorizedControllerBase
         return Ok(trend);
     }
 
+    /// <summary>Vraća ukupnu tonažu po nedeljama mezociklusa.</summary>
+    [HttpGet("tonnage")]
+    [ProducesResponseType(typeof(IReadOnlyList<WeeklyTonnageDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetWeeklyTonnage(
+        [FromQuery] Guid mesocycleId,
+        CancellationToken cancellationToken)
+    {
+        var tonnage = await _analyticsService.GetWeeklyTonnageAsync(GetUserId(), mesocycleId, cancellationToken);
+        return Ok(tonnage);
+    }
+
     /// <summary>Vraća personal records po vežbi.</summary>
     [HttpGet("prs")]
     [ProducesResponseType(typeof(IReadOnlyList<PersonalRecordDto>), StatusCodes.Status200OK)]
