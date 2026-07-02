@@ -164,6 +164,9 @@
   font-size: 1.15rem;
   font-weight: 700;
   height: 44px;
+  // Number input ima velik podrazumevani min-width — bez ovoga kartica
+  // gura layout van ekrana na uskim telefonima.
+  min-width: 0;
   padding: 0 0.35rem;
   text-align: center;
   width: 100%;
@@ -289,18 +292,24 @@
   text-align: center;
 }
 
-@media (max-width: 420px) {
+@media (max-width: 480px) {
   .lift {
     flex-direction: column;
     align-items: stretch;
   }
 
   .lift__control {
+    flex-wrap: wrap;
     justify-content: space-between;
   }
 
   .stepper {
     flex: 1;
     grid-template-columns: 44px 1fr 44px;
+    min-width: 0;
+  }
+
+  .lift__save {
+    flex: 1 1 100%;
   }
 }

@@ -32,7 +32,12 @@
           >
             <div class="template__head">
               <span class="template__name">{{ template.name }}</span>
-              <span class="template__count numeric">{{ template.days.length }}× nedeljno</span>
+              <span class="template__meta">
+                <span class="template__check" aria-hidden="true">
+                  <mat-icon>check_circle</mat-icon>
+                </span>
+                <span class="template__count numeric">{{ template.days.length }}× nedeljno</span>
+              </span>
             </div>
             <ul class="template__days">
               @for (day of template.days; track day.name) {
@@ -42,9 +47,6 @@
                 </li>
               }
             </ul>
-            <span class="template__check" aria-hidden="true">
-              <mat-icon>check_circle</mat-icon>
-            </span>
           </button>
         }
       </div>

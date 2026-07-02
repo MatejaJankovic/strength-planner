@@ -43,10 +43,18 @@ form {
 }
 
 .template__head {
-  align-items: baseline;
+  align-items: flex-start;
   display: flex;
   gap: 0.6rem;
   justify-content: space-between;
+}
+
+// Desna kolona zaglavlja: kvačica IZNAD "X× nedeljno" (bez preklapanja).
+.template__meta {
+  display: grid;
+  flex: none;
+  gap: 0.1rem;
+  justify-items: end;
 }
 
 .template__name {
@@ -87,14 +95,18 @@ form {
 
 .template__check {
   color: var(--color-primary);
-  opacity: 0;
-  position: absolute;
-  right: 0.85rem;
-  top: 0.85rem;
+  height: 24px;
+  visibility: hidden;
+}
+
+.template__check mat-icon {
+  font-size: 24px;
+  height: 24px;
+  width: 24px;
 }
 
 .template.is-selected .template__check {
-  opacity: 1;
+  visibility: visible;
 }
 
 // Goal selector
