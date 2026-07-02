@@ -113,12 +113,15 @@ public class SessionService : ISessionService
             .Select(group => new { ExerciseId = group.Key, ValueKg = group.Max(record => record.ValueKg) })
             .ToDictionaryAsync(record => record.ExerciseId, record => record.ValueKg, cancellationToken);
 
+        // Samo sesije koje još nisu završene: complete van redosleda ne sme da
+        // prepiše ciljeve već odrađenih treninga.
         var nextPlans = await _db.ExercisePlans
             .Include(plan => plan.WorkoutSession)
                 .ThenInclude(workoutSession => workoutSession.TrainingWeek)
             .Where(plan => plan.WorkoutSession.TrainingWeek.MesocycleId == session.TrainingWeek.MesocycleId
                            && plan.WorkoutSession.DayLabel == session.DayLabel
                            && plan.WorkoutSession.TrainingWeek.WeekNumber > session.TrainingWeek.WeekNumber
+                           && plan.WorkoutSession.Status != SessionStatus.Completed
                            && exerciseIds.Contains(plan.ExerciseId))
             .OrderBy(plan => plan.WorkoutSession.TrainingWeek.WeekNumber)
             .ThenBy(plan => plan.Order)
@@ -155,12 +158,14 @@ public class SessionService : ISessionService
                 continue;
             }
 
-            var bestEstimate = EstimateBestOneRepMax(logs);
+            // Deload serije su namerno submaksimalne — njihov e1RM bi veštački
+            // oborio trend snage i start sledećeg mezociklusa, pa se ne upisuje.
+            var bestEstimate = session.TrainingWeek.IsDeload ? null : EstimateBestOneRepMax(logs);
             if (bestEstimate.HasValue)
             {
                 summary.E1Rm = bestEstimate.Value;
-                summary.IsPr = !previousMaxByExerciseId.TryGetValue(plan.ExerciseId, out var previousMax)
-                               || bestEstimate.Value > previousMax;
+                summary.IsPr = previousMaxByExerciseId.TryGetValue(plan.ExerciseId, out var previousMax)
+                               && bestEstimate.Value > previousMax;
 
                 _db.OneRepMaxRecords.Add(new OneRepMaxRecord
                 {
@@ -173,7 +178,11 @@ public class SessionService : ISessionService
                 });
             }
 
-            var usedWeight = plan.TargetWeightKg ?? logs.Average(set => set.WeightKg);
+            // Progresija polazi od težine koju je korisnik STVARNO koristio;
+            // planska težina je samo fallback (logova ovde uvek ima).
+            var usedWeight = logs.Count > 0
+                ? logs.Average(set => set.WeightKg)
+                : plan.TargetWeightKg ?? 0m;
             var workingSets = logs
                 .Select(set => (set.Reps, set.Rir))
                 .ToList();
@@ -189,9 +198,10 @@ public class SessionService : ISessionService
 
             if (nextPlan is not null)
             {
+                // Deload = 90% STVARNE težine iz ove nedelje (bez +2.5 progresije).
                 var nextWeight = nextPlan.WorkoutSession.TrainingWeek.IsDeload
                     ? WeightMath.RoundToStep(
-                        progression.NextWeightKg * TrainingConstants.DeloadWeightFactor,
+                        usedWeight * TrainingConstants.DeloadWeightFactor,
                         TrainingConstants.WeightStepKg)
                     : progression.NextWeightKg;
 
@@ -233,7 +243,7 @@ public class SessionService : ISessionService
 
         foreach (var log in logs.Where(log => log.Reps <= TrainingConstants.EpleyRepCap))
         {
-            var estimate = _e1RmCalculator.EstimateOneRepMax(log.WeightKg, log.Reps);
+            var estimate = _e1RmCalculator.EstimateOneRepMax(log.WeightKg, log.Reps, log.Rir);
             if (!bestEstimate.HasValue || estimate > bestEstimate.Value)
             {
                 bestEstimate = estimate;

@@ -6,9 +6,12 @@ namespace StrengthPlanner.Domain.Algorithms;
 public sealed class E1RmCalculator
 {
     /// <summary>
-    /// Estimates one-rep max with Epley formula: 1RM = weight * (1 + reps / 30), only up to the configured rep cap.
+    /// Estimates one-rep max with Epley formula over effective reps (reps + RIR):
+    /// 1RM = weight * (1 + (reps + rir) / 30). Epley assumes a set to failure, so reps
+    /// left in reserve count as additional effective reps. Supported only up to the
+    /// configured rep cap (actual reps), above which the estimate is unreliable.
     /// </summary>
-    public decimal EstimateOneRepMax(decimal weight, int reps)
+    public decimal EstimateOneRepMax(decimal weight, int reps, int rir = 0)
     {
         if (reps > TrainingConstants.EpleyRepCap)
         {
@@ -17,7 +20,13 @@ public sealed class E1RmCalculator
                 nameof(reps));
         }
 
-        return weight * (1 + reps / 30m);
+        if (rir < 0)
+        {
+            throw new ArgumentException("RIR cannot be negative.", nameof(rir));
+        }
+
+        var effectiveReps = reps + rir;
+        return weight * (1 + effectiveReps / 30m);
     }
 
     /// <summary>

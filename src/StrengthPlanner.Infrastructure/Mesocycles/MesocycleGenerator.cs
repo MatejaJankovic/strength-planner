@@ -50,7 +50,8 @@ public class MesocycleGenerator : IMesocycleGenerator
 
         var exercises = await _db.Exercises
             .AsNoTracking()
-            .Where(exercise => exerciseNames.Contains(exercise.Name))
+            .Where(exercise => exerciseNames.Contains(exercise.Name)
+                               && (!exercise.IsCustom || exercise.CreatedByUserId == userId))
             .ToListAsync(cancellationToken);
 
         var exerciseByName = exercises.ToDictionary(
@@ -67,15 +68,28 @@ public class MesocycleGenerator : IMesocycleGenerator
         }
 
         var exerciseIds = exercises.Select(exercise => exercise.Id).ToList();
-        var latestOneRepMaxRecords = await _db.OneRepMaxRecords
+        var oneRepMaxRecords = await _db.OneRepMaxRecords
             .AsNoTracking()
             .Where(record => record.UserId == userId && exerciseIds.Contains(record.ExerciseId))
             .OrderByDescending(record => record.RecordedAt)
             .ThenByDescending(record => record.Id)
             .ToListAsync(cancellationToken);
-        var oneRepMaxByExerciseId = latestOneRepMaxRecords
+
+        // Najbolji 1RM u skorašnjem prozoru, ne najnoviji: poslednji zapis može
+        // biti sa slabijeg dana pa bi novi ciklus krenuo preblago. Ako u prozoru
+        // nema ničega, uzmi najnoviji zapis ikada.
+        var lookbackCutoff = DateTime.UtcNow.AddDays(-TrainingConstants.OneRepMaxLookbackDays);
+        var oneRepMaxByExerciseId = oneRepMaxRecords
             .GroupBy(record => record.ExerciseId)
-            .ToDictionary(group => group.Key, group => group.First().ValueKg);
+            .ToDictionary(
+                group => group.Key,
+                group =>
+                {
+                    var recent = group.Where(record => record.RecordedAt >= lookbackCutoff).ToList();
+                    return recent.Count > 0
+                        ? recent.Max(record => record.ValueKg)
+                        : group.First().ValueKg;
+                });
 
         await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
 
