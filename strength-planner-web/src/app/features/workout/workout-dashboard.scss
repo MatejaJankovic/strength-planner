@@ -66,6 +66,17 @@
   gap: 0.4rem;
 }
 
+.plan-bar__actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.9rem;
+}
+
+.linkbtn.linkbtn--primary {
+  color: var(--color-primary);
+}
+
 .confirm {
   align-items: center;
   display: inline-flex;

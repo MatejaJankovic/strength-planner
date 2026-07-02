@@ -24,7 +24,11 @@
       <app-stat-chip label="Trajanje" [value]="plan.durationWeeks + ' ned.'" />
     </div>
 
-    <div class="plan-bar__delete">
+    <div class="plan-bar__actions">
+      <button class="linkbtn linkbtn--primary" type="button" (click)="openCreate()">
+        <mat-icon aria-hidden="true">add_circle_outline</mat-icon>
+        Novi plan
+      </button>
       @if (confirmingDelete()) {
         <span class="confirm">
           <span class="confirm__label">Obrisati plan?</span>
