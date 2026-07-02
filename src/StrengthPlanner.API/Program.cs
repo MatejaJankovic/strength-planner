@@ -87,6 +87,15 @@ builder.Services.AddInfrastructure(builder.Configuration);
 var jwtSettings = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()
     ?? throw new InvalidOperationException("Jwt sekcija nije podešena u konfiguraciji.");
 
+// Fail-fast: dev ključ iz appsettings ne sme da završi u produkciji.
+const string DevJwtKeyPlaceholder = "";
+if (!builder.Environment.IsDevelopment()
+    && (string.IsNullOrWhiteSpace(jwtSettings.Key) || jwtSettings.Key == DevJwtKeyPlaceholder))
+{
+    throw new InvalidOperationException(
+        "JWT ključ nije podešen za ovo okruženje. Prosledi Jwt__Key kroz environment varijable.");
+}
+
 builder.Services.AddAuthentication(options =>
     {
         options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;

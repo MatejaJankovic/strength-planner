@@ -65,8 +65,20 @@ public class AuthService : IAuthService
     public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
     {
         var user = await _userManager.FindByEmailAsync(dto.Email);
-        if (user is null || !await _userManager.CheckPasswordAsync(user, dto.Password))
+        if (user is null)
             throw new AuthException("Pogrešan email ili lozinka.");
+
+        if (await _userManager.IsLockedOutAsync(user))
+            throw new AuthException("Nalog je privremeno zaključan zbog previše neuspešnih pokušaja. Pokušaj ponovo za nekoliko minuta.");
+
+        if (!await _userManager.CheckPasswordAsync(user, dto.Password))
+        {
+            // Broji neuspešan pokušaj; posle praga Identity zaključava nalog.
+            await _userManager.AccessFailedAsync(user);
+            throw new AuthException("Pogrešan email ili lozinka.");
+        }
+
+        await _userManager.ResetAccessFailedCountAsync(user);
 
         return BuildResponse(user);
     }
@@ -90,6 +102,39 @@ public class AuthService : IAuthService
             BodyweightKg = profile?.BodyweightKg,
             ExperienceLevel = profile?.ExperienceLevel,
             TrainingDaysPerWeek = profile?.TrainingDaysPerWeek
+        };
+    }
+
+    public async Task<CurrentUserDto> UpdateProfileAsync(Guid userId, UpdateProfileDto dto)
+    {
+        var profile = await _db.Profiles.FirstOrDefaultAsync(p => p.UserId == userId);
+
+        if (profile is null)
+        {
+            profile = new Profile { UserId = userId };
+            _db.Profiles.Add(profile);
+        }
+
+        profile.Sex = dto.Sex;
+        profile.Age = dto.Age;
+        profile.BodyweightKg = dto.BodyweightKg;
+        profile.ExperienceLevel = dto.ExperienceLevel;
+        profile.TrainingDaysPerWeek = dto.TrainingDaysPerWeek;
+
+        await _db.SaveChangesAsync();
+
+        var user = await _userManager.FindByIdAsync(userId.ToString())
+            ?? throw new AuthException("Korisnik ne postoji.");
+
+        return new CurrentUserDto
+        {
+            Id = userId,
+            Email = user.Email ?? string.Empty,
+            Sex = profile.Sex,
+            Age = profile.Age,
+            BodyweightKg = profile.BodyweightKg,
+            ExperienceLevel = profile.ExperienceLevel,
+            TrainingDaysPerWeek = profile.TrainingDaysPerWeek
         };
     }
 

@@ -32,8 +32,19 @@ public static class DependencyInjection
         services.AddIdentityCore<ApplicationUser>(options =>
             {
                 options.User.RequireUniqueEmail = true;
+
+                // Usaglašeno sa UI porukom "bar 6 karaktera" — bez skrivenih
+                // dodatnih zahteva koje frontend ne komunicira.
                 options.Password.RequireNonAlphanumeric = false;
+                options.Password.RequireUppercase = false;
+                options.Password.RequireLowercase = false;
+                options.Password.RequireDigit = false;
                 options.Password.RequiredLength = 6;
+
+                // Zaštita od brute-force pogađanja lozinke.
+                options.Lockout.AllowedForNewUsers = true;
+                options.Lockout.MaxFailedAccessAttempts = 5;
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
             })
             .AddRoles<IdentityRole<Guid>>()
             .AddEntityFrameworkStores<AppDbContext>();
