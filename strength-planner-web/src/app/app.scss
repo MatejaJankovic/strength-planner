@@ -30,15 +30,10 @@
 }
 
 .brand__mark {
-  align-items: center;
-  background: var(--color-primary);
   border-radius: 0.45rem;
-  color: #fff;
-  display: inline-flex;
-  font-family: var(--font-display);
-  font-weight: 800;
+  display: block;
   height: 44px;
-  justify-content: center;
+  object-fit: cover;
   width: 44px;
 }
 
