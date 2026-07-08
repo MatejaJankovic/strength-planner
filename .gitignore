@@ -44,6 +44,9 @@ secrets.json
 *.env
 .env
 
+# ---- Diplomski rad / dokumenti (ne idu u repo) ----
+*.docx
+
 # ---- OS ----
 .DS_Store
 Thumbs.db

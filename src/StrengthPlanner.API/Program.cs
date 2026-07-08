@@ -87,13 +87,24 @@ builder.Services.AddInfrastructure(builder.Configuration);
 var jwtSettings = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()
     ?? throw new InvalidOperationException("Jwt sekcija nije podešena u konfiguraciji.");
 
-// Fail-fast: dev ključ iz appsettings ne sme da završi u produkciji.
-const string DevJwtKeyPlaceholder = "";
-if (!builder.Environment.IsDevelopment()
-    && (string.IsNullOrWhiteSpace(jwtSettings.Key) || jwtSettings.Key == DevJwtKeyPlaceholder))
+// Fail-fast: slab ili placeholder ključ ne sme da se koristi van Development-a.
+// Pokriva dev ključ iz appsettings, fallback iz docker-compose.yml i .env.example
+// (svi sadrže "change-me"/"dev-only"/"replace"), kao i prekratke ključeve.
+if (!builder.Environment.IsDevelopment())
 {
-    throw new InvalidOperationException(
-        "JWT ključ nije podešen za ovo okruženje. Prosledi Jwt__Key kroz environment varijable.");
+    var key = jwtSettings.Key ?? string.Empty;
+    string[] placeholderMarkers = { "change-me", "dev-only", "replace" };
+    var looksLikePlaceholder = placeholderMarkers.Any(
+        marker => key.Contains(marker, StringComparison.OrdinalIgnoreCase));
+
+    if (string.IsNullOrWhiteSpace(key)
+        || Encoding.UTF8.GetByteCount(key) < 32
+        || looksLikePlaceholder)
+    {
+        throw new InvalidOperationException(
+            "JWT ključ nije bezbedno podešen za ovo okruženje. Prosledi jak Jwt__Key "
+            + "(min. 32 bajta, bez placeholder vrednosti) kroz environment varijable ili tajne.");
+    }
 }
 
 builder.Services.AddAuthentication(options =>
