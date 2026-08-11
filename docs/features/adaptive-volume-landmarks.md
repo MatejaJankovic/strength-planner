@@ -30,7 +30,7 @@ Pravila (`VolumeAdaptation.Adjust`):
 
 | Uslov | Pomeraj |
 |---|---|
-| Volumen ≥ 90% MRV **i** ostajala rezerva (odstupanje ≥ 0, bez otkaza) | MRV +1 |
+| Volumen ≥ 90% MRV **i** nedelja bila lakša od plana (odstupanje ≥ +1, do 12.5% otkaza) | MRV +1 |
 | Volumen ≥ MEV **i** umor (odstupanje ≤ −1 **ili** ≥ 25% otkaza) | MRV −1 |
 | Volumen ≤ MEV **i** bilo lako (odstupanje ≥ +1) | MEV +1 |
 | Volumen ≤ MEV **i** umor | MEV −1 |
@@ -58,10 +58,10 @@ dozi se sudi samo kada je nedelja i bila na toj dozi.
   kaskadnim FK ka nalogu i `CHECK` ograničenjem `Mev >= 1 AND Mrv > Mev`.
 - `VolumeLandmarkService` — čita efektivne granice (lične ili seed) i sažima završenu
   nedelju u `VolumeResponse` po mišićnoj grupi.
-- `SessionService.CompleteAsync` pokreće adaptaciju u trenutku kada poslednja sesija
-  nedelje pređe u `Completed`. Taj prelaz se dešava tačno jednom (završena sesija se ne
-  može ponovo završiti), pa se nedelja ne može dvaput obračunati. Sve je u istoj
-  transakciji kao i završetak sesije.
+- `SessionService.CompleteAsync` posle svake završene sesije obračuna svaku nedelju
+  mezociklusa koja je u celosti odrađena a još nema `VolumeAdaptedAt`. Sam upis tog
+  datuma je uslovni `UPDATE`, pa je obračun nedelje atomično preuzimanje: drugi zahtev
+  dobija nula redova i preskače. Sve je u istoj transakciji kao i završetak sesije.
 - Deload nedelje se preskaču — namerno su submaksimalne i o toleranciji ne govore ništa.
 - `WeeklyVolumeDto` nosi i `defaultMev`/`defaultMrv`/`isPersonal`, pa ekran može da
   pokaže odakle je granica došla.
@@ -86,3 +86,76 @@ dozi se sudi samo kada je nedelja i bila na toj dozi.
 - U pretraživaču: deset grupa označeno kao "lično" sa podrazumevanim vrednostima u
   zagradi, tekst "Granice za 10 mišićnih grupa su prilagođene…", a posle klika na
   "Vrati podrazumevane granice" oznake nestaju i dugme se skloni.
+
+## Ispravke posle revizije koda
+
+### MEV je mogao trajno da zaglavi
+
+Kada bi se MRV spustio do svoje donje ivice, pojas između granica bi se stisnuo, a
+zaštita pojasa je tada obarala **MEV** — iako o donjoj granici ta nedelja nije rekla
+ništa (volumen je bio znatno iznad nje). Pošto se MEV posle diže samo kada je nedelja
+odrađena *na* njemu, oboren MEV bi ostao zaglavljen i pošto se pojas ponovo otvori.
+Trag: petnaest teških nedelja na 20 serija obori Chest MEV sa 10 na 9, i tu ostane
+zauvek. Sada se pojas prvo širi podizanjem MRV-a, a MEV se dira samo kada je MRV
+stvarno na svojoj granici. Dodat regresioni test sa nizom teških pa lakih nedelja.
+
+### Prag je važio samo u jednom smeru
+
+Za spuštanje granice tražio se ceo RIR poen odstupanja, a za dizanje je bilo dovoljno
+`>= 0`. Zbog toga je MRV mogao da poraste i posle nedelje koja je u proseku bila
+**teža** od plana (npr. odstupanja +0.2 / −0.5, prosek −0.15). Sada isti prag važi u
+oba smera.
+
+### Jedan otkaz je zauvek zamrzavao MRV
+
+Uslov za dizanje je bio "nijedan otkaz". Pošto je poslednja serija do otkaza sasvim
+uobičajena praksa — a otkazi su tek uvedeni u prethodnoj grani — takvom vežbaču gornja
+granica ne bi mogla nikada da poraste, jer ni uslov za spuštanje (≥ 25% otkaza) nije
+ispunjen. Uveden je prag tolerancije od 12.5%.
+
+### Algoritam je mogao da vrati vrednost koju baza odbija
+
+`Math.Max(1, mev)` se primenjivao **posle** sužavanja pojasa, pa je mogao da vrati
+`Mev == Mrv` i time oborio `CHECK` ograničenje usred završavanja treninga — što bi
+srušilo celu transakciju, uključujući i upis samog treninga. Sa isporučenim seed
+vrednostima nije bilo dostižno (najmanji MRV je 16), ali jeste čim bi neki seed imao
+`Mrv <= 2`. Dodat test koji vrti pet seed vrednosti i pet ekstremnih odgovora kroz
+četrdeset nedelja i traži da pojas nikada ne padne.
+
+### Nedelja je mogla da se obračuna dvaput ili nijednom
+
+Oslanjanje na prelaz "poslednja sesija postaje Completed" nije bilo dovoljno:
+
+- **Dvaput:** dva istovremena zahteva za završetak iste sesije oba prođu provera
+  statusa (čitanje bez zaključavanja pod READ COMMITTED), pa oba vide nedelju kao
+  gotovu i pomere granice za po jednu seriju — ukupno dve.
+- **Nijednom:** ako dva zahteva istovremeno završe **poslednje dve različite** sesije
+  nedelje, nijedan ne vidi onu drugu kao završenu, pa nedelja ostane neobračunata
+  zauvek.
+
+Rešeno na dva mesta. `TrainingWeek.VolumeAdaptedAt` se upisuje uslovnim `UPDATE`-om,
+što je istovremeno i zaključavanje i provera — drugi zahtev dobija nula redova i
+preskoči. I umesto samo nedelje kojoj pripada završena sesija, obrađuje se **svaka**
+nedelja mezociklusa koja je gotova a još nije obračunata, pa propuštena nedelja bude
+pokupljena pri sledećem završetku.
+
+### Usput nađena starija greška: dvostruko završavanje treninga
+
+Ista trka postoji i u samom `CompleteAsync`, nezavisno od ove funkcionalnosti: dva
+istovremena zahteva su oba vraćala 200 i **oba** upisivala e1RM zapis (istorija dobije
+duplikat, koji onda kvari PR listu i trend). Provereno: `e1RM zapisa: 1 -> 3`. Pošto
+ova funkcionalnost počiva na tome da se sesija završava tačno jednom, sesija se sada
+preuzima istim uslovnim `UPDATE`-om; drugi zahtev dobija 409. Posle ispravke:
+`statusi: [200, 409]`, `e1RM zapisa: 1 -> 2`.
+
+### Frontend
+
+- Reset je destruktivan a bio je jedan klik bez potvrde i bez ikakve poruke — jedini
+  trag je bio nestanak oznaka. Sada je potvrda u dva koraka, po uzoru na brisanje plana
+  na dashboardu, uz poruku o uspehu.
+- Osvežavanje posle reseta je rušilo ceo ekran u "Učitavam volumen…" jer je `startWith`
+  važio i za ponovno učitavanje. Sada spinner ide samo na promenu mezociklusa ili
+  nedelje; provereno da se lista ne isprazni tokom reseta i da se spinner i dalje
+  prikazuje pri promeni nedelje.
+- `personalCount` je bio deklarisan iznad `rows` koji koristi; radilo je samo zato što
+  je `computed` lenj. Premešten ispod.

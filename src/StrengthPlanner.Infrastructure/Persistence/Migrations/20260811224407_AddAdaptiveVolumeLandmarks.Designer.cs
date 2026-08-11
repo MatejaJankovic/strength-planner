@@ -12,7 +12,7 @@ using StrengthPlanner.Infrastructure.Persistence;
 namespace StrengthPlanner.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260811191037_AddAdaptiveVolumeLandmarks")]
+    [Migration("20260811224407_AddAdaptiveVolumeLandmarks")]
     partial class AddAdaptiveVolumeLandmarks
     {
         /// <inheritdoc />
@@ -419,6 +419,9 @@ namespace StrengthPlanner.Infrastructure.Persistence.Migrations
 
                     b.Property<Guid>("MesocycleId")
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("VolumeAdaptedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("WeekNumber")
                         .HasColumnType("integer");

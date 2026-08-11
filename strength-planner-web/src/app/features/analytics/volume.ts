@@ -33,9 +33,13 @@ export class Volume {
   protected readonly week = signal(1);
 
   protected readonly resetting = signal(false);
+  protected readonly confirmingReset = signal(false);
   protected readonly resetError = signal<string | null>(null);
+  protected readonly resetDone = signal(false);
   // Menja se posle reseta da bi se granice ponovo dovukle sa servera.
   private readonly reloadToken = signal(0);
+  // Poslednji viđeni token: razlikuje osvežavanje posle reseta od promene nedelje.
+  private lastReloadToken = 0;
 
   private readonly chosenMesoId = signal<string | null>(null);
   protected readonly selectedMesoId = computed(
@@ -46,13 +50,12 @@ export class Volume {
     toObservable(
       computed(() => ({ id: this.selectedMesoId(), week: this.week(), token: this.reloadToken() })),
     ).pipe(
-      switchMap(({ id, week }) => {
+      switchMap(({ id, week, token }) => {
         if (!id) {
           return of<VolumeState>({ status: 'ready', items: [] });
         }
-        return this.analyticsService.volume(id, week).pipe(
+        const request = this.analyticsService.volume(id, week).pipe(
           map((items): VolumeState => ({ status: 'ready', items })),
-          startWith<VolumeState>({ status: 'loading' }),
           catchError((err: unknown) =>
             of<VolumeState>({
               status: 'error',
@@ -60,6 +63,14 @@ export class Volume {
             }),
           ),
         );
+
+        // Promena mezociklusa ili nedelje menja podatke, pa spinner ima smisla.
+        // Osvežavanje posle reseta ne — inače lista, legenda i dugme nestanu na
+        // trenutak, a korisnik ostane bez potvrde da se išta desilo.
+        const isReload = token !== this.lastReloadToken;
+        this.lastReloadToken = token;
+
+        return isReload ? request : request.pipe(startWith<VolumeState>({ status: 'loading' }));
       }),
     ),
     { initialValue: { status: 'loading' } as VolumeState },
@@ -70,11 +81,6 @@ export class Volume {
     const s = this.state();
     return s.status === 'error' ? s.message : null;
   });
-
-  /** Broj mišićnih grupa čije su granice pomerene u odnosu na seed. */
-  protected readonly personalCount = computed(
-    () => this.rows().filter((row) => row.isPersonal).length,
-  );
 
   protected readonly rows = computed<VolumeRow[]>(() => {
     const s = this.state();
@@ -93,6 +99,11 @@ export class Volume {
     });
   });
 
+  /** Broj mišićnih grupa čije su granice pomerene u odnosu na seed. */
+  protected readonly personalCount = computed(
+    () => this.rows().filter((row) => row.isPersonal).length,
+  );
+
   protected selectMeso(id: string): void {
     this.chosenMesoId.set(id);
   }
@@ -101,7 +112,15 @@ export class Volume {
     this.week.set(week);
   }
 
-  protected resetLandmarks(): void {
+  protected requestReset(): void {
+    this.confirmingReset.set(true);
+  }
+
+  protected cancelReset(): void {
+    this.confirmingReset.set(false);
+  }
+
+  protected confirmReset(): void {
     if (this.resetting()) {
       return;
     }
@@ -112,6 +131,11 @@ export class Volume {
     this.analyticsService.resetVolumeLandmarks().subscribe({
       next: () => {
         this.resetting.set(false);
+        this.confirmingReset.set(false);
+        // Dugme nestaje zajedno sa naučenim granicama, pa je potvrda jedini trag
+        // da se nešto desilo.
+        this.resetDone.set(true);
+        setTimeout(() => this.resetDone.set(false), 3200);
         this.reloadToken.update((token) => token + 1);
       },
       error: (err: unknown) => {

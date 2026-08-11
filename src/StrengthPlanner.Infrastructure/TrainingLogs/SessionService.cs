@@ -108,6 +108,21 @@ public class SessionService : ISessionService
             throw new TrainingLogException(TrainingLogErrorType.Conflict, "Workout session is already completed.");
         }
 
+        // Provera iznad je samo brzi izlaz: čitanje bez zaključavanja ne sprečava da dva
+        // istovremena zahteva oba prođu. Uslovni UPDATE preuzima sesiju atomično — drugi
+        // zahtev čeka na redu i dobija nula redova, pa se progresija, e1RM zapisi i
+        // granice volumena obračunavaju tačno jednom.
+        var claimed = await _db.WorkoutSessions
+            .Where(candidate => candidate.Id == sessionId && candidate.Status != SessionStatus.Completed)
+            .ExecuteUpdateAsync(
+                setters => setters.SetProperty(candidate => candidate.Status, SessionStatus.Completed),
+                cancellationToken);
+
+        if (claimed == 0)
+        {
+            throw new TrainingLogException(TrainingLogErrorType.Conflict, "Workout session is already completed.");
+        }
+
         var exerciseIds = session.ExercisePlans
             .Select(plan => plan.ExerciseId)
             .Distinct()
@@ -139,6 +154,8 @@ public class SessionService : ISessionService
             .ToListAsync(cancellationToken);
 
         var now = DateTime.UtcNow;
+        // Status je već upisan uslovnim UPDATE-om; ovo samo usklađuje učitanu instancu
+        // sa bazom da bi DTO ispod prijavio tačno stanje.
         session.Status = SessionStatus.Completed;
 
         var summaries = new List<CompletedExerciseSummaryDto>();
@@ -227,18 +244,16 @@ public class SessionService : ISessionService
 
         await _db.SaveChangesAsync(cancellationToken);
 
-        // Nedelja je gotova tek kad nijedna njena sesija nije ostala nezavršena; taj
-        // prelaz se dešava tačno jednom, pa se granice volumena pomeraju jednom.
-        var weekIsComplete = !await _db.WorkoutSessions.AnyAsync(
-            other => other.TrainingWeekId == session.TrainingWeekId
-                     && other.Status != SessionStatus.Completed,
+        // Granice volumena uče iz svake nedelje koja je u celosti odrađena a još nije
+        // obračunata; sama metoda uslovnim UPDATE-om obezbeđuje da se nedelja obračuna
+        // tačno jednom. Ostaje u istoj transakciji kao i završetak sesije, pa se ili
+        // upiše sve ili ništa.
+        await _volumeLandmarks.AdaptPendingWeeksAsync(
+            userId,
+            session.TrainingWeek.MesocycleId,
+            now,
             cancellationToken);
-
-        if (weekIsComplete)
-        {
-            await _volumeLandmarks.AdaptAfterWeekAsync(userId, session.TrainingWeekId, now, cancellationToken);
-            await _db.SaveChangesAsync(cancellationToken);
-        }
+        await _db.SaveChangesAsync(cancellationToken);
 
         await transaction.CommitAsync(cancellationToken);
 

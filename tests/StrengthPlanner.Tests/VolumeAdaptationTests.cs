@@ -14,14 +14,38 @@ public class VolumeAdaptationTests
     [Fact]
     public void Adjust_RaisesMrv_WhenNearMaxVolumeStillLeftRepsInReserve()
     {
-        // 21 serija je iznad 90% MRV-a, a prosečno odstupanje RIR-a je pozitivno:
+        // 21 serija je iznad 90% MRV-a, a odstupanje RIR-a je ceo poen naviše:
         // korisnik podnosi više nego što populaciona granica pretpostavlja.
-        var response = new VolumeResponse(PerformedSets: 21m, AverageRirDeviation: 0.5m, FailureShare: 0m);
+        var response = new VolumeResponse(PerformedSets: 21m, AverageRirDeviation: 1m, FailureShare: 0m);
 
         var result = VolumeAdaptation.Adjust(Seed, Seed, response);
 
         Assert.Equal(23, result.Mrv);
         Assert.Equal(10, result.Mev);
+    }
+
+    [Fact]
+    public void Adjust_DoesNotRaiseMrv_WhenWeekWasOnlyMarginallyEasierThanPrescribed()
+    {
+        // Ispod celog RIR poena razlika je šum procene. Prag mora da važi u oba smera,
+        // inače bi se MRV penjao i na nedeljama koje su u proseku bile teže od plana.
+        var response = new VolumeResponse(PerformedSets: 21m, AverageRirDeviation: 0.2m, FailureShare: 0m);
+
+        var result = VolumeAdaptation.Adjust(Seed, Seed, response);
+
+        Assert.Equal(Seed.Mrv, result.Mrv);
+    }
+
+    [Fact]
+    public void Adjust_StillRaisesMrv_WhenOnlyTheLastSetWentToFailure()
+    {
+        // Poslednja serija do otkaza je uobičajena praksa; da nulti otkaz bude uslov,
+        // gornja granica takvom vežbaču ne bi mogla nikada da poraste.
+        var response = new VolumeResponse(PerformedSets: 21m, AverageRirDeviation: 1.5m, FailureShare: 0.05m);
+
+        var result = VolumeAdaptation.Adjust(Seed, Seed, response);
+
+        Assert.Equal(23, result.Mrv);
     }
 
     [Fact]
@@ -121,6 +145,83 @@ public class VolumeAdaptationTests
         var result = VolumeAdaptation.Adjust(current, Seed, response);
 
         Assert.True(result.Mrv - result.Mev >= VolumeAdaptation.MinBandWidth);
+    }
+
+    [Fact]
+    public void Adjust_WidensBandByRaisingMrv_RatherThanCuttingMevWithoutEvidence()
+    {
+        // Volumen je iznad MEV-a, pa o donjoj granici nedelja ne govori ništa.
+        // Pojas se zato širi naviše; obaranje MEV-a bi bilo trajno, jer se donja
+        // granica posle diže samo kada je nedelja odrađena NA njoj.
+        var current = new VolumeLandmarkValues(Mev: 10, Mrv: 11);
+        var response = new VolumeResponse(PerformedSets: 20m, AverageRirDeviation: -2m, FailureShare: 0m);
+
+        var result = VolumeAdaptation.Adjust(current, Seed, response);
+
+        Assert.Equal(10, result.Mev);
+        Assert.Equal(12, result.Mrv);
+    }
+
+    [Fact]
+    public void Adjust_RestoresMev_AfterHardWeeksAreFollowedByEasyOnes()
+    {
+        // Regresija: ranije je usko grlo obaralo MEV bez ijednog dokaza o donjoj granici,
+        // pa je ostajao zaglavljen i kada se pojas ponovo otvori.
+        var current = Seed;
+        var hardWeek = new VolumeResponse(PerformedSets: 20m, AverageRirDeviation: -2m, FailureShare: 0m);
+        var easyWeek = new VolumeResponse(PerformedSets: 20m, AverageRirDeviation: 2m, FailureShare: 0m);
+
+        for (var week = 0; week < 15; week++)
+        {
+            current = VolumeAdaptation.Adjust(current, Seed, hardWeek);
+        }
+
+        Assert.Equal(Seed.Mev, current.Mev);
+
+        for (var week = 0; week < 10; week++)
+        {
+            current = VolumeAdaptation.Adjust(current, Seed, easyWeek);
+        }
+
+        Assert.Equal(Seed.Mev, current.Mev);
+        Assert.True(current.Mrv > 11, "MRV se posle lakih nedelja mora oporaviti sa donje ivice.");
+    }
+
+    [Fact]
+    public void Adjust_NeverReturnsCollapsedBand_ForAnyReachableInput()
+    {
+        // CHECK ograničenje u bazi traži Mrv > Mev; ako bi algoritam ikada vratio
+        // jednake vrednosti, pao bi upis usred završavanja treninga.
+        var seeds = new[]
+        {
+            new VolumeLandmarkValues(10, 22), new VolumeLandmarkValues(4, 16),
+            new VolumeLandmarkValues(6, 16), new VolumeLandmarkValues(8, 26),
+            new VolumeLandmarkValues(1, 2)
+        };
+        var responses = new[]
+        {
+            new VolumeResponse(0m, -3m, 1m), new VolumeResponse(1m, -3m, 1m),
+            new VolumeResponse(40m, 3m, 0m), new VolumeResponse(10m, 0m, 0.25m),
+            new VolumeResponse(2m, 1m, 0m)
+        };
+
+        foreach (var seed in seeds)
+        {
+            var current = seed;
+
+            for (var week = 0; week < 40; week++)
+            {
+                foreach (var response in responses)
+                {
+                    current = VolumeAdaptation.Adjust(current, seed, response);
+
+                    Assert.True(current.Mev >= 1, $"MEV {current.Mev} ispod jedinice za seed {seed}.");
+                    Assert.True(
+                        current.Mrv > current.Mev,
+                        $"Pojas urušen ({current.Mev}/{current.Mrv}) za seed {seed}.");
+                }
+            }
+        }
     }
 
     [Fact]

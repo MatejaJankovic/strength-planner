@@ -82,20 +82,43 @@
         {{ personalCount() === 1 ? 'mišićnu grupu su prilagođene' : 'mišićnih grupa su prilagođene' }}
         tvom odgovoru na volumen — pomeraju se najviše za jednu seriju po završenoj nedelji.
       </p>
-      <button
-        class="legend__reset"
-        type="button"
-        [disabled]="resetting()"
-        (click)="resetLandmarks()"
-      >
-        {{ resetting() ? 'Vraćam…' : 'Vrati podrazumevane granice' }}
-      </button>
+      @if (confirmingReset()) {
+        <p class="legend__note">
+          Naučene granice se brišu i sve se vraća na podrazumevane vrednosti. Učenje
+          kreće ispočetka, od sledeće završene nedelje.
+        </p>
+        <div class="legend__actions">
+          <button
+            class="legend__reset legend__reset--danger"
+            type="button"
+            [disabled]="resetting()"
+            (click)="confirmReset()"
+          >
+            {{ resetting() ? 'Vraćam…' : 'Da, vrati podrazumevane' }}
+          </button>
+          <button
+            class="legend__reset"
+            type="button"
+            [disabled]="resetting()"
+            (click)="cancelReset()"
+          >
+            Odustani
+          </button>
+        </div>
+      } @else {
+        <button class="legend__reset" type="button" (click)="requestReset()">
+          Vrati podrazumevane granice
+        </button>
+      }
     } @else {
       <p class="legend__note">
         Granice su još podrazumevane — prilagođavaju se same kad odradiš celu nedelju.
       </p>
     }
 
+    @if (resetDone()) {
+      <p class="legend__ok" role="status">Granice su vraćene na podrazumevane vrednosti.</p>
+    }
     @if (resetError(); as message) {
       <p class="vol-note vol-note--error" role="alert">{{ message }}</p>
     }

@@ -35,6 +35,11 @@ public static class VolumeAdaptation
     // Otkazi na četvrtini serija su jasan znak da je nedelja bila pretemna.
     private const decimal FatigueFailureShare = 0.25m;
 
+    // Poslednja serija izvučena do otkaza je uobičajena praksa i ne sme da znači da
+    // gornja granica više nikada ne može da poraste; tek iznad ovog udela otkaz počinje
+    // da govori o umoru.
+    private const decimal TolerableFailureShare = FatigueFailureShare / 2;
+
     /// <summary>
     /// Returns the landmarks to store after a completed week. <paramref name="seed"/> is
     /// the population default the personal value is allowed to drift around.
@@ -48,10 +53,12 @@ public static class VolumeAdaptation
         ArgumentNullException.ThrowIfNull(seed);
         ArgumentNullException.ThrowIfNull(response);
 
+        // Isti prag u oba smera: ispod celog RIR poena razlika je šum procene, pa ne sme
+        // da pomeri granicu ni naviše ni naniže.
         var showedFatigue = response.AverageRirDeviation <= -MeaningfulRirDeviation
                             || response.FailureShare >= FatigueFailureShare;
-        var hadRepsToSpare = response.AverageRirDeviation >= 0
-                             && response.FailureShare == 0;
+        var hadRepsToSpare = response.AverageRirDeviation >= MeaningfulRirDeviation
+                             && response.FailureShare <= TolerableFailureShare;
 
         var mrv = current.Mrv;
         var mev = current.Mev;
@@ -83,13 +90,28 @@ public static class VolumeAdaptation
         mev = ClampToSeed(mev, seed.Mev);
         mrv = ClampToSeed(mrv, seed.Mrv);
 
-        // MEV ne sme da pojede optimalni pojas ni kada obe granice udare u svoje ivice.
+        // Optimalni pojas se čuva podizanjem MRV-a kad god je to moguće. Spuštanje MEV-a
+        // je jednosmerno: donja granica se posle diže samo ako je nedelja odrađena NA njoj,
+        // pa bi MEV oboren zbog uskog pojasa — bez ijednog dokaza o samoj donjoj granici —
+        // ostao zaglavljen i pošto se pojas ponovo otvori.
         if (mrv - mev < MinBandWidth)
         {
-            mev = mrv - MinBandWidth;
+            var liftedMrv = ClampToSeed(mev + MinBandWidth, seed.Mrv);
+
+            if (liftedMrv - mev >= MinBandWidth)
+            {
+                mrv = liftedMrv;
+            }
+            else
+            {
+                mev = mrv - MinBandWidth;
+            }
         }
 
-        return new VolumeLandmarkValues(Math.Max(1, mev), mrv);
+        // Pojas mora da preživi i poravnanje MEV-a na jedinicu, inače bi ovo prošlo
+        // algoritam a palo na CHECK ograničenju usred završavanja treninga.
+        var safeMev = Math.Max(1, mev);
+        return new VolumeLandmarkValues(safeMev, Math.Max(safeMev + MinBandWidth, mrv));
     }
 
     private static int ClampToSeed(int value, int seed)

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using StrengthPlanner.Domain.Algorithms;
 using StrengthPlanner.Domain.Entities;
+using StrengthPlanner.Domain.Enums;
 using StrengthPlanner.Infrastructure.Persistence;
 
 namespace StrengthPlanner.Infrastructure.Analytics;
@@ -56,24 +57,52 @@ public sealed class VolumeLandmarkService
     }
 
     /// <summary>
-    /// Pomera granice na osnovu upravo završene nedelje. Poziva se tačno jednom po
-    /// nedelji — u trenutku kada poslednja sesija te nedelje pređe u Completed.
-    /// Deload nedelje se preskaču: namerno su submaksimalne, pa o toleranciji na
-    /// volumen ne govore ništa.
+    /// Pomera granice na osnovu svake nedelje mezociklusa koja je u celosti odrađena a
+    /// još nije obračunata. Radi se nad celim mezociklusom, a ne samo nad nedeljom kojoj
+    /// pripada upravo završena sesija, da nedelja ne bi trajno propala ako dva zahteva
+    /// istovremeno završe njene poslednje dve sesije i nijedan je ne vidi kao gotovu.
+    /// Deload nedelje se preskaču: namerno su submaksimalne, pa o toleranciji ne govore.
     /// </summary>
-    public async Task AdaptAfterWeekAsync(
+    public async Task AdaptPendingWeeksAsync(
+        Guid userId,
+        Guid mesocycleId,
+        DateTime completedAt,
+        CancellationToken cancellationToken)
+    {
+        var pendingWeekIds = await _db.TrainingWeeks
+            .AsNoTracking()
+            .Where(week => week.MesocycleId == mesocycleId
+                           && week.Mesocycle.UserId == userId
+                           && !week.IsDeload
+                           && week.VolumeAdaptedAt == null
+                           && week.Sessions.All(session => session.Status == SessionStatus.Completed))
+            .OrderBy(week => week.WeekNumber)
+            .Select(week => week.Id)
+            .ToListAsync(cancellationToken);
+
+        foreach (var weekId in pendingWeekIds)
+        {
+            await AdaptWeekAsync(userId, weekId, completedAt, cancellationToken);
+        }
+    }
+
+    private async Task AdaptWeekAsync(
         Guid userId,
         Guid trainingWeekId,
         DateTime completedAt,
         CancellationToken cancellationToken)
     {
-        var week = await _db.TrainingWeeks
-            .AsNoTracking()
-            .Where(item => item.Id == trainingWeekId && item.Mesocycle.UserId == userId)
-            .Select(item => new { item.Id, item.IsDeload })
-            .FirstOrDefaultAsync(cancellationToken);
+        // Uslovni UPDATE je i zaključavanje i provera: drugi zahtev koji je istovremeno
+        // stigao dovde čeka na redu, pa vidi već upisan datum i dobija nula redova.
+        var claimed = await _db.TrainingWeeks
+            .Where(week => week.Id == trainingWeekId
+                           && week.Mesocycle.UserId == userId
+                           && week.VolumeAdaptedAt == null)
+            .ExecuteUpdateAsync(
+                setters => setters.SetProperty(week => week.VolumeAdaptedAt, completedAt),
+                cancellationToken);
 
-        if (week is null || week.IsDeload)
+        if (claimed == 0)
         {
             return;
         }
@@ -136,7 +165,8 @@ public sealed class VolumeLandmarkService
     }
 
     /// <summary>
-    /// Vraća lične granice na seed vrednosti (briše redove).
+    /// Vraća lične granice na seed vrednosti (briše redove). Promene ostaju u change
+    /// trackeru — pozivalac ih upisuje.
     /// </summary>
     public async Task ResetAsync(Guid userId, CancellationToken cancellationToken)
     {

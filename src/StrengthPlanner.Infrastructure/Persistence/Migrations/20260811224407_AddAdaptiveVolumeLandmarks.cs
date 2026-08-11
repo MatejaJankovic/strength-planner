@@ -11,6 +11,12 @@ namespace StrengthPlanner.Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.AddColumn<DateTime>(
+                name: "VolumeAdaptedAt",
+                table: "TrainingWeeks",
+                type: "timestamp with time zone",
+                nullable: true);
+
             migrationBuilder.CreateTable(
                 name: "UserVolumeLandmarks",
                 columns: table => new
@@ -57,6 +63,10 @@ namespace StrengthPlanner.Infrastructure.Persistence.Migrations
         {
             migrationBuilder.DropTable(
                 name: "UserVolumeLandmarks");
+
+            migrationBuilder.DropColumn(
+                name: "VolumeAdaptedAt",
+                table: "TrainingWeeks");
         }
     }
 }
