@@ -28,6 +28,20 @@
         <mat-icon aria-hidden="true">verified</mat-icon>
         <h2>Trening završen</h2>
       </div>
+
+      @if (result.autoDeload; as deload) {
+        <div class="deload-note" role="status">
+          <mat-icon aria-hidden="true">battery_alert</mat-icon>
+          <div>
+            <strong>Nedelja {{ deload.deloadWeek }} je pretvorena u deload.</strong>
+            <p>
+              Nedelja {{ deload.triggeredByWeek }} pokazala je nakupljen umor
+              (ocena {{ deload.fatigueScore | number: '1.0-2' }} od 1). Serije su
+              prepolovljene, a opterećenje spušteno na 90% — pa da se vratiš jači.
+            </p>
+          </div>
+        </div>
+      }
       <ul class="summary__list">
         @for (ex of result.exercises; track ex.exercisePlanId) {
           <li class="summary__item">

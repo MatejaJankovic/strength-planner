@@ -107,7 +107,7 @@ public sealed class VolumeLandmarkService
             return;
         }
 
-        var responses = await BuildWeeklyResponsesAsync(userId, trainingWeekId, cancellationToken);
+        var responses = await GetWeeklyResponsesAsync(userId, trainingWeekId, cancellationToken);
         if (responses.Count == 0)
         {
             return;
@@ -181,7 +181,7 @@ public sealed class VolumeLandmarkService
     /// Sažima nedelju u jedan odgovor po mišićnoj grupi. Sve se meri doprinosom serije
     /// (primarna 1.0, sekundarna 0.5), pa sekundarni rad ne broji kao pun.
     /// </summary>
-    private async Task<Dictionary<Guid, VolumeResponse>> BuildWeeklyResponsesAsync(
+    public async Task<Dictionary<Guid, VolumeResponse>> GetWeeklyResponsesAsync(
         Guid userId,
         Guid trainingWeekId,
         CancellationToken cancellationToken)

@@ -125,6 +125,8 @@ public class MesocycleService : IMesocycleService
                     Id = week.Id,
                     WeekNumber = week.WeekNumber,
                     IsDeload = week.IsDeload,
+                    IsAutoDeload = week.IsAutoDeload,
+                    FatigueScore = week.FatigueScore,
                     Sessions = week.Sessions
                         .OrderBy(session => session.Date)
                         .ThenBy(session => session.DayLabel)
@@ -133,6 +135,7 @@ public class MesocycleService : IMesocycleService
                             Id = session.Id,
                             WeekNumber = week.WeekNumber,
                             IsDeload = week.IsDeload,
+                            IsAutoDeload = week.IsAutoDeload,
                             DayLabel = session.DayLabel,
                             Date = session.Date,
                             Status = session.Status.ToString(),

@@ -492,3 +492,23 @@
     transform: rotate(360deg);
   }
 }
+
+// Objašnjenje zašto je sledeća nedelja postala deload — pojavljuje se u rezimeu
+// treninga, gde ga korisnik sigurno vidi pre nego što otvori sledeći trening.
+.deload-note {
+  align-items: flex-start;
+  background: color-mix(in srgb, var(--color-accent) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 45%, transparent);
+  border-radius: 0.6rem;
+  display: flex;
+  gap: 0.6rem;
+  margin-bottom: 0.85rem;
+  padding: 0.7rem 0.8rem;
+}
+
+.deload-note p {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  line-height: 1.4;
+  margin: 0.2rem 0 0;
+}

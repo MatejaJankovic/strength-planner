@@ -78,6 +78,10 @@ export interface TrainingWeekDto {
   id: string;
   weekNumber: number;
   isDeload: boolean;
+  /** Deload uveden procenom umora, a ne planom. */
+  isAutoDeload: boolean;
+  /** Ocena umora izracunata iz ove nedelje (0-1); null dok nije zavrsena. */
+  fatigueScore?: number | null;
   sessions: WorkoutSessionDto[];
 }
 
@@ -85,6 +89,7 @@ export interface WorkoutSessionDto {
   id: string;
   weekNumber: number;
   isDeload: boolean;
+  isAutoDeload: boolean;
   dayLabel: string;
   date?: string | null;
   status: 'Planned' | 'InProgress' | 'Completed' | string;
@@ -128,6 +133,15 @@ export interface CompleteSessionResultDto {
   sessionId: string;
   status: string;
   exercises: CompletedExerciseSummaryDto[];
+  /** Popunjeno samo kada je ovaj trening zatvorio nedelju i pokrenuo deload. */
+  autoDeload?: AutoDeloadDto | null;
+}
+
+export interface AutoDeloadDto {
+  triggeredByWeek: number;
+  deloadWeek: number;
+  /** Ocena umora, 0 (odmoran) do 1 (svi signali na maksimumu). */
+  fatigueScore: number;
 }
 
 export interface CompletedExerciseSummaryDto {

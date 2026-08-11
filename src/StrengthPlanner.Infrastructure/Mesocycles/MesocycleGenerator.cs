@@ -268,6 +268,8 @@ public class MesocycleGenerator : IMesocycleGenerator
                     Id = week.Id,
                     WeekNumber = week.WeekNumber,
                     IsDeload = week.IsDeload,
+                    IsAutoDeload = week.IsAutoDeload,
+                    FatigueScore = week.FatigueScore,
                     Sessions = week.Sessions
                         .OrderBy(session => session.Date)
                         .Select(session => new WorkoutSessionDto
@@ -275,6 +277,7 @@ public class MesocycleGenerator : IMesocycleGenerator
                             Id = session.Id,
                             WeekNumber = week.WeekNumber,
                             IsDeload = week.IsDeload,
+                            IsAutoDeload = week.IsAutoDeload,
                             DayLabel = session.DayLabel,
                             Date = session.Date,
                             Status = session.Status.ToString(),

@@ -17,13 +17,18 @@ public class SessionService : ISessionService
 {
     private readonly AppDbContext _db;
     private readonly VolumeLandmarkService _volumeLandmarks;
+    private readonly DeloadService _deloads;
     private readonly E1RmCalculator _e1RmCalculator = new();
     private readonly ProgressionEngine _progressionEngine = new();
 
-    public SessionService(AppDbContext db, VolumeLandmarkService volumeLandmarks)
+    public SessionService(
+        AppDbContext db,
+        VolumeLandmarkService volumeLandmarks,
+        DeloadService deloads)
     {
         _db = db;
         _volumeLandmarks = volumeLandmarks;
+        _deloads = deloads;
     }
 
     public async Task<WorkoutSessionDto> GetByIdAsync(
@@ -253,6 +258,14 @@ public class SessionService : ISessionService
             session.TrainingWeek.MesocycleId,
             now,
             cancellationToken);
+
+        // Procena umora ide POSLE progresije: deload prepisuje opterećenja koja je
+        // progresija upravo popunila za narednu nedelju.
+        var autoDeload = await _deloads.EvaluatePendingWeeksAsync(
+            userId,
+            session.TrainingWeek.MesocycleId,
+            cancellationToken);
+
         await _db.SaveChangesAsync(cancellationToken);
 
         await transaction.CommitAsync(cancellationToken);
@@ -261,7 +274,15 @@ public class SessionService : ISessionService
         {
             SessionId = session.Id,
             Status = session.Status.ToString(),
-            Exercises = summaries
+            Exercises = summaries,
+            AutoDeload = autoDeload is null
+                ? null
+                : new AutoDeloadDto
+                {
+                    TriggeredByWeek = autoDeload.TriggeredByWeek,
+                    DeloadWeek = autoDeload.DeloadWeek,
+                    FatigueScore = autoDeload.FatigueScore
+                }
         };
     }
 
@@ -308,6 +329,7 @@ public class SessionService : ISessionService
             Id = session.Id,
             WeekNumber = session.TrainingWeek.WeekNumber,
             IsDeload = session.TrainingWeek.IsDeload,
+            IsAutoDeload = session.TrainingWeek.IsAutoDeload,
             DayLabel = session.DayLabel,
             Date = session.Date,
             Status = session.Status.ToString(),
