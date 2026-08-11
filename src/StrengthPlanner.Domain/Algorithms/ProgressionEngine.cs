@@ -20,12 +20,12 @@ public sealed class ProgressionEngine
     {
         ArgumentNullException.ThrowIfNull(workingSets);
 
-        var stepKg = weightStepKg ?? TrainingConstants.WeightStepKg;
-
         if (workingSets.Count == 0)
         {
             return new ProgressionResult(usedWeightKg, repRangeMin, WeightIncreased: false);
         }
+
+        var stepKg = weightStepKg ?? TrainingConstants.WeightStepKg;
 
         decimal rirTotal = 0;
         var allHitTop = true;

@@ -22,9 +22,12 @@ internal static class WeightStepResolver
             return new Dictionary<Guid, decimal>();
         }
 
+        // Vidljivost vežbi je i ovde uslovljena korisnikom, iako pozivaoci već filtriraju:
+        // helper ne sme da zavisi od discipline pozivaoca.
         var defaults = await db.Exercises
             .AsNoTracking()
-            .Where(exercise => exerciseIds.Contains(exercise.Id))
+            .Where(exercise => exerciseIds.Contains(exercise.Id)
+                               && (!exercise.IsCustom || exercise.CreatedByUserId == userId))
             .Select(exercise => new { exercise.Id, exercise.WeightStepKg })
             .ToDictionaryAsync(exercise => exercise.Id, exercise => exercise.WeightStepKg, cancellationToken);
 

@@ -12,7 +12,7 @@ using StrengthPlanner.Infrastructure.Persistence;
 namespace StrengthPlanner.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260811180754_AddPerExerciseWeightStep")]
+    [Migration("20260811183317_AddPerExerciseWeightStep")]
     partial class AddPerExerciseWeightStep
     {
         /// <inheritdoc />
@@ -718,6 +718,12 @@ namespace StrengthPlanner.Infrastructure.Persistence.Migrations
                         .WithMany()
                         .HasForeignKey("ExerciseId")
                         .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("StrengthPlanner.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Exercise");

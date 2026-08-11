@@ -39,6 +39,20 @@ public class EquipmentWeightStepTests
     }
 
     [Theory]
+    // Kolona je numeric(6,2): sve preko dve decimale mora da se poravna pre upisa,
+    // inače odgovor API-ja vraća vrednost koju baza nikada neće pročitati nazad.
+    [InlineData(2.333, 2.33)]
+    [InlineData(2.335, 2.34)]
+    [InlineData(2.5, 2.5)]
+    [InlineData(0.499, 0.5)]
+    public void Normalize_RoundsToTwoDecimals(double stepKg, double expected)
+    {
+        var normalized = EquipmentWeightStep.Normalize((decimal)stepKg);
+
+        Assert.Equal((decimal)expected, normalized);
+    }
+
+    [Theory]
     [InlineData(0.5, true)]
     [InlineData(2.0, true)]
     [InlineData(10.0, true)]

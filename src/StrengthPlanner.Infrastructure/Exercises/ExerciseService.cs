@@ -48,7 +48,7 @@ public class ExerciseService : IExerciseService
             })
             .ToListAsync(cancellationToken);
 
-        var overrideByExerciseId = await GetWeightStepOverridesAsync(userId, cancellationToken);
+        var overrideByExerciseId = await WeightStepResolver.LoadOverridesAsync(_db, userId, cancellationToken);
 
         return exercises
             .Select(exercise => new ExerciseDto
@@ -68,23 +68,6 @@ public class ExerciseService : IExerciseService
             .ToList();
     }
 
-    /// <summary>
-    /// Efektivni korak opterećenja po vežbi: korisnički override ako postoji,
-    /// inače podrazumevani korak same vežbe.
-    /// </summary>
-    private async Task<Dictionary<Guid, decimal>> GetWeightStepOverridesAsync(
-        Guid userId,
-        CancellationToken cancellationToken)
-    {
-        return await _db.UserExerciseSettings
-            .AsNoTracking()
-            .Where(setting => setting.UserId == userId)
-            .ToDictionaryAsync(
-                setting => setting.ExerciseId,
-                setting => setting.WeightStepKg,
-                cancellationToken);
-    }
-
     public async Task<ExerciseDto> SetWeightStepAsync(
         Guid userId,
         Guid exerciseId,
@@ -92,6 +75,7 @@ public class ExerciseService : IExerciseService
         CancellationToken cancellationToken = default)
     {
         var exercise = await _db.Exercises
+            .AsNoTracking()
             .Include(e => e.Muscles)
                 .ThenInclude(m => m.MuscleGroup)
             .FirstOrDefaultAsync(
@@ -103,7 +87,13 @@ public class ExerciseService : IExerciseService
             throw new TrainingLogException(TrainingLogErrorType.NotFound, "Exercise was not found.");
         }
 
-        if (weightStepKg.HasValue && !EquipmentWeightStep.IsValidStep(weightStepKg.Value))
+        // Kolona čuva dve decimale; zaokruži pre provere i upisa da odgovor ne bi
+        // vraćao vrednost koju baza nikada neće pročitati nazad.
+        var normalizedStepKg = weightStepKg.HasValue
+            ? EquipmentWeightStep.Normalize(weightStepKg.Value)
+            : (decimal?)null;
+
+        if (normalizedStepKg.HasValue && !EquipmentWeightStep.IsValidStep(normalizedStepKg.Value))
         {
             throw new TrainingLogException(
                 TrainingLogErrorType.Validation,
@@ -115,7 +105,7 @@ public class ExerciseService : IExerciseService
             cancellationToken);
 
         // Null ili vrednost jednaka podrazumevanoj: override nema smisla da postoji.
-        var isReset = !weightStepKg.HasValue || weightStepKg.Value == exercise.WeightStepKg;
+        var isReset = !normalizedStepKg.HasValue || normalizedStepKg.Value == exercise.WeightStepKg;
 
         if (isReset)
         {
@@ -131,15 +121,25 @@ public class ExerciseService : IExerciseService
                 Id = Guid.NewGuid(),
                 UserId = userId,
                 ExerciseId = exerciseId,
-                WeightStepKg = weightStepKg!.Value
+                WeightStepKg = normalizedStepKg!.Value
             });
         }
         else
         {
-            setting.WeightStepKg = weightStepKg!.Value;
+            setting.WeightStepKg = normalizedStepKg!.Value;
         }
 
-        await _db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException)
+        {
+            // Jedinstveni indeks (UserId, ExerciseId): dva istovremena prva override-a.
+            throw new TrainingLogException(
+                TrainingLogErrorType.Conflict,
+                "Weight step for this exercise was changed concurrently. Try again.");
+        }
 
         return new ExerciseDto
         {
@@ -148,7 +148,7 @@ public class ExerciseService : IExerciseService
             Type = exercise.Type.ToString(),
             Equipment = exercise.Equipment,
             IsCustom = exercise.IsCustom,
-            WeightStepKg = isReset ? exercise.WeightStepKg : weightStepKg!.Value,
+            WeightStepKg = isReset ? exercise.WeightStepKg : normalizedStepKg!.Value,
             DefaultWeightStepKg = exercise.WeightStepKg,
             IsWeightStepOverridden = !isReset,
             Muscles = exercise.Muscles

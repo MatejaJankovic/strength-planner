@@ -167,8 +167,8 @@
               <select
                 class="control control--compact"
                 [attr.id]="'step-' + exercise.id"
-                [disabled]="savingStepId() === exercise.id"
-                (change)="setWeightStep(exercise, $any($event.target).value)"
+                [disabled]="savingStepId() !== null"
+                (change)="setWeightStep(exercise, $any($event.target))"
               >
                 @for (step of stepOptionsFor(exercise); track step) {
                   <option [value]="step" [selected]="step === exercise.weightStepKg">
@@ -181,7 +181,7 @@
                 <button
                   class="btn btn--ghost btn--compact"
                   type="button"
-                  [disabled]="savingStepId() === exercise.id"
+                  [disabled]="savingStepId() !== null"
                   (click)="resetWeightStep(exercise)"
                 >
                   Vrati {{ exercise.defaultWeightStepKg }} kg

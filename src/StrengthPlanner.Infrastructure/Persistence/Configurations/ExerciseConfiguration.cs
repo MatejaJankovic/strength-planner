@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using StrengthPlanner.Domain.Algorithms;
 using StrengthPlanner.Domain.Entities;
 
 namespace StrengthPlanner.Infrastructure.Persistence.Configurations;
@@ -20,7 +21,7 @@ public class ExerciseConfiguration : IEntityTypeConfiguration<Exercise>
 
         builder.Property(e => e.WeightStepKg)
             .HasPrecision(6, 2)
-            .HasDefaultValue(2.5m);
+            .HasDefaultValue(TrainingConstants.WeightStepKg);
 
         // Enum -> string radi čitljivosti u bazi.
         builder.Property(e => e.Type)

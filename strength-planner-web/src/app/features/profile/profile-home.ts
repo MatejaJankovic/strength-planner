@@ -182,20 +182,24 @@ export class ProfileHome {
     return [...this.weightStepOptions, exercise.weightStepKg].sort((a, b) => a - b);
   }
 
-  protected setWeightStep(exercise: ExerciseDto, raw: string): void {
-    const parsed = Number(raw);
+  protected setWeightStep(exercise: ExerciseDto, select: HTMLSelectElement): void {
+    const parsed = Number(select.value);
     if (Number.isNaN(parsed) || parsed === exercise.weightStepKg) {
       return;
     }
 
-    this.saveWeightStep(exercise, parsed);
+    this.saveWeightStep(exercise, parsed, select);
   }
 
   protected resetWeightStep(exercise: ExerciseDto): void {
     this.saveWeightStep(exercise, null);
   }
 
-  private saveWeightStep(exercise: ExerciseDto, weightStepKg: number | null): void {
+  private saveWeightStep(
+    exercise: ExerciseDto,
+    weightStepKg: number | null,
+    select?: HTMLSelectElement,
+  ): void {
     if (this.savingStepId()) {
       return;
     }
@@ -207,11 +211,20 @@ export class ProfileHome {
     this.exerciseService.updateWeightStep(exercise.id, weightStepKg).subscribe({
       next: (updated) => {
         this.savingStepId.set(null);
+        // Server može da vrati zaokruženu vrednost; select mora da prikaže nju.
+        if (select) {
+          select.value = String(updated.weightStepKg);
+        }
         this.weightStepSaved.set(`Korak za "${updated.name}" je sada ${updated.weightStepKg} kg.`);
         setTimeout(() => this.weightStepSaved.set(null), 3200);
       },
       error: (err: unknown) => {
         this.savingStepId.set(null);
+        // Angular ne prepisuje [selected] kada se model nije promenio, pa se
+        // odbijena izmena mora ručno vratiti da select ne laže o stanju servera.
+        if (select) {
+          select.value = String(exercise.weightStepKg);
+        }
         this.weightStepError.set(
           extractErrorMessage(err, 'Korak opterećenja nije sačuvan. Pokušaj ponovo.'),
         );

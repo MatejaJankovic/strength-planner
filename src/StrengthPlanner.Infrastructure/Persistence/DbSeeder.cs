@@ -86,7 +86,9 @@ public static class DbSeeder
         }
 
         if (changed)
+        {
             await db.SaveChangesAsync();
+        }
     }
 
     private static async Task SeedVolumeLandmarksAsync(AppDbContext db, IReadOnlyDictionary<string, Guid> muscleIds)

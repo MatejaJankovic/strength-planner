@@ -92,7 +92,7 @@
         <app-weight-stepper
           label="Težina serije"
           [value]="draft.weightKg"
-          [step]="plan.weightStepKg || 2.5"
+          [step]="plan.weightStepKg"
           [disabled]="!isInProgress()"
           (valueChange)="setWeight(plan.id, $event)"
         />

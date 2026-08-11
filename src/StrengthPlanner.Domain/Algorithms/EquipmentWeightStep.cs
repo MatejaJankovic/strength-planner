@@ -44,4 +44,13 @@ public static class EquipmentWeightStep
     {
         return stepKg >= MinStepKg && stepKg <= MaxStepKg;
     }
+
+    /// <summary>
+    /// Snaps an override to the two decimals the column actually stores, so the value
+    /// returned to the client is the value that will be read back from the database.
+    /// </summary>
+    public static decimal Normalize(decimal stepKg)
+    {
+        return Math.Round(stepKg, 2, MidpointRounding.AwayFromZero);
+    }
 }

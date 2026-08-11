@@ -48,6 +48,12 @@ namespace StrengthPlanner.Infrastructure.Persistence.Migrations
                 {
                     table.PrimaryKey("PK_UserExerciseSettings", x => x.Id);
                     table.ForeignKey(
+                        name: "FK_UserExerciseSettings_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
                         name: "FK_UserExerciseSettings_Exercises_ExerciseId",
                         column: x => x.ExerciseId,
                         principalTable: "Exercises",
