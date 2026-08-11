@@ -71,7 +71,7 @@ dozi se sudi samo kada je nedelja i bila na toj dozi.
 
 ## Provera
 
-- `dotnet build`, `dotnet test` (69 testova, bilo 58), `npm run build` — sve prolazi.
+- `dotnet build`, `dotnet test` (74 testa, bilo 58), `npm run build` — sve prolazi.
 - `VolumeAdaptationTests` pokriva svako pravilo iz tabele, korak od najviše jedne serije,
   oba kraja ±50% pojasa, očuvanje optimalnog pojasa i konvergenciju (dvadeset istih
   dobrih nedelja staje na 33, ne beži dalje).
