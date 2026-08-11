@@ -17,6 +17,12 @@ export class WeightStepper {
 
   readonly canDecrease = computed(() => !this.disabled() && this.value() - this.step() >= this.min());
 
+  /** Korak u tekstu dugmadi: 2.5 ostaje "2.5", a 5 se prikazuje kao "5". */
+  readonly stepLabel = computed(() => {
+    const step = this.step();
+    return Number.isInteger(step) ? String(step) : step.toFixed(1);
+  });
+
   decrease(): void {
     if (!this.canDecrease()) {
       return;

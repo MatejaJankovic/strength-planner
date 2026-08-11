@@ -6,7 +6,7 @@ import { extractErrorMessage } from '../../core/api/http-error';
 import { ExerciseService } from '../../core/api/exercise.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { ExperienceLevel, UpdateProfileDto } from '../../core/models/auth.models';
-import { CreateExerciseRequest } from '../../core/models/training.models';
+import { CreateExerciseRequest, ExerciseDto } from '../../core/models/training.models';
 import { Loading } from '../../shared/components/loading/loading';
 
 @Component({
@@ -57,6 +57,26 @@ export class ProfileHome {
   protected readonly customExercises = computed(() =>
     this.exerciseService.exercises().filter((exercise) => exercise.isCustom),
   );
+
+  // --- korak opterećenja -------------------------------------------------------
+
+  protected readonly weightStepOptions = [0.5, 1, 1.25, 2, 2.5, 5, 10];
+
+  protected readonly savingStepId = signal<string | null>(null);
+  protected readonly weightStepError = signal<string | null>(null);
+  protected readonly weightStepSaved = signal<string | null>(null);
+  protected readonly exerciseFilter = signal('');
+
+  protected readonly filteredExercises = computed(() => {
+    const term = this.exerciseFilter().trim().toLocaleLowerCase('sr');
+    const exercises = this.exerciseService.exercises();
+
+    if (term.length === 0) {
+      return exercises;
+    }
+
+    return exercises.filter((exercise) => exercise.name.toLocaleLowerCase('sr').includes(term));
+  });
 
   protected readonly typeOptions = [
     { value: 'Compound', label: 'Složena' },
@@ -141,6 +161,59 @@ export class ProfileHome {
         this.savingProfile.set(false);
         this.profileError.set(
           extractErrorMessage(err, 'Izmena profila nije sačuvana. Pokušaj ponovo.'),
+        );
+      },
+    });
+  }
+
+  protected setExerciseFilter(term: string): void {
+    this.exerciseFilter.set(term);
+  }
+
+  /**
+   * Ponuđeni koraci za vežbu. Ako korisnik ima korak koji nije na listi (postavljen
+   * direktno preko API-ja), dodaje se da select ne bi tiho pao na prvu opciju.
+   */
+  protected stepOptionsFor(exercise: ExerciseDto): number[] {
+    if (this.weightStepOptions.includes(exercise.weightStepKg)) {
+      return this.weightStepOptions;
+    }
+
+    return [...this.weightStepOptions, exercise.weightStepKg].sort((a, b) => a - b);
+  }
+
+  protected setWeightStep(exercise: ExerciseDto, raw: string): void {
+    const parsed = Number(raw);
+    if (Number.isNaN(parsed) || parsed === exercise.weightStepKg) {
+      return;
+    }
+
+    this.saveWeightStep(exercise, parsed);
+  }
+
+  protected resetWeightStep(exercise: ExerciseDto): void {
+    this.saveWeightStep(exercise, null);
+  }
+
+  private saveWeightStep(exercise: ExerciseDto, weightStepKg: number | null): void {
+    if (this.savingStepId()) {
+      return;
+    }
+
+    this.savingStepId.set(exercise.id);
+    this.weightStepError.set(null);
+    this.weightStepSaved.set(null);
+
+    this.exerciseService.updateWeightStep(exercise.id, weightStepKg).subscribe({
+      next: (updated) => {
+        this.savingStepId.set(null);
+        this.weightStepSaved.set(`Korak za "${updated.name}" je sada ${updated.weightStepKg} kg.`);
+        setTimeout(() => this.weightStepSaved.set(null), 3200);
+      },
+      error: (err: unknown) => {
+        this.savingStepId.set(null);
+        this.weightStepError.set(
+          extractErrorMessage(err, 'Korak opterećenja nije sačuvan. Pokušaj ponovo.'),
         );
       },
     });

@@ -18,6 +18,10 @@ public class ExerciseConfiguration : IEntityTypeConfiguration<Exercise>
             .IsRequired()
             .HasMaxLength(32);
 
+        builder.Property(e => e.WeightStepKg)
+            .HasPrecision(6, 2)
+            .HasDefaultValue(2.5m);
+
         // Enum -> string radi čitljivosti u bazi.
         builder.Property(e => e.Type)
             .HasConversion<string>()

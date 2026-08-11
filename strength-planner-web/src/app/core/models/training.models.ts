@@ -24,7 +24,16 @@ export interface ExerciseDto {
   type: string;
   equipment: string;
   isCustom: boolean;
+  /** Korak koji se stvarno primenjuje (korisnicki override ili podrazumevani). */
+  weightStepKg: number;
+  /** Korak izveden iz sprave — vrednost na koju "Vrati podrazumevano" resetuje. */
+  defaultWeightStepKg: number;
+  isWeightStepOverridden: boolean;
   muscles: MuscleContributionDto[];
+}
+
+export interface UpdateWeightStepRequest {
+  weightStepKg: number | null;
 }
 
 export interface CreateExerciseRequest {
@@ -92,6 +101,7 @@ export interface ExercisePlanDto {
   repRangeMax: number;
   targetRir: number;
   targetWeightKg?: number | null;
+  weightStepKg: number;
   setLogs: SetLogDto[];
 }
 

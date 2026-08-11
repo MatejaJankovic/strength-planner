@@ -2,7 +2,11 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
 import { Observable, of, shareReplay, tap } from 'rxjs';
 import { API_BASE_URL } from './api-base';
-import { CreateExerciseRequest, ExerciseDto } from '../models/training.models';
+import {
+  CreateExerciseRequest,
+  ExerciseDto,
+  UpdateWeightStepRequest,
+} from '../models/training.models';
 
 @Injectable({ providedIn: 'root' })
 export class ExerciseService {
@@ -39,6 +43,25 @@ export class ExerciseService {
 
   muscleGroups(): Observable<string[]> {
     return this.http.get<string[]>(`${this.apiUrl}/exercises/muscle-groups`);
+  }
+
+  /**
+   * Sets the per-exercise load increment. Passing null clears the override and
+   * restores the equipment default. The cached catalog is updated in place so
+   * every screen sees the new step without a reload.
+   */
+  updateWeightStep(exerciseId: string, weightStepKg: number | null): Observable<ExerciseDto> {
+    const request: UpdateWeightStepRequest = { weightStepKg };
+
+    return this.http
+      .put<ExerciseDto>(`${this.apiUrl}/exercises/${exerciseId}/weight-step`, request)
+      .pipe(
+        tap((updated) =>
+          this.exercisesSignal.update((exercises) =>
+            exercises.map((exercise) => (exercise.id === updated.id ? updated : exercise)),
+          ),
+        ),
+      );
   }
 
   createCustom(request: CreateExerciseRequest): Observable<ExerciseDto> {

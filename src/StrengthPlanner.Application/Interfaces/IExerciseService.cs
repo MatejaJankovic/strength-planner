@@ -15,4 +15,14 @@ public interface IExerciseService
 
     /// <summary>Nazivi svih mišićnih grupa (za formu dodavanja vežbe).</summary>
     Task<IReadOnlyList<string>> GetMuscleGroupNamesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Postavlja korisnički korak opterećenja za vežbu; null briše override i vraća
+    /// podrazumevani korak izveden iz sprave.
+    /// </summary>
+    Task<ExerciseDto> SetWeightStepAsync(
+        Guid userId,
+        Guid exerciseId,
+        decimal? weightStepKg,
+        CancellationToken cancellationToken = default);
 }

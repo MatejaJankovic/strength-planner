@@ -45,6 +45,25 @@ public class ExercisesController : AuthorizedControllerBase
         return CreatedAtAction(nameof(GetAll), new { }, exercise);
     }
 
+    /// <summary>Postavlja korisnički korak opterećenja za vežbu (null vraća podrazumevani).</summary>
+    [HttpPut("{exerciseId:guid}/weight-step")]
+    [ProducesResponseType(typeof(ExerciseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SetWeightStep(
+        Guid exerciseId,
+        UpdateWeightStepRequest request,
+        CancellationToken cancellationToken)
+    {
+        var exercise = await _exerciseService.SetWeightStepAsync(
+            GetUserId(),
+            exerciseId,
+            request.WeightStepKg,
+            cancellationToken);
+
+        return Ok(exercise);
+    }
+
     /// <summary>Nazivi mišićnih grupa (za formu dodavanja vežbe).</summary>
     [HttpGet("muscle-groups")]
     [ProducesResponseType(typeof(IReadOnlyList<string>), StatusCodes.Status200OK)]

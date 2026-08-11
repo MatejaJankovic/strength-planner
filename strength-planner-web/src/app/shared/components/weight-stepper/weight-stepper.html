@@ -6,7 +6,7 @@
       class="weight-stepper__button"
       type="button"
       [disabled]="!canDecrease()"
-      aria-label="Smanji opterećenje za 2.5 kg"
+      [attr.aria-label]="'Smanji opterećenje za ' + stepLabel() + ' kg'"
       (click)="decrease()"
     >
       −
@@ -18,7 +18,7 @@
       class="weight-stepper__button"
       type="button"
       [disabled]="disabled()"
-      aria-label="Povećaj opterećenje za 2.5 kg"
+      [attr.aria-label]="'Povećaj opterećenje za ' + stepLabel() + ' kg'"
       (click)="increase()"
     >
       +

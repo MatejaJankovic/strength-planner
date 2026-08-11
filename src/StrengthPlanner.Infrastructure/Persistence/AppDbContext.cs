@@ -23,6 +23,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
     public DbSet<SetLog> SetLogs => Set<SetLog>();
     public DbSet<OneRepMaxRecord> OneRepMaxRecords => Set<OneRepMaxRecord>();
     public DbSet<VolumeLandmark> VolumeLandmarks => Set<VolumeLandmark>();
+    public DbSet<UserExerciseSetting> UserExerciseSettings => Set<UserExerciseSetting>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

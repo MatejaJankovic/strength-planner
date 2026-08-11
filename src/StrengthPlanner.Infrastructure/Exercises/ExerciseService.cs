@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using StrengthPlanner.Application.DTOs.Exercises;
 using StrengthPlanner.Application.Exceptions;
 using StrengthPlanner.Application.Interfaces;
+using StrengthPlanner.Domain.Algorithms;
 using StrengthPlanner.Domain.Entities;
 using StrengthPlanner.Domain.Enums;
 using StrengthPlanner.Infrastructure.Persistence;
@@ -24,17 +25,18 @@ public class ExerciseService : IExerciseService
         Guid userId,
         CancellationToken cancellationToken = default)
     {
-        return await _db.Exercises
+        var exercises = await _db.Exercises
             .AsNoTracking()
             .Where(e => !e.IsCustom || e.CreatedByUserId == userId)
             .OrderBy(e => e.Name)
-            .Select(e => new ExerciseDto
+            .Select(e => new
             {
-                Id = e.Id,
-                Name = e.Name,
-                Type = e.Type.ToString(),
-                Equipment = e.Equipment,
-                IsCustom = e.IsCustom,
+                e.Id,
+                e.Name,
+                e.Type,
+                e.Equipment,
+                e.IsCustom,
+                e.WeightStepKg,
                 Muscles = e.Muscles
                     .OrderByDescending(m => m.Contribution)
                     .Select(m => new MuscleContributionDto
@@ -45,6 +47,119 @@ public class ExerciseService : IExerciseService
                     .ToList()
             })
             .ToListAsync(cancellationToken);
+
+        var overrideByExerciseId = await GetWeightStepOverridesAsync(userId, cancellationToken);
+
+        return exercises
+            .Select(exercise => new ExerciseDto
+            {
+                Id = exercise.Id,
+                Name = exercise.Name,
+                Type = exercise.Type.ToString(),
+                Equipment = exercise.Equipment,
+                IsCustom = exercise.IsCustom,
+                WeightStepKg = overrideByExerciseId.TryGetValue(exercise.Id, out var stepOverride)
+                    ? stepOverride
+                    : exercise.WeightStepKg,
+                DefaultWeightStepKg = exercise.WeightStepKg,
+                IsWeightStepOverridden = overrideByExerciseId.ContainsKey(exercise.Id),
+                Muscles = exercise.Muscles
+            })
+            .ToList();
+    }
+
+    /// <summary>
+    /// Efektivni korak opterećenja po vežbi: korisnički override ako postoji,
+    /// inače podrazumevani korak same vežbe.
+    /// </summary>
+    private async Task<Dictionary<Guid, decimal>> GetWeightStepOverridesAsync(
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
+        return await _db.UserExerciseSettings
+            .AsNoTracking()
+            .Where(setting => setting.UserId == userId)
+            .ToDictionaryAsync(
+                setting => setting.ExerciseId,
+                setting => setting.WeightStepKg,
+                cancellationToken);
+    }
+
+    public async Task<ExerciseDto> SetWeightStepAsync(
+        Guid userId,
+        Guid exerciseId,
+        decimal? weightStepKg,
+        CancellationToken cancellationToken = default)
+    {
+        var exercise = await _db.Exercises
+            .Include(e => e.Muscles)
+                .ThenInclude(m => m.MuscleGroup)
+            .FirstOrDefaultAsync(
+                e => e.Id == exerciseId && (!e.IsCustom || e.CreatedByUserId == userId),
+                cancellationToken);
+
+        if (exercise is null)
+        {
+            throw new TrainingLogException(TrainingLogErrorType.NotFound, "Exercise was not found.");
+        }
+
+        if (weightStepKg.HasValue && !EquipmentWeightStep.IsValidStep(weightStepKg.Value))
+        {
+            throw new TrainingLogException(
+                TrainingLogErrorType.Validation,
+                $"Weight step must be between {EquipmentWeightStep.MinStepKg} and {EquipmentWeightStep.MaxStepKg} kg.");
+        }
+
+        var setting = await _db.UserExerciseSettings.FirstOrDefaultAsync(
+            s => s.UserId == userId && s.ExerciseId == exerciseId,
+            cancellationToken);
+
+        // Null ili vrednost jednaka podrazumevanoj: override nema smisla da postoji.
+        var isReset = !weightStepKg.HasValue || weightStepKg.Value == exercise.WeightStepKg;
+
+        if (isReset)
+        {
+            if (setting is not null)
+            {
+                _db.UserExerciseSettings.Remove(setting);
+            }
+        }
+        else if (setting is null)
+        {
+            _db.UserExerciseSettings.Add(new UserExerciseSetting
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                ExerciseId = exerciseId,
+                WeightStepKg = weightStepKg!.Value
+            });
+        }
+        else
+        {
+            setting.WeightStepKg = weightStepKg!.Value;
+        }
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        return new ExerciseDto
+        {
+            Id = exercise.Id,
+            Name = exercise.Name,
+            Type = exercise.Type.ToString(),
+            Equipment = exercise.Equipment,
+            IsCustom = exercise.IsCustom,
+            WeightStepKg = isReset ? exercise.WeightStepKg : weightStepKg!.Value,
+            DefaultWeightStepKg = exercise.WeightStepKg,
+            IsWeightStepOverridden = !isReset,
+            Muscles = exercise.Muscles
+                .OrderByDescending(m => m.Contribution)
+                .Select(m => new MuscleContributionDto
+                {
+                    MuscleGroup = m.MuscleGroup.Name,
+                    Contribution = m.Contribution
+                })
+                .ToList()
+        };
     }
 
     public async Task<ExerciseDto> CreateCustomAsync(
@@ -113,14 +228,16 @@ public class ExerciseService : IExerciseService
                 $"Unknown muscle groups: {string.Join(", ", missing)}.");
         }
 
+        var equipment = request.Equipment.Trim();
         var exercise = new Exercise
         {
             Id = Guid.NewGuid(),
             Name = name,
             Type = exerciseType,
-            Equipment = request.Equipment.Trim(),
+            Equipment = equipment,
             IsCustom = true,
             CreatedByUserId = userId,
+            WeightStepKg = EquipmentWeightStep.ForEquipment(equipment),
             Muscles = request.Muscles
                 .Select(m => new ExerciseMuscle
                 {
@@ -140,6 +257,9 @@ public class ExerciseService : IExerciseService
             Type = exercise.Type.ToString(),
             Equipment = exercise.Equipment,
             IsCustom = true,
+            WeightStepKg = exercise.WeightStepKg,
+            DefaultWeightStepKg = exercise.WeightStepKg,
+            IsWeightStepOverridden = false,
             Muscles = request.Muscles
                 .OrderByDescending(m => m.Contribution)
                 .Select(m => new MuscleContributionDto

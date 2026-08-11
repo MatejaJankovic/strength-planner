@@ -4,6 +4,7 @@ using StrengthPlanner.Application.DTOs.SetLogs;
 using StrengthPlanner.Application.Exceptions;
 using StrengthPlanner.Application.Interfaces;
 using StrengthPlanner.Domain.Entities;
+using StrengthPlanner.Infrastructure.Exercises;
 using StrengthPlanner.Infrastructure.Persistence;
 
 namespace StrengthPlanner.Infrastructure.Mesocycles;
@@ -49,7 +50,8 @@ public class MesocycleService : IMesocycleService
             throw new TrainingLogException(TrainingLogErrorType.NotFound, "Active mesocycle was not found.");
         }
 
-        return ToDto(mesocycle);
+        var weightStepOverrides = await WeightStepResolver.LoadOverridesAsync(_db, userId, cancellationToken);
+        return ToDto(mesocycle, weightStepOverrides);
     }
 
     public async Task<MesocycleDto> GetByIdAsync(
@@ -65,7 +67,8 @@ public class MesocycleService : IMesocycleService
             throw new TrainingLogException(TrainingLogErrorType.NotFound, "Mesocycle was not found.");
         }
 
-        return ToDto(mesocycle);
+        var weightStepOverrides = await WeightStepResolver.LoadOverridesAsync(_db, userId, cancellationToken);
+        return ToDto(mesocycle, weightStepOverrides);
     }
 
     public async Task DeleteAsync(
@@ -103,7 +106,9 @@ public class MesocycleService : IMesocycleService
             .Where(mesocycle => mesocycle.UserId == userId);
     }
 
-    private static MesocycleDto ToDto(Mesocycle mesocycle)
+    private static MesocycleDto ToDto(
+        Mesocycle mesocycle,
+        IReadOnlyDictionary<Guid, decimal> weightStepOverrides)
     {
         return new MesocycleDto
         {
@@ -144,6 +149,10 @@ public class MesocycleService : IMesocycleService
                                     RepRangeMax = plan.RepRangeMax,
                                     TargetRir = plan.TargetRir,
                                     TargetWeightKg = plan.TargetWeightKg,
+                                    WeightStepKg = WeightStepResolver.Effective(
+                                        weightStepOverrides,
+                                        plan.ExerciseId,
+                                        plan.Exercise.WeightStepKg),
                                     SetLogs = plan.SetLogs
                                         .OrderBy(set => set.SetNumber)
                                         .Select(set => new SetLogDto

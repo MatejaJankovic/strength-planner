@@ -115,6 +115,86 @@
   </section>
 
   <section class="card">
+    <h2 class="card__title">Korak opterećenja</h2>
+    <p class="card__hint">
+      Najmanji skok težine koji ti je dostupan za svaku vežbu. Podrazumevano se izvodi iz sprave
+      (šipka 2.5 kg, bučice 2 kg, mašina 5 kg), a ovde ga možeš prilagoditi svojoj teretani.
+    </p>
+
+    @if (weightStepError(); as message) {
+      <p class="alert alert--error" role="alert">
+        <mat-icon aria-hidden="true">error_outline</mat-icon>
+        <span>{{ message }}</span>
+      </p>
+    }
+    @if (weightStepSaved(); as message) {
+      <p class="alert alert--ok" role="status">
+        <mat-icon aria-hidden="true">check_circle</mat-icon>
+        <span>{{ message }}</span>
+      </p>
+    }
+
+    <div class="field">
+      <label class="field__label" for="step-filter">Pretraga vežbe</label>
+      <input
+        id="step-filter"
+        class="control"
+        type="search"
+        placeholder="npr. Bench"
+        [value]="exerciseFilter()"
+        (input)="setExerciseFilter($any($event.target).value)"
+      />
+    </div>
+
+    @if (filteredExercises().length === 0) {
+      <p class="card__hint">Nema vežbe koja odgovara pretrazi.</p>
+    } @else {
+      <ul class="exlist">
+        @for (exercise of filteredExercises(); track exercise.id) {
+          <li class="exlist__item exlist__item--step">
+            <span class="exlist__name">
+              {{ exercise.name }}
+              @if (exercise.isWeightStepOverridden) {
+                <span class="badge">izmenjeno</span>
+              }
+            </span>
+            <span class="exlist__meta">{{ exercise.equipment }}</span>
+
+            <div class="step-controls">
+              <label class="sr-only" [attr.for]="'step-' + exercise.id">
+                Korak za vežbu {{ exercise.name }}
+              </label>
+              <select
+                class="control control--compact"
+                [attr.id]="'step-' + exercise.id"
+                [disabled]="savingStepId() === exercise.id"
+                (change)="setWeightStep(exercise, $any($event.target).value)"
+              >
+                @for (step of stepOptionsFor(exercise); track step) {
+                  <option [value]="step" [selected]="step === exercise.weightStepKg">
+                    {{ step }} kg
+                  </option>
+                }
+              </select>
+
+              @if (exercise.isWeightStepOverridden) {
+                <button
+                  class="btn btn--ghost btn--compact"
+                  type="button"
+                  [disabled]="savingStepId() === exercise.id"
+                  (click)="resetWeightStep(exercise)"
+                >
+                  Vrati {{ exercise.defaultWeightStepKg }} kg
+                </button>
+              }
+            </div>
+          </li>
+        }
+      </ul>
+    }
+  </section>
+
+  <section class="card">
     <h2 class="card__title">Moje vežbe</h2>
     <p class="card__hint">
       Dodaj vežbu koje nema u katalogu — ulazi u analitiku volumena preko izabranih mišićnih grupa.
