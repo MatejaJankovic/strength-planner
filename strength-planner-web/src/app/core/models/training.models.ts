@@ -112,6 +112,8 @@ export interface SetLogDto {
   weightKg: number;
   reps: number;
   rir: number;
+  /** Serija izvucena do otkaza; RIR je tada uvek 0. */
+  isFailure: boolean;
   performedAt: string;
 }
 
@@ -119,6 +121,7 @@ export interface AddSetLogRequest {
   weightKg: number;
   reps: number;
   rir: number;
+  isFailure: boolean;
 }
 
 export interface CompleteSessionResultDto {

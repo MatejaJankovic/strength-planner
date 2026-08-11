@@ -8,5 +8,9 @@ public class SetLogDto
     public decimal WeightKg { get; set; }
     public int Reps { get; set; }
     public int Rir { get; set; }
+
+    /// <summary>Serija izvučena do otkaza (RIR je tada uvek 0).</summary>
+    public bool IsFailure { get; set; }
+
     public DateTime PerformedAt { get; set; }
 }

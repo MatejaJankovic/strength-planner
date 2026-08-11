@@ -163,6 +163,7 @@ public class MesocycleService : IMesocycleService
                                             WeightKg = set.WeightKg,
                                             Reps = set.Reps,
                                             Rir = set.Rir,
+                                            IsFailure = set.IsFailure,
                                             PerformedAt = set.PerformedAt
                                         })
                                         .ToList()

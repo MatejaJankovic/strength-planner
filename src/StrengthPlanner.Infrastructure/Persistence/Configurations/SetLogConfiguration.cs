@@ -11,5 +11,7 @@ public class SetLogConfiguration : IEntityTypeConfiguration<SetLog>
         builder.HasKey(sl => sl.Id);
 
         builder.Property(sl => sl.WeightKg).HasPrecision(6, 2);
+
+        builder.Property(sl => sl.IsFailure).HasDefaultValue(false);
     }
 }

@@ -6,6 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { extractErrorMessage } from '../../core/api/http-error';
 import { SessionService } from '../../core/api/session.service';
 import {
+  AddSetLogRequest,
   CompleteSessionResultDto,
   ExercisePlanDto,
   SetLogDto,
@@ -20,6 +21,7 @@ interface SetDraft {
   weightKg: number;
   reps: number;
   rir: number;
+  isFailure: boolean;
 }
 
 const REP_STEP_MIN = 1;
@@ -96,6 +98,8 @@ export class WorkoutSession {
         weightKg: lastLog?.weightKg ?? plan.targetWeightKg ?? 0,
         reps: lastLog?.reps ?? plan.repRangeMin,
         rir: lastLog?.rir ?? plan.targetRir,
+        // Otkaz se ne prenosi na sledeću seriju: to je izuzetak, ne podrazumevano stanje.
+        isFailure: false,
       };
     }
     this.drafts.set(drafts);
@@ -104,7 +108,7 @@ export class WorkoutSession {
   // --- draft accessors ------------------------------------------------------
 
   protected draftOf(planId: string): SetDraft {
-    return this.drafts()[planId] ?? { weightKg: 0, reps: 1, rir: 0 };
+    return this.drafts()[planId] ?? { weightKg: 0, reps: 1, rir: 0, isFailure: false };
   }
 
   protected setWeight(planId: string, weightKg: number): void {
@@ -125,7 +129,28 @@ export class WorkoutSession {
   }
 
   protected setRir(planId: string, rir: number): void {
+    if (this.draftOf(planId).isFailure) {
+      return;
+    }
+
     this.patchDraft(planId, { rir });
+  }
+
+  /**
+   * Posle upisa otkaz se gasi. Težina, ponavljanja i RIR se namerno pamte za sledeću
+   * seriju, ali otkaz ne: zaboravljena kvačica bi nemo spustila sledeći trening za
+   * do 10%, a korisnik ne bi imao razlog da je traži.
+   */
+  private clearFailureDraft(planId: string): void {
+    if (this.draftOf(planId).isFailure) {
+      this.patchDraft(planId, { isFailure: false });
+    }
+  }
+
+  /** Otkaz i RIR se isključuju — serija do otkaza po definiciji nema rezervu. */
+  protected toggleFailure(planId: string): void {
+    const isFailure = !this.draftOf(planId).isFailure;
+    this.patchDraft(planId, { isFailure, rir: isFailure ? 0 : this.draftOf(planId).rir });
   }
 
   private patchDraft(planId: string, patch: Partial<SetDraft>): void {
@@ -198,7 +223,12 @@ export class WorkoutSession {
     }
 
     const draft = this.draftOf(plan.id);
-    const request = { weightKg: draft.weightKg, reps: draft.reps, rir: draft.rir };
+    const request: AddSetLogRequest = {
+      weightKg: draft.weightKg,
+      reps: draft.reps,
+      rir: draft.isFailure ? 0 : draft.rir,
+      isFailure: draft.isFailure,
+    };
     const editingId = this.editingId(plan.id);
     this.savingPlanId.set(plan.id);
     this.actionError.set(null);
@@ -209,6 +239,7 @@ export class WorkoutSession {
           this.replaceSet(plan.id, editingId, saved);
           this.setEditing(plan.id, null);
           this.savingPlanId.set(null);
+          this.clearFailureDraft(plan.id);
         },
         error: (err: unknown) => {
           this.savingPlanId.set(null);
@@ -227,6 +258,7 @@ export class WorkoutSession {
       weightKg: request.weightKg,
       reps: request.reps,
       rir: request.rir,
+      isFailure: request.isFailure,
       performedAt: new Date().toISOString(),
     };
     this.appendSet(plan.id, optimistic);
@@ -235,6 +267,7 @@ export class WorkoutSession {
       next: (saved) => {
         this.replaceSet(plan.id, tempId, saved);
         this.savingPlanId.set(null);
+        this.clearFailureDraft(plan.id);
       },
       error: (err: unknown) => {
         this.removeSet(plan.id, tempId);
@@ -245,7 +278,12 @@ export class WorkoutSession {
   }
 
   protected editSet(planId: string, set: SetLogDto): void {
-    this.patchDraft(planId, { weightKg: set.weightKg, reps: set.reps, rir: set.rir });
+    this.patchDraft(planId, {
+      weightKg: set.weightKg,
+      reps: set.reps,
+      rir: set.rir,
+      isFailure: set.isFailure,
+    });
     this.setEditing(planId, set.id);
   }
 

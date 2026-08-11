@@ -25,11 +25,11 @@ public class ProgressionEngineTests
         double expectedNextWeightKg,
         bool expectedWeightIncreased)
     {
-        var workingSets = new List<(int reps, int rir)>
+        var workingSets = new List<WorkingSet>
         {
-            (reps1, rir1),
-            (reps2, rir2),
-            (reps3, rir3)
+            new(reps1, rir1),
+            new(reps2, rir2),
+            new(reps3, rir3)
         };
 
         var result = _engine.ComputeNext(
@@ -56,7 +56,7 @@ public class ProgressionEngineTests
         double weightStepKg,
         double expectedNextWeightKg)
     {
-        var workingSets = new List<(int reps, int rir)> { (12, 1), (12, 1), (12, 1) };
+        var workingSets = new List<WorkingSet> { new(12, 1), new(12, 1), new(12, 1) };
 
         var result = _engine.ComputeNext(
             (decimal)usedWeightKg,
@@ -74,7 +74,7 @@ public class ProgressionEngineTests
     public void ComputeNext_RoundsDownwardCorrectionToExerciseStep()
     {
         // Prosečan RIR 0 uz cilj 2 => -6%: 40 kg -> 37.6 kg, zaokruženo na korak od 2 kg.
-        var workingSets = new List<(int reps, int rir)> { (10, 0), (10, 0), (10, 0) };
+        var workingSets = new List<WorkingSet> { new(10, 0), new(10, 0), new(10, 0) };
 
         var result = _engine.ComputeNext(
             usedWeightKg: 40m,
@@ -91,7 +91,7 @@ public class ProgressionEngineTests
     [Fact]
     public void ComputeNext_DefaultsToGlobalStep_WhenExerciseStepIsNotSupplied()
     {
-        var workingSets = new List<(int reps, int rir)> { (12, 1), (12, 1), (12, 1) };
+        var workingSets = new List<WorkingSet> { new(12, 1), new(12, 1), new(12, 1) };
 
         var withoutStep = _engine.ComputeNext(100m, workingSets, 1, 8, 12);
         var withGlobalStep = _engine.ComputeNext(100m, workingSets, 1, 8, 12, TrainingConstants.WeightStepKg);
@@ -104,7 +104,7 @@ public class ProgressionEngineTests
     {
         var result = _engine.ComputeNext(
             usedWeightKg: 83.1m,
-            workingSets: Array.Empty<(int reps, int rir)>(),
+            workingSets: Array.Empty<WorkingSet>(),
             targetRir: 1,
             repRangeMin: 8,
             repRangeMax: 12);

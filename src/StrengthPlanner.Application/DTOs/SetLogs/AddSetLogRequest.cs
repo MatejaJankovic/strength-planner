@@ -12,4 +12,10 @@ public class AddSetLogRequest
 
     [Range(0, 5)]
     public int Rir { get; set; }
+
+    /// <summary>
+    /// Serija izvučena do otkaza. Kada je true, RIR se ignoriše i upisuje kao 0 —
+    /// otkaz po definiciji znači da nije ostalo nijedno ponavljanje u rezervi.
+    /// </summary>
+    public bool IsFailure { get; set; }
 }
