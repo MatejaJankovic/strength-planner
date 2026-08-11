@@ -14,15 +14,22 @@ namespace StrengthPlanner.Domain.Algorithms;
 /// can trigger a deload on its own: the heaviest carries 0.35 against a threshold of
 /// 0.60, so at least two have to agree. That is deliberate — every one of them is
 /// noisy in isolation, and an unnecessary deload costs a week of training.
+///
+/// For that safeguard to mean anything the signals have to be independent, which is why
+/// the RIR signal is measured only over sets the lifter completed. A set taken to
+/// failure short of the range would otherwise push both the RIR average and the failure
+/// share, and the "two must agree" rule would be satisfied by a single event.
 /// </summary>
 public static class FatigueEvaluator
 {
     /// <summary>Score at or above which the next week is turned into a deload.</summary>
     public const decimal DeloadThreshold = 0.60m;
 
-    // RIR koji je dva puna poena ispod cilja znači da su serije bile znatno teže nego
-    // što je plan tražio — to je najdirektniji znak umora koji sistem ima.
-    private const decimal RirDeviationAtFullWeight = 2m;
+    // Odstupanje RIR-a se meri u odnosu na ono što je za dati cilj uopšte dostižno
+    // (WeeklyFatigue.AchievableRirDeficit), a ne u odnosu na fiksne dve jedinice.
+    // Fiksna skala bi hipertrofiju (ciljni RIR 1) trajno stavila u podređen položaj:
+    // najgore što serija bez otkaza tamo može da prijavi je -1, pa nikada ne bi mogla
+    // da iskoristi ni polovinu ovog udela.
     private const decimal RirWeight = 0.35m;
 
     // Polovina serija do otkaza je nedelja izvučena preko svake mere.
@@ -45,7 +52,11 @@ public static class FatigueEvaluator
     {
         ArgumentNullException.ThrowIfNull(fatigue);
 
-        var rir = Normalize(-fatigue.AverageRirDeviation, 0m, RirDeviationAtFullWeight);
+        // Nedelja u kojoj nijedna serija nije dovršena nema prosek koji bi se merio,
+        // ali to odsustvo je najgore moguće očitavanje, a ne neutralno.
+        var rir = fatigue.AllSetsFailed
+            ? 1m
+            : Normalize(-fatigue.AverageRirDeviation, 0m, Math.Max(1m, fatigue.AchievableRirDeficit));
         var failures = Normalize(fatigue.FailureShare, 0m, FailureShareAtFullWeight);
         var e1Rm = Normalize(-fatigue.E1RmChangeShare, 0m, E1RmDropAtFullWeight);
         var volume = Normalize(fatigue.VolumeVsMrvShare, VolumeShareFloor, VolumeShareAtFullWeight);

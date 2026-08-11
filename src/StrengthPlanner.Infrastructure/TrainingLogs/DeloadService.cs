@@ -45,8 +45,6 @@ public sealed class DeloadService
             .Select(week => new { week.Id, week.WeekNumber })
             .ToListAsync(cancellationToken);
 
-        DeloadOutcome? outcome = null;
-
         foreach (var week in pendingWeeks)
         {
             var evaluated = await EvaluateWeekAsync(
@@ -56,10 +54,18 @@ public sealed class DeloadService
                 week.WeekNumber,
                 cancellationToken);
 
-            outcome ??= evaluated;
+            // Prekid posle prve konverzije je namerno. Pretvaranje nedelje u deload je
+            // tek promena u change trackeru, pa bi upit za sledeću nedelju u narednom
+            // krugu i dalje video staro stanje u bazi i mogao da pretvori i nju. Kada se
+            // nadoknađuje više nedelja odjednom, ionako je ispravno stati na prvom
+            // deload-u: ono što sledi posle njega više nije ista situacija.
+            if (evaluated is not null)
+            {
+                return evaluated;
+            }
         }
 
-        return outcome;
+        return null;
     }
 
     private async Task<DeloadOutcome?> EvaluateWeekAsync(
@@ -70,12 +76,11 @@ public sealed class DeloadService
         CancellationToken cancellationToken)
     {
         var fatigue = await BuildWeeklyFatigueAsync(userId, mesocycleId, weekId, weekNumber, cancellationToken);
-        if (fatigue is null)
-        {
-            return null;
-        }
 
-        var score = FatigueEvaluator.Score(fatigue);
+        // Nedelja bez ijedne upisane serije nema šta da kaže o umoru, ali mora da dobije
+        // ocenu — inače ostaje "neocenjena" zauvek i svaki naredni završetak treninga
+        // je iznova učitava.
+        var score = fatigue is null ? 0m : FatigueEvaluator.Score(fatigue);
 
         // Upis ocene je ujedno i preuzimanje nedelje: drugi zahtev vidi ocenu i odustaje.
         var claimed = await _db.TrainingWeeks
@@ -91,13 +96,19 @@ public sealed class DeloadService
             return null;
         }
 
+        // Deload se sme staviti samo na nedelju koja još nije počela: prepisivanje
+        // ciljeva već odrađenog ili započetog treninga bi falsifikovalo istoriju, a
+        // korisniku koji je usred nedelje menjalo plan pod rukama.
         var nextWeek = await _db.TrainingWeeks
             .Where(week => week.MesocycleId == mesocycleId
+                           && week.Mesocycle.UserId == userId
                            && week.WeekNumber == weekNumber + 1
-                           && !week.IsDeload)
+                           && !week.IsDeload
+                           && week.Sessions.All(session => session.Status == SessionStatus.Planned))
             .FirstOrDefaultAsync(cancellationToken);
 
-        // Nema sledeće nedelje ili je već deload — ocena je upisana, ali nema šta da se menja.
+        // Nema sledeće nedelje, već je deload, ili je počela — ocena je upisana, ali
+        // nema šta da se menja.
         if (nextWeek is null)
         {
             return null;
@@ -108,7 +119,79 @@ public sealed class DeloadService
         nextWeek.IsDeload = true;
         nextWeek.IsAutoDeload = true;
 
-        return new DeloadOutcome(weekNumber, nextWeek.WeekNumber, score);
+        var plannedDeloadRestored = await RestorePlannedDeloadAsync(
+            userId,
+            mesocycleId,
+            nextWeek.WeekNumber,
+            cancellationToken);
+
+        return new DeloadOutcome(weekNumber, nextWeek.WeekNumber, score, plannedDeloadRestored);
+    }
+
+    /// <summary>
+    /// Mezociklus nosi jedan deload. Kada ga umor povuče ranije, planirani deload na
+    /// kraju se vraća u običnu trenažnu nedelju — inače bi četvoronedeljni blok ostao
+    /// sa dva rasterećenja, a u lošijem slučaju i sa izolovanim pojedinačnim nedeljama
+    /// treninga između njih. Vraća broj nedelje koja je oslobođena, ili null.
+    /// </summary>
+    private async Task<int?> RestorePlannedDeloadAsync(
+        Guid userId,
+        Guid mesocycleId,
+        int autoDeloadWeekNumber,
+        CancellationToken cancellationToken)
+    {
+        var planned = await _db.TrainingWeeks
+            .Where(week => week.MesocycleId == mesocycleId
+                           && week.Mesocycle.UserId == userId
+                           && week.IsDeload
+                           && !week.IsAutoDeload
+                           && week.WeekNumber != autoDeloadWeekNumber
+                           && week.Sessions.All(session => session.Status == SessionStatus.Planned))
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (planned is null)
+        {
+            return null;
+        }
+
+        // Broj serija se vraća sa odgovarajuće trenažne nedelje: deload nedelja je pri
+        // generisanju kreirana sa prepolovljenim serijama, pa se original ne može
+        // izvesti računanjem unazad.
+        var referenceSets = await _db.ExercisePlans
+            .AsNoTracking()
+            .Where(plan => plan.WorkoutSession.TrainingWeek.MesocycleId == mesocycleId
+                           && !plan.WorkoutSession.TrainingWeek.IsDeload
+                           && plan.WorkoutSession.TrainingWeek.WeekNumber != autoDeloadWeekNumber)
+            .Select(plan => new
+            {
+                plan.WorkoutSession.DayLabel,
+                plan.ExerciseId,
+                plan.TargetSets
+            })
+            .ToListAsync(cancellationToken);
+
+        var setsByExerciseAndDay = referenceSets
+            .GroupBy(item => (item.DayLabel, item.ExerciseId))
+            .ToDictionary(group => group.Key, group => group.Max(item => item.TargetSets));
+
+        var plans = await _db.ExercisePlans
+            .Include(plan => plan.WorkoutSession)
+            .Where(plan => plan.WorkoutSession.TrainingWeekId == planned.Id)
+            .ToListAsync(cancellationToken);
+
+        foreach (var plan in plans)
+        {
+            if (setsByExerciseAndDay.TryGetValue(
+                    (plan.WorkoutSession.DayLabel, plan.ExerciseId),
+                    out var targetSets))
+            {
+                plan.TargetSets = targetSets;
+            }
+        }
+
+        planned.IsDeload = false;
+
+        return planned.WeekNumber;
     }
 
     /// <summary>
@@ -145,7 +228,9 @@ public sealed class DeloadService
 
         var plans = await _db.ExercisePlans
             .Include(plan => plan.WorkoutSession)
-            .Where(plan => plan.WorkoutSession.TrainingWeekId == deloadWeekId)
+            .Where(plan => plan.WorkoutSession.TrainingWeekId == deloadWeekId
+                           && plan.WorkoutSession.TrainingWeek.Mesocycle.UserId == userId
+                           && plan.WorkoutSession.Status == SessionStatus.Planned)
             .ToListAsync(cancellationToken);
 
         var exerciseIds = plans.Select(plan => plan.ExerciseId).Distinct().ToList();
@@ -206,15 +291,27 @@ public sealed class DeloadService
             return null;
         }
 
-        var rirDeviation = sets.Average(set =>
-            (decimal)(new WorkingSet(set.Reps, set.Rir, set.IsFailure).EffectiveRir(set.RepRangeMin)
-                      - set.TargetRir));
+        // RIR se meri samo nad dovršenim serijama; otkazi su zaseban signal i ne smeju
+        // da se broje dvaput (vidi FatigueEvaluator).
+        var completed = sets.Where(set => !set.IsFailure).ToList();
+        var rirDeviation = completed.Count == 0
+            ? 0m
+            : completed.Average(set => (decimal)(set.Rir - set.TargetRir));
+
+        // Koliko ispod cilja dovršena serija uopšte može da padne: RIR ne ide ispod nule.
+        var achievableDeficit = sets.Max(set => (decimal)set.TargetRir);
         var failureShare = (decimal)sets.Count(set => set.IsFailure) / sets.Count;
 
         var e1RmChange = await GetE1RmChangeShareAsync(userId, mesocycleId, weekNumber, sets, cancellationToken);
         var volumeShare = await GetVolumeVsMrvShareAsync(userId, weekId, cancellationToken);
 
-        return new WeeklyFatigue(rirDeviation, failureShare, e1RmChange, volumeShare);
+        return new WeeklyFatigue(
+            rirDeviation,
+            achievableDeficit,
+            AllSetsFailed: completed.Count == 0,
+            failureShare,
+            e1RmChange,
+            volumeShare);
     }
 
     /// <summary>
@@ -234,10 +331,27 @@ public sealed class DeloadService
             return 0m;
         }
 
+        // Poređenje ide sa poslednjom nedeljom koja NIJE bila deload: deload serije su
+        // namerno submaksimalne, pa bi nedelja posle deload-a uvek izgledala kao skok.
+        var comparableWeekNumber = await _db.TrainingWeeks
+            .AsNoTracking()
+            .Where(week => week.MesocycleId == mesocycleId
+                           && week.Mesocycle.UserId == userId
+                           && week.WeekNumber < weekNumber
+                           && !week.IsDeload)
+            .OrderByDescending(week => week.WeekNumber)
+            .Select(week => (int?)week.WeekNumber)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (comparableWeekNumber is null)
+        {
+            return 0m;
+        }
+
         var previousSets = await _db.SetLogs
             .AsNoTracking()
             .Where(set => set.ExercisePlan.WorkoutSession.TrainingWeek.MesocycleId == mesocycleId
-                          && set.ExercisePlan.WorkoutSession.TrainingWeek.WeekNumber == weekNumber - 1
+                          && set.ExercisePlan.WorkoutSession.TrainingWeek.WeekNumber == comparableWeekNumber
                           && set.ExercisePlan.WorkoutSession.TrainingWeek.Mesocycle.UserId == userId)
             .Select(set => new SetSignal(
                 set.ExercisePlan.ExerciseId,
@@ -257,10 +371,15 @@ public sealed class DeloadService
         var current = BestE1RmByExercise(currentSets);
         var previous = BestE1RmByExercise(previousSets);
 
-        var changes = current
-            .Where(entry => previous.ContainsKey(entry.Key) && previous[entry.Key] > 0)
-            .Select(entry => (entry.Value - previous[entry.Key]) / previous[entry.Key])
-            .ToList();
+        var changes = new List<decimal>();
+
+        foreach (var (exerciseId, currentBest) in current)
+        {
+            if (previous.TryGetValue(exerciseId, out var previousBest) && previousBest > 0)
+            {
+                changes.Add((currentBest - previousBest) / previousBest);
+            }
+        }
 
         return changes.Count == 0 ? 0m : changes.Average();
     }
@@ -298,12 +417,17 @@ public sealed class DeloadService
         }
 
         var landmarks = await _landmarks.GetEffectiveAsync(userId, cancellationToken);
-        var shares = responses
-            .Where(entry => landmarks.ContainsKey(entry.Key) && landmarks[entry.Key].Mrv > 0)
-            .Select(entry => entry.Value.PerformedSets / landmarks[entry.Key].Mrv)
-            .ToList();
+        decimal highest = 0m;
 
-        return shares.Count == 0 ? 0m : shares.Max();
+        foreach (var (muscleGroupId, response) in responses)
+        {
+            if (landmarks.TryGetValue(muscleGroupId, out var landmark) && landmark.Mrv > 0)
+            {
+                highest = Math.Max(highest, response.PerformedSets / landmark.Mrv);
+            }
+        }
+
+        return highest;
     }
 
     private sealed record SetSignal(
@@ -317,4 +441,15 @@ public sealed class DeloadService
 }
 
 /// <summary>Rezultat automatskog deload-a, za poruku korisniku posle treninga.</summary>
-public sealed record DeloadOutcome(int TriggeredByWeek, int DeloadWeek, decimal FatigueScore);
+/// <param name="TriggeredByWeek">Nedelja iz koje je umor izračunat.</param>
+/// <param name="DeloadWeek">Nedelja koja je pretvorena u deload.</param>
+/// <param name="FatigueScore">Ocena umora, 0 do 1.</param>
+/// <param name="PlannedDeloadReleasedWeek">
+/// Nedelja u kojoj je planirani deload otpao jer mezociklus nosi samo jedan; null kada
+/// planiranog deload-a nije ni bilo ili je već započet.
+/// </param>
+public sealed record DeloadOutcome(
+    int TriggeredByWeek,
+    int DeloadWeek,
+    decimal FatigueScore,
+    int? PlannedDeloadReleasedWeek);

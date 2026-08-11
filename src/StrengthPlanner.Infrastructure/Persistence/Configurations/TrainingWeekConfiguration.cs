@@ -10,6 +10,9 @@ public class TrainingWeekConfiguration : IEntityTypeConfiguration<TrainingWeek>
     {
         builder.HasKey(w => w.Id);
 
+        // Ocena umora je uvek 0-1; bez preciznosti bi kolona bila neograničeni numeric.
+        builder.Property(w => w.FatigueScore).HasPrecision(4, 3);
+
         // Jedan broj nedelje po mezociklusu.
         builder.HasIndex(w => new { w.MesocycleId, w.WeekNumber }).IsUnique();
 

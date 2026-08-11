@@ -82,3 +82,82 @@ nedelja završavala — bez toga bi "deload" nedelja nosila normalne radne teži
 - U pretraživaču: posle završetka treninga u rezimeu stoji *"Nedelja 2 je pretvorena u
   deload… (ocena 0.6 od 1)"* sa `role="status"`, a na dashboardu nedelja 1 nosi
   *Umor 0.6*, nedelja 2 *Deload zbog umora*, nedelja 4 *Deload*.
+
+## Ispravke posle revizije koda
+
+### Kritično: kaskada je znala da pojede ceo mezociklus
+
+Nedelje koje čekaju ocenu se učitaju **jednom**, na početku, a pretvaranje nedelje u
+deload je samo promena u change trackeru — pa je upit za "sledeću nedelju koja nije
+deload" u narednom krugu i dalje video staro stanje u bazi.
+
+Redosled treniranja nije nametnut (i `SessionService` to izričito podržava), pa je
+dovoljno da korisnik prvo odradi celu nedelju 2, a zatim se vrati na nedelju 1. Tada se
+ocenjuju obe: nedelja 1 pretvori nedelju 2, a nedelja 2 zatim pretvori nedelju 3.
+Provereno na stvarnom API-ju: **tri deload nedelje od četiri, jedna trenažna**.
+
+Sada se posle prve konverzije staje. To je i suštinski ispravno: ono što dolazi posle
+umetnutog deload-a više nije ista situacija, pa se ne sme suditi po podacima od pre.
+Posle ispravke isti scenario daje **jedan deload i tri trenažne nedelje**.
+
+### Kritično: deload je prepisivao već odrađene treninge
+
+Ni upit za sledeću nedelju ni upit za planove nisu gledali status sesija — iako
+progresija to pravilo poštuje (`plan.WorkoutSession.Status != Completed`, sa komentarom
+da "complete van redosleda ne sme da prepiše ciljeve već odrađenih treninga").
+
+Posledica: nedelja koju je korisnik već odradio mogla je naknadno da dobije prepolovljene
+serije i spuštena opterećenja, pa zapis plana više ne bi opisivao ono što je stvarno
+urađeno; nedelja u toku bi se menjala korisniku pod rukama. Sada se deload stavlja samo
+na nedelju čije su **sve sesije još u statusu Planned**.
+
+### Umor se merio nejednako za različite ciljeve
+
+Odstupanje RIR-a se normalizovalo fiksnom skalom od dva poena. Ali RIR ne ide ispod
+nule, pa serija bez otkaza pri cilju RIR 1 (hipertrofija, podrazumevani cilj) najviše
+može da prijavi −1 → pola udela. Maksimum dostižan bez otkaza je bio **0.575**, ispod
+praga od 0.60: hipertrofija praktično nije mogla da izazove deload, dok je ista slika
+pri cilju RIR 2 davala 0.75. Sada se meri u odnosu na ono što je za dati cilj dostižno,
+pa oba cilja daju isti signal za isto ponašanje.
+
+### Dva najteža signala merila su isti događaj
+
+Serija do otkaza ispod opsega ulazila je i u prosek RIR-a (kroz efektivni RIR) i u udeo
+otkaza. Time je pravilo "moraju se složiti bar dva signala" gubilo smisao — jedan
+događaj je popunjavao oba. RIR se sada računa **samo nad dovršenim serijama**; otkazi su
+zaseban signal. Nedelja u kojoj nijedna serija nije dovršena nema prosek, ali se to
+odsustvo tretira kao najgore moguće očitavanje, a ne kao neutralno.
+
+### Mezociklus je ostajao sa dva deload-a
+
+Pretvaranje nedelje 2 uz planirani deload u nedelji 4 davalo je raspored
+`trening – deload – trening – deload`: dve izolovane trenažne nedelje. Pretvaranje
+nedelje 3 davalo je dva deload-a jedan za drugim. Sada mezociklus nosi **jedan** deload:
+kada ga umor povuče ranije, planirani na kraju se vraća u trenažnu nedelju (broj serija
+se preuzima sa odgovarajuće trenažne nedelje, jer je deload nedelja pri generisanju
+kreirana već prepolovljena). Odgovor to i prijavljuje, pa ekran može da objasni zašto je
+plan izgubio poslednji deload.
+
+### Rezime treninga je protivrečio sam sebi
+
+Rezime je popunjavan tokom progresije, a deload posle toga prepisuje ista planska
+zaduženja. Korisnik je u istom ekranu video poruku "nedelja je pretvorena u deload" i,
+odmah ispod, *"Sledeće 82.5 kg ↑"*. Rezime se sada usklađuje sa stvarnim planom:
+provereno da za svih šest vežbi prijavljuje tačno ono što stoji u deload nedelji
+(72.5 / 70 kg), bez strelice naviše.
+
+### Sitnije
+
+- Poređenje e1RM je išlo sa prethodnom nedeljom bez obzira na to da li je ona bila
+  deload. Pošto su deload serije namerno submaksimalne, nedelja posle deload-a je uvek
+  izgledala kao skok i taj signal (udeo 0.25) je tiho otpadao. Sada se poredi sa
+  poslednjom nedeljom koja nije bila deload.
+- Nedelja bez ijedne upisane serije nije dobijala ocenu, pa je zauvek ostajala u listi
+  "za ocenjivanje" i svaki naredni završetak treninga ju je iznova učitavao. Sada dobija
+  ocenu 0.
+- Dva upita nisu bila ograničena po korisniku (bez stvarnog curenja, jer je mezociklus
+  već proveren, ali suprotno pravilu iz `CLAUDE.md`).
+- `FatigueScore` je bio neograničeni `numeric`; dobio je `HasPrecision(4, 3)` kao i
+  ostale decimalne kolone u šemi.
+- `WorkoutSessionDto.IsAutoDeload` je bio popunjen ali nigde prikazan — zaglavlje
+  treninga sada razlikuje "Deload" od "Deload zbog umora".

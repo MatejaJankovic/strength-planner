@@ -13,7 +13,9 @@ namespace StrengthPlanner.Infrastructure.Persistence.Migrations
             migrationBuilder.AddColumn<decimal>(
                 name: "FatigueScore",
                 table: "TrainingWeeks",
-                type: "numeric",
+                type: "numeric(4,3)",
+                precision: 4,
+                scale: 3,
                 nullable: true);
 
             migrationBuilder.AddColumn<bool>(

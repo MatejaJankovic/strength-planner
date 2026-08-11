@@ -142,6 +142,8 @@ export interface AutoDeloadDto {
   deloadWeek: number;
   /** Ocena umora, 0 (odmoran) do 1 (svi signali na maksimumu). */
   fatigueScore: number;
+  /** Nedelja u kojoj je planirani deload otpao, jer mezociklus nosi samo jedan. */
+  plannedDeloadReleasedWeek?: number | null;
 }
 
 export interface CompletedExerciseSummaryDto {

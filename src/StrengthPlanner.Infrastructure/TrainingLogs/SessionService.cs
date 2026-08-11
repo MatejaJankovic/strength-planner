@@ -266,6 +266,11 @@ public class SessionService : ISessionService
             session.TrainingWeek.MesocycleId,
             cancellationToken);
 
+        if (autoDeload is not null)
+        {
+            RefreshSummariesAfterDeload(summaries, nextPlans);
+        }
+
         await _db.SaveChangesAsync(cancellationToken);
 
         await transaction.CommitAsync(cancellationToken);
@@ -281,9 +286,33 @@ public class SessionService : ISessionService
                 {
                     TriggeredByWeek = autoDeload.TriggeredByWeek,
                     DeloadWeek = autoDeload.DeloadWeek,
-                    FatigueScore = autoDeload.FatigueScore
+                    FatigueScore = autoDeload.FatigueScore,
+                    PlannedDeloadReleasedWeek = autoDeload.PlannedDeloadReleasedWeek
                 }
         };
+    }
+
+    /// <summary>
+    /// Rezime treninga je popunjen tokom progresije, a deload posle toga prepisuje ista
+    /// (praćena) planska zaduženja. Bez ovog usklađivanja korisnik bi u istom ekranu
+    /// video poruku "nedelja je pretvorena u deload" i, ispod nje, uvećanu težinu koju
+    /// je progresija predložila pre te odluke.
+    /// </summary>
+    private static void RefreshSummariesAfterDeload(
+        List<CompletedExerciseSummaryDto> summaries,
+        IReadOnlyList<ExercisePlan> nextPlans)
+    {
+        foreach (var summary in summaries)
+        {
+            var nextPlan = nextPlans.FirstOrDefault(plan => plan.ExerciseId == summary.ExerciseId);
+            if (nextPlan is null)
+            {
+                continue;
+            }
+
+            summary.NextWeightKg = nextPlan.TargetWeightKg;
+            summary.WeightIncreased = false;
+        }
     }
 
     private IQueryable<WorkoutSession> BuildSessionDetailsQuery(Guid userId)

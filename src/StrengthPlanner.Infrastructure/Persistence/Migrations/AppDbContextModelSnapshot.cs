@@ -412,7 +412,8 @@ namespace StrengthPlanner.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<decimal?>("FatigueScore")
-                        .HasColumnType("numeric");
+                        .HasPrecision(4, 3)
+                        .HasColumnType("numeric(4,3)");
 
                     b.Property<bool>("IsAutoDeload")
                         .HasColumnType("boolean");

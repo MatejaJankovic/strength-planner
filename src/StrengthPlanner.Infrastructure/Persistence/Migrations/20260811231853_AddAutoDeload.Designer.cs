@@ -12,7 +12,7 @@ using StrengthPlanner.Infrastructure.Persistence;
 namespace StrengthPlanner.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260811225655_AddAutoDeload")]
+    [Migration("20260811231853_AddAutoDeload")]
     partial class AddAutoDeload
     {
         /// <inheritdoc />
@@ -415,7 +415,8 @@ namespace StrengthPlanner.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<decimal?>("FatigueScore")
-                        .HasColumnType("numeric");
+                        .HasPrecision(4, 3)
+                        .HasColumnType("numeric(4,3)");
 
                     b.Property<bool>("IsAutoDeload")
                         .HasColumnType("boolean");

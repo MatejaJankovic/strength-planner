@@ -21,4 +21,10 @@ public class AutoDeloadDto
 
     /// <summary>Ocena umora, 0 (odmoran) do 1 (svi signali na maksimumu).</summary>
     public decimal FatigueScore { get; set; }
+
+    /// <summary>
+    /// Nedelja u kojoj je planirani deload otpao, jer mezociklus nosi samo jedan;
+    /// null kada planiranog deload-a nije ni bilo ili je već započet.
+    /// </summary>
+    public int? PlannedDeloadReleasedWeek { get; set; }
 }
