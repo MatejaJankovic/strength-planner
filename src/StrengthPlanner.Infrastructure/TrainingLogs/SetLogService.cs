@@ -24,7 +24,7 @@ public class SetLogService : ISetLogService
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        ValidateSetInput(request.WeightKg, request.Reps, request.Rir);
+        ValidateSetInput(request.WeightKg, request.Reps, request.Rir, request.IsFailure);
 
         var planInfo = await _db.ExercisePlans
             .Where(plan => plan.Id == exercisePlanId
@@ -51,7 +51,8 @@ public class SetLogService : ISetLogService
             SetNumber = lastSetNumber + 1,
             WeightKg = request.WeightKg,
             Reps = request.Reps,
-            Rir = request.Rir,
+            Rir = NormalizeRir(request.Rir, request.IsFailure),
+            IsFailure = request.IsFailure,
             PerformedAt = DateTime.UtcNow
         };
 
@@ -68,7 +69,7 @@ public class SetLogService : ISetLogService
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        ValidateSetInput(request.WeightKg, request.Reps, request.Rir);
+        ValidateSetInput(request.WeightKg, request.Reps, request.Rir, request.IsFailure);
 
         var setLog = await _db.SetLogs
             .Include(set => set.ExercisePlan.WorkoutSession)
@@ -86,7 +87,8 @@ public class SetLogService : ISetLogService
 
         setLog.WeightKg = request.WeightKg;
         setLog.Reps = request.Reps;
-        setLog.Rir = request.Rir;
+        setLog.Rir = NormalizeRir(request.Rir, request.IsFailure);
+        setLog.IsFailure = request.IsFailure;
 
         await _db.SaveChangesAsync(cancellationToken);
 
@@ -130,7 +132,16 @@ public class SetLogService : ISetLogService
         }
     }
 
-    private static void ValidateSetInput(decimal weightKg, int reps, int rir)
+    /// <summary>
+    /// Otkaz i RIR > 0 se međusobno isključuju: ako je serija izvučena do otkaza,
+    /// u rezervi po definiciji nije ostalo nijedno ponavljanje.
+    /// </summary>
+    private static int NormalizeRir(int rir, bool isFailure)
+    {
+        return isFailure ? 0 : rir;
+    }
+
+    private static void ValidateSetInput(decimal weightKg, int reps, int rir, bool isFailure)
     {
         if (weightKg < 0)
         {
@@ -146,6 +157,13 @@ public class SetLogService : ISetLogService
         {
             throw new TrainingLogException(TrainingLogErrorType.Validation, "RIR must be between 0 and 5.");
         }
+
+        if (isFailure && rir > 0)
+        {
+            throw new TrainingLogException(
+                TrainingLogErrorType.Validation,
+                "A set taken to failure cannot have reps in reserve.");
+        }
     }
 
     private static SetLogDto ToDto(SetLog setLog)
@@ -158,6 +176,7 @@ public class SetLogService : ISetLogService
             WeightKg = setLog.WeightKg,
             Reps = setLog.Reps,
             Rir = setLog.Rir,
+            IsFailure = setLog.IsFailure,
             PerformedAt = setLog.PerformedAt
         };
     }

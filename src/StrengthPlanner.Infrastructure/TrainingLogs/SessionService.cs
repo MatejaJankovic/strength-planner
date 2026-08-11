@@ -192,7 +192,7 @@ public class SessionService : ISessionService
                 ? logs.Average(set => set.WeightKg)
                 : plan.TargetWeightKg ?? 0m;
             var workingSets = logs
-                .Select(set => (set.Reps, set.Rir))
+                .Select(set => new WorkingSet(set.Reps, set.Rir, set.IsFailure))
                 .ToList();
             var weightStepKg = WeightStepResolver.StepFor(weightStepByExerciseId, plan.ExerciseId);
             var progression = _progressionEngine.ComputeNext(
@@ -302,6 +302,7 @@ public class SessionService : ISessionService
                             WeightKg = set.WeightKg,
                             Reps = set.Reps,
                             Rir = set.Rir,
+                            IsFailure = set.IsFailure,
                             PerformedAt = set.PerformedAt
                         })
                         .ToList()

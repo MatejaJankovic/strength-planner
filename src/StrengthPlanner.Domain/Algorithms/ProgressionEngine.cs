@@ -6,13 +6,17 @@ namespace StrengthPlanner.Domain.Algorithms;
 public sealed class ProgressionEngine
 {
     /// <summary>
-    /// Applies RIR correction = clamp((average RIR - target RIR) * 3%, +/-10%) and double progression rules.
-    /// The load increment used for the double-progression bump and for rounding comes from the
-    /// exercise (2.5 kg when none is supplied), so dumbbells and machines step realistically.
+    /// Applies RIR correction = clamp((average effective RIR - target RIR) * 3%, +/-10%)
+    /// and double progression rules. Failed sets contribute a negative effective RIR
+    /// proportional to the reps missed against the bottom of the range, which is what
+    /// lets the correction reach the same 10% cap downward as it does upward.
+    /// The load increment used for the double-progression bump and for rounding comes
+    /// from the exercise (2.5 kg when none is supplied), so dumbbells and machines
+    /// step realistically.
     /// </summary>
     public ProgressionResult ComputeNext(
         decimal usedWeightKg,
-        IReadOnlyList<(int reps, int rir)> workingSets,
+        IReadOnlyList<WorkingSet> workingSets,
         int targetRir,
         int repRangeMin,
         int repRangeMax,
@@ -29,15 +33,21 @@ public sealed class ProgressionEngine
 
         decimal rirTotal = 0;
         var allHitTop = true;
+        var anyFailure = false;
 
         for (var i = 0; i < workingSets.Count; i++)
         {
             var set = workingSets[i];
-            rirTotal += set.rir;
+            rirTotal += set.EffectiveRir(repRangeMin);
 
-            if (set.reps < repRangeMax)
+            if (set.Reps < repRangeMax)
             {
                 allHitTop = false;
+            }
+
+            if (set.IsFailure)
+            {
+                anyFailure = true;
             }
         }
 
@@ -49,7 +59,10 @@ public sealed class ProgressionEngine
             TrainingConstants.MaxCorrection);
         var adjustedWeight = usedWeightKg * (1 + correction);
 
-        var nextWeight = allHitTop
+        // Double progression dodaje korak tek kada je ceo rep-opseg ispunjen bez otkaza:
+        // dvanaest ponavljanja izvučenih do otkaza nije isti signal kao dvanaest sa RIR 1.
+        var increaseWeight = allHitTop && !anyFailure;
+        var nextWeight = increaseWeight
             ? adjustedWeight + stepKg
             : adjustedWeight;
         var nextTargetReps = repRangeMin;
@@ -57,6 +70,6 @@ public sealed class ProgressionEngine
         return new ProgressionResult(
             WeightMath.RoundToStep(nextWeight, stepKg),
             nextTargetReps,
-            allHitTop);
+            increaseWeight);
     }
 }

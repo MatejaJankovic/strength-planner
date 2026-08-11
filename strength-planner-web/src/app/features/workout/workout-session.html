@@ -143,14 +143,40 @@
                   <button
                     class="rir__btn numeric"
                     type="button"
-                    [class.is-active]="draft.rir === value"
-                    [attr.aria-pressed]="draft.rir === value"
+                    [disabled]="draft.isFailure"
+                    [class.is-active]="!draft.isFailure && draft.rir === value"
+                    [attr.aria-pressed]="!draft.isFailure && draft.rir === value"
                     (click)="setRir(plan.id, value)"
                   >
                     {{ value }}
                   </button>
                 }
               </div>
+            </div>
+
+            <div class="entry__field entry__field--wide">
+              <button
+                class="failure"
+                type="button"
+                [class.is-active]="draft.isFailure"
+                [attr.aria-pressed]="draft.isFailure"
+                (click)="toggleFailure(plan.id)"
+              >
+                <mat-icon aria-hidden="true">
+                  {{ draft.isFailure ? 'check_box' : 'check_box_outline_blank' }}
+                </mat-icon>
+                <span>Serija do otkaza</span>
+              </button>
+              @if (draft.isFailure) {
+                <p class="entry__hint">
+                  @if (draft.reps < plan.repRangeMin) {
+                    Promašeno {{ plan.repRangeMin - draft.reps }} ponavljanja do donje granice
+                    opsega — sledeći put predlažemo osetno manje opterećenje.
+                  } @else {
+                    Otkaz unutar opsega — RIR je 0.
+                  }
+                </p>
+              }
             </div>
 
             <div class="entry__actions">
@@ -179,7 +205,11 @@
                 <span class="set__value numeric">
                   {{ set.weightKg | number: '1.0-1' }} kg × {{ set.reps }}
                 </span>
-                <span class="set__rir numeric">RIR {{ set.rir }}</span>
+                @if (set.isFailure) {
+                  <span class="set__rir set__rir--failure">otkaz</span>
+                } @else {
+                  <span class="set__rir numeric">RIR {{ set.rir }}</span>
+                }
                 @if (isInProgress()) {
                   <span class="set__actions">
                     <button
