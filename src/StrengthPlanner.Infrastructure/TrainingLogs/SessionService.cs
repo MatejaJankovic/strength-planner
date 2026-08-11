@@ -18,17 +18,20 @@ public class SessionService : ISessionService
     private readonly AppDbContext _db;
     private readonly VolumeLandmarkService _volumeLandmarks;
     private readonly DeloadService _deloads;
+    private readonly IMacrocycleService _macrocycles;
     private readonly E1RmCalculator _e1RmCalculator = new();
     private readonly ProgressionEngine _progressionEngine = new();
 
     public SessionService(
         AppDbContext db,
         VolumeLandmarkService volumeLandmarks,
-        DeloadService deloads)
+        DeloadService deloads,
+        IMacrocycleService macrocycles)
     {
         _db = db;
         _volumeLandmarks = volumeLandmarks;
         _deloads = deloads;
+        _macrocycles = macrocycles;
     }
 
     public async Task<WorkoutSessionDto> GetByIdAsync(
@@ -271,6 +274,15 @@ public class SessionService : ISessionService
             RefreshSummariesAfterDeload(summaries, nextPlans);
         }
 
+        // Kada je ovim treningom ceo blok zaokružen, sledeći iz plana se generiše odmah,
+        // od 1RM vrednosti koje važe sada. Ide poslednje: tek posle progresije i deload-a
+        // je stanje bloka konačno.
+        var nextBlock = await _macrocycles.AdvanceIfFinishedAsync(
+            userId,
+            session.TrainingWeek.MesocycleId,
+            now,
+            cancellationToken);
+
         await _db.SaveChangesAsync(cancellationToken);
 
         await transaction.CommitAsync(cancellationToken);
@@ -288,6 +300,17 @@ public class SessionService : ISessionService
                     DeloadWeek = autoDeload.DeloadWeek,
                     FatigueScore = autoDeload.FatigueScore,
                     PlannedDeloadReleasedWeek = autoDeload.PlannedDeloadReleasedWeek
+                },
+            NextBlock = nextBlock is null
+                ? null
+                : new MacrocycleAdvanceDto
+                {
+                    PlanName = nextBlock.PlanName,
+                    BlockOrder = nextBlock.BlockOrder,
+                    BlockCount = nextBlock.BlockCount,
+                    Goal = nextBlock.Goal.ToString(),
+                    MesocycleId = nextBlock.MesocycleId,
+                    MesocycleName = nextBlock.MesocycleName
                 }
         };
     }

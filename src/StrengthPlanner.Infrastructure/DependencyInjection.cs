@@ -56,6 +56,7 @@ public static class DependencyInjection
         services.AddScoped<IExerciseService, ExerciseService>();
         services.AddScoped<IMesocycleGenerator, MesocycleGenerator>();
         services.AddScoped<IMesocycleService, MesocycleService>();
+        services.AddScoped<IMacrocycleService, MacrocycleService>();
         services.AddScoped<IOneRepMaxService, OneRepMaxService>();
         services.AddScoped<ISetLogService, SetLogService>();
         services.AddScoped<ISessionService, SessionService>();

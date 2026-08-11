@@ -36,5 +36,10 @@ public class ApplicationUserConfiguration : IEntityTypeConfiguration<Application
             .WithOne()
             .HasForeignKey(landmark => landmark.UserId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasMany<Macrocycle>()
+            .WithOne()
+            .HasForeignKey(macrocycle => macrocycle.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

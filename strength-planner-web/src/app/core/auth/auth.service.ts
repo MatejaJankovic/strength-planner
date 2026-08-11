@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 import { API_BASE_URL } from '../api/api-base';
 import { ExerciseService } from '../api/exercise.service';
+import { MacrocycleService } from '../api/macrocycle.service';
 import { MesocycleService } from '../api/mesocycle.service';
 import { AuthResponseDto, CurrentUserDto, LoginDto, RegisterDto, UpdateProfileDto } from '../models/auth.models';
 import { AuthTokenStorage } from './auth-token-storage';
@@ -16,6 +17,7 @@ export class AuthService {
   private readonly router = inject(Router);
   private readonly exerciseService = inject(ExerciseService);
   private readonly mesocycleService = inject(MesocycleService);
+  private readonly macrocycleService = inject(MacrocycleService);
 
   readonly token = this.tokenStorage.token;
 
@@ -65,5 +67,6 @@ export class AuthService {
   private resetUserCaches(): void {
     this.exerciseService.reset();
     this.mesocycleService.reset();
+    this.macrocycleService.reset();
   }
 }

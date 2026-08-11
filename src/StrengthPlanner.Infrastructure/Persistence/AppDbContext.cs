@@ -16,6 +16,8 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
     public DbSet<MuscleGroup> MuscleGroups => Set<MuscleGroup>();
     public DbSet<Exercise> Exercises => Set<Exercise>();
     public DbSet<ExerciseMuscle> ExerciseMuscles => Set<ExerciseMuscle>();
+    public DbSet<Macrocycle> Macrocycles => Set<Macrocycle>();
+    public DbSet<MacrocycleBlock> MacrocycleBlocks => Set<MacrocycleBlock>();
     public DbSet<Mesocycle> Mesocycles => Set<Mesocycle>();
     public DbSet<TrainingWeek> TrainingWeeks => Set<TrainingWeek>();
     public DbSet<WorkoutSession> WorkoutSessions => Set<WorkoutSession>();

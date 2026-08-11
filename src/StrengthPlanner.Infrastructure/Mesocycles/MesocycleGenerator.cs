@@ -97,7 +97,14 @@ public class MesocycleGenerator : IMesocycleGenerator
                         : group.First().ValueKg;
                 });
 
-        await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+        // Kada generator radi unutar već otvorene transakcije (npr. pri automatskom
+        // prelasku na sledeći blok dugoročnog plana), ne otvara svoju — inače bi
+        // ugnježdena transakcija pukla, a i prelazak mora da deli sudbinu sa
+        // završetkom treninga koji ga je pokrenuo.
+        var ownsTransaction = _db.Database.CurrentTransaction is null;
+        var transaction = ownsTransaction
+            ? await _db.Database.BeginTransactionAsync(cancellationToken)
+            : null;
 
         var activeMesocycles = await _db.Mesocycles
             .Where(mesocycle => mesocycle.UserId == userId && mesocycle.IsActive)
@@ -122,7 +129,12 @@ public class MesocycleGenerator : IMesocycleGenerator
 
         _db.Mesocycles.Add(mesocycle);
         await _db.SaveChangesAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
+
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+            await transaction.DisposeAsync();
+        }
 
         var exerciseNameById = exercises.ToDictionary(exercise => exercise.Id, exercise => exercise.Name);
         return ToDto(mesocycle, exerciseNameById, weightStepByExerciseId);

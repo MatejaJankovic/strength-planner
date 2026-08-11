@@ -53,6 +53,19 @@
           </div>
         </div>
       }
+      @if (result.nextBlock; as next) {
+        <div class="deload-note deload-note--next" role="status">
+          <mat-icon aria-hidden="true">flag</mat-icon>
+          <div>
+            <strong>Blok {{ next.blockOrder }} od {{ next.blockCount }} je otvoren.</strong>
+            <p>
+              Plan "{{ next.planName }}" nastavlja sa ciljem
+              {{ next.goal === 'Strength' ? 'snage' : 'hipertrofije' }}. Novi mezociklus je
+              generisan od tvojih sadašnjih 1RM vrednosti i već je aktivan.
+            </p>
+          </div>
+        </div>
+      }
       <ul class="summary__list">
         @for (ex of result.exercises; track ex.exercisePlanId) {
           <li class="summary__item">

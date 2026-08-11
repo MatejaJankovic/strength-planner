@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using StrengthPlanner.Application.DTOs.Macrocycles;
 using StrengthPlanner.Application.DTOs.Mesocycles;
 using StrengthPlanner.Application.Interfaces;
 
@@ -10,17 +11,22 @@ namespace StrengthPlanner.API.Controllers;
 [Route("api/mesocycles")]
 public class MesocyclesController : AuthorizedControllerBase
 {
-    private readonly IMesocycleGenerator _mesocycleGenerator;
+    private readonly IMacrocycleService _macrocycleService;
     private readonly IMesocycleService _mesocycleService;
 
-    public MesocyclesController(IMesocycleGenerator mesocycleGenerator, IMesocycleService mesocycleService)
+    public MesocyclesController(IMacrocycleService macrocycleService, IMesocycleService mesocycleService)
     {
-        _mesocycleGenerator = mesocycleGenerator;
+        _macrocycleService = macrocycleService;
         _mesocycleService = mesocycleService;
     }
 
     /// <summary>Generiše novi četvoronedeljni mezociklus.</summary>
-    /// <remarks>Primer body-ja: { "templateKey": "full-body", "goal": "Hypertrophy", "name": "Base Hypertrophy", "startDate": "2026-07-06" }</remarks>
+    /// <remarks>
+    /// Primer body-ja: { "templateKey": "full-body", "goal": "Hypertrophy", "name": "Base Hypertrophy", "startDate": "2026-07-06" }
+    ///
+    /// Svaki mezociklus pripada dugoročnom planu; ovaj put pravi plan sa jednim blokom,
+    /// pa se ponaša isto kao ranije, ali se kasnije može produžiti.
+    /// </remarks>
     [HttpPost]
     [ProducesResponseType(typeof(MesocycleDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -28,7 +34,23 @@ public class MesocyclesController : AuthorizedControllerBase
         GenerateMesocycleRequest request,
         CancellationToken cancellationToken)
     {
-        var mesocycle = await _mesocycleGenerator.GenerateAsync(GetUserId(), request, cancellationToken);
+        var userId = GetUserId();
+        var plan = await _macrocycleService.CreateAsync(
+            userId,
+            new CreateMacrocycleRequest
+            {
+                Name = request.Name,
+                StartDate = request.StartDate,
+                Blocks =
+                [
+                    new CreateMacrocycleBlockDto { Goal = request.Goal, TemplateKey = request.TemplateKey }
+                ]
+            },
+            cancellationToken);
+
+        var mesocycleId = plan.Blocks[0].MesocycleId!.Value;
+        var mesocycle = await _mesocycleService.GetByIdAsync(userId, mesocycleId, cancellationToken);
+
         return CreatedAtAction(nameof(GetById), new { id = mesocycle.Id }, mesocycle);
     }
 
