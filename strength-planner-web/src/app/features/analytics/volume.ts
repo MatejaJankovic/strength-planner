@@ -32,13 +32,20 @@ export class Volume {
   protected readonly weeks = [1, 2, 3, 4];
   protected readonly week = signal(1);
 
+  protected readonly resetting = signal(false);
+  protected readonly resetError = signal<string | null>(null);
+  // Menja se posle reseta da bi se granice ponovo dovukle sa servera.
+  private readonly reloadToken = signal(0);
+
   private readonly chosenMesoId = signal<string | null>(null);
   protected readonly selectedMesoId = computed(
     () => this.chosenMesoId() ?? this.mesocycles()[0]?.id ?? null,
   );
 
   private readonly state = toSignal(
-    toObservable(computed(() => ({ id: this.selectedMesoId(), week: this.week() }))).pipe(
+    toObservable(
+      computed(() => ({ id: this.selectedMesoId(), week: this.week(), token: this.reloadToken() })),
+    ).pipe(
       switchMap(({ id, week }) => {
         if (!id) {
           return of<VolumeState>({ status: 'ready', items: [] });
@@ -64,6 +71,11 @@ export class Volume {
     return s.status === 'error' ? s.message : null;
   });
 
+  /** Broj mišićnih grupa čije su granice pomerene u odnosu na seed. */
+  protected readonly personalCount = computed(
+    () => this.rows().filter((row) => row.isPersonal).length,
+  );
+
   protected readonly rows = computed<VolumeRow[]>(() => {
     const s = this.state();
     if (s.status !== 'ready') {
@@ -87,6 +99,28 @@ export class Volume {
 
   protected selectWeek(week: number): void {
     this.week.set(week);
+  }
+
+  protected resetLandmarks(): void {
+    if (this.resetting()) {
+      return;
+    }
+
+    this.resetting.set(true);
+    this.resetError.set(null);
+
+    this.analyticsService.resetVolumeLandmarks().subscribe({
+      next: () => {
+        this.resetting.set(false);
+        this.reloadToken.update((token) => token + 1);
+      },
+      error: (err: unknown) => {
+        this.resetting.set(false);
+        this.resetError.set(
+          extractErrorMessage(err, 'Vraćanje granica nije uspelo. Pokušaj ponovo.'),
+        );
+      },
+    });
   }
 }
 

@@ -59,6 +59,7 @@ public static class DependencyInjection
         services.AddScoped<IOneRepMaxService, OneRepMaxService>();
         services.AddScoped<ISetLogService, SetLogService>();
         services.AddScoped<ISessionService, SessionService>();
+        services.AddScoped<VolumeLandmarkService>();
         services.AddScoped<IVolumeService, VolumeService>();
         services.AddScoped<IAnalyticsService, AnalyticsService>();
 

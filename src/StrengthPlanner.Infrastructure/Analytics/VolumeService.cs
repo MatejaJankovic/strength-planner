@@ -9,10 +9,12 @@ namespace StrengthPlanner.Infrastructure.Analytics;
 public class VolumeService : IVolumeService
 {
     private readonly AppDbContext _db;
+    private readonly VolumeLandmarkService _landmarks;
 
-    public VolumeService(AppDbContext db)
+    public VolumeService(AppDbContext db, VolumeLandmarkService landmarks)
     {
         _db = db;
+        _landmarks = landmarks;
     }
 
     public async Task<IReadOnlyList<WeeklyVolumeDto>> GetWeeklyVolumeAsync(
@@ -56,34 +58,37 @@ public class VolumeService : IVolumeService
             })
             .ToDictionaryAsync(item => item.MuscleGroupId, item => item.Sets, cancellationToken);
 
-        var landmarks = await _db.VolumeLandmarks
+        var muscleNames = await _db.MuscleGroups
             .AsNoTracking()
-            .Include(landmark => landmark.MuscleGroup)
-            .OrderBy(landmark => landmark.MuscleGroup.Name)
-            .Select(landmark => new
-            {
-                landmark.MuscleGroupId,
-                Muscle = landmark.MuscleGroup.Name,
-                landmark.Mev,
-                landmark.Mrv
-            })
-            .ToListAsync(cancellationToken);
+            .ToDictionaryAsync(group => group.Id, group => group.Name, cancellationToken);
+        var effective = await _landmarks.GetEffectiveAsync(userId, cancellationToken);
 
-        return landmarks
-            .Select(landmark =>
+        return effective
+            .Select(entry =>
             {
-                var sets = volumeByMuscleGroupId.GetValueOrDefault(landmark.MuscleGroupId);
+                var sets = volumeByMuscleGroupId.GetValueOrDefault(entry.Key);
+                var landmark = entry.Value;
 
                 return new WeeklyVolumeDto
                 {
-                    Muscle = landmark.Muscle,
+                    Muscle = muscleNames.GetValueOrDefault(entry.Key, string.Empty),
                     Sets = sets,
                     Mev = landmark.Mev,
                     Mrv = landmark.Mrv,
+                    DefaultMev = landmark.SeedMev,
+                    DefaultMrv = landmark.SeedMrv,
+                    IsPersonal = landmark.IsPersonal,
                     Status = GetStatus(sets, landmark.Mev, landmark.Mrv)
                 };
             })
+            .OrderBy(dto => dto.Muscle)
             .ToList();
+    }
+
+    public async Task ResetLandmarksAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        await _landmarks.ResetAsync(userId, cancellationToken);
+        await _db.SaveChangesAsync(cancellationToken);
     }
 
     private static string GetStatus(decimal sets, int mev, int mrv)

@@ -3,6 +3,11 @@ export interface VolumeItemDto {
   sets: number;
   mev: number;
   mrv: number;
+  /** Populaciona seed granica — vrednost na koju reset vraca. */
+  defaultMev: number;
+  defaultMrv: number;
+  /** True kada su granice naucene iz korisnikovog odgovora na volumen. */
+  isPersonal: boolean;
   status: 'below' | 'optimal' | 'above';
 }
 

@@ -54,7 +54,14 @@
           <span class="marker marker--mev" [style.left.%]="row.mevPct" aria-hidden="true"></span>
           <span class="marker marker--mrv" [style.left.%]="row.mrvPct" aria-hidden="true"></span>
         </div>
-        <p class="vrow__meta numeric">MEV {{ row.mev }} · MRV {{ row.mrv }}</p>
+        <p class="vrow__meta numeric">
+          MEV {{ row.mev }} · MRV {{ row.mrv }}
+          @if (row.isPersonal) {
+            <span class="vrow__learned">
+              lično (podrazumevano {{ row.defaultMev }}/{{ row.defaultMrv }})
+            </span>
+          }
+        </p>
       </li>
     }
   </ul>
@@ -68,5 +75,29 @@
     <p class="legend__note">
       MEV = minimalni efektivni volumen, MRV = maksimalni oporavljivi volumen; cilj je biti između.
     </p>
+
+    @if (personalCount() > 0) {
+      <p class="legend__note">
+        Granice za {{ personalCount() }}
+        {{ personalCount() === 1 ? 'mišićnu grupu su prilagođene' : 'mišićnih grupa su prilagođene' }}
+        tvom odgovoru na volumen — pomeraju se najviše za jednu seriju po završenoj nedelji.
+      </p>
+      <button
+        class="legend__reset"
+        type="button"
+        [disabled]="resetting()"
+        (click)="resetLandmarks()"
+      >
+        {{ resetting() ? 'Vraćam…' : 'Vrati podrazumevane granice' }}
+      </button>
+    } @else {
+      <p class="legend__note">
+        Granice su još podrazumevane — prilagođavaju se same kad odradiš celu nedelju.
+      </p>
+    }
+
+    @if (resetError(); as message) {
+      <p class="vol-note vol-note--error" role="alert">{{ message }}</p>
+    }
   </div>
 }

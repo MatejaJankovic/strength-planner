@@ -31,5 +31,10 @@ public class ApplicationUserConfiguration : IEntityTypeConfiguration<Application
             .WithOne()
             .HasForeignKey(setting => setting.UserId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasMany<UserVolumeLandmark>()
+            .WithOne()
+            .HasForeignKey(landmark => landmark.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

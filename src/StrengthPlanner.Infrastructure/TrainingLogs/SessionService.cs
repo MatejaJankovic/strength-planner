@@ -7,6 +7,7 @@ using StrengthPlanner.Application.Interfaces;
 using StrengthPlanner.Domain.Algorithms;
 using StrengthPlanner.Domain.Entities;
 using StrengthPlanner.Domain.Enums;
+using StrengthPlanner.Infrastructure.Analytics;
 using StrengthPlanner.Infrastructure.Exercises;
 using StrengthPlanner.Infrastructure.Persistence;
 
@@ -15,12 +16,14 @@ namespace StrengthPlanner.Infrastructure.TrainingLogs;
 public class SessionService : ISessionService
 {
     private readonly AppDbContext _db;
+    private readonly VolumeLandmarkService _volumeLandmarks;
     private readonly E1RmCalculator _e1RmCalculator = new();
     private readonly ProgressionEngine _progressionEngine = new();
 
-    public SessionService(AppDbContext db)
+    public SessionService(AppDbContext db, VolumeLandmarkService volumeLandmarks)
     {
         _db = db;
+        _volumeLandmarks = volumeLandmarks;
     }
 
     public async Task<WorkoutSessionDto> GetByIdAsync(
@@ -223,6 +226,20 @@ public class SessionService : ISessionService
         }
 
         await _db.SaveChangesAsync(cancellationToken);
+
+        // Nedelja je gotova tek kad nijedna njena sesija nije ostala nezavršena; taj
+        // prelaz se dešava tačno jednom, pa se granice volumena pomeraju jednom.
+        var weekIsComplete = !await _db.WorkoutSessions.AnyAsync(
+            other => other.TrainingWeekId == session.TrainingWeekId
+                     && other.Status != SessionStatus.Completed,
+            cancellationToken);
+
+        if (weekIsComplete)
+        {
+            await _volumeLandmarks.AdaptAfterWeekAsync(userId, session.TrainingWeekId, now, cancellationToken);
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+
         await transaction.CommitAsync(cancellationToken);
 
         return new CompleteSessionResultDto
