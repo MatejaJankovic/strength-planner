@@ -48,10 +48,9 @@ Sada i korekcija naniže dostiže isti prag od 10% koji je korekcija naviše odu
 - `WorkingSet` — nov record `(Reps, Rir, IsFailure)` sa metodom `EffectiveRir(repRangeMin)`.
   Zamenio je anonimnu torku `(int reps, int rir)` u potpisu progresije; time je otkaz
   postao deo modela, a ne još jedan paralelan parametar.
-- `ProgressionEngine.ComputeNext` računa prosek **efektivnog** RIR-a i uz to više ne
-  dodaje korak kada je vrh opsega dostignut isključivo otkazom: dvanaest ponavljanja
-  izvučenih do otkaza nije isti signal kao dvanaest sa RIR 1.
-- `SetLog.IsFailure` — nova kolona.
+- `ProgressionEngine.ComputeNext` računa prosek **efektivnog** RIR-a.
+- `SetLog.IsFailure` — nova kolona, uz `CHECK` ograničenje koje brani invarijantu
+  "otkaz ⇒ RIR 0" i na nivou baze, jer o njoj zavisi smer korekcije.
 
 ### Servisi
 
@@ -84,3 +83,60 @@ Sada i korekcija naniže dostiže isti prag od 10% koji je korekcija naviše odu
 - U pretraživaču: prekidač gasi RIR dugmad, tekst tačno broji promašena ponavljanja
   (5 od 8 → "Promašeno 3"), serija se prikazuje sa oznakom "otkaz", a prekidač se
   posle upisa vraća na isključeno i RIR dugmad se ponovo omogućavaju.
+
+## Ispravke posle revizije koda
+
+### Ozbiljna greška: opterećenje je klizilo naniže bez dna
+
+Prva verzija je pored korekcije blokirala i double progression kada je bilo koja serija
+otkazala (`allHitTop && !anyFailure`). Ispostavilo se da taj uslov **nikada ne pogađa
+ono zbog čega je napisan**: serija koja otkaže ispod vrha opsega ionako već obara
+`allHitTop`. Jedini slučaj u kome se `!anyFailure` uopšte proverava jeste onaj u kome
+je vežbač stigao do vrha opsega — a tu je blokada najmanje opravdana.
+
+Efekat je bio dupla kazna: efektivni RIR za otkaz na vrhu opsega je 0, što daje trajnih
+−3%, a korak koji bi to poništio je uklonjen. Vežbač koji svaki trening radi tri serije
+po 12 ponavljanja do otkaza dobijao je:
+
+```
+100 → 97.5 → 95 → 92.5 → 90 → 87.5 → 85 → 82.5 → 80 kg
+```
+
+Opterećenje pada iz treninga u trening iako je rep-opseg ispunjen svaki put — i to
+upravo onom vežbaču zbog koga je funkcionalnost i pravljena. Provereno pokretanjem
+stvarnog `ProgressionEngine`-a kroz osam uzastopnih treninga.
+
+Ispravka: vrh opsega ponovo nosi korak. Razliku između "12 do otkaza" i "12 sa RIR 1"
+nosi **isključivo** korekcija: prvo daje 100 · 0.97 + 2.5 = 99.5 → **100 kg** (zadrži),
+drugo 100 + 2.5 = **102.5 kg** (napreduj). Dodat je regresioni test koji pušta osam
+treninga zaredom i traži da opterećenje ne padne.
+
+### Ostalo
+
+- **Otkazivanje izmene ostavljalo je kvačicu upaljenu.** `editSet` prepisuje draft sa
+  vrednostima serije koja se menja, ali `cancelEdit` (i brisanje serije koja se upravo
+  menja) čistio je samo id izmene. Sledeća "Dodaj seriju" je nemo upisivala otkaz —
+  tačno opasnost zbog koje se prekidač i gasi posle upisa.
+- **Prekidač je brisao izabrani RIR.** Uključivanje otkaza je upisivalo `rir: 0` u draft,
+  pa je isključivanje vraćalo nulu umesto onoga što je korisnik izabrao (RIR 3 → kvačica
+  → bez kvačice → RIR 0, razlika od 9 procentnih poena u korekciji). Sada se `rir` ne dira;
+  nula se šalje pri upisu i normalizuje na serveru.
+- **Onemogućena RIR dugmad nisu izgledala onemogućeno** — `.rir__btn` postavlja svoju
+  boju i pozadinu, pa je podrazumevano sivilo bilo pregaženo. Dodato `:disabled` pravilo.
+- **Dokumentacija DTO-a je tvrdila da se RIR tiho prepisuje**, a servis vraća 400.
+  Ispravljen tekst da odgovara ponašanju.
+- Pomoćni tekst dobija `aria-live`, a RIR grupa `aria-describedby` ka prekidaču, pa se
+  razlog nedostupnosti čuje i bez gledanja u ekran.
+- Dodat slučaj za otkaz **iznad** vrha opsega ("Otkaz na vrhu opsega — opterećenje se
+  zadržava, a ne diže"), koji je ranije padao u poruku "unutar opsega".
+- Komentar u `SessionService` beleži zašto e1RM koristi upisani `Rir`, a ne
+  `EffectiveRir`: efektivni RIR ume da bude negativan i služi samo auto-regulaciji, dok
+  Epley ionako pretpostavlja seriju do otkaza.
+
+### Razmotreno pa ostavljeno
+
+Revizija je primetila da se pri prelasku u deload nedelju izračunata progresija odbacuje
+i koristi `stvarna težina × 0.90`. To jeste tako, ali nije gubitak: pošto je korekcija
+ograničena na −10%, deload je uvek **niži ili jednak** onome što bi progresija dala, pa
+loše prošla nedelja i dalje vodi u lakši deload. Menjanje formule bi promenilo definiciju
+deload-a iz rada, što izlazi iz opsega ove funkcionalnosti.

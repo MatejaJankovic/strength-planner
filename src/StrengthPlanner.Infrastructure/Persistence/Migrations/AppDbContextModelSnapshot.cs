@@ -399,7 +399,10 @@ namespace StrengthPlanner.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("ExercisePlanId");
 
-                    b.ToTable("SetLogs");
+                    b.ToTable("SetLogs", t =>
+                        {
+                            t.HasCheckConstraint("CK_SetLogs_FailureHasNoRir", "NOT \"IsFailure\" OR \"Rir\" = 0");
+                        });
                 });
 
             modelBuilder.Entity("StrengthPlanner.Domain.Entities.TrainingWeek", b =>

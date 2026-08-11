@@ -88,21 +88,69 @@ public class FailedSetProgressionTests
     }
 
     [Fact]
-    public void ComputeNext_DoesNotAddWeight_WhenTopOfRangeWasReachedOnlyByFailing()
+    public void ComputeNext_StillAddsWeight_WhenTopOfRangeWasReachedByFailing()
     {
-        // Dvanaest ponavljanja izvučenih do otkaza nije isti signal kao dvanaest sa RIR 1,
-        // pa double progression u tom slučaju ne dodaje korak.
+        // Otkaz NA vrhu opsega ne poništava double progression: vrh opsega je upravo
+        // signal na kome progresija počiva. Razliku prema "12 sa RIR 1" nosi korekcija
+        // (efektivni RIR 0 => -3%), koja se sabira sa korakom.
         var failedAtTop = new List<WorkingSet>
         {
             new(12, 0, IsFailure: true),
             new(12, 0, IsFailure: true),
             new(12, 0, IsFailure: true)
         };
+        var comfortableAtTop = new List<WorkingSet> { new(12, 1), new(12, 1), new(12, 1) };
 
-        var result = _engine.ComputeNext(100m, failedAtTop, targetRir: 1, repRangeMin: 8, repRangeMax: 12);
+        var failed = _engine.ComputeNext(100m, failedAtTop, targetRir: 1, repRangeMin: 8, repRangeMax: 12);
+        var comfortable = _engine.ComputeNext(100m, comfortableAtTop, targetRir: 1, repRangeMin: 8, repRangeMax: 12);
+
+        Assert.True(failed.WeightIncreased);
+        // 100 * 0.97 + 2.5 = 99.5 -> 100 kg: opterećenje se zadržava, ne pada.
+        Assert.Equal(100m, failed.NextWeightKg);
+        // Ista ponavljanja sa rezervom i dalje nose punu progresiju.
+        Assert.Equal(102.5m, comfortable.NextWeightKg);
+    }
+
+    [Fact]
+    public void ComputeNext_DoesNotDriveWeightDown_WhenEveryTopOfRangeSessionEndsInFailure()
+    {
+        // Regresija: raniji pokušaj da se otkaz kazni i preko double progression-a
+        // gurao je opterećenje naniže iz treninga u trening (100 -> 80 kg za osam
+        // treninga) iako je vežbač svaki put stizao do vrha opsega.
+        var weightKg = 100m;
+
+        for (var session = 0; session < 8; session++)
+        {
+            var sets = new List<WorkingSet>
+            {
+                new(12, 0, IsFailure: true),
+                new(12, 0, IsFailure: true),
+                new(12, 0, IsFailure: true)
+            };
+
+            weightKg = _engine
+                .ComputeNext(weightKg, sets, targetRir: 1, repRangeMin: 8, repRangeMax: 12)
+                .NextWeightKg;
+        }
+
+        Assert.Equal(100m, weightKg);
+    }
+
+    [Fact]
+    public void ComputeNext_DoesNotAddWeight_WhenAnySetFailedShortOfTheTop()
+    {
+        // Otkaz ISPOD vrha opsega i dalje blokira korak — ali kroz allHitTop,
+        // jer serija koja nije stigla do vrha po definiciji obara taj uslov.
+        var failedShort = new List<WorkingSet>
+        {
+            new(12, 1),
+            new(12, 1),
+            new(9, 0, IsFailure: true)
+        };
+
+        var result = _engine.ComputeNext(100m, failedShort, targetRir: 1, repRangeMin: 8, repRangeMax: 12);
 
         Assert.False(result.WeightIncreased);
-        Assert.Equal(97.5m, result.NextWeightKg);
     }
 
     [Fact]

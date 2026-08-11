@@ -149,8 +149,9 @@ export class WorkoutSession {
 
   /** Otkaz i RIR se isključuju — serija do otkaza po definiciji nema rezervu. */
   protected toggleFailure(planId: string): void {
-    const isFailure = !this.draftOf(planId).isFailure;
-    this.patchDraft(planId, { isFailure, rir: isFailure ? 0 : this.draftOf(planId).rir });
+    // RIR se namerno ne dira: gašenje otkaza mora da vrati izbor koji je korisnik
+    // imao pre kvačice. Nula se šalje u submitSet-u i normalizuje na serveru.
+    this.patchDraft(planId, { isFailure: !this.draftOf(planId).isFailure });
   }
 
   private patchDraft(planId: string, patch: Partial<SetDraft>): void {
@@ -289,6 +290,7 @@ export class WorkoutSession {
 
   protected cancelEdit(planId: string): void {
     this.setEditing(planId, null);
+    this.clearFailureDraft(planId);
   }
 
   protected deleteSet(planId: string, set: SetLogDto): void {
@@ -296,6 +298,7 @@ export class WorkoutSession {
     this.removeSet(planId, set.id);
     if (this.editingId(planId) === set.id) {
       this.setEditing(planId, null);
+      this.clearFailureDraft(planId);
     }
 
     this.sessionService.deleteSet(set.id).subscribe({

@@ -12,7 +12,7 @@ using StrengthPlanner.Infrastructure.Persistence;
 namespace StrengthPlanner.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260811184155_AddFailedSetFlag")]
+    [Migration("20260811190156_AddFailedSetFlag")]
     partial class AddFailedSetFlag
     {
         /// <inheritdoc />
@@ -402,7 +402,10 @@ namespace StrengthPlanner.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("ExercisePlanId");
 
-                    b.ToTable("SetLogs");
+                    b.ToTable("SetLogs", t =>
+                        {
+                            t.HasCheckConstraint("CK_SetLogs_FailureHasNoRir", "NOT \"IsFailure\" OR \"Rir\" = 0");
+                        });
                 });
 
             modelBuilder.Entity("StrengthPlanner.Domain.Entities.TrainingWeek", b =>

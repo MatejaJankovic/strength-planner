@@ -14,8 +14,9 @@ public class AddSetLogRequest
     public int Rir { get; set; }
 
     /// <summary>
-    /// Serija izvučena do otkaza. Kada je true, RIR se ignoriše i upisuje kao 0 —
-    /// otkaz po definiciji znači da nije ostalo nijedno ponavljanje u rezervi.
+    /// Serija izvučena do otkaza. Uz true, RIR mora biti 0 — otkaz po definiciji
+    /// znači da nije ostalo nijedno ponavljanje u rezervi; svaka druga vrednost
+    /// se odbija sa 400 umesto da se tiho prepiše.
     /// </summary>
     public bool IsFailure { get; set; }
 }
