@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using StrengthPlanner.Application.DTOs.Macrocycles;
 using StrengthPlanner.Application.Interfaces;
+using StrengthPlanner.Domain.Enums;
 
 namespace StrengthPlanner.API.Controllers;
 
@@ -33,6 +34,18 @@ public class MacrocyclesController : AuthorizedControllerBase
     {
         var macrocycle = await _macrocycleService.CreateAsync(GetUserId(), request, cancellationToken);
         return CreatedAtAction(nameof(GetById), new { id = macrocycle.Id }, macrocycle);
+    }
+
+    /// <summary>Predlog blokova sa smenjujućim ciljevima, za čarobnjak.</summary>
+    [HttpGet("suggested-blocks")]
+    [ProducesResponseType(typeof(IReadOnlyList<CreateMacrocycleBlockDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    public IActionResult GetSuggestedBlocks(
+        [FromQuery] int blockCount = 2,
+        [FromQuery] Goal firstGoal = Goal.Hypertrophy,
+        [FromQuery] string templateKey = "upper-lower")
+    {
+        return Ok(_macrocycleService.SuggestBlocks(blockCount, firstGoal, templateKey));
     }
 
     /// <summary>Vraća aktivan dugoročan plan sa svim blokovima.</summary>

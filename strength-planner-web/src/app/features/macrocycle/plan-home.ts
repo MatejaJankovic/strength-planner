@@ -4,6 +4,7 @@ import { DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MacrocycleService } from '../../core/api/macrocycle.service';
+import { MesocycleService } from '../../core/api/mesocycle.service';
 import { extractErrorMessage } from '../../core/api/http-error';
 import { Goal, CreateMacrocycleBlockDto, MacrocycleBlockDto } from '../../core/models/training.models';
 import { EmptyState } from '../../shared/components/empty-state/empty-state';
@@ -26,6 +27,7 @@ const MAX_BLOCKS = 6;
 })
 export class PlanHome {
   private readonly macrocycleService = inject(MacrocycleService);
+  private readonly mesocycleService = inject(MesocycleService);
   private readonly router = inject(Router);
 
   protected readonly loading = signal(true);
@@ -48,10 +50,7 @@ export class PlanHome {
 
   protected readonly planName = signal('');
   protected readonly startDate = signal(new Date().toISOString().slice(0, 10));
-  protected readonly blocks = signal<CreateMacrocycleBlockDto[]>([
-    { goal: Goal.Hypertrophy, templateKey: 'upper-lower' },
-    { goal: Goal.Strength, templateKey: 'upper-lower' },
-  ]);
+  protected readonly blocks = signal<CreateMacrocycleBlockDto[]>([]);
 
   protected readonly canAddBlock = computed(() => this.blocks().length < MAX_BLOCKS);
   protected readonly canRemoveBlock = computed(() => this.blocks().length > MIN_BLOCKS);
@@ -76,8 +75,10 @@ export class PlanHome {
       error: (err: unknown) => {
         this.loading.set(false);
 
-        // 404 nije greška: korisnik jednostavno još nema plan.
+        // 404 nije greška: korisnik jednostavno još nema plan. Keš mora da se isprazni,
+        // inače bi na ekranu ostao stari plan a prazno stanje se ne bi ni prikazalo.
         if (err instanceof HttpErrorResponse && err.status === 404) {
+          this.macrocycleService.reset();
           this.notFound.set(true);
           return;
         }
@@ -92,6 +93,17 @@ export class PlanHome {
   protected openWizard(): void {
     this.showWizard.set(true);
     this.createError.set(null);
+
+    // Početni raspored dolazi sa servera: smenjivanje ciljeva je trenažno pravilo i
+    // živi u domenu, pa ga ekran ne izvodi ponovo za sebe.
+    this.macrocycleService.suggestedBlocks(2, Goal.Hypertrophy, 'upper-lower').subscribe({
+      next: (blocks) => this.blocks.set(blocks),
+      error: () =>
+        this.blocks.set([
+          { goal: Goal.Hypertrophy, templateKey: 'upper-lower' },
+          { goal: Goal.Strength, templateKey: 'upper-lower' },
+        ]),
+    });
   }
 
   protected closeWizard(): void {
@@ -160,6 +172,9 @@ export class PlanHome {
           this.creating.set(false);
           this.showWizard.set(false);
           this.notFound.set(false);
+          // Novi plan uvek gasi stari mezociklus i pravi novi, pa keširani trening
+          // više ne važi.
+          this.mesocycleService.reset();
         },
         error: (err: unknown) => {
           this.creating.set(false);

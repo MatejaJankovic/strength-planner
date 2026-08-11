@@ -101,8 +101,9 @@ public class MesocycleGenerator : IMesocycleGenerator
         // prelasku na sledeći blok dugoročnog plana), ne otvara svoju — inače bi
         // ugnježdena transakcija pukla, a i prelazak mora da deli sudbinu sa
         // završetkom treninga koji ga je pokrenuo.
-        var ownsTransaction = _db.Database.CurrentTransaction is null;
-        var transaction = ownsTransaction
+        // await using i na null-u je legalan no-op, pa se transakcija oslobadja i kada
+        // se izadje izuzetkom.
+        await using var transaction = _db.Database.CurrentTransaction is null
             ? await _db.Database.BeginTransactionAsync(cancellationToken)
             : null;
 
@@ -133,7 +134,6 @@ public class MesocycleGenerator : IMesocycleGenerator
         if (transaction is not null)
         {
             await transaction.CommitAsync(cancellationToken);
-            await transaction.DisposeAsync();
         }
 
         var exerciseNameById = exercises.ToDictionary(exercise => exercise.Id, exercise => exercise.Name);

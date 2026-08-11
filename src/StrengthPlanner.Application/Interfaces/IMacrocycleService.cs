@@ -14,6 +14,12 @@ public interface IMacrocycleService
         CreateMacrocycleRequest request,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Predlog blokova sa smenjujućim ciljevima — jedina definicija tog pravila živi u
+    /// domenu, pa ga klijent ne ponavlja svojom logikom.
+    /// </summary>
+    IReadOnlyList<CreateMacrocycleBlockDto> SuggestBlocks(int blockCount, Goal firstGoal, string templateKey);
+
     Task<MacrocycleDto> GetActiveAsync(Guid userId, CancellationToken cancellationToken = default);
 
     Task<MacrocycleDto> GetByIdAsync(Guid userId, Guid macrocycleId, CancellationToken cancellationToken = default);

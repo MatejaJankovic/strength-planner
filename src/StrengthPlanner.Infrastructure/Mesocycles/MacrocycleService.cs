@@ -13,8 +13,6 @@ namespace StrengthPlanner.Infrastructure.Mesocycles;
 
 public class MacrocycleService : IMacrocycleService
 {
-    private const int BlockDurationWeeks = 4;
-
     private readonly AppDbContext _db;
     private readonly IMesocycleGenerator _generator;
 
@@ -56,8 +54,9 @@ public class MacrocycleService : IMacrocycleService
             }
         }
 
-        var ownsTransaction = _db.Database.CurrentTransaction is null;
-        var transaction = ownsTransaction
+        // await using i na null-u je legalan no-op, pa se transakcija oslobadja i kada
+        // se izadje izuzetkom, a ne samo posle uspesnog commit-a.
+        await using var transaction = _db.Database.CurrentTransaction is null
             ? await _db.Database.BeginTransactionAsync(cancellationToken)
             : null;
 
@@ -97,22 +96,52 @@ public class MacrocycleService : IMacrocycleService
 
         // Prvi blok kreće odmah; ostali čekaju svoj red.
         var firstBlock = macrocycle.Blocks.OrderBy(block => block.Order).First();
-        await GenerateForBlockAsync(userId, macrocycle, firstBlock, startDate, DateTime.UtcNow, cancellationToken);
+        await GenerateForBlockAsync(
+            userId,
+            macrocycle,
+            firstBlock,
+            macrocycle.Blocks.Count,
+            startDate,
+            DateTime.UtcNow,
+            cancellationToken);
         await _db.SaveChangesAsync(cancellationToken);
 
         if (transaction is not null)
         {
             await transaction.CommitAsync(cancellationToken);
-            await transaction.DisposeAsync();
         }
 
         return await GetByIdAsync(userId, macrocycle.Id, cancellationToken);
+    }
+
+    public IReadOnlyList<CreateMacrocycleBlockDto> SuggestBlocks(
+        int blockCount,
+        Goal firstGoal,
+        string templateKey)
+    {
+        if (!MacrocyclePlanner.IsValidBlockCount(blockCount))
+        {
+            throw new MesocycleGenerationException(
+                $"A plan holds between {MacrocyclePlanner.MinBlocks} and {MacrocyclePlanner.MaxBlocks} blocks.");
+        }
+
+        if (WorkoutTemplateCatalog.GetByKey(templateKey) is null)
+        {
+            throw new MesocycleGenerationException($"Unknown workout template: '{templateKey}'.");
+        }
+
+        return MacrocyclePlanner
+            .AlternatingGoals(blockCount, firstGoal)
+            .Select(goal => new CreateMacrocycleBlockDto { Goal = goal, TemplateKey = templateKey })
+            .ToList();
     }
 
     public async Task<MacrocycleDto> GetActiveAsync(
         Guid userId,
         CancellationToken cancellationToken = default)
     {
+        await EnsureCurrentBlockAsync(userId, cancellationToken);
+
         var macrocycle = await BuildDetailsQuery(userId)
             .FirstOrDefaultAsync(item => item.IsActive, cancellationToken);
 
@@ -122,6 +151,116 @@ public class MacrocycleService : IMacrocycleService
         }
 
         return await ToDtoAsync(macrocycle, cancellationToken);
+    }
+
+    /// <summary>
+    /// Popravlja plan koji je ostao bez tekućeg bloka. Prelazak inače pokreće završetak
+    /// poslednjeg treninga, ali taj okidač može da promaši: mezociklus bude obrisan, ili
+    /// dva istovremena završetka poslednje dve sesije se međusobno ne vide, pa nijedan
+    /// nedelju ne prepozna kao gotovu. Bez ovoga plan tu ostaje zauvek zaglavljen.
+    /// Preuzimanje ide istim uslovnim UPDATE-om, pa je bezbedno pozvati sa čitanja.
+    /// </summary>
+    private async Task EnsureCurrentBlockAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var plan = await _db.Macrocycles
+            .AsNoTracking()
+            .Where(macrocycle => macrocycle.UserId == userId && macrocycle.IsActive)
+            .Select(macrocycle => new { macrocycle.Id, macrocycle.Name })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (plan is null)
+        {
+            return;
+        }
+
+        var blocks = await _db.MacrocycleBlocks
+            .AsNoTracking()
+            .Where(block => block.MacrocycleId == plan.Id && block.Macrocycle.UserId == userId)
+            .OrderBy(block => block.Order)
+            .Select(block => new { block.Id, block.Order, block.MesocycleId, block.GeneratedAt })
+            .ToListAsync(cancellationToken);
+
+        if (blocks.Count == 0)
+        {
+            return;
+        }
+
+        var live = blocks.Where(block => block.MesocycleId.HasValue).ToList();
+
+        // Nijedan blok nema mezociklus: ili prvi nikada nije napravljen, ili je obrisan.
+        if (live.Count == 0)
+        {
+            await RegenerateBlockAsync(userId, plan.Id, blocks[0].Id, cancellationToken);
+            return;
+        }
+
+        var lastLive = live[^1];
+        var isFinished = !await _db.WorkoutSessions.AnyAsync(
+            session => session.TrainingWeek.MesocycleId == lastLive.MesocycleId!.Value
+                       && session.TrainingWeek.Mesocycle.UserId == userId
+                       && session.Status != SessionStatus.Completed,
+            cancellationToken);
+
+        if (!isFinished)
+        {
+            return;
+        }
+
+        var next = blocks.FirstOrDefault(block => block.Order == lastLive.Order + 1);
+        if (next is not null && next.MesocycleId is null)
+        {
+            await RegenerateBlockAsync(userId, plan.Id, next.Id, cancellationToken);
+        }
+    }
+
+    /// <summary>
+    /// Generiše mezociklus za blok koji ga nema, bez obzira na to da li je ranije već
+    /// bio preuzet (obrisan mezociklus ostavlja GeneratedAt iza sebe).
+    /// </summary>
+    private async Task RegenerateBlockAsync(
+        Guid userId,
+        Guid macrocycleId,
+        Guid blockId,
+        CancellationToken cancellationToken)
+    {
+        var now = DateTime.UtcNow;
+        var claimed = await _db.MacrocycleBlocks
+            .Where(block => block.Id == blockId
+                            && block.Macrocycle.UserId == userId
+                            && block.MesocycleId == null)
+            .ExecuteUpdateAsync(
+                setters => setters.SetProperty(block => block.GeneratedAt, now),
+                cancellationToken);
+
+        if (claimed == 0)
+        {
+            return;
+        }
+
+        var macrocycle = await _db.Macrocycles
+            .FirstAsync(item => item.Id == macrocycleId && item.UserId == userId, cancellationToken);
+        var block = await _db.MacrocycleBlocks.FirstAsync(item => item.Id == blockId, cancellationToken);
+        var blockCount = await CountBlocksAsync(userId, macrocycleId, cancellationToken);
+
+        try
+        {
+            await GenerateForBlockAsync(
+                userId,
+                macrocycle,
+                block,
+                blockCount,
+                DateTime.SpecifyKind(now.Date, DateTimeKind.Utc),
+                now,
+                cancellationToken);
+
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch (MesocycleGenerationException)
+        {
+            // Šablon više nije generisiv (obrisana vežba). Plan ostaje kakav jeste;
+            // čitanje ne sme da pukne zbog toga.
+            _db.ChangeTracker.Clear();
+        }
     }
 
     public async Task<MacrocycleDto> GetByIdAsync(
@@ -152,7 +291,12 @@ public class MacrocycleService : IMacrocycleService
     {
         var block = await _db.MacrocycleBlocks
             .AsNoTracking()
-            .Where(item => item.MesocycleId == mesocycleId && item.Macrocycle.UserId == userId)
+            // Samo aktivan plan sme da napreduje. Bez ovoga bi dovrsavanje zaostalog
+            // treninga iz napustenog plana generisalo njegov sledeci blok i preotelo
+            // aktivni mezociklus planu koji korisnik zaista prati.
+            .Where(item => item.MesocycleId == mesocycleId
+                           && item.Macrocycle.UserId == userId
+                           && item.Macrocycle.IsActive)
             .Select(item => new { item.Id, item.Order, item.MacrocycleId })
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -163,6 +307,7 @@ public class MacrocycleService : IMacrocycleService
 
         var isFinished = !await _db.WorkoutSessions.AnyAsync(
             session => session.TrainingWeek.MesocycleId == mesocycleId
+                       && session.TrainingWeek.Mesocycle.UserId == userId
                        && session.Status != SessionStatus.Completed,
             cancellationToken);
 
@@ -196,18 +341,27 @@ public class MacrocycleService : IMacrocycleService
         }
 
         var macrocycle = await _db.Macrocycles
-            .FirstAsync(item => item.Id == block.MacrocycleId, cancellationToken);
+            .FirstAsync(
+                item => item.Id == block.MacrocycleId && item.UserId == userId,
+                cancellationToken);
 
         // Novi blok kreće od dana posle poslednjeg treninga prethodnog.
         var lastSessionDate = await _db.WorkoutSessions
-            .Where(session => session.TrainingWeek.MesocycleId == mesocycleId)
+            .Where(session => session.TrainingWeek.MesocycleId == mesocycleId
+                              && session.TrainingWeek.Mesocycle.UserId == userId)
             .MaxAsync(session => (DateTime?)session.Date, cancellationToken);
-        var startDate = (lastSessionDate ?? now).Date.AddDays(1);
 
+        // Blok krece dan posle prethodnog, ali nikad u proslosti: ko je cetvoronedeljni
+        // blok razvukao na sedam nedelja ne sme da dobije plan koji je vec zakasnio.
+        var previousEnd = (lastSessionDate ?? now).Date.AddDays(1);
+        var startDate = previousEnd > now.Date ? previousEnd : now.Date;
+
+        var blockCount = await CountBlocksAsync(userId, macrocycle.Id, cancellationToken);
         var mesocycle = await GenerateForBlockAsync(
             userId,
             macrocycle,
             nextBlock,
+            blockCount,
             DateTime.SpecifyKind(startDate, DateTimeKind.Utc),
             now,
             cancellationToken);
@@ -215,16 +369,19 @@ public class MacrocycleService : IMacrocycleService
         return new MacrocycleAdvance(
             macrocycle.Name,
             nextBlock.Order,
-            macrocycle.Blocks.Count == 0 ? nextBlock.Order : await CountBlocksAsync(macrocycle.Id, cancellationToken),
+            blockCount,
             nextBlock.Goal,
             mesocycle.Id,
             mesocycle.Name);
     }
 
-    private async Task<int> CountBlocksAsync(Guid macrocycleId, CancellationToken cancellationToken)
+    private async Task<int> CountBlocksAsync(
+        Guid userId,
+        Guid macrocycleId,
+        CancellationToken cancellationToken)
     {
         return await _db.MacrocycleBlocks.CountAsync(
-            block => block.MacrocycleId == macrocycleId,
+            block => block.MacrocycleId == macrocycleId && block.Macrocycle.UserId == userId,
             cancellationToken);
     }
 
@@ -236,6 +393,7 @@ public class MacrocycleService : IMacrocycleService
         Guid userId,
         Macrocycle macrocycle,
         MacrocycleBlock block,
+        int blockCount,
         DateTime startDate,
         DateTime now,
         CancellationToken cancellationToken)
@@ -245,7 +403,7 @@ public class MacrocycleService : IMacrocycleService
         {
             TemplateKey = block.TemplateKey,
             Goal = block.Goal,
-            Name = BuildBlockName(macrocycle.Name, block.Order, template.Name),
+            Name = BuildBlockName(macrocycle.Name, block.Order, blockCount, template.Name),
             StartDate = startDate
         };
 
@@ -257,8 +415,17 @@ public class MacrocycleService : IMacrocycleService
         return mesocycle;
     }
 
-    private static string BuildBlockName(string planName, int order, string templateName)
+    /// <summary>
+    /// Plan sa jednim blokom zadrzava naziv koji je korisnik uneo — iz njegovog ugla je
+    /// to i dalje obican novi mezociklus. Tek kod vise blokova ima smisla razlikovati ih.
+    /// </summary>
+    private static string BuildBlockName(string planName, int order, int blockCount, string templateName)
     {
+        if (blockCount <= 1)
+        {
+            return planName;
+        }
+
         var name = $"{planName} — blok {order} ({templateName})";
 
         return name.Length <= 128 ? name : name[..128];
@@ -283,7 +450,8 @@ public class MacrocycleService : IMacrocycleService
         // Napredak po bloku: koliko je treninga odrađeno od ukupnog broja.
         var progress = await _db.WorkoutSessions
             .AsNoTracking()
-            .Where(session => mesocycleIds.Contains(session.TrainingWeek.MesocycleId))
+            .Where(session => mesocycleIds.Contains(session.TrainingWeek.MesocycleId)
+                              && session.TrainingWeek.Mesocycle.UserId == macrocycle.UserId)
             .GroupBy(session => session.TrainingWeek.MesocycleId)
             .Select(group => new
             {
@@ -335,7 +503,10 @@ public class MacrocycleService : IMacrocycleService
     {
         if (block.MesocycleId is null)
         {
-            return "planned";
+            // GeneratedAt bez mezociklusa znaci da je mezociklus obrisan: blok je bio
+            // pokrenut pa ponisten, a ne da tek ceka svoj red. Bez te razlike bi ekran
+            // obecavao generisanje koje nikada nece doci.
+            return block.GeneratedAt is null ? "planned" : "cancelled";
         }
 
         return total > 0 && completed >= total ? "completed" : "active";
