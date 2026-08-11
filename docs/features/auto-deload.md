@@ -22,9 +22,9 @@ ostaje kao donja granica — ovo ga samo može povući ranije.
 
 | Signal | Puna težina na | Udeo |
 |---|---|---|
-| Prosečno odstupanje efektivnog RIR-a ispod cilja | −2 poena | 0.35 |
+| Prosečno odstupanje RIR-a ispod cilja, **samo nad dovršenim serijama** | ciljni RIR (koliko je uopšte dostižno) | 0.35 |
 | Udeo serija do otkaza | 50% | 0.25 |
-| Pad najbolje procene 1RM u odnosu na prethodnu nedelju | −5% | 0.25 |
+| Pad najbolje procene 1RM u odnosu na poslednju nedelju koja nije bila deload | −5% | 0.25 |
 | Najveći odnos volumena i MRV-a među mišićnim grupama | 100% MRV (od 80% naviše) | 0.15 |
 
 Svaki signal se normalizuje na 0–1, pa se sabira sa svojim udelom. Prag je **0.60**.
@@ -32,6 +32,15 @@ Svaki signal se normalizuje na 0–1, pa se sabira sa svojim udelom. Prag je **0
 Pošto najteži signal nosi 0.35, **nijedan sam ne može da izazove deload** — moraju se
 složiti bar dva. To je namerno: svaki od njih je pojedinačno bučan (loš san, jedan
 neuspeo dan, jedna vežba blizu MRV-a), a nepotreban deload košta nedelju treninga.
+
+Da bi to pravilo išta značilo, signali moraju da budu **nezavisni**. Zato se RIR meri
+samo nad serijama koje su dovršene: serija do otkaza bi inače pomerila i prosek RIR-a i
+udeo otkaza, pa bi jedan događaj sam ispunio uslov "moraju se složiti bar dva".
+
+Iz istog razloga se odstupanje RIR-a meri u odnosu na ono što je za dati cilj **dostižno**,
+a ne fiksnom skalom: RIR ne ide ispod nule, pa serija bez otkaza pri cilju RIR 1
+(hipertrofija) najviše može da prijavi −1, dok pri cilju RIR 2 (snaga) može −2. Fiksna
+skala bi istu sliku ocenila različito samo zbog cilja.
 
 Signali koji pokazuju u suprotnom smeru se odsecaju na nuli: nedelja lakša od plana, sa
 rastom snage, daje ocenu 0, a ne negativnu vrednost koja bi "kompenzovala" nešto drugo.
@@ -44,7 +53,11 @@ Kada se nedelja pretvori u deload:
 
 - broj serija po vežbi se prepolovljava (zaokruženo naviše, najmanje jedna),
 - ciljno opterećenje se postavlja na **90% težine koja je stvarno korišćena** u
-  prethodnoj nedelji, zaokruženo na [korak te vežbe](per-exercise-weight-step.md).
+  prethodnoj nedelji, zaokruženo na [korak te vežbe](per-exercise-weight-step.md),
+- planirani deload na kraju mezociklusa se oslobađa: blok nosi **jedno** rasterećenje.
+
+Deload se stavlja samo na nedelju čije sesije još nisu započete — prepisivanje ciljeva
+već odrađenog treninga bi falsifikovalo istoriju.
 
 Opterećenja se preračunavaju zato što ih je progresija već popunila dok se prethodna
 nedelja završavala — bez toga bi "deload" nedelja nosila normalne radne težine.
@@ -68,7 +81,7 @@ nedelja završavala — bez toga bi "deload" nedelja nosila normalne radne teži
 
 ## Provera
 
-- `dotnet build`, `dotnet test` (86 testova, bilo 74), `npm run build` — sve prolazi.
+- `dotnet build`, `dotnet test` (89 testova, bilo 74), `npm run build` — sve prolazi.
 - `FatigueEvaluatorTests` pokriva: nulu za nedelju po planu, jedinicu kada su svi
   signali na maksimumu, odsecanje signala u suprotnom smeru, to da nijedan pojedinačni
   signal ne prelazi prag, da se više umerenih signala zajedno prelazi, da naporna ali
@@ -79,6 +92,8 @@ nedelja završavala — bez toga bi "deload" nedelja nosila normalne radne teži
   opterećenja sa 80 kg na 70/72/72.5 kg zavisno od koraka vežbe (mašina/bučice/šipka).
 - End-to-end, uredna prva nedelja (vrh opsega uz ciljni RIR): ocena **0.00**, nedelja 2
   netaknuta, planirani deload u nedelji 4 i dalje na mestu i označen kao planiran.
+- End-to-end, van redosleda (prvo cela nedelja 2, pa nedelja 1): jedan deload i tri
+  trenažne nedelje; nedelja 2, koju je korisnik već odradio, ostaje netaknuta.
 - U pretraživaču: posle završetka treninga u rezimeu stoji *"Nedelja 2 je pretvorena u
   deload… (ocena 0.6 od 1)"* sa `role="status"`, a na dashboardu nedelja 1 nosi
   *Umor 0.6*, nedelja 2 *Deload zbog umora*, nedelja 4 *Deload*.
