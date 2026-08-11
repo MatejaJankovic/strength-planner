@@ -310,6 +310,13 @@
   color: #fff;
 }
 
+// Uz uključen otkaz RIR nema smisla; eksplicitna boja bi inače pregazila
+// podrazumevano sivilo onemogućenog dugmeta i delovalo bi kao da radi.
+.rir__btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
 .entry__field--wide {
   gap: 0.4rem;
 }

@@ -16,11 +16,20 @@ namespace StrengthPlanner.Infrastructure.Persistence.Migrations
                 type: "boolean",
                 nullable: false,
                 defaultValue: false);
+
+            migrationBuilder.AddCheckConstraint(
+                name: "CK_SetLogs_FailureHasNoRir",
+                table: "SetLogs",
+                sql: "NOT \"IsFailure\" OR \"Rir\" = 0");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropCheckConstraint(
+                name: "CK_SetLogs_FailureHasNoRir",
+                table: "SetLogs");
+
             migrationBuilder.DropColumn(
                 name: "IsFailure",
                 table: "SetLogs");

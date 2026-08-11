@@ -138,7 +138,12 @@
 
             <div class="entry__field">
               <span class="entry__label">RIR</span>
-              <div class="rir" role="group" [attr.aria-label]="'RIR za ' + plan.exerciseName">
+              <div
+                class="rir"
+                role="group"
+                [attr.aria-label]="'RIR za ' + plan.exerciseName"
+                [attr.aria-describedby]="draft.isFailure ? 'failure-' + plan.id : null"
+              >
                 @for (value of rirOptions; track value) {
                   <button
                     class="rir__btn numeric"
@@ -158,6 +163,7 @@
               <button
                 class="failure"
                 type="button"
+                [attr.id]="'failure-' + plan.id"
                 [class.is-active]="draft.isFailure"
                 [attr.aria-pressed]="draft.isFailure"
                 (click)="toggleFailure(plan.id)"
@@ -168,10 +174,12 @@
                 <span>Serija do otkaza</span>
               </button>
               @if (draft.isFailure) {
-                <p class="entry__hint">
+                <p class="entry__hint" role="status" aria-live="polite">
                   @if (draft.reps < plan.repRangeMin) {
                     Promašeno {{ plan.repRangeMin - draft.reps }} ponavljanja do donje granice
                     opsega — sledeći put predlažemo osetno manje opterećenje.
+                  } @else if (draft.reps >= plan.repRangeMax) {
+                    Otkaz na vrhu opsega — opterećenje se zadržava, a ne diže.
                   } @else {
                     Otkaz unutar opsega — RIR je 0.
                   }

@@ -251,6 +251,10 @@ public class SessionService : ISessionService
     {
         decimal? bestEstimate = null;
 
+        // Namerno upisani Rir, ne WorkingSet.EffectiveRir: Epley ionako pretpostavlja
+        // seriju do otkaza, pa je za otkaz tačna vrednost 0. Efektivni RIR ume da bude
+        // negativan i služi isključivo auto-regulaciji — ovde bi oborio procenu i pukao
+        // na proveri u E1RmCalculator.
         foreach (var log in logs.Where(log => log.Reps <= TrainingConstants.EpleyRepCap))
         {
             var estimate = _e1RmCalculator.EstimateOneRepMax(log.WeightKg, log.Reps, log.Rir);
