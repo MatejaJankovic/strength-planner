@@ -155,7 +155,7 @@
                 [attr.id]="'block-template-' + $index"
                 (change)="setBlockTemplate($index, $any($event.target).value)"
               >
-                @for (template of templates; track template.key) {
+                @for (template of templates(); track template.key) {
                   <option [value]="template.key" [selected]="template.key === block.templateKey">
                     {{ template.name }}
                   </option>

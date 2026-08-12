@@ -67,6 +67,13 @@ export class CreateMesocycle {
       next: (templates) => {
         this.templates.set(templates);
         this.loading.set(false);
+
+        // Server označava šablon koji odgovara broju trenažnih dana iz profila.
+        // Izabran je unapred, ali korisnik i dalje bira šta hoće.
+        const suggested = templates.find((template) => template.isSuggested);
+        if (suggested && !this.selectedKey()) {
+          this.selectTemplate(suggested);
+        }
       },
       error: (err: unknown) => {
         this.loading.set(false);

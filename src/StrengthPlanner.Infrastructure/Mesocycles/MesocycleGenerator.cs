@@ -15,9 +15,6 @@ public class MesocycleGenerator : IMesocycleGenerator
 {
     private const int DurationWeeks = 4;
 
-    private static readonly int[] ThreeDayOffsets = [0, 2, 4];
-    private static readonly int[] FourDayOffsets = [0, 1, 3, 4];
-
     private readonly AppDbContext _db;
     private readonly E1RmCalculator _e1RmCalculator = new();
 
@@ -268,14 +265,8 @@ public class MesocycleGenerator : IMesocycleGenerator
     private static DateTime GetSessionDate(DateTime startDate, int weekNumber, int dayIndex, int daysPerWeek)
     {
         var weekStartDate = startDate.AddDays((weekNumber - 1) * 7);
-        var offset = daysPerWeek switch
-        {
-            3 => ThreeDayOffsets[dayIndex],
-            4 => FourDayOffsets[dayIndex],
-            _ => dayIndex
-        };
 
-        return weekStartDate.AddDays(offset);
+        return weekStartDate.AddDays(TrainingWeekSchedule.OffsetFor(daysPerWeek, dayIndex));
     }
 
     private static MesocycleDto ToDto(

@@ -10,6 +10,7 @@ using StrengthPlanner.Infrastructure.Identity;
 using StrengthPlanner.Infrastructure.Mesocycles;
 using StrengthPlanner.Infrastructure.OneRepMax;
 using StrengthPlanner.Infrastructure.Persistence;
+using StrengthPlanner.Infrastructure.Templates;
 using StrengthPlanner.Infrastructure.TrainingLogs;
 
 namespace StrengthPlanner.Infrastructure;
@@ -54,6 +55,7 @@ public static class DependencyInjection
         services.AddScoped<ITokenService, JwtTokenService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IExerciseService, ExerciseService>();
+        services.AddScoped<ITemplateService, TemplateService>();
         services.AddScoped<IMesocycleGenerator, MesocycleGenerator>();
         services.AddScoped<IMesocycleService, MesocycleService>();
         services.AddScoped<IMacrocycleService, MacrocycleService>();

@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\StrengthPlanner.Domain\StrengthPlanner.Domain.csproj" />
+    <ProjectReference Include="..\..\src\StrengthPlanner.Application\StrengthPlanner.Application.csproj" />
   </ItemGroup>
 
 </Project>
