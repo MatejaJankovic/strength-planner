@@ -1,0 +1,33 @@
+using StrengthPlanner.Domain.Enums;
+
+namespace StrengthPlanner.Domain.Entities;
+
+/// <summary>
+/// Jedan blok dugoročnog plana. Blok postoji kao *namera* od trenutka pravljenja plana,
+/// a mezociklus se generiše tek kada blok dođe na red — da bi krenuo od 1RM vrednosti
+/// koje važe tada, a ne od procena starih nekoliko meseci.
+/// </summary>
+public class MacrocycleBlock
+{
+    public Guid Id { get; set; }
+
+    public Guid MacrocycleId { get; set; }
+    public Macrocycle Macrocycle { get; set; } = null!;
+
+    /// <summary>Redosled u planu, počev od 1.</summary>
+    public int Order { get; set; }
+
+    public Goal Goal { get; set; }
+    public string TemplateKey { get; set; } = null!;
+
+    /// <summary>Mezociklus generisan za ovaj blok; null dok blok nije došao na red.</summary>
+    public Guid? MesocycleId { get; set; }
+    public Mesocycle? Mesocycle { get; set; }
+
+    /// <summary>
+    /// Kada je generisanje preuzeto. Upisuje se uslovnim UPDATE-om pre samog
+    /// generisanja, pa dva istovremena završetka poslednjeg treninga ne mogu da
+    /// naprave dva mezociklusa za isti blok.
+    /// </summary>
+    public DateTime? GeneratedAt { get; set; }
+}

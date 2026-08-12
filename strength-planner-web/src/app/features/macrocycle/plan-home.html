@@ -1,0 +1,197 @@
+<header class="feature-header">
+  <p class="eyebrow">Plan</p>
+  <h1>Dugoročni plan</h1>
+</header>
+
+@if (loading()) {
+  <app-loading label="Učitavam plan…" />
+} @else if (error(); as message) {
+  <section class="panel">
+    <p class="panel__error" role="alert">
+      <mat-icon aria-hidden="true">cloud_off</mat-icon>
+      <span>{{ message }}</span>
+    </p>
+    <button class="retry" type="button" (click)="load()">
+      <mat-icon aria-hidden="true">refresh</mat-icon>
+      Pokušaj ponovo
+    </button>
+  </section>
+} @else {
+  @if (plan(); as current) {
+    <section class="plan">
+      <div class="plan__head">
+        <h2 class="plan__name">{{ current.name }}</h2>
+        <p class="plan__meta numeric">
+          {{ current.blocks.length }} {{ blockLabel(current.blocks.length) }} ·
+          {{ current.blocks.length * 4 }} {{ weekLabel(current.blocks.length * 4) }} · od
+          {{ current.startDate | date: 'd.M.yyyy.' }}
+        </p>
+      </div>
+
+      <ol class="timeline">
+        @for (block of current.blocks; track block.id) {
+          <li class="tblock" [class]="'tblock tblock--' + block.status">
+            <div class="tblock__marker" aria-hidden="true">{{ block.order }}</div>
+            <div class="tblock__body">
+              <div class="tblock__head">
+                <span class="tblock__goal">{{ goalLabel(block.goal) }}</span>
+                <span class="tblock__status">{{ statusLabel(block) }}</span>
+              </div>
+              <p class="tblock__template">{{ block.templateName }}</p>
+
+              @if (block.totalSessions > 0) {
+                <div
+                  class="progress"
+                  role="progressbar"
+                  [attr.aria-valuenow]="progressPct(block)"
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                  [attr.aria-label]="'Napredak bloka ' + block.order"
+                >
+                  <div class="progress__bar" [style.width.%]="progressPct(block)"></div>
+                </div>
+                <p class="tblock__count numeric">
+                  {{ block.completedSessions }} / {{ block.totalSessions }} treninga
+                </p>
+              } @else {
+                <p class="tblock__count">
+                  Generiše se kad prethodni blok bude gotov — da krene od tvojih tadašnjih 1RM.
+                </p>
+              }
+            </div>
+          </li>
+        }
+      </ol>
+
+      <button class="btn btn--primary" type="button" (click)="openWorkout()">
+        <mat-icon aria-hidden="true">fitness_center</mat-icon>
+        Idi na trening
+      </button>
+    </section>
+  } @else if (notFound()) {
+    <app-empty-state
+      icon="calendar_month"
+      title="Još nemaš dugoročni plan"
+      message="Poveži nekoliko blokova u plan koji smenjuje hipertrofiju i snagu — sistem sam otvara sledeći kad prethodni završiš."
+      action="Napravi plan"
+      (actionClick)="openWizard()"
+    />
+  }
+
+  @if (!showWizard() && plan()) {
+    <button class="btn btn--ghost" type="button" (click)="openWizard()">
+      <mat-icon aria-hidden="true">add</mat-icon>
+      Novi plan
+    </button>
+  }
+
+  @if (showWizard()) {
+    <section class="card">
+      <h2 class="card__title">Novi plan</h2>
+      <p class="card__hint">
+        Svaki blok je četvoronedeljni mezociklus. Prvi kreće odmah; ostali se generišu
+        kad im dođe red, od 1RM vrednosti koje tada važe.
+      </p>
+
+      @if (createError(); as message) {
+        <p class="alert alert--error" role="alert">
+          <mat-icon aria-hidden="true">error_outline</mat-icon>
+          <span>{{ message }}</span>
+        </p>
+      }
+
+      <div class="field">
+        <label class="field__label" for="plan-name">Naziv plana</label>
+        <input
+          id="plan-name"
+          class="control"
+          type="text"
+          maxlength="128"
+          placeholder="npr. Zima 2026"
+          [value]="planName()"
+          (input)="setPlanName($any($event.target).value)"
+        />
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="plan-start">Početak</label>
+        <input
+          id="plan-start"
+          class="control"
+          type="date"
+          [value]="startDate()"
+          (change)="setStartDate($any($event.target).value)"
+        />
+      </div>
+
+      <ol class="blocks">
+        @for (block of blocks(); track $index) {
+          <li class="brow">
+            <span class="brow__index numeric">{{ $index + 1 }}</span>
+
+            <div class="field">
+              <label class="sr-only" [attr.for]="'block-goal-' + $index">
+                Cilj bloka {{ $index + 1 }}
+              </label>
+              <select
+                class="control control--compact"
+                [attr.id]="'block-goal-' + $index"
+                (change)="setBlockGoal($index, $any($event.target).value)"
+              >
+                @for (option of goalOptions; track option.value) {
+                  <option [value]="option.value" [selected]="option.value === block.goal">
+                    {{ option.label }}
+                  </option>
+                }
+              </select>
+            </div>
+
+            <div class="field">
+              <label class="sr-only" [attr.for]="'block-template-' + $index">
+                Šablon bloka {{ $index + 1 }}
+              </label>
+              <select
+                class="control control--compact"
+                [attr.id]="'block-template-' + $index"
+                (change)="setBlockTemplate($index, $any($event.target).value)"
+              >
+                @for (template of templates; track template.key) {
+                  <option [value]="template.key" [selected]="template.key === block.templateKey">
+                    {{ template.name }}
+                  </option>
+                }
+              </select>
+            </div>
+
+            <button
+              class="iconbtn"
+              type="button"
+              [disabled]="!canRemoveBlock()"
+              [attr.aria-label]="'Ukloni blok ' + ($index + 1)"
+              (click)="removeBlock($index)"
+            >
+              <mat-icon aria-hidden="true">delete_outline</mat-icon>
+            </button>
+          </li>
+        }
+      </ol>
+
+      <div class="wizard__actions">
+        <button class="btn btn--ghost" type="button" [disabled]="!canAddBlock()" (click)="addBlock()">
+          <mat-icon aria-hidden="true">add</mat-icon>
+          Dodaj blok
+        </button>
+        <p class="card__hint numeric">Ukupno {{ totalWeeks() }} {{ weekLabel(totalWeeks()) }}</p>
+      </div>
+
+      <div class="wizard__actions">
+        <button class="btn btn--primary" type="button" [disabled]="!canSubmit()" (click)="create()">
+          {{ creating() ? 'Pravim…' : 'Napravi plan' }}
+        </button>
+        <button class="btn btn--ghost" type="button" [disabled]="creating()" (click)="closeWizard()">
+          Odustani
+        </button>
+      </div>
+    </section>
+  }
+}

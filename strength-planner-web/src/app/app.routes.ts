@@ -22,6 +22,11 @@ export const routes: Routes = [
       import('./features/workout/workout-dashboard').then((m) => m.WorkoutDashboard),
   },
   {
+    path: 'plan',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/macrocycle/plan-home').then((m) => m.PlanHome),
+  },
+  {
     path: 'analytics',
     canActivate: [authGuard],
     loadComponent: () => import('./features/analytics/analytics-home').then((m) => m.AnalyticsHome),

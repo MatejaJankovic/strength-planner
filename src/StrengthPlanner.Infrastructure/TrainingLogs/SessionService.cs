@@ -18,17 +18,20 @@ public class SessionService : ISessionService
     private readonly AppDbContext _db;
     private readonly VolumeLandmarkService _volumeLandmarks;
     private readonly DeloadService _deloads;
+    private readonly IMacrocycleService _macrocycles;
     private readonly E1RmCalculator _e1RmCalculator = new();
     private readonly ProgressionEngine _progressionEngine = new();
 
     public SessionService(
         AppDbContext db,
         VolumeLandmarkService volumeLandmarks,
-        DeloadService deloads)
+        DeloadService deloads,
+        IMacrocycleService macrocycles)
     {
         _db = db;
         _volumeLandmarks = volumeLandmarks;
         _deloads = deloads;
+        _macrocycles = macrocycles;
     }
 
     public async Task<WorkoutSessionDto> GetByIdAsync(
@@ -271,7 +274,42 @@ public class SessionService : ISessionService
             RefreshSummariesAfterDeload(summaries, nextPlans);
         }
 
+        // Sve što se tiče samog treninga mora da bude upisano pre prelaska na sledeći
+        // blok — generator ispod poziva svoj SaveChanges, pa se na njega ne oslanjamo.
         await _db.SaveChangesAsync(cancellationToken);
+
+        // Kada je ovim treningom ceo blok zaokružen, sledeći iz plana se generiše odmah,
+        // od 1RM vrednosti koje važe sada. Ide poslednje: tek posle progresije i deload-a
+        // je stanje bloka konačno.
+        //
+        // Neuspeh ovde ne sme da obori završetak treninga. Generator odbija šablon kome
+        // neka vežba više ne postoji (obrisana custom vežba, promenjen seed), a kako se
+        // ovo dešava u istoj transakciji, izuzetak bi poništio i status sesije i e1RM
+        // zapise — pa korisnik svoj trening ne bi mogao da završi nikada, zbog usputne
+        // pogodnosti. Blok ostaje negenerisan i biće preuzet pri sledećem pokušaju.
+        MacrocycleAdvance? nextBlock = null;
+        const string advanceSavepoint = "before_block_advance";
+        await transaction.CreateSavepointAsync(advanceSavepoint, cancellationToken);
+
+        try
+        {
+            nextBlock = await _macrocycles.AdvanceIfFinishedAsync(
+                userId,
+                session.TrainingWeek.MesocycleId,
+                now,
+                cancellationToken);
+
+            await _db.SaveChangesAsync(cancellationToken);
+            await transaction.ReleaseSavepointAsync(advanceSavepoint, cancellationToken);
+        }
+        catch (MesocycleGenerationException)
+        {
+            // Povratak na savepoint, a ne samo hvatanje izuzetka: da je pukla neka SQL
+            // naredba, cela transakcija bi u PostgreSQL-u bila u prekinutom stanju i
+            // commit ispod bi svejedno pao.
+            await transaction.RollbackToSavepointAsync(advanceSavepoint, cancellationToken);
+            nextBlock = null;
+        }
 
         await transaction.CommitAsync(cancellationToken);
 
@@ -288,6 +326,17 @@ public class SessionService : ISessionService
                     DeloadWeek = autoDeload.DeloadWeek,
                     FatigueScore = autoDeload.FatigueScore,
                     PlannedDeloadReleasedWeek = autoDeload.PlannedDeloadReleasedWeek
+                },
+            NextBlock = nextBlock is null
+                ? null
+                : new MacrocycleAdvanceDto
+                {
+                    PlanName = nextBlock.PlanName,
+                    BlockOrder = nextBlock.BlockOrder,
+                    BlockCount = nextBlock.BlockCount,
+                    Goal = nextBlock.Goal.ToString(),
+                    MesocycleId = nextBlock.MesocycleId,
+                    MesocycleName = nextBlock.MesocycleName
                 }
         };
     }

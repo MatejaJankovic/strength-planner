@@ -30,6 +30,7 @@ export class App {
 
   protected readonly navItems = [
     { label: 'Trening', icon: 'fitness_center', route: '/workout' },
+    { label: 'Plan', icon: 'calendar_month', route: '/plan' },
     { label: 'Analitika', icon: 'monitoring', route: '/analytics' },
     { label: 'Profil', icon: 'person', route: '/profile' },
   ];

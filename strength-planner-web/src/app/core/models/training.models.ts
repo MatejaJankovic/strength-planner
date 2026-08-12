@@ -135,6 +135,18 @@ export interface CompleteSessionResultDto {
   exercises: CompletedExerciseSummaryDto[];
   /** Popunjeno samo kada je ovaj trening zatvorio nedelju i pokrenuo deload. */
   autoDeload?: AutoDeloadDto | null;
+  /** Popunjeno kada je ovaj trening zatvorio blok i otvorio sledeci iz plana. */
+  nextBlock?: MacrocycleAdvanceDto | null;
+}
+
+export interface MacrocycleAdvanceDto {
+  planName: string;
+  blockOrder: number;
+  blockCount: number;
+  /** Cilj novog bloka ("Strength" ili "Hypertrophy"). */
+  goal: string;
+  mesocycleId: string;
+  mesocycleName: string;
 }
 
 export interface AutoDeloadDto {
@@ -154,4 +166,37 @@ export interface CompletedExerciseSummaryDto {
   isPr: boolean;
   nextWeightKg?: number | null;
   weightIncreased: boolean;
+}
+
+export interface MacrocycleBlockDto {
+  id: string;
+  order: number;
+  goal: Goal;
+  templateKey: string;
+  /** Naziv sablona za prikaz ("Push/Pull/Legs"), a ne kljuc. */
+  templateName: string;
+  /** Mezociklus generisan za ovaj blok; null dok blok nije dosao na red. */
+  mesocycleId?: string | null;
+  status: 'planned' | 'active' | 'completed' | string;
+  completedSessions: number;
+  totalSessions: number;
+}
+
+export interface MacrocycleDto {
+  id: string;
+  name: string;
+  startDate: string;
+  isActive: boolean;
+  blocks: MacrocycleBlockDto[];
+}
+
+export interface CreateMacrocycleBlockDto {
+  goal: Goal;
+  templateKey: string;
+}
+
+export interface CreateMacrocycleRequest {
+  name: string;
+  startDate: string;
+  blocks: CreateMacrocycleBlockDto[];
 }

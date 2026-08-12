@@ -8,6 +8,23 @@ public class CompleteSessionResultDto
 
     /// <summary>Popunjeno samo kada je ovaj trening zatvorio nedelju i pokrenuo deload.</summary>
     public AutoDeloadDto? AutoDeload { get; set; }
+
+    /// <summary>Popunjeno kada je ovaj trening zatvorio blok i otvorio sledeći iz plana.</summary>
+    public MacrocycleAdvanceDto? NextBlock { get; set; }
+}
+
+/// <summary>Prelazak na sledeći blok dugoročnog plana.</summary>
+public class MacrocycleAdvanceDto
+{
+    public string PlanName { get; set; } = string.Empty;
+    public int BlockOrder { get; set; }
+    public int BlockCount { get; set; }
+
+    /// <summary>Cilj novog bloka ("Strength" ili "Hypertrophy").</summary>
+    public string Goal { get; set; } = string.Empty;
+
+    public Guid MesocycleId { get; set; }
+    public string MesocycleName { get; set; } = string.Empty;
 }
 
 /// <summary>Deload koji je uvela procena umora, a ne kalendar.</summary>
