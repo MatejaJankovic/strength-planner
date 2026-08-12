@@ -14,7 +14,6 @@ namespace StrengthPlanner.Infrastructure.Mesocycles;
 public class MesocycleGenerator : IMesocycleGenerator
 {
     private const int DurationWeeks = 4;
-    private const int DefaultTargetSets = 3;
 
     private static readonly int[] ThreeDayOffsets = [0, 2, 4];
     private static readonly int[] FourDayOffsets = [0, 1, 3, 4];
@@ -67,6 +66,14 @@ public class MesocycleGenerator : IMesocycleGenerator
             throw new MesocycleGenerationException(
                 $"Template references exercises missing from seed: {string.Join(", ", missingExercises)}.");
         }
+
+        // Nivo iskustva određuje i koliko vežbi trening nosi i koliko serija svaka.
+        // Profil ga prikuplja pri registraciji; do sada se nigde nije čitao.
+        var experienceLevel = await _db.Profiles
+            .AsNoTracking()
+            .Where(profile => profile.UserId == userId)
+            .Select(profile => (ExperienceLevel?)profile.ExperienceLevel)
+            .FirstOrDefaultAsync(cancellationToken) ?? ExperienceLevel.Intermediate;
 
         var exerciseIds = exercises.Select(exercise => exercise.Id).ToList();
         var weightStepByExerciseId = await WeightStepResolver.ResolveAsync(
@@ -126,7 +133,8 @@ public class MesocycleGenerator : IMesocycleGenerator
             goalSettings,
             exerciseByName,
             oneRepMaxByExerciseId,
-            weightStepByExerciseId);
+            weightStepByExerciseId,
+            experienceLevel);
 
         _db.Mesocycles.Add(mesocycle);
         await _db.SaveChangesAsync(cancellationToken);
@@ -149,8 +157,10 @@ public class MesocycleGenerator : IMesocycleGenerator
         GoalSettings goalSettings,
         IReadOnlyDictionary<string, Exercise> exerciseByName,
         IReadOnlyDictionary<Guid, decimal> oneRepMaxByExerciseId,
-        IReadOnlyDictionary<Guid, decimal> weightStepByExerciseId)
+        IReadOnlyDictionary<Guid, decimal> weightStepByExerciseId,
+        ExperienceLevel experienceLevel)
     {
+        var startingSets = ExperienceProgramming.StartingSetsPerExercise(experienceLevel);
         var mesocycle = new Mesocycle
         {
             Id = Guid.NewGuid(),
@@ -166,8 +176,8 @@ public class MesocycleGenerator : IMesocycleGenerator
         {
             var isDeload = weekNumber == DurationWeeks;
             var targetSets = isDeload
-                ? Math.Max(1, (int)Math.Ceiling(DefaultTargetSets / 2m))
-                : DefaultTargetSets;
+                ? Math.Max(1, (int)Math.Ceiling(startingSets / 2m))
+                : startingSets;
             var week = new TrainingWeek
             {
                 Id = Guid.NewGuid(),
@@ -186,9 +196,17 @@ public class MesocycleGenerator : IMesocycleGenerator
                     Status = SessionStatus.Planned
                 };
 
-                for (var exerciseIndex = 0; exerciseIndex < templateDay.Exercises.Count; exerciseIndex++)
+                // Šablon nudi pun spisak; nivo iskustva bira koliko i kojih vežbi ulazi
+                // u trening — početnik dobija manje vežbi težište na složenima, napredni
+                // jednu složenu i više izolacija.
+                var dayExercises = SessionComposition.ForLevel(
+                    templateDay.Exercises.Select(name => exerciseByName[name]).ToList(),
+                    exercise => exercise.Type == ExerciseType.Compound,
+                    experienceLevel);
+
+                for (var exerciseIndex = 0; exerciseIndex < dayExercises.Count; exerciseIndex++)
                 {
-                    var exercise = exerciseByName[templateDay.Exercises[exerciseIndex]];
+                    var exercise = dayExercises[exerciseIndex];
                     var targetWeightKg = GetInitialTargetWeight(
                         weekNumber,
                         exercise.Id,

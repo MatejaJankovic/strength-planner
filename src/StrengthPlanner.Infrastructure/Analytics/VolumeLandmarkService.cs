@@ -27,10 +27,7 @@ public sealed class VolumeLandmarkService
         Guid userId,
         CancellationToken cancellationToken)
     {
-        var seeds = await _db.VolumeLandmarks
-            .AsNoTracking()
-            .Select(landmark => new { landmark.MuscleGroupId, landmark.Mev, landmark.Mav, landmark.Mrv })
-            .ToListAsync(cancellationToken);
+        var seeds = await GetScaledSeedsAsync(userId, cancellationToken);
 
         var personal = await _db.UserVolumeLandmarks
             .AsNoTracking()
@@ -38,10 +35,12 @@ public sealed class VolumeLandmarkService
             .ToDictionaryAsync(landmark => landmark.MuscleGroupId, cancellationToken);
 
         return seeds.ToDictionary(
-            seed => seed.MuscleGroupId,
-            seed =>
+            entry => entry.Key,
+            entry =>
             {
-                if (personal.TryGetValue(seed.MuscleGroupId, out var own))
+                var seed = entry.Value;
+
+                if (personal.TryGetValue(entry.Key, out var own))
                 {
                     return new EffectiveLandmark(
                         own.Mev,
@@ -123,13 +122,7 @@ public sealed class VolumeLandmarkService
             return;
         }
 
-        var seeds = await _db.VolumeLandmarks
-            .AsNoTracking()
-            .Select(landmark => new { landmark.MuscleGroupId, landmark.Mev, landmark.Mav, landmark.Mrv })
-            .ToDictionaryAsync(
-                landmark => landmark.MuscleGroupId,
-                landmark => new VolumeLandmarkValues(landmark.Mev, landmark.Mav, landmark.Mrv),
-                cancellationToken);
+        var seeds = await GetScaledSeedsAsync(userId, cancellationToken);
 
         var personal = await _db.UserVolumeLandmarks
             .Where(landmark => landmark.UserId == userId)
@@ -174,6 +167,35 @@ public sealed class VolumeLandmarkService
                 row.UpdatedAt = completedAt;
             }
         }
+    }
+
+    /// <summary>
+    /// Populacione granice skalirane nivoom iskustva korisnika.
+    ///
+    /// Serija početnika je slabiji stimulus i njegov oporavak je nerazvijen, pa mu ceo
+    /// pojas stoji niže; napredan vežbač podnosi i traži više. Adaptacija onda kreće od
+    /// te tačke, a ne od populacionog proseka — i reset se vraća na nju.
+    /// </summary>
+    private async Task<Dictionary<Guid, VolumeLandmarkValues>> GetScaledSeedsAsync(
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
+        var level = await _db.Profiles
+            .AsNoTracking()
+            .Where(profile => profile.UserId == userId)
+            .Select(profile => (ExperienceLevel?)profile.ExperienceLevel)
+            .FirstOrDefaultAsync(cancellationToken) ?? ExperienceLevel.Intermediate;
+
+        var seeds = await _db.VolumeLandmarks
+            .AsNoTracking()
+            .Select(landmark => new { landmark.MuscleGroupId, landmark.Mev, landmark.Mav, landmark.Mrv })
+            .ToListAsync(cancellationToken);
+
+        return seeds.ToDictionary(
+            seed => seed.MuscleGroupId,
+            seed => ExperienceProgramming.ScaleLandmarks(
+                new VolumeLandmarkValues(seed.Mev, seed.Mav, seed.Mrv),
+                level));
     }
 
     /// <summary>
