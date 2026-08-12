@@ -18,6 +18,11 @@ export class AnalyticsService {
     return this.http.get<VolumeItemDto[]>(`${this.apiUrl}/analytics/volume`, { params });
   }
 
+  /** Vraca naucene MEV/MRV granice na podrazumevane vrednosti. */
+  resetVolumeLandmarks(): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/analytics/volume/landmarks/reset`, {});
+  }
+
   personalRecords(): Observable<PersonalRecordDto[]> {
     return this.http.get<PersonalRecordDto[]>(`${this.apiUrl}/analytics/prs`);
   }

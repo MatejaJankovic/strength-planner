@@ -33,6 +33,15 @@ public class AnalyticsController : AuthorizedControllerBase
         return Ok(volume);
     }
 
+    /// <summary>Vraća naučene MEV/MRV granice na podrazumevane vrednosti.</summary>
+    [HttpPost("volume/landmarks/reset")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> ResetVolumeLandmarks(CancellationToken cancellationToken)
+    {
+        await _volumeService.ResetLandmarksAsync(GetUserId(), cancellationToken);
+        return NoContent();
+    }
+
     /// <summary>Vraća e1RM trend za vežbu.</summary>
     [HttpGet("e1rm/{exerciseId:guid}")]
     [ProducesResponseType(typeof(IReadOnlyList<E1RmTrendPointDto>), StatusCodes.Status200OK)]

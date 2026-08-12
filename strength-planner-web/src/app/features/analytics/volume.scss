@@ -186,3 +186,46 @@
   font-size: 0.8rem;
   margin: 0;
 }
+
+.legend__reset {
+  align-self: flex-start;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  color: var(--color-ink);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 700;
+  min-height: 40px;
+  padding: 0 0.75rem;
+}
+
+.legend__reset:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.legend__reset--danger {
+  border-color: color-mix(in srgb, #e4572e 45%, transparent);
+  color: var(--color-above, #e4572e);
+}
+
+.legend__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.legend__ok {
+  color: var(--color-optimal, #1f9e8a);
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+// Oznaka da granica više nije populaciona nego naučena iz korisnikovih nedelja.
+.vrow__learned {
+  color: var(--color-primary);
+  font-weight: 700;
+  margin-left: 0.35rem;
+}

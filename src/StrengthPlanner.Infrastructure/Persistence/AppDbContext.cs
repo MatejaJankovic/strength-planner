@@ -24,6 +24,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
     public DbSet<OneRepMaxRecord> OneRepMaxRecords => Set<OneRepMaxRecord>();
     public DbSet<VolumeLandmark> VolumeLandmarks => Set<VolumeLandmark>();
     public DbSet<UserExerciseSetting> UserExerciseSettings => Set<UserExerciseSetting>();
+    public DbSet<UserVolumeLandmark> UserVolumeLandmarks => Set<UserVolumeLandmark>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
