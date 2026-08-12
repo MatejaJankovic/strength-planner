@@ -87,7 +87,7 @@ nedelja nešto kaže — za razliku od MEV-a i MRV-a, koji se dodiruju retko.
 
 ## Provera
 
-- `dotnet build`, `dotnet test` (119 testova, bilo 100), `npm run build` — sve prolazi.
+- `dotnet build`, `dotnet test` (121 test, bilo 100), `npm run build` — sve prolazi.
 - `StimulativeVolumeTests` pokriva svaki prag, otkaz kao uvek pun doprinos, i dva slučaja
   koja objašnjavaju zašto pravilo postoji: dvadeset serija sa RIR 5 vredi **0**, a obična
   naporna nedelja (RIR 0–2) vredi **tačno onoliko koliko i pre**, pa pravilo nije tiho
