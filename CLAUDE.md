@@ -115,9 +115,22 @@ For each implemented feature, write a plain markdown summary file under `docs/fe
 describing what was implemented and why. These are review notes for the user, not thesis
 prose — no need for academic style.
 
-## Scope note (2026-08-11)
+## Scope note (2026-08-12)
 
-Work in progress: the "future improvements" items from the thesis conclusion —
-per-exercise weight step, failed-reps logging, adaptive MEV/MRV landmarks, auto-deload,
-and macrocycles. Deliberately **out of scope** for now: i18n, full-history analytics,
-undulating periodization, PWA/offline.
+Five "future improvements" items from the thesis conclusion are implemented, each on its
+own branch with its own PR, reviewed and fixed before hand-off. The branches are stacked
+in this order and must be merged in it:
+
+1. `feature/per-exercise-weight-step` (PR #2)
+2. `feature/failed-reps-logging` (PR #3)
+3. `feature/adaptive-volume-landmarks` (PR #4)
+4. `feature/auto-deload` (PR #5)
+5. `feature/macrocycles` (PR #6)
+
+`chore/claude-md` (PR #1) carries this file and should be merged first.
+
+Each feature has a plain-language write-up in `docs/features/`, including what a code
+review found and how it was fixed.
+
+Deliberately **out of scope**: i18n, full-history analytics, undulating periodization,
+PWA/offline.
