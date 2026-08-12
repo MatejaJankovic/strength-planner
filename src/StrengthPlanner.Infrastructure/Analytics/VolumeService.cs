@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using StrengthPlanner.Application.DTOs.Analytics;
 using StrengthPlanner.Application.Exceptions;
 using StrengthPlanner.Application.Interfaces;
+using StrengthPlanner.Domain.Algorithms;
 using StrengthPlanner.Infrastructure.Persistence;
 
 namespace StrengthPlanner.Infrastructure.Analytics;
@@ -39,7 +40,10 @@ public class VolumeService : IVolumeService
             throw new TrainingLogException(TrainingLogErrorType.NotFound, "Training week was not found.");
         }
 
-        var volumeByMuscleGroupId = await _db.SetLogs
+        // Sabiranje se radi u memoriji jer stimulativni udeo živi kao domensko pravilo,
+        // a ne kao izraz koji EF ume da prevede u SQL — bolje jedan izvor istine nego
+        // isto pravilo napisano drugi put kao CASE.
+        var contributions = await _db.SetLogs
             .AsNoTracking()
             .Where(set => set.ExercisePlan.WorkoutSession.TrainingWeek.MesocycleId == mesocycleId
                           && set.ExercisePlan.WorkoutSession.TrainingWeek.WeekNumber == weekNumber
@@ -48,15 +52,18 @@ public class VolumeService : IVolumeService
                 .Select(muscle => new
                 {
                     muscle.MuscleGroupId,
-                    muscle.Contribution
+                    muscle.Contribution,
+                    set.Rir,
+                    set.IsFailure
                 }))
-            .GroupBy(muscle => muscle.MuscleGroupId)
-            .Select(group => new
-            {
-                MuscleGroupId = group.Key,
-                Sets = group.Sum(item => item.Contribution)
-            })
-            .ToDictionaryAsync(item => item.MuscleGroupId, item => item.Sets, cancellationToken);
+            .ToListAsync(cancellationToken);
+
+        var volumeByMuscleGroupId = contributions
+            .GroupBy(item => item.MuscleGroupId)
+            .ToDictionary(
+                group => group.Key,
+                group => group.Sum(item =>
+                    item.Contribution * StimulativeVolume.CreditFor(item.Rir, item.IsFailure)));
 
         var muscleNames = await _db.MuscleGroups
             .AsNoTracking()
@@ -74,8 +81,10 @@ public class VolumeService : IVolumeService
                     Muscle = muscleNames.GetValueOrDefault(entry.Key, string.Empty),
                     Sets = sets,
                     Mev = landmark.Mev,
+                    Mav = landmark.Mav,
                     Mrv = landmark.Mrv,
                     DefaultMev = landmark.SeedMev,
+                    DefaultMav = landmark.SeedMav,
                     DefaultMrv = landmark.SeedMrv,
                     IsPersonal = landmark.IsPersonal,
                     Status = GetStatus(sets, landmark.Mev, landmark.Mrv)

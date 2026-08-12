@@ -124,6 +124,9 @@
   bottom: 0;
   position: absolute;
   top: 0;
+  // Marker stoji NA svojoj vrednosti, a ne desno od nje; bez ovoga sve tri crte
+  // pocinju na svojoj tacki pa deluju pomereno udesno za svoju sirinu.
+  transform: translateX(-50%);
   width: 2px;
 }
 
@@ -133,6 +136,14 @@
 
 .marker--mrv {
   background: var(--color-ink);
+}
+
+// Cilj je akcentne boje i nesto siri od granica: primarna boja na optimalnoj (zelenoj)
+// traci ima kontrast ispod 3:1, pa bi marker bio najslabije vidljiv bas tamo gde je
+// najvazniji. Traka ima overflow: hidden, pa se visinom ne moze isticati.
+.marker--mav {
+  background: var(--color-accent);
+  width: 3px;
 }
 
 .vrow__meta {

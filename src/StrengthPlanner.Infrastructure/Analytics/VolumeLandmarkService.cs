@@ -7,7 +7,7 @@ using StrengthPlanner.Infrastructure.Persistence;
 namespace StrengthPlanner.Infrastructure.Analytics;
 
 /// <summary>
-/// Čita lične MEV/MRV granice i pomera ih posle svake završene nedelje.
+/// Čita lične MEV/MAV/MRV granice i pomera ih posle svake završene nedelje.
 /// Seed vrednosti iz <see cref="VolumeLandmark"/> ostaju referentna tačka: lične
 /// granice su dozvoljene samo u pojasu oko njih i tu se vraćaju na reset.
 /// </summary>
@@ -29,7 +29,7 @@ public sealed class VolumeLandmarkService
     {
         var seeds = await _db.VolumeLandmarks
             .AsNoTracking()
-            .Select(landmark => new { landmark.MuscleGroupId, landmark.Mev, landmark.Mrv })
+            .Select(landmark => new { landmark.MuscleGroupId, landmark.Mev, landmark.Mav, landmark.Mrv })
             .ToListAsync(cancellationToken);
 
         var personal = await _db.UserVolumeLandmarks
@@ -45,14 +45,24 @@ public sealed class VolumeLandmarkService
                 {
                     return new EffectiveLandmark(
                         own.Mev,
+                        own.Mav,
                         own.Mrv,
                         seed.Mev,
+                        seed.Mav,
                         seed.Mrv,
-                        IsPersonal: own.Mev != seed.Mev || own.Mrv != seed.Mrv,
+                        IsPersonal: own.Mev != seed.Mev || own.Mav != seed.Mav || own.Mrv != seed.Mrv,
                         own.UpdatedAt);
                 }
 
-                return new EffectiveLandmark(seed.Mev, seed.Mrv, seed.Mev, seed.Mrv, IsPersonal: false, null);
+                return new EffectiveLandmark(
+                    seed.Mev,
+                    seed.Mav,
+                    seed.Mrv,
+                    seed.Mev,
+                    seed.Mav,
+                    seed.Mrv,
+                    IsPersonal: false,
+                    null);
             });
     }
 
@@ -115,10 +125,10 @@ public sealed class VolumeLandmarkService
 
         var seeds = await _db.VolumeLandmarks
             .AsNoTracking()
-            .Select(landmark => new { landmark.MuscleGroupId, landmark.Mev, landmark.Mrv })
+            .Select(landmark => new { landmark.MuscleGroupId, landmark.Mev, landmark.Mav, landmark.Mrv })
             .ToDictionaryAsync(
                 landmark => landmark.MuscleGroupId,
-                landmark => new VolumeLandmarkValues(landmark.Mev, landmark.Mrv),
+                landmark => new VolumeLandmarkValues(landmark.Mev, landmark.Mav, landmark.Mrv),
                 cancellationToken);
 
         var personal = await _db.UserVolumeLandmarks
@@ -135,7 +145,7 @@ public sealed class VolumeLandmarkService
             personal.TryGetValue(muscleGroupId, out var row);
             var current = row is null
                 ? seed
-                : new VolumeLandmarkValues(row.Mev, row.Mrv);
+                : new VolumeLandmarkValues(row.Mev, row.Mav, row.Mrv);
 
             var adjusted = VolumeAdaptation.Adjust(current, seed, response);
             if (adjusted == current)
@@ -151,6 +161,7 @@ public sealed class VolumeLandmarkService
                     UserId = userId,
                     MuscleGroupId = muscleGroupId,
                     Mev = adjusted.Mev,
+                    Mav = adjusted.Mav,
                     Mrv = adjusted.Mrv,
                     UpdatedAt = completedAt
                 });
@@ -158,6 +169,7 @@ public sealed class VolumeLandmarkService
             else
             {
                 row.Mev = adjusted.Mev;
+                row.Mav = adjusted.Mav;
                 row.Mrv = adjusted.Mrv;
                 row.UpdatedAt = completedAt;
             }
@@ -179,7 +191,8 @@ public sealed class VolumeLandmarkService
 
     /// <summary>
     /// Sažima nedelju u jedan odgovor po mišićnoj grupi. Sve se meri doprinosom serije
-    /// (primarna 1.0, sekundarna 0.5), pa sekundarni rad ne broji kao pun.
+    /// (primarna 1.0, sekundarna 0.5) pomnoženim stimulativnim udelom, pa ni sekundarni
+    /// rad ni serija daleko od otkaza ne broje kao pun.
     /// </summary>
     public async Task<Dictionary<Guid, VolumeResponse>> GetWeeklyResponsesAsync(
         Guid userId,
@@ -206,24 +219,64 @@ public sealed class VolumeLandmarkService
                 group => group.Key,
                 group =>
                 {
-                    var totalWeight = group.Sum(item => item.Contribution);
-                    if (totalWeight == 0)
-                    {
-                        return new VolumeResponse(0, 0, 0);
-                    }
+                    var measured = group
+                        .Select(item => new
+                        {
+                            item.Contribution,
+                            item.IsFailure,
+                            Set = new WorkingSet(item.Reps, item.Rir, item.IsFailure),
+                            item.TargetRir,
+                            item.RepRangeMin
+                        })
+                        .Select(item => new
+                        {
+                            item.Contribution,
+                            item.IsFailure,
+                            item.Set,
+                            Credit = StimulativeVolume.CreditFor(item.Set),
+                            item.TargetRir,
+                            item.RepRangeMin
+                        })
+                        .ToList();
 
-                    var deviation = group.Sum(item =>
-                        item.Contribution
-                        * (new WorkingSet(item.Reps, item.Rir, item.IsFailure).EffectiveRir(item.RepRangeMin)
-                           - item.TargetRir));
-                    var failed = group
+                    // Zamor pravi svaka odrađena serija, pa se on meri sirovim zbirom.
+                    var rawWeight = measured.Sum(item => item.Contribution);
+
+                    // Stimulus pravi samo serija blizu otkaza — to je mera koju granice uče.
+                    var stimulativeWeight = measured.Sum(item => item.Contribution * item.Credit);
+
+                    // Udeo otkaza je pitanje o zamoru, pa deli sirovim zbirom. Sa
+                    // stimulativnim imeniocem bi nedelja od deset laganih i dve otkazane
+                    // serije prijavila udeo 1.0 umesto 0.17, pa bi pragovi umora
+                    // (0.25 / 0.125) izgubili kalibraciju i MEV bi se survao na svoj pod.
+                    var failed = measured
                         .Where(item => item.IsFailure)
                         .Sum(item => item.Contribution);
+                    var failureShare = rawWeight == 0 ? 0m : failed / rawWeight;
+
+                    if (stimulativeWeight == 0)
+                    {
+                        // Nedelja bez ijedne stimulativne serije ne govori ništa o tome
+                        // koliko volumena korisnik podnosi. Odstupanje RIR-a se namerno
+                        // ne prijavljuje: sve te serije nose veliko pozitivno odstupanje
+                        // ("prelako"), ali to je posao progresije da ispravi opterećenjem,
+                        // a ne granica volumena da protumači kao toleranciju.
+                        return new VolumeResponse(0, rawWeight, 0, failureShare);
+                    }
+
+                    // Prosek mora da deli isti ponder sa imeniocem: kada se volumen meri
+                    // stimulativnim doprinosom, i odstupanje RIR-a se meri nad istim tim
+                    // serijama, inače to nije ponderisani prosek nego mešavina dve mere.
+                    var deviation = measured.Sum(item =>
+                        item.Contribution
+                        * item.Credit
+                        * (item.Set.EffectiveRir(item.RepRangeMin) - item.TargetRir));
 
                     return new VolumeResponse(
-                        totalWeight,
-                        deviation / totalWeight,
-                        failed / totalWeight);
+                        stimulativeWeight,
+                        rawWeight,
+                        deviation / stimulativeWeight,
+                        failureShare);
                 });
     }
 
@@ -240,8 +293,10 @@ public sealed class VolumeLandmarkService
 /// <summary>Granice koje važe za korisnika, uz seed vrednosti radi poređenja u UI-ju.</summary>
 public sealed record EffectiveLandmark(
     int Mev,
+    int Mav,
     int Mrv,
     int SeedMev,
+    int SeedMav,
     int SeedMrv,
     bool IsPersonal,
     DateTime? UpdatedAt);

@@ -423,7 +423,11 @@ public sealed class DeloadService
         {
             if (landmarks.TryGetValue(muscleGroupId, out var landmark) && landmark.Mrv > 0)
             {
-                highest = Math.Max(highest, response.PerformedSets / landmark.Mrv);
+                // Sirovi zbir, ne stimulativni: MRV je granica OPORAVKA, a oporavak troši
+                // svaka odrađena serija — i ona daleko od otkaza, koja stimulus ne pravi.
+                // Sa stimulativnim zbirom bi nedelja puna lakših serija delovala kao
+                // odmor i tiho ugasila deload koji treba da se desi.
+                highest = Math.Max(highest, response.RawSets / landmark.Mrv);
             }
         }
 

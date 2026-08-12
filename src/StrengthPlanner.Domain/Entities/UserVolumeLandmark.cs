@@ -16,6 +16,7 @@ public class UserVolumeLandmark
     public MuscleGroup MuscleGroup { get; set; } = null!;
 
     public int Mev { get; set; }
+    public int Mav { get; set; }
     public int Mrv { get; set; }
 
     /// <summary>Kraj poslednje nedelje koja je pomerila granice — sprečava dvostruko računanje.</summary>

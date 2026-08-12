@@ -15,6 +15,7 @@ type VolumeState =
 interface VolumeRow extends VolumeItemDto {
   barPct: number;
   mevPct: number;
+  mavPct: number;
   mrvPct: number;
 }
 
@@ -94,6 +95,7 @@ export class Volume {
         ...item,
         barPct: toPct(sets / scale),
         mevPct: toPct(item.mev / scale),
+        mavPct: toPct(item.mav / scale),
         mrvPct: toPct(item.mrv / scale),
       };
     });

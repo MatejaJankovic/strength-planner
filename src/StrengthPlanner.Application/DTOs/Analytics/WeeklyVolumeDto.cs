@@ -3,12 +3,23 @@ namespace StrengthPlanner.Application.DTOs.Analytics;
 public class WeeklyVolumeDto
 {
     public string Muscle { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Stimulativne nedeljne serije: doprinos svake serije pomnožen njenom blizinom
+    /// otkaza, pa serija daleko od otkaza ne ulazi u zbir.
+    /// </summary>
     public decimal Sets { get; set; }
+
     public int Mev { get; set; }
+
+    /// <summary>Maksimalni adaptivni volumen — ciljni broj serija.</summary>
+    public int Mav { get; set; }
+
     public int Mrv { get; set; }
 
     /// <summary>Populaciona seed granica — vrednost na koju reset vraća.</summary>
     public int DefaultMev { get; set; }
+    public int DefaultMav { get; set; }
     public int DefaultMrv { get; set; }
 
     /// <summary>True kada su granice naučene iz korisnikovog odgovora na volumen.</summary>

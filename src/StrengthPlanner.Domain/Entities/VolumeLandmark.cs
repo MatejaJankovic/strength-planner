@@ -11,5 +11,6 @@ public class VolumeLandmark
     public MuscleGroup MuscleGroup { get; set; } = null!;
 
     public int Mev { get; set; } // minimalni efektivni volumen (nedeljne serije)
+    public int Mav { get; set; } // maksimalni adaptivni volumen — ciljni broj serija
     public int Mrv { get; set; } // maksimalni oporavljivi volumen (nedeljne serije)
 }
