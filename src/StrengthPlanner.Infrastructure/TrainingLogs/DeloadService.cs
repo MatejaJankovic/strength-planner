@@ -91,7 +91,15 @@ public sealed class DeloadService
                 setters => setters.SetProperty(week => week.FatigueScore, score),
                 cancellationToken);
 
-        if (claimed == 0 || score < FatigueEvaluator.DeloadThreshold)
+        // Prag zavisi od nivoa iskustva. Početnik ga nema: priručnik je izričit da
+        // "početnici ne treba da razmišljaju o ovome", a i signali od kojih se ocena gradi
+        // su kod njih najmanje pouzdani — RIR procenjuju loše jer staju na pečenju misleći
+        // da su na otkazu. Nepotreban deload ih košta nedelje napretka, pa im ostaje samo
+        // planirani deload na kraju bloka.
+        var threshold = ExperienceProgramming.DeloadThreshold(
+            await GetExperienceLevelAsync(userId, cancellationToken));
+
+        if (claimed == 0 || threshold is null || score < threshold.Value)
         {
             return null;
         }
@@ -126,6 +134,17 @@ public sealed class DeloadService
             cancellationToken);
 
         return new DeloadOutcome(weekNumber, nextWeek.WeekNumber, score, plannedDeloadRestored);
+    }
+
+    private async Task<ExperienceLevel> GetExperienceLevelAsync(
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
+        return await _db.Profiles
+            .AsNoTracking()
+            .Where(profile => profile.UserId == userId)
+            .Select(profile => (ExperienceLevel?)profile.ExperienceLevel)
+            .FirstOrDefaultAsync(cancellationToken) ?? ExperienceLevel.Intermediate;
     }
 
     /// <summary>
