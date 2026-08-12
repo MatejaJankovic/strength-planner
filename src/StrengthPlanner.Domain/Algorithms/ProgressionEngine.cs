@@ -7,13 +7,16 @@ public sealed class ProgressionEngine
 {
     /// <summary>
     /// Applies RIR correction = clamp((average RIR - target RIR) * 3%, +/-10%) and double progression rules.
+    /// The load increment used for the double-progression bump and for rounding comes from the
+    /// exercise (2.5 kg when none is supplied), so dumbbells and machines step realistically.
     /// </summary>
     public ProgressionResult ComputeNext(
         decimal usedWeightKg,
         IReadOnlyList<(int reps, int rir)> workingSets,
         int targetRir,
         int repRangeMin,
-        int repRangeMax)
+        int repRangeMax,
+        decimal? weightStepKg = null)
     {
         ArgumentNullException.ThrowIfNull(workingSets);
 
@@ -21,6 +24,8 @@ public sealed class ProgressionEngine
         {
             return new ProgressionResult(usedWeightKg, repRangeMin, WeightIncreased: false);
         }
+
+        var stepKg = weightStepKg ?? TrainingConstants.WeightStepKg;
 
         decimal rirTotal = 0;
         var allHitTop = true;
@@ -45,12 +50,12 @@ public sealed class ProgressionEngine
         var adjustedWeight = usedWeightKg * (1 + correction);
 
         var nextWeight = allHitTop
-            ? adjustedWeight + TrainingConstants.WeightStepKg
+            ? adjustedWeight + stepKg
             : adjustedWeight;
         var nextTargetReps = repRangeMin;
 
         return new ProgressionResult(
-            WeightMath.RoundToStep(nextWeight, TrainingConstants.WeightStepKg),
+            WeightMath.RoundToStep(nextWeight, stepKg),
             nextTargetReps,
             allHitTop);
     }

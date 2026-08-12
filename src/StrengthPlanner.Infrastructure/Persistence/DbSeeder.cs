@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using StrengthPlanner.Domain.Algorithms;
 using StrengthPlanner.Domain.Entities;
 using StrengthPlanner.Domain.Enums;
 
@@ -47,6 +48,7 @@ public static class DbSeeder
                 Equipment = seed.Equipment,
                 IsCustom = false,
                 CreatedByUserId = null,
+                WeightStepKg = EquipmentWeightStep.ForEquipment(seed.Equipment),
                 Muscles = seed.Muscles
                     .Select(m => new ExerciseMuscle
                     {
@@ -60,6 +62,33 @@ public static class DbSeeder
         }
 
         await db.SaveChangesAsync();
+        await AlignSystemExerciseWeightStepsAsync(db);
+    }
+
+    /// <summary>
+    /// Sistemske vežbe uvek prate korak izveden iz sprave. Postojeći redovi su pre
+    /// migracije imali globalnih 2.5 kg, pa se ovde poravnavaju; korisnička odstupanja
+    /// žive u UserExerciseSettings i ovim se ne diraju.
+    /// </summary>
+    private static async Task AlignSystemExerciseWeightStepsAsync(AppDbContext db)
+    {
+        var systemExercises = await db.Exercises.Where(e => !e.IsCustom).ToListAsync();
+        var changed = false;
+
+        foreach (var exercise in systemExercises)
+        {
+            var expected = EquipmentWeightStep.ForEquipment(exercise.Equipment);
+            if (exercise.WeightStepKg != expected)
+            {
+                exercise.WeightStepKg = expected;
+                changed = true;
+            }
+        }
+
+        if (changed)
+        {
+            await db.SaveChangesAsync();
+        }
     }
 
     private static async Task SeedVolumeLandmarksAsync(AppDbContext db, IReadOnlyDictionary<string, Guid> muscleIds)

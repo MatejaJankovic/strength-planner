@@ -13,5 +13,8 @@ public class ExercisePlanDto
     public int RepRangeMax { get; set; }
     public int TargetRir { get; set; }
     public decimal? TargetWeightKg { get; set; }
+
+    /// <summary>Korak kojim klijent pomera opterećenje za ovu vežbu (kg).</summary>
+    public decimal WeightStepKg { get; set; }
     public List<SetLogDto> SetLogs { get; set; } = new();
 }

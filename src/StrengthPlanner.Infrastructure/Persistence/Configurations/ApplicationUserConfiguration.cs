@@ -24,5 +24,12 @@ public class ApplicationUserConfiguration : IEntityTypeConfiguration<Application
             .WithOne()
             .HasForeignKey(r => r.UserId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Korisnička podešavanja vežbi nemaju navigaciju na korisniku, ali moraju
+        // da nestanu sa nalogom kao i ostali korisnički podaci.
+        builder.HasMany<UserExerciseSetting>()
+            .WithOne()
+            .HasForeignKey(setting => setting.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

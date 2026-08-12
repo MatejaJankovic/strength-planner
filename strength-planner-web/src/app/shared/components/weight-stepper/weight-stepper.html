@@ -6,19 +6,19 @@
       class="weight-stepper__button"
       type="button"
       [disabled]="!canDecrease()"
-      aria-label="Smanji opterećenje za 2.5 kg"
+      [attr.aria-label]="'Smanji opterećenje za ' + stepLabel() + ' kg'"
       (click)="decrease()"
     >
       −
     </button>
 
-    <output class="weight-stepper__value numeric">{{ value() | number: '1.1-1' }} kg</output>
+    <output class="weight-stepper__value numeric">{{ value() | number: '1.1-2' }} kg</output>
 
     <button
       class="weight-stepper__button"
       type="button"
       [disabled]="disabled()"
-      aria-label="Povećaj opterećenje za 2.5 kg"
+      [attr.aria-label]="'Povećaj opterećenje za ' + stepLabel() + ' kg'"
       (click)="increase()"
     >
       +

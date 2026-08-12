@@ -7,6 +7,7 @@ using StrengthPlanner.Application.Interfaces;
 using StrengthPlanner.Domain.Algorithms;
 using StrengthPlanner.Domain.Entities;
 using StrengthPlanner.Domain.Enums;
+using StrengthPlanner.Infrastructure.Exercises;
 using StrengthPlanner.Infrastructure.Persistence;
 
 namespace StrengthPlanner.Infrastructure.TrainingLogs;
@@ -35,7 +36,8 @@ public class SessionService : ISessionService
             throw new TrainingLogException(TrainingLogErrorType.NotFound, "Workout session was not found.");
         }
 
-        return ToDto(session);
+        var weightStepOverrides = await WeightStepResolver.LoadOverridesAsync(_db, userId, cancellationToken);
+        return ToDto(session, weightStepOverrides);
     }
 
     public async Task<WorkoutSessionDto> StartAsync(
@@ -70,7 +72,8 @@ public class SessionService : ISessionService
         var detailedSession = await BuildSessionDetailsQuery(userId)
             .FirstAsync(workoutSession => workoutSession.Id == sessionId, cancellationToken);
 
-        return ToDto(detailedSession);
+        var weightStepOverrides = await WeightStepResolver.LoadOverridesAsync(_db, userId, cancellationToken);
+        return ToDto(detailedSession, weightStepOverrides);
     }
 
     public async Task<CompleteSessionResultDto> CompleteAsync(
@@ -106,6 +109,11 @@ public class SessionService : ISessionService
             .Select(plan => plan.ExerciseId)
             .Distinct()
             .ToList();
+        var weightStepByExerciseId = await WeightStepResolver.ResolveAsync(
+            _db,
+            userId,
+            exerciseIds,
+            cancellationToken);
         var previousMaxByExerciseId = await _db.OneRepMaxRecords
             .AsNoTracking()
             .Where(record => record.UserId == userId && exerciseIds.Contains(record.ExerciseId))
@@ -186,12 +194,14 @@ public class SessionService : ISessionService
             var workingSets = logs
                 .Select(set => (set.Reps, set.Rir))
                 .ToList();
+            var weightStepKg = WeightStepResolver.StepFor(weightStepByExerciseId, plan.ExerciseId);
             var progression = _progressionEngine.ComputeNext(
                 usedWeight,
                 workingSets,
                 plan.TargetRir,
                 plan.RepRangeMin,
-                plan.RepRangeMax);
+                plan.RepRangeMax,
+                weightStepKg);
 
             summary.NextWeightKg = progression.NextWeightKg;
             summary.WeightIncreased = progression.WeightIncreased;
@@ -202,7 +212,7 @@ public class SessionService : ISessionService
                 var nextWeight = nextPlan.WorkoutSession.TrainingWeek.IsDeload
                     ? WeightMath.RoundToStep(
                         usedWeight * TrainingConstants.DeloadWeightFactor,
-                        TrainingConstants.WeightStepKg)
+                        weightStepKg)
                     : progression.NextWeightKg;
 
                 nextPlan.TargetWeightKg = nextWeight;
@@ -253,7 +263,9 @@ public class SessionService : ISessionService
         return bestEstimate;
     }
 
-    private static WorkoutSessionDto ToDto(WorkoutSession session)
+    private static WorkoutSessionDto ToDto(
+        WorkoutSession session,
+        IReadOnlyDictionary<Guid, decimal> weightStepOverrides)
     {
         return new WorkoutSessionDto
         {
@@ -276,6 +288,10 @@ public class SessionService : ISessionService
                     RepRangeMax = plan.RepRangeMax,
                     TargetRir = plan.TargetRir,
                     TargetWeightKg = plan.TargetWeightKg,
+                    WeightStepKg = WeightStepResolver.Effective(
+                        weightStepOverrides,
+                        plan.ExerciseId,
+                        plan.Exercise.WeightStepKg),
                     SetLogs = plan.SetLogs
                         .OrderBy(set => set.SetNumber)
                         .Select(set => new SetLogDto

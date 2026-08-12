@@ -44,6 +44,61 @@ public class ProgressionEngineTests
         Assert.Equal(expectedWeightIncreased, result.WeightIncreased);
     }
 
+    [Theory]
+    // Dumbbell (2 kg): 20 kg + korak, jer su sve serije stigle do vrha opsega.
+    [InlineData(20.0, 2.0, 22.0)]
+    // Machine (5 kg): isti unos skače za ceo stack korak i zaokružuje se na njega.
+    [InlineData(20.0, 5.0, 25.0)]
+    // Barbell (2.5 kg): referentno ponašanje pre uvođenja koraka po vežbi.
+    [InlineData(20.0, 2.5, 22.5)]
+    public void ComputeNext_UsesExerciseWeightStepForIncrementAndRounding(
+        double usedWeightKg,
+        double weightStepKg,
+        double expectedNextWeightKg)
+    {
+        var workingSets = new List<(int reps, int rir)> { (12, 1), (12, 1), (12, 1) };
+
+        var result = _engine.ComputeNext(
+            (decimal)usedWeightKg,
+            workingSets,
+            targetRir: 1,
+            repRangeMin: 8,
+            repRangeMax: 12,
+            weightStepKg: (decimal)weightStepKg);
+
+        Assert.Equal((decimal)expectedNextWeightKg, result.NextWeightKg);
+        Assert.True(result.WeightIncreased);
+    }
+
+    [Fact]
+    public void ComputeNext_RoundsDownwardCorrectionToExerciseStep()
+    {
+        // Prosečan RIR 0 uz cilj 2 => -6%: 40 kg -> 37.6 kg, zaokruženo na korak od 2 kg.
+        var workingSets = new List<(int reps, int rir)> { (10, 0), (10, 0), (10, 0) };
+
+        var result = _engine.ComputeNext(
+            usedWeightKg: 40m,
+            workingSets,
+            targetRir: 2,
+            repRangeMin: 8,
+            repRangeMax: 12,
+            weightStepKg: 2m);
+
+        Assert.Equal(38m, result.NextWeightKg);
+        Assert.False(result.WeightIncreased);
+    }
+
+    [Fact]
+    public void ComputeNext_DefaultsToGlobalStep_WhenExerciseStepIsNotSupplied()
+    {
+        var workingSets = new List<(int reps, int rir)> { (12, 1), (12, 1), (12, 1) };
+
+        var withoutStep = _engine.ComputeNext(100m, workingSets, 1, 8, 12);
+        var withGlobalStep = _engine.ComputeNext(100m, workingSets, 1, 8, 12, TrainingConstants.WeightStepKg);
+
+        Assert.Equal(withGlobalStep.NextWeightKg, withoutStep.NextWeightKg);
+    }
+
     [Fact]
     public void ComputeNext_ReturnsInputWeight_WhenWorkingSetsAreEmpty()
     {

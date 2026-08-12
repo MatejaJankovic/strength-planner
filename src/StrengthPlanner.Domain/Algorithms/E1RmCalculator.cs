@@ -30,13 +30,14 @@ public sealed class E1RmCalculator
     }
 
     /// <summary>
-    /// Calculates working weight by reversing Epley with effective reps = target reps + target RIR, then rounds to 2.5 kg.
+    /// Calculates working weight by reversing Epley with effective reps = target reps + target RIR,
+    /// then rounds to the exercise's load increment (2.5 kg when none is supplied).
     /// </summary>
-    public decimal WorkingWeightFor(decimal oneRepMax, int targetReps, int targetRir)
+    public decimal WorkingWeightFor(decimal oneRepMax, int targetReps, int targetRir, decimal? weightStepKg = null)
     {
         var effectiveReps = targetReps + targetRir;
         var rawWeight = oneRepMax / (1 + effectiveReps / 30m);
 
-        return WeightMath.RoundToStep(rawWeight, TrainingConstants.WeightStepKg);
+        return WeightMath.RoundToStep(rawWeight, weightStepKg ?? TrainingConstants.WeightStepKg);
     }
 }

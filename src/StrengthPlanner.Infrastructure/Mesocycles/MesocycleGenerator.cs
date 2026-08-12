@@ -6,6 +6,7 @@ using StrengthPlanner.Application.Templates;
 using StrengthPlanner.Domain.Algorithms;
 using StrengthPlanner.Domain.Entities;
 using StrengthPlanner.Domain.Enums;
+using StrengthPlanner.Infrastructure.Exercises;
 using StrengthPlanner.Infrastructure.Persistence;
 
 namespace StrengthPlanner.Infrastructure.Mesocycles;
@@ -68,6 +69,11 @@ public class MesocycleGenerator : IMesocycleGenerator
         }
 
         var exerciseIds = exercises.Select(exercise => exercise.Id).ToList();
+        var weightStepByExerciseId = await WeightStepResolver.ResolveAsync(
+            _db,
+            userId,
+            exerciseIds,
+            cancellationToken);
         var oneRepMaxRecords = await _db.OneRepMaxRecords
             .AsNoTracking()
             .Where(record => record.UserId == userId && exerciseIds.Contains(record.ExerciseId))
@@ -111,14 +117,15 @@ public class MesocycleGenerator : IMesocycleGenerator
             template,
             goalSettings,
             exerciseByName,
-            oneRepMaxByExerciseId);
+            oneRepMaxByExerciseId,
+            weightStepByExerciseId);
 
         _db.Mesocycles.Add(mesocycle);
         await _db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
         var exerciseNameById = exercises.ToDictionary(exercise => exercise.Id, exercise => exercise.Name);
-        return ToDto(mesocycle, exerciseNameById);
+        return ToDto(mesocycle, exerciseNameById, weightStepByExerciseId);
     }
 
     private Mesocycle BuildMesocycle(
@@ -129,7 +136,8 @@ public class MesocycleGenerator : IMesocycleGenerator
         WorkoutTemplate template,
         GoalSettings goalSettings,
         IReadOnlyDictionary<string, Exercise> exerciseByName,
-        IReadOnlyDictionary<Guid, decimal> oneRepMaxByExerciseId)
+        IReadOnlyDictionary<Guid, decimal> oneRepMaxByExerciseId,
+        IReadOnlyDictionary<Guid, decimal> weightStepByExerciseId)
     {
         var mesocycle = new Mesocycle
         {
@@ -173,7 +181,8 @@ public class MesocycleGenerator : IMesocycleGenerator
                         weekNumber,
                         exercise.Id,
                         goalSettings,
-                        oneRepMaxByExerciseId);
+                        oneRepMaxByExerciseId,
+                        WeightStepResolver.StepFor(weightStepByExerciseId, exercise.Id));
 
                     session.ExercisePlans.Add(new ExercisePlan
                     {
@@ -201,7 +210,8 @@ public class MesocycleGenerator : IMesocycleGenerator
         int weekNumber,
         Guid exerciseId,
         GoalSettings goalSettings,
-        IReadOnlyDictionary<Guid, decimal> oneRepMaxByExerciseId)
+        IReadOnlyDictionary<Guid, decimal> oneRepMaxByExerciseId,
+        decimal weightStepKg)
     {
         if (weekNumber != 1 || !oneRepMaxByExerciseId.TryGetValue(exerciseId, out var oneRepMax))
         {
@@ -211,7 +221,8 @@ public class MesocycleGenerator : IMesocycleGenerator
         return _e1RmCalculator.WorkingWeightFor(
             oneRepMax,
             goalSettings.RepRangeMin,
-            goalSettings.TargetRir);
+            goalSettings.TargetRir,
+            weightStepKg);
     }
 
     private static GoalSettings GetGoalSettings(Goal goal)
@@ -237,7 +248,10 @@ public class MesocycleGenerator : IMesocycleGenerator
         return weekStartDate.AddDays(offset);
     }
 
-    private static MesocycleDto ToDto(Mesocycle mesocycle, IReadOnlyDictionary<Guid, string> exerciseNameById)
+    private static MesocycleDto ToDto(
+        Mesocycle mesocycle,
+        IReadOnlyDictionary<Guid, string> exerciseNameById,
+        IReadOnlyDictionary<Guid, decimal> weightStepByExerciseId)
     {
         return new MesocycleDto
         {
@@ -276,7 +290,10 @@ public class MesocycleGenerator : IMesocycleGenerator
                                     RepRangeMin = plan.RepRangeMin,
                                     RepRangeMax = plan.RepRangeMax,
                                     TargetRir = plan.TargetRir,
-                                    TargetWeightKg = plan.TargetWeightKg
+                                    TargetWeightKg = plan.TargetWeightKg,
+                                    WeightStepKg = WeightStepResolver.StepFor(
+                                        weightStepByExerciseId,
+                                        plan.ExerciseId)
                                 })
                                 .ToList()
                         })
