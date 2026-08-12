@@ -123,4 +123,45 @@ public class SessionCompositionTests
             move => move.IsCompound,
             ExperienceLevel.Beginner));
     }
+
+    [Fact]
+    public void ForLevel_HandlesADayThatRepeatsTheSameExercise()
+    {
+        // Biranje po vrednosti bi ovde uzelo obe pojave odjednom i probilo broj mesta;
+        // bira se po indeksu upravo zbog toga.
+        IReadOnlyList<Move> withDuplicate =
+        [
+            new("Bench Press", true),
+            new("Bench Press", true),
+            new("Barbell Curl", false),
+            new("Triceps Pushdown", false),
+            new("Face Pull", false)
+        ];
+
+        var chosen = SessionComposition.ForLevel(withDuplicate, move => move.IsCompound, ExperienceLevel.Advanced);
+
+        Assert.Equal(1, chosen.Count(move => move.IsCompound));
+        Assert.Equal(4, chosen.Count);
+    }
+
+    [Fact]
+    public void ForLevel_NeverThrows_ForAnyDayLengthAndLevel()
+    {
+        // Donji prag i plafon dolaze iz dve nezavisne konstante; ako plafon ikada padne
+        // ispod praga, Math.Clamp baca izuzetak usred generisanja plana.
+        foreach (var level in Enum.GetValues<ExperienceLevel>())
+        {
+            for (var length = 0; length <= 12; length++)
+            {
+                var day = Enumerable
+                    .Range(0, length)
+                    .Select(index => new Move($"Vezba {index}", index % 2 == 0))
+                    .ToList();
+
+                var chosen = SessionComposition.ForLevel(day, move => move.IsCompound, level);
+
+                Assert.True(chosen.Count <= length, $"{level}/{length}: izabrano više nego što dan ima.");
+            }
+        }
+    }
 }

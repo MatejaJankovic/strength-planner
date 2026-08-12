@@ -56,6 +56,12 @@ stoji niže. Adaptacija onda kreće od te tačke, a ne od populacionog proseka.
 Redosled `MEV < MAV < MRV` se posle skaliranja **obnavlja**, a ne pretpostavlja:
 zaokruživanje ume da sruči uzak pojas u istu vrednost, a to bi palo na `CHECK` ograničenju.
 
+**Posledica za zatečene korisnike:** adaptacija ograničava lične granice na ±50% *seed*
+vrednosti, a seed je sada skaliran. Korisnik koji je već naučio granice protiv
+neskaliranog seed-a i vodi se kao početnik dobiće ih postepeno vraćene u novi pojas — pri
+sledećoj adaptaciji, po jednu seriju nedeljno, a ne odjednom. Isto važi i kada korisnik
+promeni nivo u profilu: granice ne skaču, nego se dovuku tokom narednih nedelja.
+
 ### 4. Da li umor uopšte povlači deload
 
 | Nivo | Prag |
@@ -71,7 +77,7 @@ nedelje napretka.
 
 ## Provera
 
-- `dotnet build`, `dotnet test` (139 testova, bilo 121), `npm run build` — sve prolazi.
+- `dotnet build`, `dotnet test` (141 test, bilo 121), `npm run build` — sve prolazi.
 - `ExperienceProgrammingTests` i `SessionCompositionTests` pokrivaju sve četiri poluge,
   uključujući očuvanje redosleda granica pri zaokruživanju uskog pojasa, poštovanje
   budžeta složenih vežbi, i to da **srednji nivo zadržava tačno ponašanje koje je sistem
@@ -93,3 +99,19 @@ nedelje napretka.
 Napredni vežbač na postojećim šablonima dobija svega tri vežbe, jer ti šabloni imaju samo
 dve izolacije po danu. Pravilo radi ispravno — nema čime da popuni trening. To zatvara
 sledeća grana, koja donosi šablone sa više izolacionog rada.
+
+## Ispravke posle revizije koda
+
+Revizija je prekinuta na sredini (dostignut limit sesije), pa sam njen spisak provera
+prošao sam. Nađeno i ispravljeno:
+
+- **Biranje vežbi je išlo po vrednosti, ne po indeksu.** `ordered.Where(chosen.Contains)`
+  poredi po jednakosti, pa bi dan koji dvaput navodi istu vežbu uzeo obe pojave odjednom i
+  probio broj mesta. Sada se bira po indeksu — uz to je i `O(n)` umesto `O(n²)`.
+- **`Math.Clamp` je mogao da baci izuzetak.** Donji prag (3) i plafon (5–6) dolaze iz dve
+  nezavisne konstante; da neko spusti `ExercisesPerSession` ispod praga, generisanje plana
+  bi puklo. Prag se sada poravnava na plafon. Test vrti sve nivoe i dužine dana od 0 do 12.
+- Provereno i **ispravno bez izmena**: ocena umora se upisuje *pre* provere praga, pa
+  početnikova nedelja ne ostaje večno „neocenjena"; svi novi upiti su ograničeni po
+  korisniku; polovljenje serija u deload nedelji prati novi početni broj serija; reset
+  granica se vraća na skalirane vrednosti, što je i namera.

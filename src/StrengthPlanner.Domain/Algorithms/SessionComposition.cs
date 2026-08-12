@@ -47,55 +47,45 @@ public static class SessionComposition
         // izolacija, naprednom vežbaču je ispravnije dati kraći trening nego mu nabiti
         // složene vežbe preko dozvoljenog broja.
         var wanted = compoundBudget + isolationCount;
-        var floor = Math.Min(MinExercisesPerSession, ordered.Count);
         var ceiling = Math.Min(ExperienceProgramming.ExercisesPerSession(level), ordered.Count);
+
+        // Prag se poravnava na plafon umesto da se pretpostavi da je ispod njega —
+        // Math.Clamp baca izuzetak kada je donja granica iznad gornje, a to bi zavisilo
+        // od odnosa dve konstante koje neko kasnije može da promeni.
+        var floor = Math.Min(Math.Min(MinExercisesPerSession, ordered.Count), ceiling);
         var slots = Math.Clamp(wanted, floor, ceiling);
 
-        var chosen = new List<T>(slots);
+        // Bira se po indeksu, ne po vrednosti: šablon sme da ponovi istu vežbu u danu,
+        // a poređenje po jednakosti bi tada uzelo obe pojave i probilo broj mesta.
+        var chosenIndices = new HashSet<int>();
         var compoundsTaken = 0;
 
         // Prvi prolaz: složene vežbe do dozvoljenog broja, pa izolacije.
-        foreach (var exercise in ordered)
+        for (var index = 0; index < ordered.Count && chosenIndices.Count < slots; index++)
         {
-            if (chosen.Count == slots)
-            {
-                break;
-            }
-
-            if (isCompound(exercise))
+            if (isCompound(ordered[index]))
             {
                 if (compoundsTaken < compoundBudget)
                 {
-                    chosen.Add(exercise);
+                    chosenIndices.Add(index);
                     compoundsTaken++;
                 }
 
                 continue;
             }
 
-            chosen.Add(exercise);
+            chosenIndices.Add(index);
         }
 
         // Dan sastavljen samo od složenih vežbi (npr. čučanj, mrtvo, leg press) ne može
         // da ispuni i donji prag i budžet istovremeno. Tada pobeđuje prag: trening od
         // jedne vežbe nije trening. Ovo je jedini slučaj u kome se budžet prekoračuje.
-        if (chosen.Count < slots)
+        for (var index = 0; index < ordered.Count && chosenIndices.Count < slots; index++)
         {
-            foreach (var exercise in ordered)
-            {
-                if (chosen.Count == slots)
-                {
-                    break;
-                }
-
-                if (!chosen.Contains(exercise))
-                {
-                    chosen.Add(exercise);
-                }
-            }
+            chosenIndices.Add(index);
         }
 
         // Redosled iz šablona je trenažno pravilo, a ne slučajnost — složeno pre izolacije.
-        return ordered.Where(chosen.Contains).ToList();
+        return chosenIndices.OrderBy(index => index).Select(index => ordered[index]).ToList();
     }
 }
