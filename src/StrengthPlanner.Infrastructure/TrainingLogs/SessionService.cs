@@ -192,7 +192,7 @@ public class SessionService : ISessionService
                 ? logs.Average(set => set.WeightKg)
                 : plan.TargetWeightKg ?? 0m;
             var workingSets = logs
-                .Select(set => (set.Reps, set.Rir))
+                .Select(set => new WorkingSet(set.Reps, set.Rir, set.IsFailure))
                 .ToList();
             var weightStepKg = WeightStepResolver.StepFor(weightStepByExerciseId, plan.ExerciseId);
             var progression = _progressionEngine.ComputeNext(
@@ -251,6 +251,10 @@ public class SessionService : ISessionService
     {
         decimal? bestEstimate = null;
 
+        // Namerno upisani Rir, ne WorkingSet.EffectiveRir: Epley ionako pretpostavlja
+        // seriju do otkaza, pa je za otkaz tačna vrednost 0. Efektivni RIR ume da bude
+        // negativan i služi isključivo auto-regulaciji — ovde bi oborio procenu i pukao
+        // na proveri u E1RmCalculator.
         foreach (var log in logs.Where(log => log.Reps <= TrainingConstants.EpleyRepCap))
         {
             var estimate = _e1RmCalculator.EstimateOneRepMax(log.WeightKg, log.Reps, log.Rir);
@@ -302,6 +306,7 @@ public class SessionService : ISessionService
                             WeightKg = set.WeightKg,
                             Reps = set.Reps,
                             Rir = set.Rir,
+                            IsFailure = set.IsFailure,
                             PerformedAt = set.PerformedAt
                         })
                         .ToList()

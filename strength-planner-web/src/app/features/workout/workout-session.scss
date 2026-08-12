@@ -310,6 +310,47 @@
   color: #fff;
 }
 
+// Uz uključen otkaz RIR nema smisla; eksplicitna boja bi inače pregazila
+// podrazumevano sivilo onemogućenog dugmeta i delovalo bi kao da radi.
+.rir__btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.entry__field--wide {
+  gap: 0.4rem;
+}
+
+// Prekidač "serija do otkaza" — vizuelno bliži čekboksu nego dugmetu.
+.failure {
+  align-items: center;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 0.55rem;
+  color: var(--color-ink);
+  cursor: pointer;
+  display: flex;
+  font-weight: 700;
+  gap: 0.5rem;
+  min-height: 48px;
+  padding: 0 0.75rem;
+  text-align: left;
+  width: 100%;
+}
+
+.failure.is-active {
+  background: color-mix(in srgb, #e4572e 12%, transparent);
+  border-color: color-mix(in srgb, #e4572e 45%, transparent);
+  color: var(--color-above, #e4572e);
+}
+
+.entry__hint {
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  line-height: 1.35;
+  margin: 0;
+}
+
 .entry__actions {
   display: flex;
   gap: 0.5rem;
@@ -386,6 +427,13 @@
   color: var(--color-muted);
   font-size: 0.85rem;
   font-weight: 600;
+}
+
+.set__rir--failure {
+  color: var(--color-above, #e4572e);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .set__actions {

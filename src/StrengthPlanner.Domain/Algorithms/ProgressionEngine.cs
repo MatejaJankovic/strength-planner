@@ -6,13 +6,20 @@ namespace StrengthPlanner.Domain.Algorithms;
 public sealed class ProgressionEngine
 {
     /// <summary>
-    /// Applies RIR correction = clamp((average RIR - target RIR) * 3%, +/-10%) and double progression rules.
-    /// The load increment used for the double-progression bump and for rounding comes from the
-    /// exercise (2.5 kg when none is supplied), so dumbbells and machines step realistically.
+    /// Applies RIR correction = clamp((average effective RIR - target RIR) * 3%, +/-10%)
+    /// and double progression rules. Failed sets contribute a negative effective RIR
+    /// proportional to the reps missed against the bottom of the range, which is what
+    /// lets the correction reach the same 10% cap downward as it does upward. A set
+    /// that failed at the top of the range is penalised by that correction alone; the
+    /// double-progression increment still applies, because reaching the top of the
+    /// range is the very signal the increment is based on.
+    /// The load increment used for the double-progression bump and for rounding comes
+    /// from the exercise (2.5 kg when none is supplied), so dumbbells and machines
+    /// step realistically.
     /// </summary>
     public ProgressionResult ComputeNext(
         decimal usedWeightKg,
-        IReadOnlyList<(int reps, int rir)> workingSets,
+        IReadOnlyList<WorkingSet> workingSets,
         int targetRir,
         int repRangeMin,
         int repRangeMax,
@@ -33,9 +40,9 @@ public sealed class ProgressionEngine
         for (var i = 0; i < workingSets.Count; i++)
         {
             var set = workingSets[i];
-            rirTotal += set.rir;
+            rirTotal += set.EffectiveRir(repRangeMin);
 
-            if (set.reps < repRangeMax)
+            if (set.Reps < repRangeMax)
             {
                 allHitTop = false;
             }
@@ -49,6 +56,11 @@ public sealed class ProgressionEngine
             TrainingConstants.MaxCorrection);
         var adjustedWeight = usedWeightKg * (1 + correction);
 
+        // Dostizanje vrha opsega je signal na kome double progression počiva, pa ga
+        // otkaz ne poništava: serija koja je otkazala ISPOD vrha ionako već obara
+        // allHitTop. Razliku između "12 do otkaza" i "12 sa RIR 1" nosi korekcija
+        // (efektivni RIR 0 daje -3%), a ne drugo, skriveno kažnjavanje — spajanje
+        // to dvoje je opterećenje na vrhu opsega guralo naniže iz treninga u trening.
         var nextWeight = allHitTop
             ? adjustedWeight + stepKg
             : adjustedWeight;
