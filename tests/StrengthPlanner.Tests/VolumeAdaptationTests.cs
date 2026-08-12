@@ -3,13 +3,13 @@ using StrengthPlanner.Domain.Algorithms;
 namespace StrengthPlanner.Tests;
 
 /// <summary>
-/// Seed MEV/MRV vrednosti su populacioni prosek; ovi testovi pokrivaju kako se pomeraju
-/// ka onome što konkretan korisnik stvarno podnosi.
+/// Seed MEV/MAV/MRV vrednosti su populacioni prosek; ovi testovi pokrivaju kako se
+/// pomeraju ka onome što konkretan korisnik stvarno podnosi.
 /// </summary>
 public class VolumeAdaptationTests
 {
-    // Chest iz seed-a: MEV 10, MRV 22.
-    private static readonly VolumeLandmarkValues Seed = new(Mev: 10, Mrv: 22);
+    // Chest iz seed-a: MEV 10, MAV 16, MRV 22.
+    private static readonly VolumeLandmarkValues Seed = new(Mev: 10, Mav: 16, Mrv: 22);
 
     [Fact]
     public void Adjust_RaisesMrv_WhenNearMaxVolumeStillLeftRepsInReserve()
@@ -115,7 +115,7 @@ public class VolumeAdaptationTests
     public void Adjust_StopsAtFiftyPercentAboveSeed()
     {
         // MRV 33 je tačno +50% od seed-a 22; dalje se ne ide ni posle mnogo dobrih nedelja.
-        var current = new VolumeLandmarkValues(Mev: 10, Mrv: 33);
+        var current = new VolumeLandmarkValues(Mev: 10, Mav: 16, Mrv: 33);
         var response = new VolumeResponse(PerformedSets: 33m, AverageRirDeviation: 2m, FailureShare: 0m);
 
         var result = VolumeAdaptation.Adjust(current, Seed, response);
@@ -126,7 +126,7 @@ public class VolumeAdaptationTests
     [Fact]
     public void Adjust_StopsAtFiftyPercentBelowSeed()
     {
-        var current = new VolumeLandmarkValues(Mev: 5, Mrv: 11);
+        var current = new VolumeLandmarkValues(Mev: 5, Mav: 8, Mrv: 11);
         var response = new VolumeResponse(PerformedSets: 11m, AverageRirDeviation: -3m, FailureShare: 1m);
 
         var result = VolumeAdaptation.Adjust(current, Seed, response);
@@ -139,7 +139,7 @@ public class VolumeAdaptationTests
     public void Adjust_KeepsOptimalBandFromCollapsing()
     {
         // Kada bi obe granice krenule jedna ka drugoj, "optimalno" bi nestalo kao pojam.
-        var current = new VolumeLandmarkValues(Mev: 10, Mrv: 11);
+        var current = new VolumeLandmarkValues(Mev: 10, Mav: 11, Mrv: 12);
         var response = new VolumeResponse(PerformedSets: 11m, AverageRirDeviation: -2m, FailureShare: 0m);
 
         var result = VolumeAdaptation.Adjust(current, Seed, response);
@@ -153,7 +153,7 @@ public class VolumeAdaptationTests
         // Volumen je iznad MEV-a, pa o donjoj granici nedelja ne govori ništa.
         // Pojas se zato širi naviše; obaranje MEV-a bi bilo trajno, jer se donja
         // granica posle diže samo kada je nedelja odrađena NA njoj.
-        var current = new VolumeLandmarkValues(Mev: 10, Mrv: 11);
+        var current = new VolumeLandmarkValues(Mev: 10, Mav: 11, Mrv: 12);
         var response = new VolumeResponse(PerformedSets: 20m, AverageRirDeviation: -2m, FailureShare: 0m);
 
         var result = VolumeAdaptation.Adjust(current, Seed, response);
@@ -194,9 +194,9 @@ public class VolumeAdaptationTests
         // jednake vrednosti, pao bi upis usred završavanja treninga.
         var seeds = new[]
         {
-            new VolumeLandmarkValues(10, 22), new VolumeLandmarkValues(4, 16),
-            new VolumeLandmarkValues(6, 16), new VolumeLandmarkValues(8, 26),
-            new VolumeLandmarkValues(1, 2)
+            new VolumeLandmarkValues(10, 16, 22), new VolumeLandmarkValues(4, 10, 16),
+            new VolumeLandmarkValues(6, 11, 16), new VolumeLandmarkValues(8, 16, 26),
+            new VolumeLandmarkValues(1, 2, 3)
         };
         var responses = new[]
         {
@@ -217,8 +217,8 @@ public class VolumeAdaptationTests
 
                     Assert.True(current.Mev >= 1, $"MEV {current.Mev} ispod jedinice za seed {seed}.");
                     Assert.True(
-                        current.Mrv > current.Mev,
-                        $"Pojas urušen ({current.Mev}/{current.Mrv}) za seed {seed}.");
+                        current.Mrv > current.Mav && current.Mav > current.Mev,
+                        $"Pojas urušen ({current.Mev}/{current.Mav}/{current.Mrv}) za seed {seed}.");
                 }
             }
         }
@@ -239,5 +239,66 @@ public class VolumeAdaptationTests
         }
 
         Assert.Equal(33, current.Mrv);
+    }
+
+    [Fact]
+    public void Adjust_RaisesMav_WhenTheTargetVolumeStillLeftRepsInReserve()
+    {
+        // Nedelja odrađena na ciljnom volumenu koja je i dalje ostavljala rezervu znači
+        // da je cilj postavljen prenisko.
+        var response = new VolumeResponse(PerformedSets: 16m, AverageRirDeviation: 1.5m, FailureShare: 0m);
+
+        var result = VolumeAdaptation.Adjust(Seed, Seed, response);
+
+        Assert.Equal(17, result.Mav);
+    }
+
+    [Fact]
+    public void Adjust_LowersMav_WhenTheTargetVolumeProducedFatigue()
+    {
+        var response = new VolumeResponse(PerformedSets: 16m, AverageRirDeviation: -1.5m, FailureShare: 0m);
+
+        var result = VolumeAdaptation.Adjust(Seed, Seed, response);
+
+        Assert.Equal(15, result.Mav);
+    }
+
+    [Fact]
+    public void Adjust_LeavesMavAlone_WhenTheWeekWasFarBelowIt()
+    {
+        // Osam serija ne govori ništa o tome da li je cilj od šesnaest dobro postavljen.
+        var response = new VolumeResponse(PerformedSets: 8m, AverageRirDeviation: 2m, FailureShare: 0m);
+
+        var result = VolumeAdaptation.Adjust(Seed, Seed, response);
+
+        Assert.Equal(Seed.Mav, result.Mav);
+    }
+
+    [Fact]
+    public void Adjust_KeepsMavStrictlyInsideTheBand()
+    {
+        // MAV je cilj; van pojasa ne bi bio cilj nego još jedna granica.
+        var current = new VolumeLandmarkValues(Mev: 10, Mav: 11, Mrv: 12);
+        var response = new VolumeResponse(PerformedSets: 12m, AverageRirDeviation: -3m, FailureShare: 1m);
+
+        var result = VolumeAdaptation.Adjust(current, Seed, response);
+
+        Assert.True(result.Mev < result.Mav, $"MAV {result.Mav} nije iznad MEV {result.Mev}.");
+        Assert.True(result.Mav < result.Mrv, $"MAV {result.Mav} nije ispod MRV {result.Mrv}.");
+    }
+
+    [Fact]
+    public void Adjust_StopsMavAtFiftyPercentAboveSeed()
+    {
+        // 16 + 50% = 24; posle toga cilj prestaje da raste ma koliko nedelja prošlo.
+        var current = Seed;
+        var goodWeek = new VolumeResponse(PerformedSets: 40m, AverageRirDeviation: 2m, FailureShare: 0m);
+
+        for (var week = 0; week < 30; week++)
+        {
+            current = VolumeAdaptation.Adjust(current, Seed, goodWeek);
+        }
+
+        Assert.Equal(24, current.Mav);
     }
 }

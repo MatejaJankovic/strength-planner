@@ -135,6 +135,12 @@
   background: var(--color-ink);
 }
 
+// Cilj se crta punije od granica: MEV i MRV su ivice, MAV je ono na sta se gadja.
+.marker--mav {
+  background: var(--color-primary);
+  width: 3px;
+}
+
 .vrow__meta {
   color: var(--color-muted);
   font-size: 0.78rem;

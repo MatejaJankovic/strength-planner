@@ -22,6 +22,6 @@ public class UserVolumeLandmarkConfiguration : IEntityTypeConfiguration<UserVolu
         // Optimalni pojas mora da postoji i u bazi, ne samo u algoritmu.
         builder.ToTable(table => table.HasCheckConstraint(
             "CK_UserVolumeLandmarks_MevBelowMrv",
-            "\"Mev\" >= 1 AND \"Mrv\" > \"Mev\""));
+            "\"Mev\" >= 1 AND \"Mav\" > \"Mev\" AND \"Mrv\" > \"Mav\""));
     }
 }

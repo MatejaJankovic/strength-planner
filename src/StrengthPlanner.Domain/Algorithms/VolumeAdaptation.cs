@@ -1,7 +1,7 @@
 namespace StrengthPlanner.Domain.Algorithms;
 
 /// <summary>
-/// Moves a user's MEV/MRV limits toward the volume they actually tolerate.
+/// Moves a user's MEV/MAV/MRV limits toward the volume they actually tolerate.
 ///
 /// The seeded landmarks are population averages: every lifter starts on the same
 /// numbers per muscle group even though real tolerance varies widely. Rather than ask
@@ -21,12 +21,19 @@ public static class VolumeAdaptation
     /// <summary>How far a personal landmark may drift from its seeded value, as a share.</summary>
     public const decimal MaxDriftFromSeed = 0.50m;
 
-    /// <summary>Minimum gap kept between MEV and MRV so the optimal band never collapses.</summary>
+    /// <summary>
+    /// Minimum gap kept between MEV and MRV so the optimal band never collapses. Two is
+    /// the smallest gap that still leaves room for MAV strictly between them.
+    /// </summary>
     public const int MinBandWidth = 2;
 
     // Volumen ispod ovog udela MRV-a ne govori ništa o gornjoj granici: lakoća na
     // pola posla nije dokaz da bi i pun posao bio podnošljiv.
     private const decimal NearMrvShare = 0.90m;
+
+    // Isti razlog važi i za ciljni volumen: nedelja odrađena znatno ispod MAV-a ne
+    // govori ništa o tome da li je MAV dobro postavljen.
+    private const decimal NearMavShare = 0.90m;
 
     // Odstupanje RIR-a mora da pređe ceo poen da bi se uzelo kao signal; sve ispod
     // toga je šum procene, pogotovo kod početnika.
@@ -61,6 +68,7 @@ public static class VolumeAdaptation
                              && response.FailureShare <= TolerableFailureShare;
 
         var mrv = current.Mrv;
+        var mav = current.Mav;
         var mev = current.Mev;
 
         // Gornja granica: pomera se samo ako je nedelja stvarno bila blizu nje.
@@ -71,6 +79,21 @@ public static class VolumeAdaptation
         else if (response.PerformedSets >= current.Mev && showedFatigue)
         {
             mrv -= MaxWeeklyStep;
+        }
+
+        // Ciljni volumen: pomera se kada je nedelja odrađena na njemu ili iznad njega.
+        // MAV je jedina granica oko koje se zaista trenira, pa je i jedina o kojoj svaka
+        // takva nedelja nešto kaže — za razliku od MEV-a i MRV-a, koji se dodiruju retko.
+        if (response.PerformedSets >= current.Mav * NearMavShare)
+        {
+            if (hadRepsToSpare)
+            {
+                mav += MaxWeeklyStep;
+            }
+            else if (showedFatigue)
+            {
+                mav -= MaxWeeklyStep;
+            }
         }
 
         // Donja granica: sudi se samo kada je nedelja i bila na donjoj granici,
@@ -88,6 +111,7 @@ public static class VolumeAdaptation
         }
 
         mev = ClampToSeed(mev, seed.Mev);
+        mav = ClampToSeed(mav, seed.Mav);
         mrv = ClampToSeed(mrv, seed.Mrv);
 
         // Optimalni pojas se čuva podizanjem MRV-a kad god je to moguće. Spuštanje MEV-a
@@ -111,7 +135,13 @@ public static class VolumeAdaptation
         // Pojas mora da preživi i poravnanje MEV-a na jedinicu, inače bi ovo prošlo
         // algoritam a palo na CHECK ograničenju usred završavanja treninga.
         var safeMev = Math.Max(1, mev);
-        return new VolumeLandmarkValues(safeMev, Math.Max(safeMev + MinBandWidth, mrv));
+        var safeMrv = Math.Max(safeMev + MinBandWidth, mrv);
+
+        // MAV je cilj, pa mora da ostane strogo unutar pojasa: van njega ne bi bio cilj
+        // nego još jedna granica.
+        var safeMav = Math.Clamp(mav, safeMev + 1, safeMrv - 1);
+
+        return new VolumeLandmarkValues(safeMev, safeMav, safeMrv);
     }
 
     private static int ClampToSeed(int value, int seed)

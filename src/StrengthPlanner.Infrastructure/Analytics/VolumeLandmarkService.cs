@@ -7,7 +7,7 @@ using StrengthPlanner.Infrastructure.Persistence;
 namespace StrengthPlanner.Infrastructure.Analytics;
 
 /// <summary>
-/// Čita lične MEV/MRV granice i pomera ih posle svake završene nedelje.
+/// Čita lične MEV/MAV/MRV granice i pomera ih posle svake završene nedelje.
 /// Seed vrednosti iz <see cref="VolumeLandmark"/> ostaju referentna tačka: lične
 /// granice su dozvoljene samo u pojasu oko njih i tu se vraćaju na reset.
 /// </summary>
@@ -29,7 +29,7 @@ public sealed class VolumeLandmarkService
     {
         var seeds = await _db.VolumeLandmarks
             .AsNoTracking()
-            .Select(landmark => new { landmark.MuscleGroupId, landmark.Mev, landmark.Mrv })
+            .Select(landmark => new { landmark.MuscleGroupId, landmark.Mev, landmark.Mav, landmark.Mrv })
             .ToListAsync(cancellationToken);
 
         var personal = await _db.UserVolumeLandmarks
@@ -45,14 +45,24 @@ public sealed class VolumeLandmarkService
                 {
                     return new EffectiveLandmark(
                         own.Mev,
+                        own.Mav,
                         own.Mrv,
                         seed.Mev,
+                        seed.Mav,
                         seed.Mrv,
-                        IsPersonal: own.Mev != seed.Mev || own.Mrv != seed.Mrv,
+                        IsPersonal: own.Mev != seed.Mev || own.Mav != seed.Mav || own.Mrv != seed.Mrv,
                         own.UpdatedAt);
                 }
 
-                return new EffectiveLandmark(seed.Mev, seed.Mrv, seed.Mev, seed.Mrv, IsPersonal: false, null);
+                return new EffectiveLandmark(
+                    seed.Mev,
+                    seed.Mav,
+                    seed.Mrv,
+                    seed.Mev,
+                    seed.Mav,
+                    seed.Mrv,
+                    IsPersonal: false,
+                    null);
             });
     }
 
@@ -115,10 +125,10 @@ public sealed class VolumeLandmarkService
 
         var seeds = await _db.VolumeLandmarks
             .AsNoTracking()
-            .Select(landmark => new { landmark.MuscleGroupId, landmark.Mev, landmark.Mrv })
+            .Select(landmark => new { landmark.MuscleGroupId, landmark.Mev, landmark.Mav, landmark.Mrv })
             .ToDictionaryAsync(
                 landmark => landmark.MuscleGroupId,
-                landmark => new VolumeLandmarkValues(landmark.Mev, landmark.Mrv),
+                landmark => new VolumeLandmarkValues(landmark.Mev, landmark.Mav, landmark.Mrv),
                 cancellationToken);
 
         var personal = await _db.UserVolumeLandmarks
@@ -135,7 +145,7 @@ public sealed class VolumeLandmarkService
             personal.TryGetValue(muscleGroupId, out var row);
             var current = row is null
                 ? seed
-                : new VolumeLandmarkValues(row.Mev, row.Mrv);
+                : new VolumeLandmarkValues(row.Mev, row.Mav, row.Mrv);
 
             var adjusted = VolumeAdaptation.Adjust(current, seed, response);
             if (adjusted == current)
@@ -151,6 +161,7 @@ public sealed class VolumeLandmarkService
                     UserId = userId,
                     MuscleGroupId = muscleGroupId,
                     Mev = adjusted.Mev,
+                    Mav = adjusted.Mav,
                     Mrv = adjusted.Mrv,
                     UpdatedAt = completedAt
                 });
@@ -158,6 +169,7 @@ public sealed class VolumeLandmarkService
             else
             {
                 row.Mev = adjusted.Mev;
+                row.Mav = adjusted.Mav;
                 row.Mrv = adjusted.Mrv;
                 row.UpdatedAt = completedAt;
             }
@@ -179,7 +191,8 @@ public sealed class VolumeLandmarkService
 
     /// <summary>
     /// Sažima nedelju u jedan odgovor po mišićnoj grupi. Sve se meri doprinosom serije
-    /// (primarna 1.0, sekundarna 0.5), pa sekundarni rad ne broji kao pun.
+    /// (primarna 1.0, sekundarna 0.5) pomnoženim stimulativnim udelom, pa ni sekundarni
+    /// rad ni serija daleko od otkaza ne broje kao pun.
     /// </summary>
     public async Task<Dictionary<Guid, VolumeResponse>> GetWeeklyResponsesAsync(
         Guid userId,
@@ -206,19 +219,26 @@ public sealed class VolumeLandmarkService
                 group => group.Key,
                 group =>
                 {
-                    var totalWeight = group.Sum(item => item.Contribution);
+                    // Doprinos serije skalira se blizinom otkaza: serija daleko od otkaza
+                    // donosi zamor, ali ne i stimulus koji broj serija treba da predstavlja.
+                    var totalWeight = group.Sum(item =>
+                        item.Contribution * StimulativeVolume.CreditFor(item.Rir, item.IsFailure));
                     if (totalWeight == 0)
                     {
                         return new VolumeResponse(0, 0, 0);
                     }
 
+                    // Prosek mora da deli isti ponder sa imeniocem: kada se volumen meri
+                    // stimulativnim doprinosom, i odstupanje RIR-a se meri nad istim tim
+                    // serijama, inače to nije ponderisani prosek nego mešavina dve mere.
                     var deviation = group.Sum(item =>
                         item.Contribution
+                        * StimulativeVolume.CreditFor(item.Rir, item.IsFailure)
                         * (new WorkingSet(item.Reps, item.Rir, item.IsFailure).EffectiveRir(item.RepRangeMin)
                            - item.TargetRir));
                     var failed = group
                         .Where(item => item.IsFailure)
-                        .Sum(item => item.Contribution);
+                        .Sum(item => item.Contribution * StimulativeVolume.CreditFor(item.Rir, item.IsFailure));
 
                     return new VolumeResponse(
                         totalWeight,
@@ -240,8 +260,10 @@ public sealed class VolumeLandmarkService
 /// <summary>Granice koje važe za korisnika, uz seed vrednosti radi poređenja u UI-ju.</summary>
 public sealed record EffectiveLandmark(
     int Mev,
+    int Mav,
     int Mrv,
     int SeedMev,
+    int SeedMav,
     int SeedMrv,
     bool IsPersonal,
     DateTime? UpdatedAt);

@@ -52,13 +52,14 @@
             [style.width.%]="row.barPct"
           ></div>
           <span class="marker marker--mev" [style.left.%]="row.mevPct" aria-hidden="true"></span>
+          <span class="marker marker--mav" [style.left.%]="row.mavPct" aria-hidden="true"></span>
           <span class="marker marker--mrv" [style.left.%]="row.mrvPct" aria-hidden="true"></span>
         </div>
         <p class="vrow__meta numeric">
-          MEV {{ row.mev }} · MRV {{ row.mrv }}
+          MEV {{ row.mev }} · <strong>cilj {{ row.mav }}</strong> · MRV {{ row.mrv }}
           @if (row.isPersonal) {
             <span class="vrow__learned">
-              lično (podrazumevano {{ row.defaultMev }}/{{ row.defaultMrv }})
+              lično (podrazumevano {{ row.defaultMev }}/{{ row.defaultMav }}/{{ row.defaultMrv }})
             </span>
           }
         </p>
@@ -73,7 +74,12 @@
       <span class="legend__chip"><span class="dot dot--above"></span> iznad</span>
     </div>
     <p class="legend__note">
-      MEV = minimalni efektivni volumen, MRV = maksimalni oporavljivi volumen; cilj je biti između.
+      MEV = minimalni efektivni volumen, MRV = maksimalni oporavljivi volumen, a cilj je
+      MAV — volumen na kome telo najbolje napreduje bez ulaska u prekomeran zamor.
+    </p>
+    <p class="legend__note">
+      Broje se samo stimulativne serije: serija do otkaza ili blizu njega (RIR 0–3) ulazi
+      cela, RIR 4 upola, a serija dalja od otkaza donosi zamor ali ne i volumen.
     </p>
 
     @if (personalCount() > 0) {

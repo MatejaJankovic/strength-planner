@@ -93,18 +93,28 @@ public static class DbSeeder
 
     private static async Task SeedVolumeLandmarksAsync(AppDbContext db, IReadOnlyDictionary<string, Guid> muscleIds)
     {
-        var existing = await db.VolumeLandmarks.Select(v => v.MuscleGroupId).ToListAsync();
+        var existing = await db.VolumeLandmarks.ToDictionaryAsync(v => v.MuscleGroupId);
 
-        foreach (var (muscle, mev, mrv) in VolumeLandmarkSeeds)
+        foreach (var (muscle, mev, mav, mrv) in VolumeLandmarkSeeds)
         {
             var muscleId = muscleIds[muscle];
-            if (existing.Contains(muscleId))
+
+            if (existing.TryGetValue(muscleId, out var landmark))
+            {
+                // Zatečeni redovi nemaju MAV; dopuni ga bez diranja ostalih vrednosti.
+                if (landmark.Mav <= 0)
+                {
+                    landmark.Mav = mav;
+                }
+
                 continue;
+            }
 
             db.VolumeLandmarks.Add(new VolumeLandmark
             {
                 MuscleGroupId = muscleId,
                 Mev = mev,
+                Mav = mav,
                 Mrv = mrv
             });
         }
@@ -182,18 +192,19 @@ public static class DbSeeder
             new[] { ("Abs", 1.0m) })
     };
 
-    // (Mišićna grupa, MEV, MRV) — orijentacione nedeljne radne serije.
-    private static readonly (string Muscle, int Mev, int Mrv)[] VolumeLandmarkSeeds =
+    // (Mišićna grupa, MEV, MAV, MRV) — orijentacione nedeljne radne serije.
+    // MAV je ciljna vrednost; priručnik je smešta u raspon 8-20 serija nedeljno.
+    private static readonly (string Muscle, int Mev, int Mav, int Mrv)[] VolumeLandmarkSeeds =
     {
-        ("Chest", 10, 22),
-        ("Back", 10, 25),
-        ("Shoulders", 8, 26),
-        ("Quads", 8, 20),
-        ("Hamstrings", 6, 16),
-        ("Glutes", 4, 16),
-        ("Biceps", 8, 20),
-        ("Triceps", 6, 18),
-        ("Calves", 8, 20),
-        ("Abs", 6, 25)
+        ("Chest", 10, 16, 22),
+        ("Back", 10, 18, 25),
+        ("Shoulders", 8, 16, 26),
+        ("Quads", 8, 14, 20),
+        ("Hamstrings", 6, 11, 16),
+        ("Glutes", 4, 10, 16),
+        ("Biceps", 8, 14, 20),
+        ("Triceps", 6, 12, 18),
+        ("Calves", 8, 13, 20),
+        ("Abs", 6, 12, 25)
     };
 }

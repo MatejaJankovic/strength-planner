@@ -1,10 +1,14 @@
 export interface VolumeItemDto {
   muscle: string;
+  /** Stimulativne serije: doprinos svake serije skaliran blizinom otkaza. */
   sets: number;
   mev: number;
+  /** Maksimalni adaptivni volumen — ciljni broj serija. */
+  mav: number;
   mrv: number;
   /** Populaciona seed granica — vrednost na koju reset vraca. */
   defaultMev: number;
+  defaultMav: number;
   defaultMrv: number;
   /** True kada su granice naucene iz korisnikovog odgovora na volumen. */
   isPersonal: boolean;
