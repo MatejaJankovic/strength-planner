@@ -61,7 +61,15 @@
           @if (week.isDeload) {
             <span class="badge">
               <mat-icon aria-hidden="true">bedtime</mat-icon>
-              Deload
+              {{ week.isAutoDeload ? 'Deload zbog umora' : 'Deload' }}
+            </span>
+          } @else if (week.fatigueScore != null) {
+            <span
+              class="badge badge--muted"
+              [title]="'Ocena umora iz ove nedelje: ' + (week.fatigueScore | number: '1.0-2') + ' od 1'"
+            >
+              <mat-icon aria-hidden="true">monitor_heart</mat-icon>
+              Umor {{ week.fatigueScore | number: '1.0-2' }}
             </span>
           }
         </div>

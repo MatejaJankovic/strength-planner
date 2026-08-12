@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { DatePipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
@@ -17,7 +17,7 @@ interface StatusMeta {
 
 @Component({
   selector: 'app-workout-dashboard',
-  imports: [RouterLink, DatePipe, MatIconModule, StatChip, EmptyState, Loading],
+  imports: [RouterLink, DatePipe, DecimalPipe, MatIconModule, StatChip, EmptyState, Loading],
   templateUrl: './workout-dashboard.html',
   styleUrl: './workout-dashboard.scss',
 })

@@ -17,7 +17,12 @@
       <mat-icon aria-hidden="true">arrow_back</mat-icon>
     </button>
     <div>
-      <p class="eyebrow">Nedelja {{ ws.weekNumber }}{{ ws.isDeload ? ' · Deload' : '' }}</p>
+      <p class="eyebrow">
+        Nedelja {{ ws.weekNumber }}
+        @if (ws.isDeload) {
+          · {{ ws.isAutoDeload ? 'Deload zbog umora' : 'Deload' }}
+        }
+      </p>
       <h1>{{ ws.dayLabel }}</h1>
     </div>
   </header>
@@ -28,6 +33,26 @@
         <mat-icon aria-hidden="true">verified</mat-icon>
         <h2>Trening završen</h2>
       </div>
+
+      @if (result.autoDeload; as deload) {
+        <div class="deload-note" role="status">
+          <mat-icon aria-hidden="true">battery_alert</mat-icon>
+          <div>
+            <strong>Nedelja {{ deload.deloadWeek }} je pretvorena u deload.</strong>
+            <p>
+              Nedelja {{ deload.triggeredByWeek }} pokazala je nakupljen umor
+              (ocena {{ deload.fatigueScore | number: '1.0-2' }} od 1). Serije su
+              prepolovljene, a opterećenje spušteno na 90% — pa da se vratiš jači.
+            </p>
+            @if (deload.plannedDeloadReleasedWeek; as released) {
+              <p>
+                Planirani deload u nedelji {{ released }} je otpao — mezociklus nosi
+                jedno rasterećenje, a ono je sada ranije.
+              </p>
+            }
+          </div>
+        </div>
+      }
       <ul class="summary__list">
         @for (ex of result.exercises; track ex.exercisePlanId) {
           <li class="summary__item">
