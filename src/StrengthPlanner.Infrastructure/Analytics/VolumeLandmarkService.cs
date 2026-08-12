@@ -219,31 +219,64 @@ public sealed class VolumeLandmarkService
                 group => group.Key,
                 group =>
                 {
-                    // Doprinos serije skalira se blizinom otkaza: serija daleko od otkaza
-                    // donosi zamor, ali ne i stimulus koji broj serija treba da predstavlja.
-                    var totalWeight = group.Sum(item =>
-                        item.Contribution * StimulativeVolume.CreditFor(item.Rir, item.IsFailure));
-                    if (totalWeight == 0)
+                    var measured = group
+                        .Select(item => new
+                        {
+                            item.Contribution,
+                            item.IsFailure,
+                            Set = new WorkingSet(item.Reps, item.Rir, item.IsFailure),
+                            item.TargetRir,
+                            item.RepRangeMin
+                        })
+                        .Select(item => new
+                        {
+                            item.Contribution,
+                            item.IsFailure,
+                            item.Set,
+                            Credit = StimulativeVolume.CreditFor(item.Set),
+                            item.TargetRir,
+                            item.RepRangeMin
+                        })
+                        .ToList();
+
+                    // Zamor pravi svaka odrađena serija, pa se on meri sirovim zbirom.
+                    var rawWeight = measured.Sum(item => item.Contribution);
+
+                    // Stimulus pravi samo serija blizu otkaza — to je mera koju granice uče.
+                    var stimulativeWeight = measured.Sum(item => item.Contribution * item.Credit);
+
+                    // Udeo otkaza je pitanje o zamoru, pa deli sirovim zbirom. Sa
+                    // stimulativnim imeniocem bi nedelja od deset laganih i dve otkazane
+                    // serije prijavila udeo 1.0 umesto 0.17, pa bi pragovi umora
+                    // (0.25 / 0.125) izgubili kalibraciju i MEV bi se survao na svoj pod.
+                    var failed = measured
+                        .Where(item => item.IsFailure)
+                        .Sum(item => item.Contribution);
+                    var failureShare = rawWeight == 0 ? 0m : failed / rawWeight;
+
+                    if (stimulativeWeight == 0)
                     {
-                        return new VolumeResponse(0, 0, 0);
+                        // Nedelja bez ijedne stimulativne serije ne govori ništa o tome
+                        // koliko volumena korisnik podnosi. Odstupanje RIR-a se namerno
+                        // ne prijavljuje: sve te serije nose veliko pozitivno odstupanje
+                        // ("prelako"), ali to je posao progresije da ispravi opterećenjem,
+                        // a ne granica volumena da protumači kao toleranciju.
+                        return new VolumeResponse(0, rawWeight, 0, failureShare);
                     }
 
                     // Prosek mora da deli isti ponder sa imeniocem: kada se volumen meri
                     // stimulativnim doprinosom, i odstupanje RIR-a se meri nad istim tim
                     // serijama, inače to nije ponderisani prosek nego mešavina dve mere.
-                    var deviation = group.Sum(item =>
+                    var deviation = measured.Sum(item =>
                         item.Contribution
-                        * StimulativeVolume.CreditFor(item.Rir, item.IsFailure)
-                        * (new WorkingSet(item.Reps, item.Rir, item.IsFailure).EffectiveRir(item.RepRangeMin)
-                           - item.TargetRir));
-                    var failed = group
-                        .Where(item => item.IsFailure)
-                        .Sum(item => item.Contribution * StimulativeVolume.CreditFor(item.Rir, item.IsFailure));
+                        * item.Credit
+                        * (item.Set.EffectiveRir(item.RepRangeMin) - item.TargetRir));
 
                     return new VolumeResponse(
-                        totalWeight,
-                        deviation / totalWeight,
-                        failed / totalWeight);
+                        stimulativeWeight,
+                        rawWeight,
+                        deviation / stimulativeWeight,
+                        failureShare);
                 });
     }
 

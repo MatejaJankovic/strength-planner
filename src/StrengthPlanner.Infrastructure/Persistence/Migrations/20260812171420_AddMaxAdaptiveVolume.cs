@@ -28,9 +28,9 @@ namespace StrengthPlanner.Infrastructure.Persistence.Migrations
                 nullable: false,
                 defaultValue: 0);
 
-            // Kolone se dodaju sa nulom, a novo ogranicenje trazi Mev < Mav < Mrv —
-            // zato se MAV mora popuniti PRE nego sto ogranicenje pocne da vazi, inace
-            // migracija pada na svakoj bazi koja vec ima naucene granice.
+            // Kolone se dodaju sa nulom, a nova ogranicenja traze Mev < Mav < Mrv —
+            // zato se MAV mora popuniti PRE nego sto ogranicenja pocnu da vaze, inace
+            // migracija pada na svakoj bazi koja vec ima podatke.
 
             // Pojas mora biti bar dve serije sirok da bi MAV imao gde da stane.
             migrationBuilder.Sql("""
@@ -39,7 +39,7 @@ namespace StrengthPlanner.Infrastructure.Persistence.Migrations
                 """);
 
             // Seed tabela dobija vrednosti iz prirucnika (raspon 8-20 serija nedeljno);
-            // nepoznata misicna grupa pada na sredinu svog pojasa.
+            // misicna grupa van spiska pada na sredinu svog pojasa.
             migrationBuilder.Sql("""
                 UPDATE "VolumeLandmarks" v
                 SET "Mav" = CASE m."Name"
@@ -59,21 +59,29 @@ namespace StrengthPlanner.Infrastructure.Persistence.Migrations
                 WHERE m."Id" = v."MuscleGroupId";
                 """);
 
-            // Naucene granice su licne, pa se za njih ne uzima vrednost iz prirucnika
-            // nego sredina korisnikovog sopstvenog pojasa.
-            migrationBuilder.Sql("""
-                UPDATE "UserVolumeLandmarks"
-                SET "Mav" = ("Mev" + "Mrv") / 2;
-                """);
-
-            // Seed vrednost iz CASE-a moze da ispadne van suzenog licnog pojasa.
+            // Vrednost iz prirucnika moze da ispadne van pojasa konkretnog reda (npr. ako
+            // je MRV rucno spusten), pa se poravnava na taj pojas. Red bez odgovarajuce
+            // misicne grupe ostaje na nuli i ovde ga podize donja granica.
             migrationBuilder.Sql("""
                 UPDATE "VolumeLandmarks"
                 SET "Mav" = GREATEST("Mev" + 1, LEAST("Mrv" - 1, "Mav"));
                 """);
 
+            // Naucene granice su licne, pa za njih ne uzimamo vrednost iz prirucnika nego
+            // sredinu korisnikovog sopstvenog pojasa. Uz Mrv >= Mev + 2 iz koraka iznad,
+            // celobrojno deljenje uvek pada strogo unutar pojasa.
+            migrationBuilder.Sql("""
+                UPDATE "UserVolumeLandmarks"
+                SET "Mav" = ("Mev" + "Mrv") / 2;
+                """);
+
             migrationBuilder.AddCheckConstraint(
-                name: "CK_UserVolumeLandmarks_MevBelowMrv",
+                name: "CK_VolumeLandmarks_LandmarkOrder",
+                table: "VolumeLandmarks",
+                sql: "\"Mev\" >= 1 AND \"Mav\" > \"Mev\" AND \"Mrv\" > \"Mav\"");
+
+            migrationBuilder.AddCheckConstraint(
+                name: "CK_UserVolumeLandmarks_LandmarkOrder",
                 table: "UserVolumeLandmarks",
                 sql: "\"Mev\" >= 1 AND \"Mav\" > \"Mev\" AND \"Mrv\" > \"Mav\"");
         }
@@ -82,7 +90,11 @@ namespace StrengthPlanner.Infrastructure.Persistence.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropCheckConstraint(
-                name: "CK_UserVolumeLandmarks_MevBelowMrv",
+                name: "CK_VolumeLandmarks_LandmarkOrder",
+                table: "VolumeLandmarks");
+
+            migrationBuilder.DropCheckConstraint(
+                name: "CK_UserVolumeLandmarks_LandmarkOrder",
                 table: "UserVolumeLandmarks");
 
             migrationBuilder.DropColumn(

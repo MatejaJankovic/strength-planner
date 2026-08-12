@@ -102,9 +102,11 @@ public static class DbSeeder
             if (existing.TryGetValue(muscleId, out var landmark))
             {
                 // Zatečeni redovi nemaju MAV; dopuni ga bez diranja ostalih vrednosti.
+                // Vrednost iz priručnika se poravnava na pojas samog reda — ako je neko
+                // ručno spustio MRV, cilj ne sme da završi iznad plafona.
                 if (landmark.Mav <= 0)
                 {
-                    landmark.Mav = mav;
+                    landmark.Mav = Math.Clamp(mav, landmark.Mev + 1, landmark.Mrv - 1);
                 }
 
                 continue;

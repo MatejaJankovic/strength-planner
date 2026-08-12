@@ -8,6 +8,12 @@ public class VolumeLandmarkConfiguration : IEntityTypeConfiguration<VolumeLandma
 {
     public void Configure(EntityTypeBuilder<VolumeLandmark> builder)
     {
+        // Isti redosled koji važi za naučene granice mora da važi i za seed vrednosti,
+        // inače bi marker cilja mogao da završi iza plafona na ekranu.
+        builder.ToTable(table => table.HasCheckConstraint(
+            "CK_VolumeLandmarks_LandmarkOrder",
+            "\"Mev\" >= 1 AND \"Mav\" > \"Mev\" AND \"Mrv\" > \"Mav\""));
+
         builder.HasKey(vl => vl.Id);
 
         // Jedinstven landmark po mišićnoj grupi.

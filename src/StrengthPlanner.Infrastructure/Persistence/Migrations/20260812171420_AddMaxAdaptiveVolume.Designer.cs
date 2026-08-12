@@ -12,7 +12,7 @@ using StrengthPlanner.Infrastructure.Persistence;
 namespace StrengthPlanner.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260812133608_AddMaxAdaptiveVolume")]
+    [Migration("20260812171420_AddMaxAdaptiveVolume")]
     partial class AddMaxAdaptiveVolume
     {
         /// <inheritdoc />
@@ -567,7 +567,7 @@ namespace StrengthPlanner.Infrastructure.Persistence.Migrations
 
                     b.ToTable("UserVolumeLandmarks", t =>
                         {
-                            t.HasCheckConstraint("CK_UserVolumeLandmarks_MevBelowMrv", "\"Mev\" >= 1 AND \"Mav\" > \"Mev\" AND \"Mrv\" > \"Mav\"");
+                            t.HasCheckConstraint("CK_UserVolumeLandmarks_LandmarkOrder", "\"Mev\" >= 1 AND \"Mav\" > \"Mev\" AND \"Mrv\" > \"Mav\"");
                         });
                 });
 
@@ -594,7 +594,10 @@ namespace StrengthPlanner.Infrastructure.Persistence.Migrations
                     b.HasIndex("MuscleGroupId")
                         .IsUnique();
 
-                    b.ToTable("VolumeLandmarks");
+                    b.ToTable("VolumeLandmarks", t =>
+                        {
+                            t.HasCheckConstraint("CK_VolumeLandmarks_LandmarkOrder", "\"Mev\" >= 1 AND \"Mav\" > \"Mev\" AND \"Mrv\" > \"Mav\"");
+                        });
                 });
 
             modelBuilder.Entity("StrengthPlanner.Domain.Entities.WorkoutSession", b =>

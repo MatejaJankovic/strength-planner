@@ -35,6 +35,10 @@ public static class VolumeAdaptation
     // govori ništa o tome da li je MAV dobro postavljen.
     private const decimal NearMavShare = 0.90m;
 
+    // Koliko cilj sme da odluta naviše u odnosu na mesto koje mu seed daje u pojasu.
+    // Dovoljno da se uči, premalo da se slepi za plafon.
+    private const decimal TargetDriftShare = 0.15m;
+
     // Odstupanje RIR-a mora da pređe ceo poen da bi se uzelo kao signal; sve ispod
     // toga je šum procene, pogotovo kod početnika.
     private const decimal MeaningfulRirDeviation = 1m;
@@ -137,11 +141,33 @@ public static class VolumeAdaptation
         var safeMev = Math.Max(1, mev);
         var safeMrv = Math.Max(safeMev + MinBandWidth, mrv);
 
-        // MAV je cilj, pa mora da ostane strogo unutar pojasa: van njega ne bi bio cilj
-        // nego još jedna granica.
-        var safeMav = Math.Clamp(mav, safeMev + 1, safeMrv - 1);
+        return new VolumeLandmarkValues(safeMev, ClampTarget(mav, safeMev, safeMrv, seed), safeMrv);
+    }
 
-        return new VolumeLandmarkValues(safeMev, safeMav, safeMrv);
+    /// <summary>
+    /// Drži cilj unutar pojasa i na razumnom odstojanju od plafona.
+    ///
+    /// Prag za pomeranje MAV-a je slabiji od praga za MRV (jer je MAV niži), pa MAV raste
+    /// na svakoj dobroj nedelji na kojoj raste i MRV — i na nizu onih na kojima MRV ne
+    /// raste. Bez ograničenja bi se vremenom slepio za plafon i ekran bi kao cilj nudio
+    /// volumen jednu seriju ispod onoga koji je sistem proglasio nepodnošljivim, što je
+    /// tačno suprotno od definicije MAV-a ("bez ulaska u prekomeran zamor").
+    ///
+    /// Granica je zato mesto koje seed propisuje u pojasu, uvećano za dozvoljeno lutanje.
+    /// Bez tog dodatka MAV ne bi bio naučen nego samo izveden iz MEV-a i MRV-a, pa ne bi
+    /// ni imao smisla kao zasebna vrednost.
+    /// </summary>
+    private static int ClampTarget(int value, int mev, int mrv, VolumeLandmarkValues seed)
+    {
+        var seedBand = seed.Mrv - seed.Mev;
+        var seedShare = seedBand > 0
+            ? (seed.Mav - seed.Mev) / (decimal)seedBand
+            : 0.5m;
+
+        var allowedShare = Math.Min(1m, seedShare + TargetDriftShare);
+        var ceiling = mev + (int)Math.Round((mrv - mev) * allowedShare, MidpointRounding.AwayFromZero);
+
+        return Math.Clamp(value, mev + 1, Math.Clamp(ceiling, mev + 1, mrv - 1));
     }
 
     private static int ClampToSeed(int value, int seed)

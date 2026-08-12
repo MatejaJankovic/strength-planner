@@ -77,8 +77,8 @@ nedelja nešto kaže — za razliku od MEV-a i MRV-a, koji se dodiruju retko.
   napisano drugi put kao `CASE`.
 - Prosek odstupanja RIR-a sada koristi **isti** ponder kao i imenilac. Bez toga to ne bi
   bio ponderisani prosek nego mešavina dve različite mere.
-- Auto-deload nije menjan — njegov signal `volumen/MRV` čita `PerformedSets`, pa je
-  ispravku dobio besplatno.
+- `VolumeResponse` nosi **dve** mere: `PerformedSets` (stimulativna) i `RawSets` (sve
+  odrađene serije). Podela nije kozmetička — vidi ispravke posle revizije.
 - Migracija `AddMaxAdaptiveVolume` dodaje kolonu i **popunjava je pre** nego što novo
   `CHECK` ograničenje (`Mev < Mav < Mrv`) počne da važi — inače bi pala na svakoj bazi
   koja već ima naučene granice, jer nova kolona ulazi sa nulom.
@@ -109,3 +109,71 @@ nedelja nešto kaže — za razliku od MEV-a i MRV-a, koji se dodiruju retko.
 - U pretraživaču: mezociklus u kome je Push odrađen sa RIR 1 a Pull i Legs sa RIR 5 —
   Chest 6, Shoulders 9, Triceps 10.5 serija, a Back, Biceps, Quads i ostali **0**.
   Traka nosi marker cilja, a legenda objašnjava pravilo.
+
+
+## Ispravke posle revizije koda
+
+### Auto-deload je dobio regresiju, a ne ispravku
+
+Prvo sam napisao da je auto-deload „ispravku dobio besplatno" jer čita `PerformedSets`.
+Bilo je obrnuto. Signal `volumen naspram MRV` je mera **zamora**, a `PerformedSets` je
+posle ove izmene postao mera **stimulusa** — a sopstvena dokumentacija klase kaže da
+serija daleko od otkaza *„donosi zamor, ali ne i stimulus"*. Stvarni zamor je time nestao
+iz ocene umora.
+
+Revizija je izračunala konkretan slučaj: grudi sa MRV 22 i nedeljom od 20 serija (12 na
+RIR 4, 8 do otkaza). Sirovo 20/22 = 0.909; stimulativno 14/22 = 0.636, ispod praga od
+0.80, pa signal doprinosi nulom. Ocena pada sa **0.6418 na 0.5600** — deload koji je
+trebalo da se aktivira više se ne aktivira.
+
+Rešenje je razdvajanje mera: `VolumeResponse` sada nosi i `RawSets`, i pravilo je
+jednostavno — *pitanja o stimulusu koriste stimulativnu meru, pitanja o zamoru sirovu*.
+MRV je granica **oporavka**, a oporavak troši svaka odrađena serija.
+
+### Udeo otkaza je promenio značenje i survavao MEV
+
+Otkazana serija uvek nosi pun doprinos, pa preživljava u brojiocu, dok serije sa nultim
+doprinosom nestaju iz imenioca. `FailureShare` je time prestao da znači „koliki deo
+nedelje je otkazao" i postao „koliki deo *stimulativnog rada* je otkazao" — a pragovi
+(0.25 / 0.125) su kalibrisani za ono prvo.
+
+Nedelja od 12 serija (10 na RIR 5, 2 do otkaza) je pre izmene prijavljivala udeo 0.167,
+a posle **1.0**. Time se pali `showedFatigue`, a volumen je ispod MEV-a, pa MEV pada:
+**10 → 9 → 8 → 7 → 6 → 5** za pet takvih nedelja, i tu ostaje. Model je zamor deset
+laganih serija pripisao dvema stimulativnim i zaključio da se korisnik umara na dve serije.
+
+Sada `FailureShare` deli sirovim zbirom i pragovi zadržavaju kalibraciju.
+
+### Cilj se lepio za plafon
+
+Prag za pomeranje MAV-a je slabiji od praga za MRV (jer je MAV niži), pa je MAV rastao i
+na nedeljama na kojima MRV ne raste. Revizija je pustila deset seed vrednosti kroz 20
+dobrih nedelja: **7 od 10 završava na tačno `MAV = MRV − 1`**, a udeo u pojasu ide sa
+~0.50 na ~0.92. Ekran bi kao cilj nudio volumen jednu seriju ispod onog koji je sistem
+proglasio nepodnošljivim — suprotno definiciji MAV-a.
+
+Prva verzija ispravke (fiksiranje MAV-a na mesto koje seed daje u pojasu) je bila
+pretesna: MAV više uopšte nije mogao da se pomeri, pa ne bi bio *naučen* nego samo izveden
+iz MEV-a i MRV-a. Konačno rešenje dozvoljava lutanje od 15 procentnih poena iznad seed
+pozicije — dovoljno da se uči, premalo da se slepi za plafon. Dva testa čuvaju obe strane.
+
+### Sitnije
+
+- `DbSeeder` je upisivao vrednost iz priručnika ne gledajući pojas samog reda; sada je
+  poravnava. Uz to, i `VolumeLandmarks` je dobila isto `CHECK` ograničenje kao lična
+  tabela — bez njega bi marker cilja mogao da završi iza plafona na ekranu.
+- Ograničenje je preimenovano u `CK_..._LandmarkOrder`; staro ime
+  (`MevBelowMrv`) više nije opisivalo ono što ograničenje proverava.
+- Legenda je tvrdila da zelena znači „na cilju"; sada kaže da boja pokazuje pojas, a cilj
+  je marker unutar njega. `GetStatus` namerno i dalje deli po MEV/MRV granicama.
+- Marker cilja je bio u primarnoj boji, koja na zelenoj traci ima kontrast ispod 3:1 —
+  najslabije vidljiv baš tamo gde je najvažniji. Sada je akcentne boje. Svi markeri su
+  centrirani na svoju vrednost (`translateX(-50%)`) umesto da počinju na njoj.
+- `CreditFor(WorkingSet)` je bio pozvan samo iz testova; sada se koristi u produkciji,
+  jednom po seriji umesto tri puta.
+
+### Poznato ograničenje
+
+`MesocycleGenerator` ne čita granice volumena — broj serija je i dalje fiksiran
+(`DefaultTargetSets = 3`). MAV je zato za sada **prikazna** vrednost: plan se ne cilja na
+njega. To zatvara sledeća grana, u kojoj nivo iskustva određuje početni volumen.
