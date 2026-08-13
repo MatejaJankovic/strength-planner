@@ -122,7 +122,28 @@ public sealed class DeloadService
             return null;
         }
 
-        await ApplyDeloadAsync(userId, weekId, nextWeek.Id, cancellationToken);
+        // Propis nedelje zavisi od modela: kod periodizovanog bloka nedelja koja postaje
+        // deload nosi rep-opseg i RIR svoje faze, a ne cilja. Bez ovoga bi „rasterećenje"
+        // ostalo na propisu faze intenziteta — kod hipertrofije doslovno serije do otkaza.
+        var block = await _db.Mesocycles
+            .AsNoTracking()
+            .Where(mesocycle => mesocycle.Id == mesocycleId && mesocycle.UserId == userId)
+            .Select(mesocycle => new { mesocycle.Goal, mesocycle.PeriodizationModel })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var goal = block is null
+            ? (GoalPrescription?)null
+            : GoalPrescriptions.ForGoal(block.Goal);
+        var model = block?.PeriodizationModel ?? PeriodizationModel.Flat;
+
+        await ApplyDeloadAsync(
+            userId,
+            weekId,
+            nextWeek.Id,
+            nextWeek.WeekNumber,
+            model,
+            goal,
+            cancellationToken);
 
         nextWeek.IsDeload = true;
         nextWeek.IsAutoDeload = true;
@@ -131,6 +152,8 @@ public sealed class DeloadService
             userId,
             mesocycleId,
             nextWeek.WeekNumber,
+            model,
+            goal,
             cancellationToken);
 
         return new DeloadOutcome(weekNumber, nextWeek.WeekNumber, score, plannedDeloadRestored);
@@ -149,14 +172,20 @@ public sealed class DeloadService
 
     /// <summary>
     /// Mezociklus nosi jedan deload. Kada ga umor povuče ranije, planirani deload na
-    /// kraju se vraća u običnu trenažnu nedelju — inače bi četvoronedeljni blok ostao
-    /// sa dva rasterećenja, a u lošijem slučaju i sa izolovanim pojedinačnim nedeljama
-    /// treninga između njih. Vraća broj nedelje koja je oslobođena, ili null.
+    /// kraju se vraća u običnu trenažnu nedelju — inače bi blok ostao sa dva rasterećenja,
+    /// a u lošijem slučaju i sa izolovanim pojedinačnim nedeljama treninga između njih.
+    /// Vraća broj nedelje koja je oslobođena, ili null.
+    ///
+    /// Oslobođena nedelja preuzima propis nedelje koja je upravo žrtvovana za deload: taj
+    /// deo bloka time nije izgubljen nego pomeren za nedelju dana. Kod ravnog bloka su svi
+    /// propisi isti, pa se ponaša kao i ranije.
     /// </summary>
     private async Task<int?> RestorePlannedDeloadAsync(
         Guid userId,
         Guid mesocycleId,
         int autoDeloadWeekNumber,
+        PeriodizationModel model,
+        GoalPrescription? goal,
         CancellationToken cancellationToken)
     {
         var planned = await _db.TrainingWeeks
@@ -173,25 +202,33 @@ public sealed class DeloadService
             return null;
         }
 
-        // Broj serija se vraća sa odgovarajuće trenažne nedelje: deload nedelja je pri
-        // generisanju kreirana sa prepolovljenim serijama, pa se original ne može
-        // izvesti računanjem unazad.
-        var referenceSets = await _db.ExercisePlans
+        // Polazni broj serija bloka se izvodi iz bilo koje preostale trenažne nedelje.
+        // Ne čita se iz profila namerno: korisnik koji je usred bloka promenio nivo
+        // iskustva ne sme time da promeni oblik već napravljenog plana.
+        var reference = await _db.ExercisePlans
             .AsNoTracking()
             .Where(plan => plan.WorkoutSession.TrainingWeek.MesocycleId == mesocycleId
+                           && plan.WorkoutSession.TrainingWeek.Mesocycle.UserId == userId
                            && !plan.WorkoutSession.TrainingWeek.IsDeload
                            && plan.WorkoutSession.TrainingWeek.WeekNumber != autoDeloadWeekNumber)
             .Select(plan => new
             {
                 plan.WorkoutSession.DayLabel,
                 plan.ExerciseId,
-                plan.TargetSets
+                plan.TargetSets,
+                plan.WorkoutSession.TrainingWeek.WeekNumber
             })
             .ToListAsync(cancellationToken);
 
-        var setsByExerciseAndDay = referenceSets
+        var baseSetsByExerciseAndDay = reference
             .GroupBy(item => (item.DayLabel, item.ExerciseId))
-            .ToDictionary(group => group.Key, group => group.Max(item => item.TargetSets));
+            .ToDictionary(
+                group => group.Key,
+                group =>
+                {
+                    var sample = group.First();
+                    return Periodization.BaseSetsFrom(model, sample.WeekNumber, sample.TargetSets);
+                });
 
         var plans = await _db.ExercisePlans
             .Include(plan => plan.WorkoutSession)
@@ -200,12 +237,27 @@ public sealed class DeloadService
 
         foreach (var plan in plans)
         {
-            if (setsByExerciseAndDay.TryGetValue(
+            if (!baseSetsByExerciseAndDay.TryGetValue(
                     (plan.WorkoutSession.DayLabel, plan.ExerciseId),
-                    out var targetSets))
+                    out var baseSets))
             {
-                plan.TargetSets = targetSets;
+                continue;
             }
+
+            // Nedelja preuzima propis one koja je postala deload — dakle faze koja bi
+            // inače ispala iz bloka.
+            var prescription = Periodization.ForWeek(
+                model,
+                autoDeloadWeekNumber,
+                goal?.RepRangeMin ?? plan.RepRangeMin,
+                goal?.RepRangeMax ?? plan.RepRangeMax,
+                goal?.TargetRir ?? plan.TargetRir,
+                baseSets);
+
+            plan.TargetSets = prescription.Sets;
+            plan.RepRangeMin = prescription.RepRangeMin;
+            plan.RepRangeMax = prescription.RepRangeMax;
+            plan.TargetRir = prescription.TargetRir;
         }
 
         planned.IsDeload = false;
@@ -222,6 +274,9 @@ public sealed class DeloadService
         Guid userId,
         Guid completedWeekId,
         Guid deloadWeekId,
+        int deloadWeekNumber,
+        PeriodizationModel model,
+        GoalPrescription? goal,
         CancellationToken cancellationToken)
     {
         var usedWeights = await _db.SetLogs
@@ -261,7 +316,21 @@ public sealed class DeloadService
 
         foreach (var plan in plans)
         {
-            plan.TargetSets = Math.Max(1, (int)Math.Ceiling(plan.TargetSets / 2m));
+            // Serije se polove u odnosu na POLAZNI broj bloka, ne u odnosu na ono što ta
+            // nedelja nosi: nedelja faze volumena nosi seriju više, pa bi polovljenje
+            // njene vrednosti dalo preobiman deload.
+            var baseSets = Periodization.BaseSetsFrom(model, deloadWeekNumber, plan.TargetSets);
+            plan.TargetSets = Periodization.DeloadSets(baseSets);
+
+            // Rasterećenje vraća rep-opseg i RIR cilja. Kod ravnog bloka su već takvi, pa
+            // se ništa ne menja; kod periodizovanog je ovo jedina stvar koja sprečava
+            // deload propisan do otkaza.
+            if (goal is not null)
+            {
+                plan.RepRangeMin = goal.RepRangeMin;
+                plan.RepRangeMax = goal.RepRangeMax;
+                plan.TargetRir = goal.TargetRir;
+            }
 
             var baseWeight = usedByExerciseAndDay.TryGetValue(
                 (plan.ExerciseId, plan.WorkoutSession.DayLabel),

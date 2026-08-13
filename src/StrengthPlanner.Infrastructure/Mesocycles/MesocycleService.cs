@@ -33,6 +33,7 @@ public class MesocycleService : IMesocycleService
                 Goal = mesocycle.Goal,
                 StartDate = mesocycle.StartDate,
                 DurationWeeks = mesocycle.DurationWeeks,
+                PeriodizationModel = mesocycle.PeriodizationModel,
                 IsActive = mesocycle.IsActive
             })
             .ToListAsync(cancellationToken);
@@ -117,6 +118,7 @@ public class MesocycleService : IMesocycleService
             Goal = mesocycle.Goal,
             StartDate = mesocycle.StartDate,
             DurationWeeks = mesocycle.DurationWeeks,
+            PeriodizationModel = mesocycle.PeriodizationModel,
             IsActive = mesocycle.IsActive,
             Weeks = mesocycle.Weeks
                 .OrderBy(week => week.WeekNumber)

@@ -13,8 +13,6 @@ namespace StrengthPlanner.Infrastructure.Mesocycles;
 
 public class MesocycleGenerator : IMesocycleGenerator
 {
-    private const int DurationWeeks = 4;
-
     private readonly AppDbContext _db;
     private readonly E1RmCalculator _e1RmCalculator = new();
 
@@ -39,7 +37,7 @@ public class MesocycleGenerator : IMesocycleGenerator
             throw new MesocycleGenerationException("Mesocycle name is required.");
         }
 
-        var goalSettings = GetGoalSettings(request.Goal);
+        var goalSettings = GoalPrescriptions.ForGoal(request.Goal);
         var exerciseNames = template.Days
             .SelectMany(day => day.Exercises)
             .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -138,7 +136,8 @@ public class MesocycleGenerator : IMesocycleGenerator
             exerciseByName,
             oneRepMaxByExerciseId,
             weightStepByExerciseId,
-            experienceLevel);
+            experienceLevel,
+            request.PeriodizationModel);
 
         _db.Mesocycles.Add(mesocycle);
         await _db.SaveChangesAsync(cancellationToken);
@@ -158,35 +157,43 @@ public class MesocycleGenerator : IMesocycleGenerator
         Goal goal,
         DateTime startDate,
         WorkoutTemplate template,
-        GoalSettings goalSettings,
+        GoalPrescription goalSettings,
         IReadOnlyDictionary<string, Exercise> exerciseByName,
         IReadOnlyDictionary<Guid, decimal> oneRepMaxByExerciseId,
         IReadOnlyDictionary<Guid, decimal> weightStepByExerciseId,
-        ExperienceLevel experienceLevel)
+        ExperienceLevel experienceLevel,
+        PeriodizationModel periodizationModel)
     {
         var startingSets = ExperienceProgramming.StartingSetsPerExercise(experienceLevel);
+
+        // Model određuje i koliko blok traje i kako se propis menja iz nedelje u nedelju.
+        var prescriptions = Periodization.ForBlock(
+            periodizationModel,
+            goalSettings.RepRangeMin,
+            goalSettings.RepRangeMax,
+            goalSettings.TargetRir,
+            startingSets);
+
         var mesocycle = new Mesocycle
         {
             Id = Guid.NewGuid(),
             UserId = userId,
             Name = name,
             Goal = goal,
+            PeriodizationModel = periodizationModel,
             StartDate = startDate,
-            DurationWeeks = DurationWeeks,
+            DurationWeeks = prescriptions.Count,
             IsActive = true
         };
 
-        for (var weekNumber = 1; weekNumber <= DurationWeeks; weekNumber++)
+        foreach (var prescription in prescriptions)
         {
-            var isDeload = weekNumber == DurationWeeks;
-            var targetSets = isDeload
-                ? Math.Max(1, (int)Math.Ceiling(startingSets / 2m))
-                : startingSets;
+            var weekNumber = prescription.WeekNumber;
             var week = new TrainingWeek
             {
                 Id = Guid.NewGuid(),
                 WeekNumber = weekNumber,
-                IsDeload = isDeload
+                IsDeload = prescription.IsDeload
             };
 
             for (var dayIndex = 0; dayIndex < template.Days.Count; dayIndex++)
@@ -214,7 +221,7 @@ public class MesocycleGenerator : IMesocycleGenerator
                     var targetWeightKg = GetInitialTargetWeight(
                         weekNumber,
                         exercise.Id,
-                        goalSettings,
+                        prescription,
                         oneRepMaxByExerciseId,
                         WeightStepResolver.StepFor(weightStepByExerciseId, exercise.Id));
 
@@ -223,10 +230,10 @@ public class MesocycleGenerator : IMesocycleGenerator
                         Id = Guid.NewGuid(),
                         ExerciseId = exercise.Id,
                         Order = exerciseIndex + 1,
-                        TargetSets = targetSets,
-                        RepRangeMin = goalSettings.RepRangeMin,
-                        RepRangeMax = goalSettings.RepRangeMax,
-                        TargetRir = goalSettings.TargetRir,
+                        TargetSets = prescription.Sets,
+                        RepRangeMin = prescription.RepRangeMin,
+                        RepRangeMax = prescription.RepRangeMax,
+                        TargetRir = prescription.TargetRir,
                         TargetWeightKg = targetWeightKg
                     });
                 }
@@ -240,10 +247,15 @@ public class MesocycleGenerator : IMesocycleGenerator
         return mesocycle;
     }
 
+    /// <summary>
+    /// Opterećenje za prvu nedelju, izvedeno iz poznatog 1RM-a i propisa te nedelje.
+    /// Kasnije nedelje puni progresija kada se prethodna završi — tek tada se zna šta je
+    /// korisnik zaista uradio.
+    /// </summary>
     private decimal? GetInitialTargetWeight(
         int weekNumber,
         Guid exerciseId,
-        GoalSettings goalSettings,
+        WeekPrescription prescription,
         IReadOnlyDictionary<Guid, decimal> oneRepMaxByExerciseId,
         decimal weightStepKg)
     {
@@ -254,19 +266,9 @@ public class MesocycleGenerator : IMesocycleGenerator
 
         return _e1RmCalculator.WorkingWeightFor(
             oneRepMax,
-            goalSettings.RepRangeMin,
-            goalSettings.TargetRir,
+            prescription.RepRangeMin,
+            prescription.TargetRir,
             weightStepKg);
-    }
-
-    private static GoalSettings GetGoalSettings(Goal goal)
-    {
-        return goal switch
-        {
-            Goal.Strength => new GoalSettings(RepRangeMin: 3, RepRangeMax: 6, TargetRir: 2),
-            Goal.Hypertrophy => new GoalSettings(RepRangeMin: 8, RepRangeMax: 12, TargetRir: 1),
-            _ => throw new MesocycleGenerationException($"Unsupported goal: '{goal}'.")
-        };
     }
 
     private static DateTime GetSessionDate(DateTime startDate, int weekNumber, int dayIndex, int daysPerWeek)
@@ -288,6 +290,7 @@ public class MesocycleGenerator : IMesocycleGenerator
             Goal = mesocycle.Goal,
             StartDate = mesocycle.StartDate,
             DurationWeeks = mesocycle.DurationWeeks,
+            PeriodizationModel = mesocycle.PeriodizationModel,
             IsActive = mesocycle.IsActive,
             Weeks = mesocycle.Weeks
                 .OrderBy(week => week.WeekNumber)
@@ -334,5 +337,4 @@ public class MesocycleGenerator : IMesocycleGenerator
         };
     }
 
-    private sealed record GoalSettings(int RepRangeMin, int RepRangeMax, int TargetRir);
 }

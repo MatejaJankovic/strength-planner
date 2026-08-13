@@ -18,6 +18,12 @@ public class MacrocycleBlockDto
     public Goal Goal { get; set; }
     public string TemplateKey { get; set; } = string.Empty;
 
+    /// <summary>Model periodizacije za ovaj blok.</summary>
+    public PeriodizationModel PeriodizationModel { get; set; }
+
+    /// <summary>Koliko nedelja blok traje — zavisi od modela.</summary>
+    public int DurationWeeks { get; set; }
+
     /// <summary>Naziv šablona za prikaz ("Push/Pull/Legs"), a ne ključ.</summary>
     public string TemplateName { get; set; } = string.Empty;
 

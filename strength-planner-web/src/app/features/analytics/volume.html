@@ -16,7 +16,7 @@
   <div class="control">
     <span class="control__label">Nedelja</span>
     <div class="weeks" role="group" aria-label="Izbor nedelje">
-      @for (w of weeks; track w) {
+      @for (w of weeks(); track w) {
         <button
           class="weeks__btn numeric"
           type="button"

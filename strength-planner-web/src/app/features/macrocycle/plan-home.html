@@ -23,7 +23,7 @@
         <h2 class="plan__name">{{ current.name }}</h2>
         <p class="plan__meta numeric">
           {{ current.blocks.length }} {{ blockLabel(current.blocks.length) }} ·
-          {{ current.blocks.length * 4 }} {{ weekLabel(current.blocks.length * 4) }} · od
+          {{ planWeeks(current) }} {{ weekLabel(planWeeks(current)) }} · od
           {{ current.startDate | date: 'd.M.yyyy.' }}
         </p>
       </div>
@@ -37,7 +37,11 @@
                 <span class="tblock__goal">{{ goalLabel(block.goal) }}</span>
                 <span class="tblock__status">{{ statusLabel(block) }}</span>
               </div>
-              <p class="tblock__template">{{ block.templateName }}</p>
+              <p class="tblock__template">
+                {{ block.templateName }} ·
+                <span class="numeric">{{ modelLabel(block.periodizationModel) }},
+                  {{ block.durationWeeks }} ned.</span>
+              </p>
 
               @if (block.totalSessions > 0) {
                 <div
@@ -89,7 +93,7 @@
     <section class="card">
       <h2 class="card__title">Novi plan</h2>
       <p class="card__hint">
-        Svaki blok je četvoronedeljni mezociklus. Prvi kreće odmah; ostali se generišu
+        Blok traje 4 nedelje ako je ravan, 6 ako je periodizovan. Prvi kreće odmah; ostali se generišu
         kad im dođe red, od 1RM vrednosti koje tada važe.
       </p>
 
@@ -141,6 +145,26 @@
                 @for (option of goalOptions; track option.value) {
                   <option [value]="option.value" [selected]="option.value === block.goal">
                     {{ option.label }}
+                  </option>
+                }
+              </select>
+            </div>
+
+            <div class="field">
+              <label class="sr-only" [attr.for]="'block-model-' + $index">
+                Raspored bloka {{ $index + 1 }}
+              </label>
+              <select
+                class="control control--compact"
+                [attr.id]="'block-model-' + $index"
+                (change)="setBlockModel($index, $any($event.target).value)"
+              >
+                @for (option of modelOptions; track option.value) {
+                  <option
+                    [value]="option.value"
+                    [selected]="option.value === block.periodizationModel"
+                  >
+                    {{ option.label }} · {{ option.weeks }} ned.
                   </option>
                 }
               </select>

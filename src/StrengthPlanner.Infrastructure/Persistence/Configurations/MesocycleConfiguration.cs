@@ -18,6 +18,13 @@ public class MesocycleConfiguration : IEntityTypeConfiguration<Mesocycle>
             .HasConversion<string>()
             .HasMaxLength(16);
 
+        // Zatečeni blokovi su pravljeni bez modela i ravni su po sadržaju, pa im
+        // podrazumevana vrednost odgovara stvarnom rasporedu.
+        builder.Property(m => m.PeriodizationModel)
+            .HasConversion<string>()
+            .HasMaxLength(16)
+            .HasDefaultValue(Domain.Enums.PeriodizationModel.Flat);
+
         builder.Property(m => m.DurationWeeks).HasDefaultValue(4);
 
         // Kaskadni lanac: Mesocycle -> Weeks.

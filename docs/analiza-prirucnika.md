@@ -1,9 +1,32 @@
-# Šta priručnik traži, a aplikacija (još) ne radi
+# Šta priručnik traži, i šta je od toga urađeno
 
 Analiza *Džepnog priručnika o programiranju treninga* (Dušan Petrović, Igor Maljik)
-naspram trenutnog stanja StrengthPlanner-a, uključujući pet upravo isporučenih grana.
+naspram stanja StrengthPlanner-a, uz pet ranije isporučenih grana.
 
-Ovo su predlozi za dalji rad — nije implementirano. Poređano po odnosu vrednosti i cene.
+Dokument je pisan kao spisak predloga. **Sada nosi i ishod svakog** — status stoji uz samu
+stavku, uz granu na kojoj je urađena ili razlog zbog kog nije.
+
+## Ishod
+
+| # | Stavka | Ishod |
+|---|---|---|
+| 1 | Ne broji se svaka serija | ✅ `feature/stimulative-volume` |
+| 2 | Nedostaje MAV | ✅ ista grana |
+| 3 | Nedelje su ravne | ✅ `feature/periodization-models` |
+| 4 | Nivo iskustva se ne koristi | ✅ `feature/experience-level` |
+| 5 | Propušten trening | ⛔ preskočeno — odluka korisnika |
+| 6 | Zagrevanje | ⛔ preskočeno — odluka korisnika |
+| 7 | Pauze između serija | ⛔ preskočeno — odluka korisnika |
+| 8 | Obrasci pokreta | ◐ rešeno drugačije — `feature/more-templates` |
+| 9 | Osećaj pred trening | ⛔ preskočeno — odluka korisnika |
+| 10 | Volumen održavanja i prioriteti | ⛔ preskočeno — odluka korisnika |
+
+Stavka 8 je jedina rešena drugačije nego što je predlagano: umesto modela obrazaca pokreta
+i algoritma nad njim, unapred su sastavljeni bolji šabloni, a pokrivenost se proverava
+testovima. Tako je i bilo traženo.
+
+Svaka urađena stavka ima svoj zapis u [`docs/features/`](features/), sa opisom šta je
+urađeno, zašto, šta je revizija koda našla i kako je ispravljeno.
 
 ---
 
@@ -56,6 +79,15 @@ naspram MRV" u oceni umora. Sve tri sada veruju broju serija umesto stimulusu.
 Cena: mala. Jedna čista domenska funkcija i njeno provlačenje kroz `VolumeService`,
 `VolumeLandmarkService` i `DeloadService`.
 
+> **Status: urađeno** — grana [`feature/stimulative-volume`](features/stimulative-volume.md)
+> (zajedno sa stavkom 2).
+>
+> `StimulativeVolume` daje pun kredit seriji do RIR 3, pola za RIR 4 i ništa iznad toga.
+> Ispostavilo se da jedna skala nije dovoljna: pitanja o **stimulusu** (da li volumen
+> raste) i pitanja o **zamoru** (koliko je nedelja bila teška) traže različite mere, pa
+> `VolumeResponse` sada nosi obe — stimulativne i sirove serije. Prva verzija je usmerila
+> signal zamora na stimulativnu meru i time pokvarila automatski deload.
+
 ---
 
 ## 2. Nedostaje MAV — srednja granica
@@ -72,6 +104,12 @@ raspon od 10 do 22 serije. To nije cilj, to je odsustvo cilja.
 **Predlog:** dodati MAV kao ciljnu vrednost. Ekran volumena tada ne kaže samo „nisi ispod
 i nisi iznad" nego „cilj ti je ~14 serija, na 9 si". Adaptivni mehanizam koji već uči MEV
 i MRV može da uči i MAV po istom pravilu.
+
+> **Status: urađeno** — ista grana kao stavka 1.
+>
+> MAV je dodat kao ciljna vrednost, seedovan po mišićnoj grupi i uključen u adaptaciju.
+> Cilj se uči zajedno sa MEV i MRV, ali sa ograničenim pomeranjem kroz pojas — bez toga je
+> u prvoj verziji odlutao na MRV−1, pa je „cilj" prestao da bude cilj.
 
 ---
 
@@ -96,6 +134,21 @@ ponašanje, zadržati kao podrazumevano), *linearni* ili *inverzni*.
 **Zašto vredi:** ovo je najveći raskorak između onoga što rad tvrdi i onoga što kod radi,
 a nadovezuje se pravo na tek isporučene makrociklusе — svaki blok bi nosio svoj model.
 
+> **Status: urađeno** — grana [`feature/periodization-models`](features/periodization-models.md).
+>
+> Tri modela: **ravan** (4 nedelje, podrazumevan i identičan ranijem ponašanju), **linearan**
+> i **obrnut** (po 6 nedelja). Model se bira po bloku dugoročnog plana i određuje i trajanje
+> bloka.
+>
+> Propis nije upisan u `TrainingWeek` nego u `ExercisePlan`, gde serije, rep-opseg i RIR
+> ionako već stoje — pa nije trebala nijedna nova kolona za sam propis, samo `PeriodizationModel`
+> na mezociklusu i na bloku plana.
+>
+> Uz to je moralo i opterećenje: kada naredna nedelja traži drugačiji rep-opseg, težina se
+> **preračunava iz najsvežijeg e1RM-a** umesto da se nosi iz prethodne nedelje uvećana za
+> korak. Bez toga bi periodizacija menjala ponavljanja, a opterećenje bi ostalo od nekog
+> drugog zadatka.
+
 ---
 
 ## 4. Nivo iskustva se prikuplja, a ne koristi
@@ -114,6 +167,15 @@ se **nigde ne čita**. Početnik i napredni vežbač dobijaju identičan plan.
 **Predlog:** iz nivoa izvesti početni volumen, odnos složenih i izolacionih vežbi, i
 politiku deload-a. Za auto-deload konkretno: početniku prag podići (ili ga isključiti),
 naprednom spustiti — priručnik je tu izričit.
+
+> **Status: urađeno** — grana [`feature/experience-level`](features/experience-level.md).
+>
+> Nivo iskustva sada određuje **četiri** stvari: broj vežbi po treningu i odnos složenih i
+> izolacionih, broj serija po vežbi, gde počinju granice volumena (×0.8 / ×1.0 / ×1.2) i
+> da li umor uopšte može da povuče deload — početnik nema prag, kako priručnik i traži.
+>
+> Ograničenje koje je ta grana sama prijavila (napredni vežbač je dobijao svega tri vežbe)
+> zatvoreno je u [`feature/more-templates`](features/more-templates.md).
 
 ---
 
@@ -134,6 +196,12 @@ nikada ne prepozna kao gotova. U četvoronedeljnom mezociklusu to je trećina si
 **Predlog:** dodati `Skipped`. Nedelja je gotova kada je svaka sesija `Completed` ili
 `Skipped`. Rešava i priručnikov slučaj i rupu iz revizije.
 
+> **Status: preskočeno — odluka korisnika.**
+>
+> *„Ako preskočim trening danas, uraditi ću isti set vežbi sutra."* Trening se ne vezuje za
+> datum toliko čvrsto da bi propuštanje trebalo modelovati; redosled treninga ostaje isti,
+> samo se pomera u vremenu.
+
 ---
 
 ## 6. Zagrevanje se ne planira
@@ -152,6 +220,8 @@ prikazati je kao podsetnik. Ne upisuje se kao volumen, jer nije stimulativna.
 
 Cena je mala, a vidljivost velika: to je prva stvar koju korisnik radi na treningu.
 
+> **Status: preskočeno — odluka korisnika.** Zagrevanje se ne planira u aplikaciji.
+
 ---
 
 ## 7. Pauze između serija se ne pominju
@@ -166,6 +236,9 @@ postoji** i nosi tačno onu informaciju koja je za ovo potrebna.
 
 **Predlog:** tajmer pauze koji se pokreće po upisu serije, sa podrazumevanim trajanjem po
 tipu vežbe. Najmanja izmena na ovom spisku sa direktnom koristi na treningu.
+
+> **Status: preskočeno — odluka korisnika.** *„Pauziraću koliko mi treba."* Pauza se ne
+> propisuje ni ne meri.
 
 ---
 
@@ -218,6 +291,9 @@ za svih 27 vežbi.
 opterećenje za taj dan. Uklapa se u priču rada o auto-regulaciji, jer je danas jedini ulaz
 u regulaciju ono što se desilo *posle* serije, a ne stanje *pre* nje.
 
+> **Status: preskočeno — odluka korisnika.** Osećaj pred trening se ne prikuplja i ne
+> utiče na plan.
+
 ---
 
 ## 10. Volumen održavanja i prioriteti
@@ -229,6 +305,9 @@ u regulaciju ono što se desilo *posle* serije, a ne stanje *pre* nje.
 
 **Predlog:** korisnik označi 1-2 prioritetne grupe; ostale dobijaju MEV/3 kao cilj. Metafora
 sa ciglama i zamkom iz priručnika je gotovo objašnjenje za korisnika.
+
+> **Status: preskočeno — odluka korisnika.** Volumen održavanja i prioritetne mišićne
+> grupe ostaju van opsega.
 
 ---
 
@@ -244,20 +323,18 @@ sa ciglama i zamkom iz priručnika je gotovo objašnjenje za korisnika.
 
 ---
 
-## Predloženi redosled
+## Kojim redom je urađeno
 
-| # | Izmena | Cena | Zašto tim redom |
-|---|---|---|---|
-| 1 | Stimulativni volumen (blizina otkaza) | mala | popravlja tri postojeća mehanizma odjednom |
-| 2 | `Skipped` status | mala | zatvara i rupu koju je revizija našla |
-| 3 | Pauze po tipu vežbe | mala | podatak već postoji |
-| 4 | Zagrevanje iz ciljne težine | mala | oslanja se na korak po vežbi |
-| 5 | MAV kao treća granica | srednja | dopunjuje adaptivne granice |
-| 6 | Nivo iskustva u generisanju | srednja | polje se već prikuplja |
-| 7 | Periodizacija po nedeljama | veća | najveći raskorak sa tvrdnjom rada |
-| 8 | Obrasci pokreta + zamena vežbe | veća | traži proširenje seed podataka |
-| 9 | Osećaj pred trening | srednja | lepo se uklapa u auto-regulaciju |
-| 10 | Volumen održavanja i prioriteti | srednja | nadogradnja na MAV |
+Predloženi redosled je poštovan gde je imao smisla, uz jednu izmenu: šabloni (stavka 8) su
+urađeni **pre** periodizacije, jer je prethodna grana prijavila da napredni vežbač na
+zatečenim šablonima dobija krnj trening — a taj problem se nije mogao rešiti bez novih
+šablona i novih izolacionih vežbi.
 
-Prve četiri stavke zajedno su otprilike jedna grana i pokrivaju četiri odvojena mesta gde
-aplikacija odstupa od priručnika.
+| Grana | Stavke | PR |
+|---|---|---|
+| [`feature/stimulative-volume`](features/stimulative-volume.md) | 1, 2 | #8 |
+| [`feature/experience-level`](features/experience-level.md) | 4 | #9 |
+| [`feature/more-templates`](features/more-templates.md) | 8 | #10 |
+| [`feature/periodization-models`](features/periodization-models.md) | 3 | #11 |
+
+Stavke 5, 6, 7, 9 i 10 su preskočene odlukom korisnika, ne zbog cene.

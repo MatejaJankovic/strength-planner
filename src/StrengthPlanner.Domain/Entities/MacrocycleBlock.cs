@@ -20,6 +20,12 @@ public class MacrocycleBlock
     public Goal Goal { get; set; }
     public string TemplateKey { get; set; } = null!;
 
+    /// <summary>
+    /// Model periodizacije za ovaj blok. Bira se po bloku, jer dugoročan plan i dobija
+    /// smisao time što se raspored menja: blok volumena pa blok intenziteta.
+    /// </summary>
+    public PeriodizationModel PeriodizationModel { get; set; } = PeriodizationModel.Flat;
+
     /// <summary>Mezociklus generisan za ovaj blok; null dok blok nije došao na red.</summary>
     public Guid? MesocycleId { get; set; }
     public Mesocycle? Mesocycle { get; set; }

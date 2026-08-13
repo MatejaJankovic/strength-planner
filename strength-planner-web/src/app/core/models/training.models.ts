@@ -3,6 +3,13 @@ export enum Goal {
   Hypertrophy = 1,
 }
 
+/** Kako se propis menja kroz nedelje bloka. */
+export enum PeriodizationModel {
+  Flat = 0,
+  Linear = 1,
+  Inverse = 2,
+}
+
 export interface ProfileDto {
   userId: string;
   email: string;
@@ -61,6 +68,7 @@ export interface WorkoutTemplateDto {
 export interface GenerateMesocycleRequest {
   templateKey: string;
   goal: Goal;
+  periodizationModel: PeriodizationModel;
   name: string;
   startDate: string;
 }
@@ -71,6 +79,7 @@ export interface MesocycleSummaryDto {
   goal: Goal;
   startDate: string;
   durationWeeks: number;
+  periodizationModel: PeriodizationModel;
   isActive: boolean;
 }
 
@@ -176,6 +185,9 @@ export interface MacrocycleBlockDto {
   id: string;
   order: number;
   goal: Goal;
+  periodizationModel: PeriodizationModel;
+  /** Koliko nedelja blok traje — zavisi od modela. */
+  durationWeeks: number;
   templateKey: string;
   /** Naziv sablona za prikaz ("Push/Pull/Legs"), a ne kljuc. */
   templateName: string;
@@ -197,6 +209,7 @@ export interface MacrocycleDto {
 export interface CreateMacrocycleBlockDto {
   goal: Goal;
   templateKey: string;
+  periodizationModel: PeriodizationModel;
 }
 
 export interface CreateMacrocycleRequest {

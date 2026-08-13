@@ -27,4 +27,10 @@ public class CreateMacrocycleBlockDto
     [Required]
     [MaxLength(64)]
     public string TemplateKey { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Model periodizacije za ovaj blok. Bira se po bloku — dugoročan plan i dobija smisao
+    /// time što se raspored menja između blokova.
+    /// </summary>
+    public PeriodizationModel PeriodizationModel { get; set; } = PeriodizationModel.Flat;
 }
