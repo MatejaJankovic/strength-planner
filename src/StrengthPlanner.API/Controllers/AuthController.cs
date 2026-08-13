@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using StrengthPlanner.Application.DTOs.Auth;
 using StrengthPlanner.Application.Exceptions;
 using StrengthPlanner.Application.Interfaces;
@@ -20,6 +21,7 @@ public class AuthController : ControllerBase
     }
 
     [AllowAnonymous]
+    [EnableRateLimiting("auth")]
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterDto dto)
     {
@@ -35,6 +37,7 @@ public class AuthController : ControllerBase
     }
 
     [AllowAnonymous]
+    [EnableRateLimiting("auth")]
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginDto dto)
     {
@@ -61,6 +64,30 @@ public class AuthController : ControllerBase
 
         var user = await _authService.GetCurrentUserAsync(userId);
         return user is null ? NotFound() : Ok(user);
+    }
+
+    /// <summary>
+    /// Menja lozinku ulogovanog korisnika. Svi ranije izdati tokeni prestaju da važe, pa
+    /// se u odgovoru vraća nov — inače bi korisnik promenom lozinke izbacio sam sebe.
+    /// </summary>
+    [EnableRateLimiting("auth")]
+    [HttpPost("change-password")]
+    public async Task<IActionResult> ChangePassword(ChangePasswordDto dto)
+    {
+        var sub = User.FindFirstValue(JwtRegisteredClaimNames.Sub)
+                  ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (!Guid.TryParse(sub, out var userId))
+            return Unauthorized();
+
+        try
+        {
+            return Ok(await _authService.ChangePasswordAsync(userId, dto));
+        }
+        catch (AuthException ex)
+        {
+            return BadRequest(new { errors = ex.Errors });
+        }
     }
 
     /// <summary>Menja profil ulogovanog korisnika.</summary>

@@ -1,3 +1,6 @@
+/** Mora da prati PasswordPolicy.MinimumLength na serveru. */
+export const PASSWORD_MIN_LENGTH = 10;
+
 export interface RegisterDto {
   email: string;
   password: string;
@@ -18,6 +21,11 @@ export interface AuthResponseDto {
   email: string;
   token: string;
   expiresAt: string;
+}
+
+export interface ChangePasswordDto {
+  currentPassword: string;
+  newPassword: string;
 }
 
 export interface CurrentUserDto {

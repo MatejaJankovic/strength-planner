@@ -53,7 +53,7 @@
             [type]="showPassword() ? 'text' : 'password'"
             formControlName="password"
             autocomplete="new-password"
-            placeholder="Bar 6 karaktera"
+            [attr.placeholder]="'Bar ' + passwordMinLength + ' karaktera'"
             [class.control--invalid]="
               form.controls.password.invalid && form.controls.password.touched
             "
@@ -77,11 +77,13 @@
             @if (form.controls.password.hasError('required')) {
               Unesi lozinku.
             } @else {
-              Lozinka mora imati bar 6 karaktera.
+              Lozinka mora imati bar {{ passwordMinLength }} karaktera.
             }
           </p>
         } @else {
-          <p class="field__hint" id="reg-password-hint">Bar 6 karaktera.</p>
+          <p class="field__hint" id="reg-password-hint">
+            Bar {{ passwordMinLength }} karaktera. Duža lozinka je jača od komplikovane.
+          </p>
         }
       </div>
 

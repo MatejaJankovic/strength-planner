@@ -16,13 +16,17 @@ public class JwtTokenService : ITokenService
         _settings = settings.Value;
     }
 
-    public string CreateToken(Guid userId, string email)
+    /// <summary>Claim koji nosi Identity security stamp korisnika.</summary>
+    public const string SecurityStampClaim = "sstamp";
+
+    public string CreateToken(Guid userId, string email, string securityStamp)
     {
         var claims = new[]
         {
             new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, email),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new Claim(SecurityStampClaim, securityStamp)
         };
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Key));

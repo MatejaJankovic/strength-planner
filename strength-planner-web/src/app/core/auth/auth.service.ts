@@ -7,7 +7,14 @@ import { ExerciseService } from '../api/exercise.service';
 import { MacrocycleService } from '../api/macrocycle.service';
 import { MesocycleService } from '../api/mesocycle.service';
 import { OneRepMaxService } from '../api/one-rep-max.service';
-import { AuthResponseDto, CurrentUserDto, LoginDto, RegisterDto, UpdateProfileDto } from '../models/auth.models';
+import {
+  AuthResponseDto,
+  ChangePasswordDto,
+  CurrentUserDto,
+  LoginDto,
+  RegisterDto,
+  UpdateProfileDto,
+} from '../models/auth.models';
 import { AuthTokenStorage } from './auth-token-storage';
 
 @Injectable({ providedIn: 'root' })
@@ -50,6 +57,16 @@ export class AuthService {
     return this.http
       .put<CurrentUserDto>(`${this.apiUrl}/auth/profile`, dto)
       .pipe(tap((user) => this.currentUserSignal.set(user)));
+  }
+
+  /**
+   * Menja lozinku. Server pri tome poništava sve ranije izdate tokene, pa u odgovoru
+   * stiže nov — bez njega bi korisnik promenom lozinke izbacio sam sebe.
+   */
+  changePassword(dto: ChangePasswordDto): Observable<AuthResponseDto> {
+    return this.http
+      .post<AuthResponseDto>(`${this.apiUrl}/auth/change-password`, dto)
+      .pipe(tap((response) => this.tokenStorage.setToken(response.token)));
   }
 
   logout(): void {

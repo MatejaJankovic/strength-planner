@@ -115,6 +115,80 @@
   </section>
 
   <section class="card">
+    <h2 class="card__title">Lozinka</h2>
+    <p class="card__hint">
+      Promena lozinke odjavljuje sve ostale uređaje — ranije izdati tokeni prestaju da važe.
+    </p>
+
+    <form [formGroup]="passwordForm" (ngSubmit)="changePassword()" novalidate>
+      <div class="grid">
+        <div class="field">
+          <label class="field__label" for="pw-current">Trenutna lozinka</label>
+          <input
+            id="pw-current"
+            class="control"
+            type="password"
+            formControlName="currentPassword"
+            autocomplete="current-password"
+          />
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="pw-new">Nova lozinka</label>
+          <input
+            id="pw-new"
+            class="control"
+            type="password"
+            formControlName="newPassword"
+            autocomplete="new-password"
+            [attr.placeholder]="'Bar ' + passwordMinLength + ' karaktera'"
+          />
+          @if (passwordForm.controls.newPassword.touched
+                && passwordForm.controls.newPassword.hasError('minlength')) {
+            <p class="field__error">Lozinka mora imati bar {{ passwordMinLength }} karaktera.</p>
+          }
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="pw-confirm">Potvrdi novu lozinku</label>
+          <input
+            id="pw-confirm"
+            class="control"
+            type="password"
+            formControlName="confirmPassword"
+            autocomplete="new-password"
+          />
+          @if (passwordForm.controls.confirmPassword.touched
+                && passwordForm.hasError('passwordMismatch')) {
+            <p class="field__error">Lozinke se ne poklapaju.</p>
+          }
+        </div>
+      </div>
+
+      <p class="field__hint">
+        Nema oporavka lozinke — ako je zaboraviš, nalog i podaci u njemu se ne mogu vratiti.
+      </p>
+
+      @if (passwordError(); as message) {
+        <p class="alert alert--error" role="alert">
+          <mat-icon aria-hidden="true">error_outline</mat-icon>
+          <span>{{ message }}</span>
+        </p>
+      }
+      @if (passwordSaved()) {
+        <p class="alert alert--ok" role="status">
+          <mat-icon aria-hidden="true">check_circle</mat-icon>
+          <span>Lozinka je promenjena.</span>
+        </p>
+      }
+
+      <button class="btn btn--primary" type="submit" [disabled]="savingPassword()">
+        {{ savingPassword() ? 'Menjam…' : 'Promeni lozinku' }}
+      </button>
+    </form>
+  </section>
+
+  <section class="card">
     <h2 class="card__title">Korak opterećenja</h2>
     <p class="card__hint">
       Najmanji skok težine koji ti je dostupan za svaku vežbu. Podrazumevano se izvodi iz sprave

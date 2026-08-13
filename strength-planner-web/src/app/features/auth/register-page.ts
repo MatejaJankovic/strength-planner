@@ -4,7 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { extractErrorMessage } from '../../core/api/http-error';
 import { AuthService } from '../../core/auth/auth.service';
-import { ExperienceLevel, RegisterDto } from '../../core/models/auth.models';
+import { ExperienceLevel, PASSWORD_MIN_LENGTH, RegisterDto } from '../../core/models/auth.models';
 
 @Component({
   selector: 'app-register-page',
@@ -29,9 +29,11 @@ export class RegisterPage {
 
   protected readonly dayOptions = [2, 3, 4, 5, 6];
 
+  protected readonly passwordMinLength = PASSWORD_MIN_LENGTH;
+
   protected readonly form = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(6)]],
+    password: ['', [Validators.required, Validators.minLength(PASSWORD_MIN_LENGTH)]],
     sex: [''],
     age: ['', [Validators.required, Validators.min(14), Validators.max(90)]],
     bodyweightKg: ['', [Validators.required, Validators.min(30), Validators.max(300)]],

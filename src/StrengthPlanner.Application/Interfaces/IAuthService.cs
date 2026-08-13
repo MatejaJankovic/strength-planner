@@ -15,4 +15,10 @@ public interface IAuthService
 
     /// <summary>Menja profil ulogovanog korisnika i vraća ažurirano stanje.</summary>
     Task<CurrentUserDto> UpdateProfileAsync(Guid userId, UpdateProfileDto dto);
+
+    /// <summary>
+    /// Menja lozinku ulogovanog korisnika i vraća nov token. Svi ranije izdati tokeni
+    /// prestaju da važe.
+    /// </summary>
+    Task<AuthResponseDto> ChangePasswordAsync(Guid userId, ChangePasswordDto dto);
 }
