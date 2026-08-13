@@ -12,6 +12,15 @@ export class OneRepMaxService {
   private readonly oneRepMaxesSignal = signal<OneRepMaxDto[]>([]);
   readonly oneRepMaxes = this.oneRepMaxesSignal.asReadonly();
 
+  /**
+   * Prazni keširane 1RM vrednosti. Zove se pri odjavi i pri prijavi — servis živi na nivou
+   * cele aplikacije, pa bi bez ovoga maksimumi prethodnog korisnika ostali na ekranu sve
+   * dok ih neki ekran ne učita ponovo.
+   */
+  reset(): void {
+    this.oneRepMaxesSignal.set([]);
+  }
+
   load(): Observable<OneRepMaxDto[]> {
     return this.http
       .get<OneRepMaxDto[]>(`${this.apiUrl}/onerepmax`)

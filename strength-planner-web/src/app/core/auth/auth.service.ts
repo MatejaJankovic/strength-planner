@@ -6,6 +6,7 @@ import { API_BASE_URL } from '../api/api-base';
 import { ExerciseService } from '../api/exercise.service';
 import { MacrocycleService } from '../api/macrocycle.service';
 import { MesocycleService } from '../api/mesocycle.service';
+import { OneRepMaxService } from '../api/one-rep-max.service';
 import { AuthResponseDto, CurrentUserDto, LoginDto, RegisterDto, UpdateProfileDto } from '../models/auth.models';
 import { AuthTokenStorage } from './auth-token-storage';
 
@@ -18,6 +19,7 @@ export class AuthService {
   private readonly exerciseService = inject(ExerciseService);
   private readonly mesocycleService = inject(MesocycleService);
   private readonly macrocycleService = inject(MacrocycleService);
+  private readonly oneRepMaxService = inject(OneRepMaxService);
 
   readonly token = this.tokenStorage.token;
 
@@ -64,9 +66,17 @@ export class AuthService {
     this.resetUserCaches();
   }
 
+  /**
+   * Prazni sve keševe vezane za korisnika.
+   *
+   * Servisi žive na nivou cele aplikacije, pa promena identiteta bez osvežavanja stranice
+   * ostavlja podatke prethodnog korisnika u memoriji. **Svaki servis koji kešira korisničke
+   * podatke mora da bude naveden ovde** — `auth.service.spec.ts` čuva to pravilo.
+   */
   private resetUserCaches(): void {
     this.exerciseService.reset();
     this.mesocycleService.reset();
     this.macrocycleService.reset();
+    this.oneRepMaxService.reset();
   }
 }
