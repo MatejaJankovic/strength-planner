@@ -27,4 +27,8 @@ EXPOSE 8080
 
 COPY --from=build /app/publish .
 
+# Bez ovoga kontejner radi kao root: proboj u aplikaciji odmah dobija root u kontejneru.
+# Korisnik `app` postoji u zvaničnom aspnet imidžu.
+USER app
+
 ENTRYPOINT ["dotnet", "StrengthPlanner.API.dll"]

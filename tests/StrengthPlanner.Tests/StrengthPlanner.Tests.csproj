@@ -14,6 +14,13 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
     <PackageReference Include="xunit" Version="2.5.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
+
+    <!-- Stižu tranzitivno kroz stariji xunit/coverlet lanac u verziji 4.3.0, koja nosi
+         objavljene ranjivosti. U net8.0 su ionako deo okvira; eksplicitna referenca samo
+         diže razrešenu verziju. Ne isporučuje se — ovo je test projekat — ali skenere
+         zavisnosti nema smisla ostavljati crvenim. -->
+    <PackageReference Include="System.Net.Http" Version="4.3.4" />
+    <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
   </ItemGroup>
 
   <ItemGroup>

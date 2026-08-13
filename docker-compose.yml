@@ -5,14 +5,20 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-strengthplanner}
       POSTGRES_USER: ${POSTGRES_USER:-strengthplanner}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Postavi POSTGRES_PASSWORD u .env (vidi .env.example)}
+      # Aplikacija se povezuje OVIM nalogom, ne superkorisničkim iz POSTGRES_USER.
+      APP_DB_USER: ${APP_DB_USER:-strengthplanner_app}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?Postavi APP_DB_PASSWORD u .env (vidi .env.example)}
     volumes:
       - strengthplanner_pgdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 10
       start_period: 5s
+    security_opt:
+      - no-new-privileges:true
 
   api:
     build:
@@ -24,13 +30,18 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=${POSTGRES_DB:-strengthplanner};Username=${POSTGRES_USER:-strengthplanner};Password=${POSTGRES_PASSWORD:?Postavi POSTGRES_PASSWORD u .env (vidi .env.example)}
+      ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=${POSTGRES_DB:-strengthplanner};Username=${APP_DB_USER:-strengthplanner_app};Password=${APP_DB_PASSWORD:?Postavi APP_DB_PASSWORD u .env (vidi .env.example)}
       Jwt__Issuer: ${JWT_ISSUER:-StrengthPlanner}
       Jwt__Audience: ${JWT_AUDIENCE:-StrengthPlanner.Client}
       Jwt__Key: ${JWT_KEY:?Postavi jak JWT_KEY u .env (min. 32 bajta, vidi .env.example)}
       Jwt__ExpiryMinutes: ${JWT_EXPIRY_MINUTES:-60}
+    # Vezan za petlju: spolja se do API-ja dolazi samo kroz nginx. To je i ono što čini
+    # da se X-Forwarded-For sme uzeti zdravo za gotovo — inače bi svako mogao da ga
+    # postavi i time zaobiđe ograničenje broja zahteva.
     ports:
-      - "${API_PORT:-5000}:8080"
+      - "127.0.0.1:${API_PORT:-5000}:8080"
+    security_opt:
+      - no-new-privileges:true
 
   web:
     build:
@@ -40,7 +51,9 @@ services:
       api:
         condition: service_started
     ports:
-      - "${WEB_PORT:-8080}:80"
+      - "${WEB_PORT:-8080}:8080"
+    security_opt:
+      - no-new-privileges:true
 
 volumes:
   strengthplanner_pgdata:

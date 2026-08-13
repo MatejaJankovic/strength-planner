@@ -1,0 +1,8 @@
+# Podrazumevano: git sam prepoznaje tekst i normalizuje prelome redova.
+* text=auto
+
+# Fajlovi koje izvršava Linux kontejner MORAJU da ostanu sa LF prelomima.
+# Sa CRLF-om shell prijavljuje `\r: not found` i skripta puca pri prvom pokretanju baze.
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.conf text eol=lf
