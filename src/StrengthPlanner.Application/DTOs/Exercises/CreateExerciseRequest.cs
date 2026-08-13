@@ -15,12 +15,21 @@ public class CreateExerciseRequest
     [Required]
     public string Type { get; set; } = string.Empty;
 
+    // Kolona je varchar(32); duži tekst je ranije prolazio validaciju i padao kao 500.
     [Required]
-    [MaxLength(64)]
+    [MaxLength(32)]
     public string Equipment { get; set; } = string.Empty;
 
-    /// <summary>Bar jedna mišićna grupa; Contribution 1.0 (primarna) ili 0.5 (sekundarna).</summary>
+    /// <summary>
+    /// Bar jedna mišićna grupa; Contribution 1.0 (primarna) ili 0.5 (sekundarna).
+    /// Gornja granica prati broj mišićnih grupa koje sistem uopšte poznaje — bez nje se
+    /// proizvoljno velika lista obrađivala u celosti pre nego što bi upit pao.
+    /// </summary>
     [Required]
     [MinLength(1)]
+    [MaxLength(MaxMuscleGroups)]
     public List<MuscleContributionDto> Muscles { get; set; } = new();
+
+    /// <summary>Koliko mišićnih grupa sistem poznaje.</summary>
+    public const int MaxMuscleGroups = 10;
 }

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using StrengthPlanner.Application.DTOs.Auth;
 using StrengthPlanner.Application.Interfaces;
 using StrengthPlanner.Infrastructure.Analytics;
 using StrengthPlanner.Infrastructure.Authentication;
@@ -34,13 +35,15 @@ public static class DependencyInjection
             {
                 options.User.RequireUniqueEmail = true;
 
-                // Usaglašeno sa UI porukom "bar 6 karaktera" — bez skrivenih
-                // dodatnih zahteva koje frontend ne komunicira.
+                // Šest znakova bez ijedne dodatne provere je prihvatalo i "123456".
+                // Dužina je jedina mera koja stvarno otežava pogađanje, pa se podiže; za
+                // uslove složenosti se i dalje ne traži ništa skriveno od korisnika, jer
+                // ih UI ne komunicira i jer teraju ljude na predvidive obrasce.
                 options.Password.RequireNonAlphanumeric = false;
                 options.Password.RequireUppercase = false;
                 options.Password.RequireLowercase = false;
                 options.Password.RequireDigit = false;
-                options.Password.RequiredLength = 6;
+                options.Password.RequiredLength = PasswordPolicy.MinimumLength;
 
                 // Zaštita od brute-force pogađanja lozinke.
                 options.Lockout.AllowedForNewUsers = true;

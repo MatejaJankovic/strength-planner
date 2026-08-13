@@ -5,7 +5,7 @@ import { forkJoin } from 'rxjs';
 import { extractErrorMessage } from '../../core/api/http-error';
 import { ExerciseService } from '../../core/api/exercise.service';
 import { AuthService } from '../../core/auth/auth.service';
-import { ExperienceLevel, UpdateProfileDto } from '../../core/models/auth.models';
+import { ExperienceLevel, PASSWORD_MIN_LENGTH, UpdateProfileDto } from '../../core/models/auth.models';
 import { CreateExerciseRequest, ExerciseDto } from '../../core/models/training.models';
 import { Loading } from '../../shared/components/loading/loading';
 
@@ -48,6 +48,17 @@ export class ProfileHome {
   });
 
   // --- custom vežbe ------------------------------------------------------------
+
+  // --- promena lozinke ---
+  protected readonly passwordMinLength = PASSWORD_MIN_LENGTH;
+  protected readonly savingPassword = signal(false);
+  protected readonly passwordError = signal<string | null>(null);
+  protected readonly passwordSaved = signal(false);
+
+  protected readonly passwordForm = this.fb.nonNullable.group({
+    currentPassword: ['', [Validators.required]],
+    newPassword: ['', [Validators.required, Validators.minLength(PASSWORD_MIN_LENGTH)]],
+  });
 
   protected readonly muscleGroups = signal<string[]>([]);
   protected readonly savingExercise = signal(false);
@@ -123,6 +134,37 @@ export class ProfileHome {
         this.loading.set(false);
         this.error.set(
           extractErrorMessage(err, 'Ne mogu da učitam profil. Proveri vezu i pokušaj ponovo.'),
+        );
+      },
+    });
+  }
+
+  protected changePassword(): void {
+    if (this.savingPassword()) {
+      return;
+    }
+
+    if (this.passwordForm.invalid) {
+      this.passwordForm.markAllAsTouched();
+      return;
+    }
+
+    this.savingPassword.set(true);
+    this.passwordError.set(null);
+    this.passwordSaved.set(false);
+
+    this.auth.changePassword(this.passwordForm.getRawValue()).subscribe({
+      next: () => {
+        this.savingPassword.set(false);
+        this.passwordSaved.set(true);
+        // Lozinka ne sme da ostane u formi posle uspešne izmene.
+        this.passwordForm.reset();
+        setTimeout(() => this.passwordSaved.set(false), 3200);
+      },
+      error: (err: unknown) => {
+        this.savingPassword.set(false);
+        this.passwordError.set(
+          extractErrorMessage(err, 'Lozinka nije promenjena. Proveri podatke i pokušaj ponovo.'),
         );
       },
     });

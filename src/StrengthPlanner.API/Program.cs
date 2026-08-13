@@ -1,14 +1,20 @@
 using System.Text;
 using System.Reflection;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using StrengthPlanner.Application.Exceptions;
 using StrengthPlanner.Infrastructure;
 using StrengthPlanner.Infrastructure.Authentication;
+using StrengthPlanner.Infrastructure.Identity;
 using StrengthPlanner.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,6 +23,7 @@ var builder = WebApplication.CreateBuilder(args);
 // CORS: Angular dev server (radi se kasnije) sme da poziva ovaj API.
 // ---------------------------------------------------------------------------
 const string AllowAngular = "AllowAngular";
+const string AuthRateLimitPolicy = "auth";
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(AllowAngular, policy =>
@@ -29,6 +36,31 @@ builder.Services.AddCors(options =>
 // MVC kontroleri + Swagger/OpenAPI (sa JWT "Authorize" dugmetom).
 // ---------------------------------------------------------------------------
 builder.Services.AddProblemDetails();
+
+// ---------------------------------------------------------------------------
+// Ograničenje broja zahteva na auth rutama.
+//
+// Zaključavanje naloga iz Identity-ja štiti JEDAN nalog. Ne sprečava probanje iste
+// lozinke preko mnogo naloga, spam registracije (svaka troši PBKDF2 heširanje), ni
+// namerno zaključavanje tuđeg naloga sa pet zahteva svakih pet minuta.
+// ---------------------------------------------------------------------------
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.AddPolicy(AuthRateLimitPolicy, httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            // Iza nginx-a je ovo prava adresa klijenta samo ako je obrada
+            // X-Forwarded-For uključena (vidi UseForwardedHeaders ispod).
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+});
+
 builder.Services.AddControllers();
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
@@ -87,23 +119,31 @@ builder.Services.AddInfrastructure(builder.Configuration);
 var jwtSettings = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()
     ?? throw new InvalidOperationException("Jwt sekcija nije podešena u konfiguraciji.");
 
-// Fail-fast: slab ili placeholder ključ ne sme da se koristi van Development-a.
-// Pokriva dev ključ iz appsettings, fallback iz docker-compose.yml i .env.example
-// (svi sadrže "change-me"/"dev-only"/"replace"), kao i prekratke ključeve.
+// Fail-fast na ključu. Dužina se traži u SVIM okruženjima: HS256 ispod 256 bita nije
+// potpis nego ukras, a prazan ključ je ranije padao tek pri prvom izdavanju tokena, uz
+// poruku iz koje se nije videlo šta nedostaje.
+var jwtKey = jwtSettings.Key ?? string.Empty;
+
+if (string.IsNullOrWhiteSpace(jwtKey) || Encoding.UTF8.GetByteCount(jwtKey) < 32)
+{
+    throw new InvalidOperationException(
+        "Jwt:Key nije podešen ili je kraći od 32 bajta. U razvoju ga postavi kroz "
+        + "user-secrets, u ostalim okruženjima kroz environment varijablu Jwt__Key.");
+}
+
+// Placeholder vrednosti se odbijaju samo van Development-a — pokrivaju ključeve iz
+// .env.example i docker-compose.yml, koji su namerno prepoznatljivi.
 if (!builder.Environment.IsDevelopment())
 {
-    var key = jwtSettings.Key ?? string.Empty;
-    string[] placeholderMarkers = { "change-me", "dev-only", "replace" };
+    string[] placeholderMarkers = { "change-me", "dev-only", "replace", "do-not-use", "example", "sample" };
     var looksLikePlaceholder = placeholderMarkers.Any(
-        marker => key.Contains(marker, StringComparison.OrdinalIgnoreCase));
+        marker => jwtKey.Contains(marker, StringComparison.OrdinalIgnoreCase));
 
-    if (string.IsNullOrWhiteSpace(key)
-        || Encoding.UTF8.GetByteCount(key) < 32
-        || looksLikePlaceholder)
+    if (looksLikePlaceholder)
     {
         throw new InvalidOperationException(
-            "JWT ključ nije bezbedno podešen za ovo okruženje. Prosledi jak Jwt__Key "
-            + "(min. 32 bajta, bez placeholder vrednosti) kroz environment varijable ili tajne.");
+            "Jwt:Key liči na placeholder vrednost. Prosledi pravi, nasumičan ključ "
+            + "kroz environment varijable ili tajne.");
     }
 }
 
@@ -123,7 +163,35 @@ builder.Services.AddAuthentication(options =>
             ValidateIssuerSigningKey = true,
             ValidIssuer = jwtSettings.Issuer,
             ValidAudience = jwtSettings.Audience,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Key))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+        };
+
+        // JWT je bez stanja, pa odjava na klijentu ne poništava token — ukraden token je
+        // do sada važio do isteka, čak i posle promene lozinke. Security stamp iz
+        // Identity-ja se menja pri promeni lozinke, pa poređenje ovde daje pravo
+        // poništavanje sesija po ceni jednog čitanja po zahtevu.
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
+            {
+                var stampInToken = context.Principal?.FindFirst(JwtTokenService.SecurityStampClaim)?.Value;
+                var subject = context.Principal?.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+
+                if (string.IsNullOrEmpty(stampInToken) || !Guid.TryParse(subject, out var userId))
+                {
+                    context.Fail("Token ne nosi podatke potrebne za proveru.");
+                    return;
+                }
+
+                var users = context.HttpContext.RequestServices
+                    .GetRequiredService<UserManager<ApplicationUser>>();
+                var user = await users.FindByIdAsync(userId.ToString());
+
+                if (user is null || !string.Equals(user.SecurityStamp, stampInToken, StringComparison.Ordinal))
+                {
+                    context.Fail("Token više ne važi.");
+                }
+            }
         };
     });
 
@@ -172,7 +240,21 @@ if (app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 }
 
+// Iza nginx-a je izvorna adresa klijenta samo u X-Forwarded-For. Bez ovoga bi sve
+// zahteve ograničenje brojalo kao da dolaze sa jedne adrese — proxy-jeve.
+// Objavljeni port API-ja je vezan za petlju (docker-compose), pa je nginx jedini put
+// spolja i jedini koji ovo zaglavlje postavlja.
+var forwardedHeaders = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+};
+forwardedHeaders.KnownNetworks.Clear();
+forwardedHeaders.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedHeaders);
+
 app.UseCors(AllowAngular);
+
+app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();

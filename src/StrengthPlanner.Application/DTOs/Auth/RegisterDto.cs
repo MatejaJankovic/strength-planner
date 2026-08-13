@@ -13,7 +13,7 @@ public class RegisterDto
     public string Email { get; set; } = string.Empty;
 
     [Required]
-    [MinLength(6)]
+    [MinLength(PasswordPolicy.MinimumLength)]
     public string Password { get; set; } = string.Empty;
 
     // --- osnovni profil ---

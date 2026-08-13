@@ -6,5 +6,10 @@ namespace StrengthPlanner.Application.Interfaces;
 /// </summary>
 public interface ITokenService
 {
-    string CreateToken(Guid userId, string email);
+    /// <summary>
+    /// <paramref name="securityStamp"/> se upisuje kao claim i proverava pri svakom
+    /// zahtevu. Identity ga menja pri promeni lozinke, čime ranije izdati tokeni odmah
+    /// prestaju da važe — bez toga bi ukradeni token preživeo i promenu lozinke.
+    /// </summary>
+    string CreateToken(Guid userId, string email, string securityStamp);
 }

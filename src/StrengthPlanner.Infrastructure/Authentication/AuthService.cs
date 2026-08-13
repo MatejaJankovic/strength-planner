@@ -34,10 +34,19 @@ public class AuthService : IAuthService
         _jwtSettings = jwtSettings.Value;
     }
 
+    /// <summary>
+    /// Jedina poruka koju prijava vraća pri neuspehu. Nepostojeći nalog, pogrešna lozinka i
+    /// zaključan nalog moraju da izgledaju isto, inače je odgovor orakl za nabrajanje naloga.
+    /// </summary>
+    private const string InvalidCredentials = "Pogrešan email ili lozinka.";
+
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
     {
+        // Poruka namerno ne razlikuje zauzet email od ostalih razloga: ranija je bila
+        // spisak postojećih naloga za svakoga ko probije redom. Prava zaštita bi bila
+        // potvrda email-om, ali dok je nema, bar se ne odgovara na pitanje direktno.
         if (await _userManager.FindByEmailAsync(dto.Email) is not null)
-            throw new AuthException("Nalog sa datim email-om već postoji.");
+            throw new AuthException("Registracija nije uspela. Proveri podatke i pokušaj ponovo.");
 
         // Profil se kreira zajedno sa nalogom (1:1, isti Guid Id preko FK-a).
         var user = new ApplicationUser
@@ -66,16 +75,18 @@ public class AuthService : IAuthService
     {
         var user = await _userManager.FindByEmailAsync(dto.Email);
         if (user is null)
-            throw new AuthException("Pogrešan email ili lozinka.");
+            throw new AuthException(InvalidCredentials);
 
+        // Ista poruka kao za pogrešnu lozinku: posebna poruka o zaključavanju je
+        // potvrđivala da nalog postoji svakome ko pošalje pet pogrešnih pokušaja.
         if (await _userManager.IsLockedOutAsync(user))
-            throw new AuthException("Nalog je privremeno zaključan zbog previše neuspešnih pokušaja. Pokušaj ponovo za nekoliko minuta.");
+            throw new AuthException(InvalidCredentials);
 
         if (!await _userManager.CheckPasswordAsync(user, dto.Password))
         {
             // Broji neuspešan pokušaj; posle praga Identity zaključava nalog.
             await _userManager.AccessFailedAsync(user);
-            throw new AuthException("Pogrešan email ili lozinka.");
+            throw new AuthException(InvalidCredentials);
         }
 
         await _userManager.ResetAccessFailedCountAsync(user);
@@ -138,6 +149,20 @@ public class AuthService : IAuthService
         };
     }
 
+    public async Task<AuthResponseDto> ChangePasswordAsync(Guid userId, ChangePasswordDto dto)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString())
+            ?? throw new AuthException("Korisnik ne postoji.");
+
+        var result = await _userManager.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword);
+        if (!result.Succeeded)
+            throw new AuthException(result.Errors.Select(e => e.Description));
+
+        // Identity menja security stamp pri promeni lozinke, pa svi ranije izdati tokeni
+        // prestaju da važe. Korisnik dobija nov token da ga izmena ne izbaci iz aplikacije.
+        return BuildResponse(user);
+    }
+
     private AuthResponseDto BuildResponse(ApplicationUser user)
     {
         var email = user.Email ?? string.Empty;
@@ -145,7 +170,7 @@ public class AuthService : IAuthService
         {
             UserId = user.Id,
             Email = email,
-            Token = _tokenService.CreateToken(user.Id, email),
+            Token = _tokenService.CreateToken(user.Id, email, user.SecurityStamp ?? string.Empty),
             ExpiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryMinutes)
         };
     }
