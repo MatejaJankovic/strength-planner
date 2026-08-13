@@ -29,6 +29,8 @@ export class RegisterPage {
 
   protected readonly dayOptions = [2, 3, 4, 5, 6];
 
+  protected readonly passwordMinLength = PASSWORD_MIN_LENGTH;
+
   protected readonly form = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(PASSWORD_MIN_LENGTH)]],

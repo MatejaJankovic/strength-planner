@@ -75,7 +75,13 @@ public class AuthService : IAuthService
     {
         var user = await _userManager.FindByEmailAsync(dto.Email);
         if (user is null)
+        {
+            // Poruke su iste, ali vreme odgovora nije bilo: nepostojeći nalog se vraćao
+            // odmah, a postojeći tek posle PBKDF2 heširanja. Razlika je merljiva i sama
+            // po sebi odaje koji email ima nalog, pa se ovde troši isti posao uzalud.
+            BurnPasswordHashTime(dto.Password);
             throw new AuthException(InvalidCredentials);
+        }
 
         // Ista poruka kao za pogrešnu lozinku: posebna poruka o zaključavanju je
         // potvrđivala da nalog postoji svakome ko pošalje pet pogrešnih pokušaja.
@@ -154,6 +160,20 @@ public class AuthService : IAuthService
         var user = await _userManager.FindByIdAsync(userId.ToString())
             ?? throw new AuthException("Korisnik ne postoji.");
 
+        // Bez ovoga je promena lozinke bila orakl za pogađanje trenutne lozinke koji ne
+        // troši zaključavanje: onaj ko se domogne tuđeg tokena mogao je da pogađa u
+        // nedogled i tako izvuče lozinku u čistom obliku za probanje na drugim sajtovima.
+        if (await _userManager.IsLockedOutAsync(user))
+            throw new AuthException(InvalidCredentials);
+
+        if (!await _userManager.CheckPasswordAsync(user, dto.CurrentPassword))
+        {
+            await _userManager.AccessFailedAsync(user);
+            throw new AuthException(InvalidCredentials);
+        }
+
+        await _userManager.ResetAccessFailedCountAsync(user);
+
         var result = await _userManager.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword);
         if (!result.Succeeded)
             throw new AuthException(result.Errors.Select(e => e.Description));
@@ -163,6 +183,22 @@ public class AuthService : IAuthService
         return BuildResponse(user);
     }
 
+    private static string RequireSecurityStamp(ApplicationUser user)
+    {
+        return string.IsNullOrEmpty(user.SecurityStamp)
+            ? throw new AuthException("Nalog nema bezbednosni pečat; prijava nije moguća.")
+            : user.SecurityStamp;
+    }
+
+    /// <summary>
+    /// Heširanje lozinke nad praznim nalogom, samo da bi neuspela prijava trajala isto
+    /// koliko i uspela. Rezultat se namerno odbacuje.
+    /// </summary>
+    private void BurnPasswordHashTime(string password)
+    {
+        _userManager.PasswordHasher.HashPassword(new ApplicationUser(), password ?? string.Empty);
+    }
+
     private AuthResponseDto BuildResponse(ApplicationUser user)
     {
         var email = user.Email ?? string.Empty;
@@ -170,7 +206,9 @@ public class AuthService : IAuthService
         {
             UserId = user.Id,
             Email = email,
-            Token = _tokenService.CreateToken(user.Id, email, user.SecurityStamp ?? string.Empty),
+            // Prazan stamp bi značio token koji prolazi prijavu a pada na svakom
+            // narednom zahtevu — bolje odmah pasti, uz jasan razlog.
+            Token = _tokenService.CreateToken(user.Id, email, RequireSecurityStamp(user)),
             ExpiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryMinutes)
         };
     }

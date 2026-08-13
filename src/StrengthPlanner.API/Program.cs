@@ -24,6 +24,10 @@ var builder = WebApplication.CreateBuilder(args);
 // ---------------------------------------------------------------------------
 const string AllowAngular = "AllowAngular";
 const string AuthRateLimitPolicy = "auth";
+
+// Zahtev bez adrese pošiljaoca ne sme da deli budžet sa svima ostalima; preko TCP-a se
+// ne dešava, ali ime govori šta je u pitanju ako se ikad desi.
+const string UnknownClientPartition = "unknown-client";
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(AllowAngular, policy =>
@@ -40,25 +44,45 @@ builder.Services.AddProblemDetails();
 // ---------------------------------------------------------------------------
 // Ograničenje broja zahteva na auth rutama.
 //
-// Zaključavanje naloga iz Identity-ja štiti JEDAN nalog. Ne sprečava probanje iste
-// lozinke preko mnogo naloga, spam registracije (svaka troši PBKDF2 heširanje), ni
-// namerno zaključavanje tuđeg naloga sa pet zahteva svakih pet minuta.
+// Zaključavanje naloga iz Identity-ja štiti JEDAN nalog. Ovo pokriva ono što ono ne
+// pokriva: probanje iste lozinke preko mnogo naloga i spam registracije, gde svaki
+// pokušaj troši PBKDF2 heširanje.
+//
+// Ne rešava ciljani DoS nad tuđim nalogom: pet pokušaja na pet minuta je oko jednog
+// zahteva u minutu, daleko ispod ovog praga, pa napadač koji zna tuđ email može da mu
+// drži nalog zaključanim. To je poznat kompromis Identity zaključavanja i zabeležen je
+// u docs/deployment-security.md.
 // ---------------------------------------------------------------------------
 builder.Services.AddRateLimiter(options =>
 {
-    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-
     options.AddPolicy(AuthRateLimitPolicy, httpContext =>
         RateLimitPartition.GetFixedWindowLimiter(
-            // Iza nginx-a je ovo prava adresa klijenta samo ako je obrada
-            // X-Forwarded-For uključena (vidi UseForwardedHeaders ispod).
-            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            // Prava adresa klijenta iza nginx-a, jer se prosleđena zaglavlja obrađuju
+            // niže — ali samo kada dolaze sa poznate, interne adrese.
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString()
+                          ?? UnknownClientPartition,
             factory: _ => new FixedWindowRateLimiterOptions
             {
-                PermitLimit = 10,
+                PermitLimit = 20,
                 Window = TimeSpan.FromMinutes(1),
                 QueueLimit = 0
             }));
+
+    // Podrazumevani 429 nema telo, pa frontend ne ume da ga razlikuje od greške u
+    // podacima i prikaže „proveri podatke" korisniku koji je samo prebrzo kliktao.
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+
+        var retryAfterSeconds = context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter)
+            ? (int)retryAfter.TotalSeconds
+            : 60;
+        context.HttpContext.Response.Headers.RetryAfter = retryAfterSeconds.ToString();
+
+        await context.HttpContext.Response.WriteAsJsonAsync(
+            new { errors = new[] { $"Previše pokušaja. Sačekaj {retryAfterSeconds} sekundi pa probaj ponovo." } },
+            cancellationToken);
+    };
 });
 
 builder.Services.AddControllers();
@@ -213,6 +237,50 @@ var app = builder.Build();
 await app.Services.ApplyMigrationsAsync();
 await DbSeeder.SeedAsync(app.Services);
 
+// ---------------------------------------------------------------------------
+// Prosleđena zaglavlja — MORAJU prva, da bi sve ispod videlo pravu adresu i šemu.
+//
+// Iza nginx-a izvorna adresa klijenta postoji samo u X-Forwarded-For; bez ovoga bi
+// ograničenje broja zahteva sve brojalo kao da dolazi sa jedne adrese — proxy-jeve.
+//
+// Zaglavlje se uzima u obzir SAMO kada zahtev stiže sa privatne adrese, dakle iz iste
+// Docker mreže u kojoj je nginx. Ranije su liste poverenja bile ispražnjene, što u
+// ASP.NET-u znači „veruj svakome": ko god dođe direktno do API-ja mogao je sam da
+// postavi X-Forwarded-For i za svaki zahtev dobije svoju particiju, čime bi ograničenje
+// prestalo da postoji.
+// ---------------------------------------------------------------------------
+var forwardedHeaders = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+    ForwardLimit = 1
+};
+
+forwardedHeaders.KnownNetworks.Clear();
+forwardedHeaders.KnownProxies.Clear();
+
+// Privatni opsezi (RFC 1918): tu žive Docker mreže u kojima stoji nginx.
+//
+// Petlja NIJE na spisku, i to je bitno. U razvoju API sluša direktno na localhost-u i
+// pred njim nema nikakvog proxy-ja — kada bi se zaglavlju verovalo i odatle, svako bi
+// mogao da za svaki zahtev pošalje drugu vrednost i dobije svoju particiju, pa bi
+// ograničenje broja zahteva prestalo da postoji. Provereno: sa petljom na spisku 26
+// zahteva sa različitim X-Forwarded-For prolazi bez ijednog 429.
+//
+// U Docker isporuci ovo ništa ne menja: saobraćaj sa host mašine stiže do kontejnera
+// preko mosta (172.x), a ne sa 127.0.0.1.
+foreach (var (prefix, length) in new (string Prefix, int Length)[]
+         {
+             ("10.0.0.0", 8),
+             ("172.16.0.0", 12),
+             ("192.168.0.0", 16)
+         })
+{
+    forwardedHeaders.KnownNetworks.Add(
+        new Microsoft.AspNetCore.HttpOverrides.IPNetwork(System.Net.IPAddress.Parse(prefix), length));
+}
+
+app.UseForwardedHeaders(forwardedHeaders);
+
 app.UseExceptionHandler(exceptionHandlerApp =>
 {
     exceptionHandlerApp.Run(async context =>
@@ -239,18 +307,6 @@ if (app.Environment.IsDevelopment())
     // iza nginx proxy-ja (redirect bi ovde samo pravio problem).
     app.UseHttpsRedirection();
 }
-
-// Iza nginx-a je izvorna adresa klijenta samo u X-Forwarded-For. Bez ovoga bi sve
-// zahteve ograničenje brojalo kao da dolaze sa jedne adrese — proxy-jeve.
-// Objavljeni port API-ja je vezan za petlju (docker-compose), pa je nginx jedini put
-// spolja i jedini koji ovo zaglavlje postavlja.
-var forwardedHeaders = new ForwardedHeadersOptions
-{
-    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
-};
-forwardedHeaders.KnownNetworks.Clear();
-forwardedHeaders.KnownProxies.Clear();
-app.UseForwardedHeaders(forwardedHeaders);
 
 app.UseCors(AllowAngular);
 

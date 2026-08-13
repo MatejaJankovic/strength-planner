@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using StrengthPlanner.Application.Security;
 
 namespace StrengthPlanner.Application.DTOs.Auth;
 

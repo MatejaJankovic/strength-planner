@@ -148,7 +148,26 @@
             <p class="field__error">Lozinka mora imati bar {{ passwordMinLength }} karaktera.</p>
           }
         </div>
+
+        <div class="field">
+          <label class="field__label" for="pw-confirm">Potvrdi novu lozinku</label>
+          <input
+            id="pw-confirm"
+            class="control"
+            type="password"
+            formControlName="confirmPassword"
+            autocomplete="new-password"
+          />
+          @if (passwordForm.controls.confirmPassword.touched
+                && passwordForm.hasError('passwordMismatch')) {
+            <p class="field__error">Lozinke se ne poklapaju.</p>
+          }
+        </div>
       </div>
+
+      <p class="field__hint">
+        Nema oporavka lozinke — ako je zaboraviš, nalog i podaci u njemu se ne mogu vratiti.
+      </p>
 
       @if (passwordError(); as message) {
         <p class="alert alert--error" role="alert">

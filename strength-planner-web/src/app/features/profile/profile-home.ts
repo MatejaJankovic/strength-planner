@@ -1,5 +1,11 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  FormBuilder,
+  ReactiveFormsModule,
+  ValidationErrors,
+  Validators,
+} from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { forkJoin } from 'rxjs';
 import { extractErrorMessage } from '../../core/api/http-error';
@@ -55,10 +61,18 @@ export class ProfileHome {
   protected readonly passwordError = signal<string | null>(null);
   protected readonly passwordSaved = signal(false);
 
-  protected readonly passwordForm = this.fb.nonNullable.group({
-    currentPassword: ['', [Validators.required]],
-    newPassword: ['', [Validators.required, Validators.minLength(PASSWORD_MIN_LENGTH)]],
-  });
+  /**
+   * Potvrda nove lozinke nije formalnost: u sistemu nema oporavka lozinke, pa greška u
+   * kucanju znači trajan gubitak naloga i svih podataka u njemu.
+   */
+  protected readonly passwordForm = this.fb.nonNullable.group(
+    {
+      currentPassword: ['', [Validators.required]],
+      newPassword: ['', [Validators.required, Validators.minLength(PASSWORD_MIN_LENGTH)]],
+      confirmPassword: ['', [Validators.required]],
+    },
+    { validators: [matchingPasswords] },
+  );
 
   protected readonly muscleGroups = signal<string[]>([]);
   protected readonly savingExercise = signal(false);
@@ -153,7 +167,9 @@ export class ProfileHome {
     this.passwordError.set(null);
     this.passwordSaved.set(false);
 
-    this.auth.changePassword(this.passwordForm.getRawValue()).subscribe({
+    const { currentPassword, newPassword } = this.passwordForm.getRawValue();
+
+    this.auth.changePassword({ currentPassword, newPassword }).subscribe({
       next: () => {
         this.savingPassword.set(false);
         this.passwordSaved.set(true);
@@ -360,4 +376,12 @@ export class ProfileHome {
         return '';
     }
   }
+}
+
+/** Nova lozinka i potvrda moraju da se poklope. */
+function matchingPasswords(group: AbstractControl): ValidationErrors | null {
+  const password = group.get('newPassword')?.value;
+  const confirmation = group.get('confirmPassword')?.value;
+
+  return password && confirmation && password !== confirmation ? { passwordMismatch: true } : null;
 }

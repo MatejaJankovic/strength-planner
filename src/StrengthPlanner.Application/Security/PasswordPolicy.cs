@@ -1,4 +1,4 @@
-namespace StrengthPlanner.Application.DTOs.Auth;
+namespace StrengthPlanner.Application.Security;
 
 /// <summary>
 /// Zahtevi za lozinku, na jednom mestu.

@@ -30,6 +30,12 @@ public class CreateExerciseRequest
     [MaxLength(MaxMuscleGroups)]
     public List<MuscleContributionDto> Muscles { get; set; } = new();
 
-    /// <summary>Koliko mišićnih grupa sistem poznaje.</summary>
+    /// <summary>
+    /// Koliko mišićnih grupa sistem uopšte poznaje.
+    ///
+    /// Mora da ostane <c>const</c> jer ga traži atribut validacije, pa ne može da se izvede
+    /// iz <see cref="ExerciseCatalog.MuscleGroupNames"/>. Da razmimoilaženje ne bi tiho
+    /// počelo da odbija ispravne zahteve, poklapanje čuva test.
+    /// </summary>
     public const int MaxMuscleGroups = 10;
 }
