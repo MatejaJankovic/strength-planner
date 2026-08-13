@@ -100,6 +100,17 @@ superkorisničkih prava. Ranije se aplikacija povezivala nalogom iz `POSTGRES_US
 >    GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO strengthplanner_app;
 >    GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO strengthplanner_app;"
 > ```
+>
+> **Uz to prepiši vlasništvo nad zatečenim tabelama.** Migracije se izvršavaju pri svakom
+> startu i menjaju šemu; tabele koje je napravio stari superkorisnički nalog ostaju u
+> njegovom vlasništvu, pa bi prva naredna migracija pala na „must be owner of table".
+> Grantovi iznad daju pravo na *podatke*, ne na izmenu strukture:
+>
+> ```bash
+> docker compose exec db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" >   -c "REASSIGN OWNED BY $POSTGRES_USER TO strengthplanner_app;"
+> ```
+>
+> Na novoj instalaciji ovo ne treba: tabele od početka pravi sam aplikacijski nalog.
 
 ### Tajne
 
