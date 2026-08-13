@@ -115,22 +115,35 @@ For each implemented feature, write a plain markdown summary file under `docs/fe
 describing what was implemented and why. These are review notes for the user, not thesis
 prose — no need for academic style.
 
-## Scope note (2026-08-12)
+## Scope note
 
-Five "future improvements" items from the thesis conclusion are implemented, each on its
-own branch with its own PR, reviewed and fixed before hand-off. The branches are stacked
-in this order and must be merged in it:
+Two rounds of work, all merged to `main`. Every branch got its own PR, an agent code
+review, fixes for what the review turned up, and a plain-language write-up in
+`docs/features/`.
 
-1. `feature/per-exercise-weight-step` (PR #2)
-2. `feature/failed-reps-logging` (PR #3)
-3. `feature/adaptive-volume-landmarks` (PR #4)
-4. `feature/auto-deload` (PR #5)
-5. `feature/macrocycles` (PR #6)
+**Round 1 — five "future improvements" from the thesis conclusion:**
 
-`chore/claude-md` (PR #1) carries this file and should be merged first.
+| Branch | PR |
+|---|---|
+| `chore/claude-md` (this file) | #1 |
+| `feature/per-exercise-weight-step` | #2 |
+| `feature/failed-reps-logging` | #3, rebuilt as #7 |
+| `feature/adaptive-volume-landmarks` | #4 |
+| `feature/auto-deload` | #5 |
+| `feature/macrocycles` | #6 |
 
-Each feature has a plain-language write-up in `docs/features/`, including what a code
-review found and how it was fixed.
+**Round 2 — derived from *Džepni priručnik o programiranju treninga*.** The full analysis
+with an outcome per item is in [`docs/analiza-prirucnika.md`](docs/analiza-prirucnika.md).
+
+| Branch | Handbook items | PR |
+|---|---|---|
+| `feature/stimulative-volume` | 1 (proximity-weighted volume), 2 (MAV) | #8 |
+| `feature/experience-level` | 4 (level drives programming) | #9 |
+| `feature/more-templates` | 8 (movement coverage, solved with templates) | #10 |
+| `feature/periodization-models` | 3 (week-by-week periodization) | #11 |
+
+Handbook items 5, 6, 7, 9 and 10 were **skipped by the user's decision**, not on cost —
+the reasons are recorded next to each item in the analysis.
 
 Deliberately **out of scope**: i18n, full-history analytics, undulating periodization,
-PWA/offline.
+PWA/offline, changing an already-generated block's periodization model.
