@@ -192,6 +192,19 @@ ponudi zamenu.
 Ovo je verovatno najkorisnija veća izmena, ali i najskuplja: traži proširenje seed podataka
 za svih 27 vežbi.
 
+> **Status: urađeno drugačije nego što je predloženo** — grana
+> [`feature/more-templates`](features/more-templates.md).
+>
+> Po dogovoru se **ne uvodi** `MovementPattern` ni algoritam nad obrascima. Umesto toga su
+> unapred sastavljeni šabloni prošireni sa tri na sedam (2–6 dana nedeljno), a katalog
+> vežbi je dobio šest izolacija koje su nedostajale — među njima i prve izolacione vežbe
+> za grudi i leđa.
+>
+> Pokrivenost mišićnih grupa se time ne proverava u vreme izvršavanja nego **testovima nad
+> samim šablonima**: svaki šablon mora da pogodi svih osam velikih grupa, da ostane ispod
+> MRV na svakom nivou i da dostigne MEV na referentnom nivou. Zamena vežbe u planu ostaje
+> nemoguća, kao i ranije.
+
 ---
 
 ## 9. Osećaj pred trening ne utiče ni na šta

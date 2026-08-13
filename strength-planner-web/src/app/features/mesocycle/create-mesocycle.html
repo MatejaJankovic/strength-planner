@@ -31,7 +31,12 @@
             (click)="selectTemplate(template)"
           >
             <div class="template__head">
-              <span class="template__name">{{ template.name }}</span>
+              <span class="template__name">
+                {{ template.name }}
+                @if (template.isSuggested) {
+                  <span class="template__badge">predlog za tebe</span>
+                }
+              </span>
               <span class="template__meta">
                 <span class="template__check" aria-hidden="true">
                   <mat-icon>check_circle</mat-icon>
@@ -39,6 +44,12 @@
                 <span class="template__count numeric">{{ template.days.length }}× nedeljno</span>
               </span>
             </div>
+            @if (template.note; as note) {
+              <p class="template__note">
+                <mat-icon aria-hidden="true">info_outline</mat-icon>
+                <span>{{ note }}</span>
+              </p>
+            }
             <ul class="template__days">
               @for (day of template.days; track day.name) {
                 <li class="template__day">

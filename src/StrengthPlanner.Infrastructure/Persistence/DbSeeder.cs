@@ -1,14 +1,17 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using StrengthPlanner.Application.Templates;
 using StrengthPlanner.Domain.Algorithms;
 using StrengthPlanner.Domain.Entities;
-using StrengthPlanner.Domain.Enums;
 
 namespace StrengthPlanner.Infrastructure.Persistence;
 
 /// <summary>
 /// Ubacuje sistemske seed podatke (mišićne grupe, vežbe, MEV/MRV) pri startu.
 /// Idempotentno je: proverava po imenu i ne duplira postojeće.
+///
+/// Sami podaci žive u <see cref="ExerciseCatalog"/>, uz šablone koji ih referišu —
+/// ovde je samo upis u bazu.
 /// </summary>
 public static class DbSeeder
 {
@@ -27,7 +30,7 @@ public static class DbSeeder
     private static async Task SeedMuscleGroupsAsync(AppDbContext db)
     {
         var existing = await db.MuscleGroups.Select(m => m.Name).ToListAsync();
-        var missing = MuscleGroupNames.Where(name => !existing.Contains(name));
+        var missing = ExerciseCatalog.MuscleGroupNames.Where(name => !existing.Contains(name));
 
         foreach (var name in missing)
             db.MuscleGroups.Add(new MuscleGroup { Name = name });
@@ -37,9 +40,18 @@ public static class DbSeeder
 
     private static async Task SeedExercisesAsync(AppDbContext db, IReadOnlyDictionary<string, Guid> muscleIds)
     {
-        var existing = await db.Exercises.Select(e => e.Name).ToListAsync();
+        // Samo sistemske vežbe smeju da spreče upis seed vežbe. Korisnička vežba istog
+        // naziva ne sme, jer bi tada sistemska vežba nedostajala **svim ostalim**
+        // korisnicima — a šabloni je traže po nazivu, pa im generisanje plana pada.
+        // Poređenje je bez obzira na velika i mala slova, kao i provera naziva pri
+        // pravljenju korisničke vežbe.
+        var existing = await db.Exercises
+            .Where(e => !e.IsCustom)
+            .Select(e => e.Name)
+            .ToListAsync();
+        var existingNames = new HashSet<string>(existing, StringComparer.OrdinalIgnoreCase);
 
-        foreach (var seed in ExerciseSeeds.Where(s => !existing.Contains(s.Name)))
+        foreach (var seed in ExerciseCatalog.Exercises.Where(s => !existingNames.Contains(s.Name)))
         {
             var exercise = new Exercise
             {
@@ -62,7 +74,80 @@ public static class DbSeeder
         }
 
         await db.SaveChangesAsync();
+        await ReconcileSystemExercisesAsync(db, muscleIds);
         await AlignSystemExerciseWeightStepsAsync(db);
+    }
+
+    /// <summary>
+    /// Sistemska vežba mora da odgovara katalogu, ne samo da postoji.
+    ///
+    /// Upis ubacuje samo vežbe kojih nema, pa bi izmena tipa, sprave ili mišića u
+    /// <see cref="ExerciseCatalog"/> ostala samo u kodu — testovi bi je videli, a
+    /// zatečena baza ne bi. Korisničke vežbe se ne diraju, kao ni korisnički korak
+    /// opterećenja koji živi u UserExerciseSettings.
+    /// </summary>
+    private static async Task ReconcileSystemExercisesAsync(
+        AppDbContext db,
+        IReadOnlyDictionary<string, Guid> muscleIds)
+    {
+        var systemExercises = await db.Exercises
+            .Where(exercise => !exercise.IsCustom)
+            .Include(exercise => exercise.Muscles)
+            .ToListAsync();
+
+        var changed = false;
+
+        foreach (var exercise in systemExercises)
+        {
+            var seed = ExerciseCatalog.Find(exercise.Name);
+            if (seed is null)
+            {
+                continue;
+            }
+
+            if (exercise.Type != seed.Type)
+            {
+                exercise.Type = seed.Type;
+                changed = true;
+            }
+
+            if (!string.Equals(exercise.Equipment, seed.Equipment, StringComparison.Ordinal))
+            {
+                exercise.Equipment = seed.Equipment;
+                changed = true;
+            }
+
+            var expectedMuscles = seed.Muscles
+                .ToDictionary(muscle => muscleIds[muscle.Muscle], muscle => muscle.Contribution);
+
+            var actualMuscles = exercise.Muscles
+                .ToDictionary(muscle => muscle.MuscleGroupId, muscle => muscle.Contribution);
+
+            if (expectedMuscles.Count == actualMuscles.Count
+                && expectedMuscles.All(expected =>
+                    actualMuscles.TryGetValue(expected.Key, out var contribution)
+                    && contribution == expected.Value))
+            {
+                continue;
+            }
+
+            exercise.Muscles.Clear();
+            foreach (var (muscleGroupId, contribution) in expectedMuscles)
+            {
+                exercise.Muscles.Add(new ExerciseMuscle
+                {
+                    MuscleGroupId = muscleGroupId,
+                    Contribution = contribution
+                });
+            }
+
+            changed = true;
+        }
+
+        if (changed)
+        {
+            await db.SaveChangesAsync();
+        }
     }
 
     /// <summary>
@@ -95,7 +180,7 @@ public static class DbSeeder
     {
         var existing = await db.VolumeLandmarks.ToDictionaryAsync(v => v.MuscleGroupId);
 
-        foreach (var (muscle, mev, mav, mrv) in VolumeLandmarkSeeds)
+        foreach (var (muscle, mev, mav, mrv) in ExerciseCatalog.VolumeLandmarks)
         {
             var muscleId = muscleIds[muscle];
 
@@ -123,90 +208,4 @@ public static class DbSeeder
 
         await db.SaveChangesAsync();
     }
-
-    // ---------------------------------------------------------------------
-    // Seed podaci
-    // ---------------------------------------------------------------------
-
-    private static readonly string[] MuscleGroupNames =
-    {
-        "Chest", "Back", "Shoulders", "Quads", "Hamstrings",
-        "Glutes", "Biceps", "Triceps", "Calves", "Abs"
-    };
-
-    private record ExerciseSeed(string Name, ExerciseType Type, string Equipment, (string Muscle, decimal Contribution)[] Muscles);
-
-    private static readonly ExerciseSeed[] ExerciseSeeds =
-    {
-        new("Back Squat", ExerciseType.Compound, "Barbell",
-            new[] { ("Quads", 1.0m), ("Glutes", 0.5m), ("Hamstrings", 0.5m) }),
-        new("Front Squat", ExerciseType.Compound, "Barbell",
-            new[] { ("Quads", 1.0m), ("Glutes", 0.5m) }),
-        new("Leg Press", ExerciseType.Compound, "Machine",
-            new[] { ("Quads", 1.0m), ("Glutes", 0.5m) }),
-        new("Romanian Deadlift", ExerciseType.Compound, "Barbell",
-            new[] { ("Hamstrings", 1.0m), ("Glutes", 0.5m), ("Back", 0.5m) }),
-        new("Deadlift", ExerciseType.Compound, "Barbell",
-            new[] { ("Back", 1.0m), ("Glutes", 0.5m), ("Hamstrings", 0.5m), ("Quads", 0.5m) }),
-        new("Leg Curl", ExerciseType.Isolation, "Machine",
-            new[] { ("Hamstrings", 1.0m) }),
-        new("Leg Extension", ExerciseType.Isolation, "Machine",
-            new[] { ("Quads", 1.0m) }),
-        new("Hip Thrust", ExerciseType.Compound, "Barbell",
-            new[] { ("Glutes", 1.0m), ("Hamstrings", 0.5m) }),
-        new("Bench Press", ExerciseType.Compound, "Barbell",
-            new[] { ("Chest", 1.0m), ("Triceps", 0.5m), ("Shoulders", 0.5m) }),
-        new("Incline Bench Press", ExerciseType.Compound, "Barbell",
-            new[] { ("Chest", 1.0m), ("Shoulders", 0.5m), ("Triceps", 0.5m) }),
-        new("Dumbbell Bench Press", ExerciseType.Compound, "Dumbbell",
-            new[] { ("Chest", 1.0m), ("Triceps", 0.5m), ("Shoulders", 0.5m) }),
-        new("Push-up", ExerciseType.Compound, "Bodyweight",
-            new[] { ("Chest", 1.0m), ("Triceps", 0.5m) }),
-        new("Overhead Press", ExerciseType.Compound, "Barbell",
-            new[] { ("Shoulders", 1.0m), ("Triceps", 0.5m) }),
-        new("Dumbbell Shoulder Press", ExerciseType.Compound, "Dumbbell",
-            new[] { ("Shoulders", 1.0m), ("Triceps", 0.5m) }),
-        new("Lateral Raise", ExerciseType.Isolation, "Dumbbell",
-            new[] { ("Shoulders", 1.0m) }),
-        new("Pull-up", ExerciseType.Compound, "Bodyweight",
-            new[] { ("Back", 1.0m), ("Biceps", 0.5m) }),
-        new("Lat Pulldown", ExerciseType.Compound, "Machine",
-            new[] { ("Back", 1.0m), ("Biceps", 0.5m) }),
-        new("Barbell Row", ExerciseType.Compound, "Barbell",
-            new[] { ("Back", 1.0m), ("Biceps", 0.5m) }),
-        new("Seated Cable Row", ExerciseType.Compound, "Cable",
-            new[] { ("Back", 1.0m), ("Biceps", 0.5m) }),
-        new("Face Pull", ExerciseType.Isolation, "Cable",
-            new[] { ("Shoulders", 1.0m), ("Back", 0.5m) }),
-        new("Barbell Curl", ExerciseType.Isolation, "Barbell",
-            new[] { ("Biceps", 1.0m) }),
-        new("Dumbbell Curl", ExerciseType.Isolation, "Dumbbell",
-            new[] { ("Biceps", 1.0m) }),
-        new("Triceps Pushdown", ExerciseType.Isolation, "Cable",
-            new[] { ("Triceps", 1.0m) }),
-        new("Overhead Triceps Extension", ExerciseType.Isolation, "Dumbbell",
-            new[] { ("Triceps", 1.0m) }),
-        new("Calf Raise", ExerciseType.Isolation, "Machine",
-            new[] { ("Calves", 1.0m) }),
-        new("Plank", ExerciseType.Isolation, "Bodyweight",
-            new[] { ("Abs", 1.0m) }),
-        new("Cable Crunch", ExerciseType.Isolation, "Cable",
-            new[] { ("Abs", 1.0m) })
-    };
-
-    // (Mišićna grupa, MEV, MAV, MRV) — orijentacione nedeljne radne serije.
-    // MAV je ciljna vrednost; priručnik je smešta u raspon 8-20 serija nedeljno.
-    private static readonly (string Muscle, int Mev, int Mav, int Mrv)[] VolumeLandmarkSeeds =
-    {
-        ("Chest", 10, 16, 22),
-        ("Back", 10, 18, 25),
-        ("Shoulders", 8, 16, 26),
-        ("Quads", 8, 14, 20),
-        ("Hamstrings", 6, 11, 16),
-        ("Glutes", 4, 10, 16),
-        ("Biceps", 8, 14, 20),
-        ("Triceps", 6, 12, 18),
-        ("Calves", 8, 13, 20),
-        ("Abs", 6, 12, 25)
-    };
 }

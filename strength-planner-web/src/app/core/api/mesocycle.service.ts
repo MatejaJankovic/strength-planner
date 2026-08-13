@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
-import { Observable, shareReplay, tap } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 import { API_BASE_URL } from './api-base';
 import {
   GenerateMesocycleRequest,
@@ -17,19 +17,18 @@ export class MesocycleService {
   private readonly activeSignal = signal<MesocycleDto | null>(null);
   readonly active = this.activeSignal.asReadonly();
 
-  private templatesRequest?: Observable<WorkoutTemplateDto[]>;
-
-  /** Prazni korisnički keš (aktivni plan) — šabloni su globalni pa ostaju. */
+  /** Prazni korisnički keš (aktivni plan). */
   reset(): void {
     this.activeSignal.set(null);
   }
 
-  /** Built-in workout templates; cached for the session (they never change). */
+  /**
+   * Ugrađeni šabloni, viđeni očima trenutnog korisnika: dani su skraćeni na njegov nivo
+   * iskustva, a jedan je označen kao predlog za njegov broj trenažnih dana. Zato se i ne
+   * keširaju — izmena profila menja odgovor.
+   */
   templates(): Observable<WorkoutTemplateDto[]> {
-    this.templatesRequest ??= this.http
-      .get<WorkoutTemplateDto[]>(`${this.apiUrl}/templates`)
-      .pipe(shareReplay(1));
-    return this.templatesRequest;
+    return this.http.get<WorkoutTemplateDto[]>(`${this.apiUrl}/templates`);
   }
 
   /** All mesocycles for the current user (summaries, newest-first per backend). */

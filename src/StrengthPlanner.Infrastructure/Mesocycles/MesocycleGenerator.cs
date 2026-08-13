@@ -15,9 +15,6 @@ public class MesocycleGenerator : IMesocycleGenerator
 {
     private const int DurationWeeks = 4;
 
-    private static readonly int[] ThreeDayOffsets = [0, 2, 4];
-    private static readonly int[] FourDayOffsets = [0, 1, 3, 4];
-
     private readonly AppDbContext _db;
     private readonly E1RmCalculator _e1RmCalculator = new();
 
@@ -54,9 +51,16 @@ public class MesocycleGenerator : IMesocycleGenerator
                                && (!exercise.IsCustom || exercise.CreatedByUserId == userId))
             .ToListAsync(cancellationToken);
 
-        var exerciseByName = exercises.ToDictionary(
-            exercise => exercise.Name,
-            StringComparer.OrdinalIgnoreCase);
+        // Korisnik sme da ima svoju vežbu istog naziva kao sistemska (provera pri
+        // pravljenju ne gleda velika i mala slova na isti način kao ovaj upit), pa se
+        // po nazivu mogu vratiti dva reda. Šablon uvek misli na sistemsku vežbu —
+        // grupisanje sprečava izuzetak zbog dvostrukog ključa i bira pravu.
+        var exerciseByName = exercises
+            .GroupBy(exercise => exercise.Name, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                group => group.Key,
+                group => group.OrderBy(exercise => exercise.IsCustom).First(),
+                StringComparer.OrdinalIgnoreCase);
         var missingExercises = exerciseNames
             .Where(exerciseName => !exerciseByName.ContainsKey(exerciseName))
             .ToList();
@@ -268,14 +272,8 @@ public class MesocycleGenerator : IMesocycleGenerator
     private static DateTime GetSessionDate(DateTime startDate, int weekNumber, int dayIndex, int daysPerWeek)
     {
         var weekStartDate = startDate.AddDays((weekNumber - 1) * 7);
-        var offset = daysPerWeek switch
-        {
-            3 => ThreeDayOffsets[dayIndex],
-            4 => FourDayOffsets[dayIndex],
-            _ => dayIndex
-        };
 
-        return weekStartDate.AddDays(offset);
+        return weekStartDate.AddDays(TrainingWeekSchedule.OffsetFor(daysPerWeek, dayIndex));
     }
 
     private static MesocycleDto ToDto(

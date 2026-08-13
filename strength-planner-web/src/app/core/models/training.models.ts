@@ -51,6 +51,10 @@ export interface WorkoutTemplateDayDto {
 export interface WorkoutTemplateDto {
   key: string;
   name: string;
+  /** Šablon koji odgovara broju trenažnih dana iz profila. */
+  isSuggested: boolean;
+  /** Upozorenje o poznatom ograničenju šablona, ako ga ima. */
+  note: string | null;
   days: WorkoutTemplateDayDto[];
 }
 

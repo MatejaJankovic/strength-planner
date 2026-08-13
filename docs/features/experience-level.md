@@ -94,11 +94,14 @@ nedelje napretka.
   **0.6**, ali auto-deload dobijaju samo srednji i napredni — početnik ostaje na
   planiranom deload-u, tačno kako priručnik traži.
 
-## Poznato ograničenje
+## Poznato ograničenje — **zatvoreno**
 
-Napredni vežbač na postojećim šablonima dobija svega tri vežbe, jer ti šabloni imaju samo
-dve izolacije po danu. Pravilo radi ispravno — nema čime da popuni trening. To zatvara
-sledeća grana, koja donosi šablone sa više izolacionog rada.
+Napredni vežbač je na tadašnjim šablonima dobijao svega tri vežbe, jer su ti šabloni imali
+samo dve izolacije po danu. Pravilo je radilo ispravno — nije imalo čime da popuni trening.
+
+Zatvoreno u grani [`feature/more-templates`](more-templates.md): šabloni sada nose dovoljno
+izolacionog rada, a katalog je dobio izolacije za grudi i leđa kojih ranije uopšte nije
+bilo. Napredni vežbač dobija pet do šest vežbi po treningu, zavisno od frekvencije šablona.
 
 ## Ispravke posle revizije koda
 

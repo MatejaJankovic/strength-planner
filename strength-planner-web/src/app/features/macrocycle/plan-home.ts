@@ -6,15 +6,20 @@ import { MatIconModule } from '@angular/material/icon';
 import { MacrocycleService } from '../../core/api/macrocycle.service';
 import { MesocycleService } from '../../core/api/mesocycle.service';
 import { extractErrorMessage } from '../../core/api/http-error';
-import { Goal, CreateMacrocycleBlockDto, MacrocycleBlockDto } from '../../core/models/training.models';
+import {
+  Goal,
+  CreateMacrocycleBlockDto,
+  MacrocycleBlockDto,
+  WorkoutTemplateDto,
+} from '../../core/models/training.models';
 import { EmptyState } from '../../shared/components/empty-state/empty-state';
 import { Loading } from '../../shared/components/loading/loading';
 
-const TEMPLATES = [
-  { key: 'full-body', name: 'Full Body' },
-  { key: 'upper-lower', name: 'Upper/Lower' },
-  { key: 'push-pull-legs', name: 'Push/Pull/Legs' },
-];
+/**
+ * Rezerva ako spisak šablona ne stigne: čarobnjak mora da ponudi bar nešto, a
+ * `upper-lower` je i podrazumevani izbor za predlog blokova.
+ */
+const FALLBACK_TEMPLATE_KEY = 'upper-lower';
 
 const MIN_BLOCKS = 1;
 const MAX_BLOCKS = 6;
@@ -36,7 +41,7 @@ export class PlanHome {
 
   protected readonly plan = this.macrocycleService.active;
 
-  protected readonly templates = TEMPLATES;
+  protected readonly templates = signal<WorkoutTemplateDto[]>([]);
   protected readonly goalOptions = [
     { value: Goal.Hypertrophy, label: 'Hipertrofija' },
     { value: Goal.Strength, label: 'Snaga' },
@@ -94,14 +99,37 @@ export class PlanHome {
     this.showWizard.set(true);
     this.createError.set(null);
 
-    // Početni raspored dolazi sa servera: smenjivanje ciljeva je trenažno pravilo i
-    // živi u domenu, pa ga ekran ne izvodi ponovo za sebe.
-    this.macrocycleService.suggestedBlocks(2, Goal.Hypertrophy, 'upper-lower').subscribe({
+    // Spisak šablona dolazi sa servera — ekran ga više ne drži zakucanog, pa se novi
+    // šabloni pojave i ovde. Server ujedno kaže koji odgovara broju trenažnih dana.
+    this.mesocycleService.templates().subscribe({
+      next: (templates) => {
+        this.templates.set(templates);
+        this.seedBlocks(templates.find((template) => template.isSuggested)?.key);
+      },
+      error: () => {
+        // Prazan padajući spisak bi zaključao izbor šablona; jedna stavka je dovoljna
+        // da čarobnjak ostane upotrebljiv.
+        this.templates.set([
+          { key: FALLBACK_TEMPLATE_KEY, name: 'Upper/Lower', isSuggested: false, note: null, days: [] },
+        ]);
+        this.seedBlocks(FALLBACK_TEMPLATE_KEY);
+      },
+    });
+  }
+
+  /**
+   * Početni raspored blokova dolazi sa servera: smenjivanje ciljeva je trenažno pravilo i
+   * živi u domenu, pa ga ekran ne izvodi ponovo za sebe.
+   */
+  private seedBlocks(templateKey: string | undefined): void {
+    const key = templateKey ?? FALLBACK_TEMPLATE_KEY;
+
+    this.macrocycleService.suggestedBlocks(2, Goal.Hypertrophy, key).subscribe({
       next: (blocks) => this.blocks.set(blocks),
       error: () =>
         this.blocks.set([
-          { goal: Goal.Hypertrophy, templateKey: 'upper-lower' },
-          { goal: Goal.Strength, templateKey: 'upper-lower' },
+          { goal: Goal.Hypertrophy, templateKey: key },
+          { goal: Goal.Strength, templateKey: key },
         ]),
     });
   }
@@ -189,6 +217,14 @@ export class PlanHome {
 
   protected goalLabel(goal: Goal): string {
     return goal === Goal.Strength ? 'Snaga' : 'Hipertrofija';
+  }
+
+  /**
+   * Upozorenje izabranog šablona. Padajući spisak prikazuje samo naziv, pa bi se bez ovoga
+   * dugoročan plan mogao sastaviti od šablona čije ograničenje korisnik nikad ne vidi.
+   */
+  protected templateNote(templateKey: string): string | null {
+    return this.templates().find((template) => template.key === templateKey)?.note ?? null;
   }
 
   /**
