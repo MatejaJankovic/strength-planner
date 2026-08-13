@@ -145,5 +145,23 @@ with an outcome per item is in [`docs/analiza-prirucnika.md`](docs/analiza-priru
 Handbook items 5, 6, 7, 9 and 10 were **skipped by the user's decision**, not on cost —
 the reasons are recorded next to each item in the analysis.
 
+**Round 3 — security review of the whole application.** Findings, evidence and what is
+still open are in [`docs/security.md`](docs/security.md); deployment steps in
+[`docs/deployment-security.md`](docs/deployment-security.md).
+
+| Branch | What it fixed | PR |
+|---|---|---|
+| `fix/session-data-leak` | Cached lifts of the previous account survived a logout | #12 |
+| `fix/account-security` | Password policy, rate limiting, enumeration, password change with token revocation | #13 |
+| `fix/deployment-hardening` | Security headers, non-root containers, least-privilege DB role, dependencies | #14 |
+
+The review found **no IDOR and no SQL injection** — cross-user access was tested against the
+running API, not just read. TLS is the one item that cannot be fixed from inside the repo.
+
+**Do not commit a document that lists unfixed weaknesses of the live app: this repository is
+public.** Security notes describe what is closed and how it is verified; anything still open
+is stated at a level useful to the owner, not to an attacker.
+
 Deliberately **out of scope**: i18n, full-history analytics, undulating periodization,
-PWA/offline, changing an already-generated block's periodization model.
+PWA/offline, changing an already-generated block's periodization model, email delivery (so no
+password reset and no email confirmation).

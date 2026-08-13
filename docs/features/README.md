@@ -41,3 +41,17 @@ Svaka strana ima odeljak o ograničenjima i ispravkama posle revizije. Najzaniml
   sistemske i time zaključa generisanje plana **svim ostalim** korisnicima.
 - [Nivo iskustva](experience-level.md) — pravilo je radilo ispravno, ali nije imalo čime da
   popuni trening; ograničenje je zatvorila tek sledeća grana.
+
+## Bezbednost
+
+Pregled cele aplikacije, ispravke i ono što ostaje otvoreno:
+
+- [`../security.md`](../security.md) — šta je zatvoreno i kako je provereno
+- [`../deployment-security.md`](../deployment-security.md) — koraci pri isporuci (TLS,
+  sertifikati, nadogradnja postojeće baze)
+
+| Grana | O čemu je | PR |
+|---|---|---|
+| `fix/session-data-leak` | Keširani maksimumi prethodnog korisnika preživljavali su odjavu | #12 |
+| `fix/account-security` | Lozinke, ograničenje zahteva, nabrajanje naloga, promena lozinke | #13 |
+| `fix/deployment-hardening` | Zaglavlja, kontejneri bez root-a, nalog baze, zavisnosti | #14 |
