@@ -40,18 +40,6 @@ public class TemplateService : ITemplateService
             ? null
             : WorkoutTemplateCatalog.SuggestedFor(profile.TrainingDaysPerWeek).Key;
 
-        // Tip vežbe (složena / izolaciona) živi u bazi, a šablon nosi samo nazive.
-        var exerciseTypes = await _db.Exercises
-            .AsNoTracking()
-            .Where(exercise => !exercise.IsCustom)
-            .Select(exercise => new { exercise.Name, exercise.Type })
-            .ToListAsync(cancellationToken);
-
-        var isCompoundByName = exerciseTypes.ToDictionary(
-            exercise => exercise.Name,
-            exercise => exercise.Type == ExerciseType.Compound,
-            StringComparer.OrdinalIgnoreCase);
-
         return WorkoutTemplateCatalog
             .GetAll()
             .Select(template => new WorkoutTemplateDto
@@ -64,11 +52,12 @@ public class TemplateService : ITemplateService
                     .Select(day => new WorkoutTemplateDayDto
                     {
                         Name = day.Name,
+                        // Tip vežbe se čita iz kataloga, a ne iz baze: katalog je izvor
+                        // iz kojeg se baza i puni, tu ga proveravaju testovi, i nema
+                        // tihog svrstavanja nepoznatog naziva u izolacije.
                         Exercises = SessionComposition.ForLevel(
                             day.Exercises,
-                            // Vežba koje nema u bazi ne može da se prikaže kao složena;
-                            // generisanje takvog šablona ionako pada uz jasnu poruku.
-                            exerciseName => isCompoundByName.GetValueOrDefault(exerciseName),
+                            ExerciseCatalog.IsCompound,
                             experienceLevel)
                     })
                     .ToList()

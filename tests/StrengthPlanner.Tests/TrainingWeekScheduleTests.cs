@@ -69,13 +69,37 @@ public class TrainingWeekScheduleTests
         // Šablon duži od nedelje nije predviđen, ali plan koji se ipak rasporedi je
         // bolji od izuzetka usred generisanja.
         Assert.Equal(9, TrainingWeekSchedule.OffsetFor(10, 9));
-        Assert.Equal(3, TrainingWeekSchedule.OffsetFor(3, 3));
+        Assert.Equal(0, TrainingWeekSchedule.OffsetFor(10, 0));
     }
 
     [Fact]
-    public void OffsetFor_RejectsANegativeDayIndex()
+    public void OffsetFor_RejectsADayIndexOutsideTheWeek()
     {
+        // Za trening koji nedelja ne sadrži nema ispravnog dana. Vraćanje samog indeksa
+        // bi dva treninga smestilo na isti datum: četiri dana daju pomeraje 0, 1, 3, 4,
+        // pa bi i indeks 4 pao na 4.
         Assert.Throws<ArgumentOutOfRangeException>(() => TrainingWeekSchedule.OffsetFor(3, -1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => TrainingWeekSchedule.OffsetFor(3, 3));
+        Assert.Throws<ArgumentOutOfRangeException>(() => TrainingWeekSchedule.OffsetFor(4, 4));
+        Assert.Throws<ArgumentOutOfRangeException>(() => TrainingWeekSchedule.OffsetFor(5, 5));
+        Assert.Throws<ArgumentOutOfRangeException>(() => TrainingWeekSchedule.OffsetFor(-1, 0));
+    }
+
+    [Fact]
+    public void OffsetFor_NeverPutsTwoSessionsOnTheSameDay_ForEveryWeekShapeItAccepts()
+    {
+        // Prethodna verzija je za indeks van nedelje vraćala sam indeks, pa su se
+        // pomeraji poklapali. Ovde se prolazi i kroz oblike nedelje koje tabela ne
+        // pokriva, do granice na kojoj poziv postaje greška.
+        for (var daysPerWeek = 1; daysPerWeek <= 14; daysPerWeek++)
+        {
+            var offsets = Enumerable
+                .Range(0, daysPerWeek)
+                .Select(dayIndex => TrainingWeekSchedule.OffsetFor(daysPerWeek, dayIndex))
+                .ToList();
+
+            Assert.Equal(offsets.Count, offsets.Distinct().Count());
+        }
     }
 
     private static int[] Offsets(int daysPerWeek) =>

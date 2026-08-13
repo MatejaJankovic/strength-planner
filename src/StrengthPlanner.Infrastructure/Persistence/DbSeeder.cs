@@ -40,9 +40,18 @@ public static class DbSeeder
 
     private static async Task SeedExercisesAsync(AppDbContext db, IReadOnlyDictionary<string, Guid> muscleIds)
     {
-        var existing = await db.Exercises.Select(e => e.Name).ToListAsync();
+        // Samo sistemske vežbe smeju da spreče upis seed vežbe. Korisnička vežba istog
+        // naziva ne sme, jer bi tada sistemska vežba nedostajala **svim ostalim**
+        // korisnicima — a šabloni je traže po nazivu, pa im generisanje plana pada.
+        // Poređenje je bez obzira na velika i mala slova, kao i provera naziva pri
+        // pravljenju korisničke vežbe.
+        var existing = await db.Exercises
+            .Where(e => !e.IsCustom)
+            .Select(e => e.Name)
+            .ToListAsync();
+        var existingNames = new HashSet<string>(existing, StringComparer.OrdinalIgnoreCase);
 
-        foreach (var seed in ExerciseCatalog.Exercises.Where(s => !existing.Contains(s.Name)))
+        foreach (var seed in ExerciseCatalog.Exercises.Where(s => !existingNames.Contains(s.Name)))
         {
             var exercise = new Exercise
             {
@@ -65,7 +74,80 @@ public static class DbSeeder
         }
 
         await db.SaveChangesAsync();
+        await ReconcileSystemExercisesAsync(db, muscleIds);
         await AlignSystemExerciseWeightStepsAsync(db);
+    }
+
+    /// <summary>
+    /// Sistemska vežba mora da odgovara katalogu, ne samo da postoji.
+    ///
+    /// Upis ubacuje samo vežbe kojih nema, pa bi izmena tipa, sprave ili mišića u
+    /// <see cref="ExerciseCatalog"/> ostala samo u kodu — testovi bi je videli, a
+    /// zatečena baza ne bi. Korisničke vežbe se ne diraju, kao ni korisnički korak
+    /// opterećenja koji živi u UserExerciseSettings.
+    /// </summary>
+    private static async Task ReconcileSystemExercisesAsync(
+        AppDbContext db,
+        IReadOnlyDictionary<string, Guid> muscleIds)
+    {
+        var systemExercises = await db.Exercises
+            .Where(exercise => !exercise.IsCustom)
+            .Include(exercise => exercise.Muscles)
+            .ToListAsync();
+
+        var changed = false;
+
+        foreach (var exercise in systemExercises)
+        {
+            var seed = ExerciseCatalog.Find(exercise.Name);
+            if (seed is null)
+            {
+                continue;
+            }
+
+            if (exercise.Type != seed.Type)
+            {
+                exercise.Type = seed.Type;
+                changed = true;
+            }
+
+            if (!string.Equals(exercise.Equipment, seed.Equipment, StringComparison.Ordinal))
+            {
+                exercise.Equipment = seed.Equipment;
+                changed = true;
+            }
+
+            var expectedMuscles = seed.Muscles
+                .ToDictionary(muscle => muscleIds[muscle.Muscle], muscle => muscle.Contribution);
+
+            var actualMuscles = exercise.Muscles
+                .ToDictionary(muscle => muscle.MuscleGroupId, muscle => muscle.Contribution);
+
+            if (expectedMuscles.Count == actualMuscles.Count
+                && expectedMuscles.All(expected =>
+                    actualMuscles.TryGetValue(expected.Key, out var contribution)
+                    && contribution == expected.Value))
+            {
+                continue;
+            }
+
+            exercise.Muscles.Clear();
+            foreach (var (muscleGroupId, contribution) in expectedMuscles)
+            {
+                exercise.Muscles.Add(new ExerciseMuscle
+                {
+                    MuscleGroupId = muscleGroupId,
+                    Contribution = contribution
+                });
+            }
+
+            changed = true;
+        }
+
+        if (changed)
+        {
+            await db.SaveChangesAsync();
+        }
     }
 
     /// <summary>

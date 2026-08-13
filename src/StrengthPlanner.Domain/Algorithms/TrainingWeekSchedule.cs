@@ -34,17 +34,29 @@ public static class TrainingWeekSchedule
 
     /// <summary>
     /// Which day of the week the given session falls on, counting from the week's first
-    /// training day. Falls back to consecutive days for any week shape not listed —
-    /// a plan that still schedules beats one that throws.
+    /// training day.
+    ///
+    /// A week shape that is not listed falls back to consecutive days — a plan that still
+    /// schedules beats one that throws. A <paramref name="dayIndex"/> outside the week is
+    /// a different matter and throws: there is no day to return for a session the week
+    /// does not contain, and falling back would silently place two sessions on the same
+    /// date (four training days list offsets 0, 1, 3, 4 — index 4 would also land on 4).
     /// </summary>
     public static int OffsetFor(int daysPerWeek, int dayIndex)
     {
-        if (dayIndex < 0)
+        if (daysPerWeek < 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(dayIndex), dayIndex, "Day index cannot be negative.");
+            throw new ArgumentOutOfRangeException(
+                nameof(daysPerWeek), daysPerWeek, "Training days per week cannot be negative.");
         }
 
-        if (daysPerWeek < 0 || daysPerWeek >= Offsets.Length || dayIndex >= Offsets[daysPerWeek].Length)
+        if (dayIndex < 0 || dayIndex >= daysPerWeek)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(dayIndex), dayIndex, "Day index must fall inside the training week.");
+        }
+
+        if (daysPerWeek >= Offsets.Length)
         {
             return dayIndex;
         }

@@ -50,8 +50,20 @@ dobijao tri.
 | `upper-lower-ppl` | Upper/Lower + Push/Pull/Legs | 5 |
 | `push-pull-legs-6` | Push/Pull/Legs ×2 | 6 |
 
-Postojeća tri su zadržala svoje ključeve, pa zatečeni planovi i dugoročni blokovi rade
-bez izmene.
+Postojeća tri su zadržala svoje **ključeve**. Već generisani mezociklusi se ne diraju:
+progresija i deload spajaju treninge po `DayLabel` unutar jednog mezociklusa, a nazivi dana
+su nepromenjeni.
+
+**Ali sadržaj tih šablona jeste promenjen**, i to se vidi na dugoročnim planovima. Blok koji
+još nije generisan razrešava šablon tek kad dođe na red, pa dobija **novi** spisak vežbi.
+Konkretno: `Upper A` je za srednji nivo bio 4 vežbe / 16 serija, sada je 6 vežbi / 24
+serije. Ko usred dugoročnog plana pređe na ovu verziju, dobiće naredni blok obimniji nego
+prethodni, a nove vežbe bez zabeleženog 1RM ulaze bez ciljne težine (isto stanje kao za
+svakog novog korisnika — unosi se pri prvom treningu).
+
+Alternativa bi bila da se sadržaj šablona zamrzne u bazi pri pravljenju plana, što je izmena
+šeme neproporcionalna ovom radu — i trajno bi zaključala zatečene planove na šablone ispod
+MEV, koje ova grana upravo ispravlja.
 
 Svaki dan poštuje tri pravila, i sva tri su pokrivena testovima:
 
@@ -109,6 +121,27 @@ izmene nivoa iskustva ostao ustajao.
 Ekran „Plan" je imao **zakucana tri šablona** u kodu. Sada ih učitava sa servera, pa se novi
 šabloni pojavljuju i tamo, a blokovi se podrazumevano prave sa predloženim šablonom.
 
+### Seeder više ne može da bude blokiran korisničkom vežbom
+
+Ovo je našla revizija koda i jeste ozbiljno. `SeedExercisesAsync` je preskakao svaku seed
+vežbu čiji naziv već postoji u tabeli — **uključujući korisničke vežbe**. Dok se spisak
+seed vežbi nije menjao, to nije smetalo. Čim ova grana dodaje šest novih naziva u već
+popunjenu bazu, otvara se ovakav scenario:
+
+1. Korisnik A na ekranu Profil napravi svoju vežbu „Cable Fly" (danas prolazi — sistemske
+   vežbe tog naziva još nema).
+2. Ova verzija se pusti; seeder vidi „Cable Fly" u tabeli i **ne upisuje** sistemsku vežbu.
+3. Korisniku B generisanje pada za **sve** šablone, jer se „Cable Fly" nalazi u svih sedam.
+
+Ispravke:
+
+- seeder poredi samo sa **sistemskim** vežbama, i to bez obzira na velika i mala slova;
+- pošto sada obe vežbe mogu da postoje istovremeno, generator grupiše po nazivu i bira
+  sistemsku — ranije bi `ToDictionary` pukao na dvostrukom ključu (greška 500);
+- dodat je `ReconcileSystemExercisesAsync`: sistemska vežba sada prati katalog i po tipu,
+  spravi i mišićima, ne samo po postojanju. Bez toga bi izmena u katalogu ostala samo u
+  kodu — testovi bi je videli, a zatečena baza ne bi.
+
 ### Katalog vežbi se preselio u `Application`
 
 Spisak sistemskih vežbi i granica volumena je živeo u `Infrastructure/Persistence/DbSeeder`.
@@ -140,6 +173,12 @@ pogađaju postojeće vežbe niti koliko volumena zaista propisuju. Seeder je sad
 - U pregledaču: prijava, čarobnjak prikazuje 7 šablona, šestodnevni je označen kao predlog
   i unapred izabran, dvodnevni nosi upozorenje, plan se pravi u jednom kliku i daje
   4 nedelje × 6 treninga sa deload-om u četvrtoj. Ekran „Plan" nudi svih 7 šablona.
+- Svih 7 šablona × 3 nivoa generisano **na praznoj bazi** (`sp_freshcheck`), da bi se
+  potvrdilo da izmenjeni seeder radi i za novog korisnika, a ne samo kao dopuna postojeće
+  baze: 33 vežbe, 10 mišićnih grupa, sve granice volumena sa MAV vrednošću.
+- Scenario iz revizije odigran nad bazom: korisnička vežba „Cable Fly" napravljena pre
+  nadogradnje **više ne sprečava** upis sistemske, i generisanje prolazi i za njenog
+  vlasnika i za ostale korisnike.
 
 ## Poznata ograničenja
 
@@ -165,6 +204,12 @@ ne dira.
 Priručnik naprednom daje *„do 3 složene vežbe nedeljno"*, ali sistem primenjuje granicu
 **po treningu**. Na šest treninga nedeljno to ispadne šest složenih vežbi. Napredni vežbač
 koji hoće da ostane u okviru iz priručnika treba da bira šablon do tri dana nedeljno.
+
+### Dugoročni plan u toku menja oblik narednog bloka
+
+Opisano gore, uz šablone: blok koji još nije generisan koristi novi spisak vežbi. Nema
+ispravke u kodu — zamrzavanje sadržaja šablona u bazi bi bilo neproporcionalno i
+kontraproduktivno.
 
 ### Listovi i trbuh izostaju iz trodnevnog full body šablona
 

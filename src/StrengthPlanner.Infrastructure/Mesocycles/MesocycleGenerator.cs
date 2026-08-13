@@ -51,9 +51,16 @@ public class MesocycleGenerator : IMesocycleGenerator
                                && (!exercise.IsCustom || exercise.CreatedByUserId == userId))
             .ToListAsync(cancellationToken);
 
-        var exerciseByName = exercises.ToDictionary(
-            exercise => exercise.Name,
-            StringComparer.OrdinalIgnoreCase);
+        // Korisnik sme da ima svoju vežbu istog naziva kao sistemska (provera pri
+        // pravljenju ne gleda velika i mala slova na isti način kao ovaj upit), pa se
+        // po nazivu mogu vratiti dva reda. Šablon uvek misli na sistemsku vežbu —
+        // grupisanje sprečava izuzetak zbog dvostrukog ključa i bira pravu.
+        var exerciseByName = exercises
+            .GroupBy(exercise => exercise.Name, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                group => group.Key,
+                group => group.OrderBy(exercise => exercise.IsCustom).First(),
+                StringComparer.OrdinalIgnoreCase);
         var missingExercises = exerciseNames
             .Where(exerciseName => !exerciseByName.ContainsKey(exerciseName))
             .ToList();

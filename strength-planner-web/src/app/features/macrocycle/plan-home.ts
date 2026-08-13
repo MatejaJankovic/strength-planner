@@ -220,6 +220,14 @@ export class PlanHome {
   }
 
   /**
+   * Upozorenje izabranog šablona. Padajući spisak prikazuje samo naziv, pa bi se bez ovoga
+   * dugoročan plan mogao sastaviti od šablona čije ograničenje korisnik nikad ne vidi.
+   */
+  protected templateNote(templateKey: string): string | null {
+    return this.templates().find((template) => template.key === templateKey)?.note ?? null;
+  }
+
+  /**
    * Srpski ima tri oblika množine: 1 blok, 2–4 bloka, 5+ blokova. Brojevi 11–14 idu
    * u poslednji oblik bez obzira na poslednju cifru.
    */

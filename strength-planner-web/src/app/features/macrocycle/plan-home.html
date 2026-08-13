@@ -172,6 +172,13 @@
             >
               <mat-icon aria-hidden="true">delete_outline</mat-icon>
             </button>
+
+            @if (templateNote(block.templateKey); as note) {
+              <p class="brow__note">
+                <mat-icon aria-hidden="true">info_outline</mat-icon>
+                <span>{{ note }}</span>
+              </p>
+            }
           </li>
         }
       </ol>
