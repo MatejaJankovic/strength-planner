@@ -49,6 +49,18 @@ odluka: u nginx-u `add_header` iz spoljašnjeg bloka ne važi u `location`-u koj
 CSP dozvoljava `'unsafe-inline'` za stilove, jer ih Angular Material ubacuje inline. Za
 skripte ga **ne** dozvoljava, a to je deo koji zaista štiti.
 
+Pravilo propušta i `fonts.gstatic.com`, i to nije propust. Angular pri build-u pretvara
+`<link>` ka Google Fonts u ugrađene `@font-face` blokove, ali **sami fajlovi fontova i dalje
+dolaze sa gstatic-a**. Provereno tako što je produkcijski build posluzen sa strožim
+pravilom: Inter, Space Grotesk i Material Icons svi završe sa `status: error`, a
+`document.fonts.check('24px "Material Icons"')` vrati `false` — dakle ikone bi nestale sa
+ekrana.
+
+Jače rešenje je **posluživanje fontova sa istog porekla**: tada oba Google izvora ispadaju
+iz pravila, aplikacija radi bez interneta, a IP adresa korisnika ne odlazi trećoj strani pri
+svakom otvaranju stranice. To je izmena u build-u, ne u konfiguraciji nginx-a, pa ovde nije
+urađena.
+
 ### Keširanje
 
 Fajlovi sa heš-om u imenu se keširaju godinu dana; `index.html` nosi `no-cache`. Bez toga ga
@@ -114,6 +126,17 @@ openssl rand -base64 48
   šemu u trenutku kad se dižu instance.
 
 ## Poznata ograničenja
+
+- **Ciljano zaključavanje tuđeg naloga i dalje je moguće.** Identity zaključava nalog posle
+  pet promašaja na pet minuta, što je oko jednog zahteva u minutu — daleko ispod praga
+  ograničenja broja zahteva. Ko zna tuđ email može da mu drži nalog zaključanim. Prava
+  rešenja su postepeno usporavanje umesto tvrdog zaključavanja ili vezivanje brojača za par
+  (nalog, IP); oba menjaju ponašanje prijave, pa nisu dirana.
+- **Zatečene kratke lozinke ostaju.** Pravilo o dužini važi kad se lozinka postavlja, ne kad
+  se proverava, pa nalozi napravljeni ranije zadržavaju svoje. Prisilna promena traži polje
+  „lozinka promenjena" i tok koji korisnika na to natera.
+- **Registracija i dalje odaje da li email ima nalog** — ne porukom, koja je ujednačena, nego
+  statusnim kodom (400 naspram 200). Pravo rešenje je potvrda email-om.
 
 - **Ograničenje broja zahteva deli budžet po IP adresi.** Više korisnika iza istog NAT-a
   (kućni ruter, teretana, fakultet) deli 10 zahteva u minutu na auth rutama. Za prijavu i
