@@ -52,6 +52,14 @@ public class MacrocycleService : IMacrocycleService
             {
                 throw new MesocycleGenerationException($"Unsupported goal: '{block.Goal}'.");
             }
+
+            // Nepoznat model bi se tiho ponašao kao ravan, ali bi se upisao u bazu i
+            // vraćao klijentu kao vrednost koju nijedan ekran ne ume da prikaže.
+            if (!Enum.IsDefined(block.PeriodizationModel))
+            {
+                throw new MesocycleGenerationException(
+                    $"Unsupported periodization model: '{block.PeriodizationModel}'.");
+            }
         }
 
         // await using i na null-u je legalan no-op, pa se transakcija oslobadja i kada

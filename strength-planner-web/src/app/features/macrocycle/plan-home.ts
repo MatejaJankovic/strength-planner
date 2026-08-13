@@ -22,6 +22,11 @@ import { Loading } from '../../shared/components/loading/loading';
  */
 const FALLBACK_TEMPLATE_KEY = 'upper-lower';
 
+/** Blok snage gradi intenzitet, blok hipertrofije volumen — model prati cilj. */
+function modelForGoal(goal: Goal): PeriodizationModel {
+  return goal === Goal.Strength ? PeriodizationModel.Linear : PeriodizationModel.Inverse;
+}
+
 const MIN_BLOCKS = 1;
 const MAX_BLOCKS = 6;
 
@@ -173,11 +178,10 @@ export class PlanHome {
       const last = blocks[blocks.length - 1];
       const goal = last.goal === Goal.Hypertrophy ? Goal.Strength : Goal.Hypertrophy;
 
-      // Blok snage gradi intenzitet, blok hipertrofije volumen — model prati cilj.
-      const periodizationModel =
-        goal === Goal.Strength ? PeriodizationModel.Linear : PeriodizationModel.Inverse;
-
-      return [...blocks, { goal, templateKey: last.templateKey, periodizationModel }];
+      return [
+        ...blocks,
+        { goal, templateKey: last.templateKey, periodizationModel: modelForGoal(goal) },
+      ];
     });
   }
 
@@ -192,7 +196,11 @@ export class PlanHome {
   protected setBlockGoal(index: number, raw: string): void {
     const goal = Number(raw) as Goal;
     this.blocks.update((blocks) =>
-      blocks.map((block, i) => (i === index ? { ...block, goal } : block)),
+      // Model prati cilj, isto kao pri dodavanju bloka i u predlogu sa servera; korisnik
+      // ga i dalje može promeniti posle.
+      blocks.map((block, i) =>
+        i === index ? { ...block, goal, periodizationModel: modelForGoal(goal) } : block,
+      ),
     );
   }
 

@@ -68,19 +68,80 @@ public class PeriodizationTests
     {
         var weeks = Hypertrophy(PeriodizationModel.Linear);
 
-        // Prva nedelja: više ponavljanja, lakše serije, više serija.
+        // Prva nedelja: viša donja granica ponavljanja, lakše serije, više serija.
+        // Gornja granica staje na Epley granici — vidi RepRange_NeverExceedsTheEpleyCap.
         Assert.Equal(11, weeks[0].RepRangeMin);
-        Assert.Equal(15, weeks[0].RepRangeMax);
+        Assert.Equal(12, weeks[0].RepRangeMax);
         Assert.Equal(HypertrophyRir + 1, weeks[0].TargetRir);
         Assert.Equal(Sets + 1, weeks[0].Sets);
 
-        // Peta nedelja: manje ponavljanja, bliže otkazu, manje serija.
+        // Peta nedelja: manje ponavljanja i manje serija.
         Assert.Equal(6, weeks[4].RepRangeMin);
         Assert.Equal(10, weeks[4].RepRangeMax);
-        Assert.Equal(HypertrophyRir - 1, weeks[4].TargetRir);
         Assert.Equal(Sets - 1, weeks[4].Sets);
 
         Assert.True(weeks[5].IsDeload);
+    }
+
+    /// <summary>
+    /// Serija iznad Epley granice ne daje procenu 1RM-a, a tri stvari je čitaju: trend
+    /// snage, prepoznavanje rekorda i signal umora. Nedelja volumena iznad granice bi
+    /// izgledala uredno, a sistem bi u njoj prestao da meri.
+    /// </summary>
+    [Fact]
+    public void RepRange_NeverExceedsTheEpleyCap()
+    {
+        foreach (var model in Enum.GetValues<PeriodizationModel>())
+        {
+            foreach (var weeks in new[] { Hypertrophy(model), Strength(model) })
+            {
+                Assert.All(weeks, week =>
+                    Assert.True(
+                        week.RepRangeMax <= TrainingConstants.EpleyRepCap,
+                        $"{model} nedelja {week.WeekNumber}: {week.RepRangeMax} ponavljanja "
+                        + $"prelazi Epley granicu {TrainingConstants.EpleyRepCap}."));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Umor se meri kao manjak u odnosu na ciljni RIR. Ispod nule manjka nema — ponavljanja
+    /// u rezervi ne idu u minus — pa bi nedelja propisana do otkaza tiho izgubila najteži
+    /// član ocene umora i nikada ne bi mogla da pokrene raniji deload.
+    /// </summary>
+    [Fact]
+    public void TargetRir_NeverDropsToFailure()
+    {
+        foreach (var model in Enum.GetValues<PeriodizationModel>())
+        {
+            foreach (var weeks in new[] { Hypertrophy(model), Strength(model) })
+            {
+                Assert.All(weeks, week =>
+                    Assert.True(
+                        week.TargetRir >= 1,
+                        $"{model} nedelja {week.WeekNumber}: ciljni RIR {week.TargetRir}."));
+            }
+        }
+    }
+
+    [Fact]
+    public void BaseSetsFrom_InvertsEveryTrainingWeek()
+    {
+        // Deload logika iz zatečenog plana mora da izvede polazni broj serija bloka —
+        // profil se ne čita, jer korisnik koji je usred bloka promenio nivo iskustva ne
+        // sme time da promeni oblik već napravljenog plana.
+        foreach (var model in Enum.GetValues<PeriodizationModel>())
+        {
+            var weeks = Hypertrophy(model);
+
+            foreach (var week in weeks.Where(week => !week.IsDeload))
+            {
+                Assert.Equal(Sets, Periodization.BaseSetsFrom(model, week.WeekNumber, week.Sets));
+            }
+
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => Periodization.BaseSetsFrom(model, weeks[^1].WeekNumber, weeks[^1].Sets));
+        }
     }
 
     [Fact]
@@ -102,7 +163,12 @@ public class PeriodizationTests
     public void PeriodizedBlocks_LowerTheRirAsTheBlockGoesOn(PeriodizationModel model)
     {
         // Zamor raste kroz blok, pa se serije vode sve bliže otkazu — do deload-a.
-        var training = Hypertrophy(model).Where(week => !week.IsDeload).ToList();
+        // Kod snage ima prostora za pravi pad; kod hipertrofije osnovni RIR je već 1, pa
+        // se pad zaustavlja na donjoj granici i intenzitet dalje nose ponavljanja.
+        var training = Strength(model).Where(week => !week.IsDeload).ToList();
+        Assert.True(training[^1].TargetRir < training[0].TargetRir);
+
+        training = Hypertrophy(model).Where(week => !week.IsDeload).ToList();
 
         for (var index = 1; index < training.Count; index++)
         {
@@ -152,6 +218,32 @@ public class PeriodizationTests
 
         Assert.Equal(Periodization.MinReps, intensityWeek.RepRangeMin);
         Assert.True(intensityWeek.TargetRir < StrengthRir);
+    }
+
+    [Fact]
+    public void EveryTrainingWeekOfAPeriodizedBlock_HasItsOwnPrescription()
+    {
+        // Dve uzastopne nedelje sa istim propisom znače da model tu nedelju ne koristi.
+        foreach (var model in new[] { PeriodizationModel.Linear, PeriodizationModel.Inverse })
+        {
+            foreach (var weeks in new[] { Hypertrophy(model), Strength(model) })
+            {
+                var training = weeks.Where(week => !week.IsDeload).ToList();
+
+                for (var index = 1; index < training.Count; index++)
+                {
+                    var previous = training[index - 1];
+                    var current = training[index];
+
+                    Assert.False(
+                        previous.Sets == current.Sets
+                        && previous.RepRangeMin == current.RepRangeMin
+                        && previous.RepRangeMax == current.RepRangeMax
+                        && previous.TargetRir == current.TargetRir,
+                        $"{model}: nedelje {previous.WeekNumber} i {current.WeekNumber} su iste.");
+                }
+            }
+        }
     }
 
     [Fact]

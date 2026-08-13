@@ -147,6 +147,19 @@ public class SessionService : ISessionService
             .Select(group => new { ExerciseId = group.Key, ValueKg = group.Max(record => record.ValueKg) })
             .ToDictionaryAsync(record => record.ExerciseId, record => record.ValueKg, cancellationToken);
 
+        // Za preračun opterećenja se gleda samo skorašnji prozor, isto kao pri generisanju
+        // bloka. Rekord od pre pola godine je istorija, a ne procena trenutne snage — a
+        // ovde bi postao ciljno opterećenje naredne nedelje.
+        var recentCutoff = DateTime.UtcNow.AddDays(-TrainingConstants.OneRepMaxLookbackDays);
+        var recentMaxByExerciseId = await _db.OneRepMaxRecords
+            .AsNoTracking()
+            .Where(record => record.UserId == userId
+                             && exerciseIds.Contains(record.ExerciseId)
+                             && record.RecordedAt >= recentCutoff)
+            .GroupBy(record => record.ExerciseId)
+            .Select(group => new { ExerciseId = group.Key, ValueKg = group.Max(record => record.ValueKg) })
+            .ToDictionaryAsync(record => record.ExerciseId, record => record.ValueKg, cancellationToken);
+
         // Samo sesije koje još nisu završene: complete van redosleda ne sme da
         // prepiše ciljeve već odrađenih treninga.
         var nextPlans = await _db.ExercisePlans
@@ -236,13 +249,13 @@ public class SessionService : ISessionService
 
             if (nextPlan is not null)
             {
-                previousMaxByExerciseId.TryGetValue(plan.ExerciseId, out var storedMax);
+                recentMaxByExerciseId.TryGetValue(plan.ExerciseId, out var recentMax);
                 var nextWeight = NextTargetWeight(
                     plan,
                     nextPlan,
                     progression.NextWeightKg,
                     usedWeight,
-                    bestEstimate ?? (storedMax > 0 ? storedMax : null),
+                    bestEstimate ?? (recentMax > 0 ? recentMax : null),
                     weightStepKg);
 
                 nextPlan.TargetWeightKg = nextWeight;
@@ -394,8 +407,9 @@ public class SessionService : ISessionService
     /// <item><b>Isti propis</b> — obična dupla progresija, ponašanje nepromenjeno.</item>
     /// </list>
     ///
-    /// Ako procene 1RM-a nema (nijedna serija nije upisana, ili je nedelja bila deload pa
-    /// se e1RM namerno ne beleži), ostaje progresija — pogrešnija, ali bolja od praznog polja.
+    /// Ako skorašnje procene 1RM-a nema — nijedna serija nije upisana, ili su sve bile
+    /// iznad Epley granice pa se e1RM ne beleži — ostaje progresija: pogrešnija, ali bolja
+    /// od opterećenja izvedenog iz rekorda starog nekoliko meseci.
     /// </summary>
     private decimal NextTargetWeight(
         ExercisePlan plan,

@@ -37,7 +37,7 @@ public class MesocycleGenerator : IMesocycleGenerator
             throw new MesocycleGenerationException("Mesocycle name is required.");
         }
 
-        var goalSettings = GetGoalSettings(request.Goal);
+        var goalSettings = GoalPrescriptions.ForGoal(request.Goal);
         var exerciseNames = template.Days
             .SelectMany(day => day.Exercises)
             .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -157,7 +157,7 @@ public class MesocycleGenerator : IMesocycleGenerator
         Goal goal,
         DateTime startDate,
         WorkoutTemplate template,
-        GoalSettings goalSettings,
+        GoalPrescription goalSettings,
         IReadOnlyDictionary<string, Exercise> exerciseByName,
         IReadOnlyDictionary<Guid, decimal> oneRepMaxByExerciseId,
         IReadOnlyDictionary<Guid, decimal> weightStepByExerciseId,
@@ -271,16 +271,6 @@ public class MesocycleGenerator : IMesocycleGenerator
             weightStepKg);
     }
 
-    private static GoalSettings GetGoalSettings(Goal goal)
-    {
-        return goal switch
-        {
-            Goal.Strength => new GoalSettings(RepRangeMin: 3, RepRangeMax: 6, TargetRir: 2),
-            Goal.Hypertrophy => new GoalSettings(RepRangeMin: 8, RepRangeMax: 12, TargetRir: 1),
-            _ => throw new MesocycleGenerationException($"Unsupported goal: '{goal}'.")
-        };
-    }
-
     private static DateTime GetSessionDate(DateTime startDate, int weekNumber, int dayIndex, int daysPerWeek)
     {
         var weekStartDate = startDate.AddDays((weekNumber - 1) * 7);
@@ -347,5 +337,4 @@ public class MesocycleGenerator : IMesocycleGenerator
         };
     }
 
-    private sealed record GoalSettings(int RepRangeMin, int RepRangeMax, int TargetRir);
 }

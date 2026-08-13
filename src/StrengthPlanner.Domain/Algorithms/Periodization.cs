@@ -2,7 +2,7 @@ using StrengthPlanner.Domain.Enums;
 
 namespace StrengthPlanner.Domain.Algorithms;
 
-/// <summary>Propis za jednu nedelju bloka: koliko serija, u kom rep-opsegu i sa kojim RIR-om.</summary>
+/// <summary>What one week of a block prescribes: sets, rep range and target RIR.</summary>
 public sealed record WeekPrescription(
     int WeekNumber,
     bool IsDeload,
@@ -12,62 +12,72 @@ public sealed record WeekPrescription(
     int TargetRir);
 
 /// <summary>
-/// Raspoređuje propis kroz nedelje bloka.
+/// Spreads the prescription across the weeks of a block.
 ///
-/// Do sada je svaka nedelja mezociklusa nosila isti propis, a jedina razlika je bila
-/// deload na kraju. Priručnik na to ima direktan odgovor:
+/// Every week used to carry the same prescription, with a deload at the end as the only
+/// difference. The handbook answers that directly: <i>"Ne možeš isto trenirati svake
+/// nedelje i očekivati da napreduješ — telo se prilagodi. Zato se kroz blok menja odnos
+/// volumena i intenziteta."</i>
 ///
-/// <i>"Ne možeš isto trenirati svake nedelje i očekivati da napreduješ — telo se
-/// prilagodi. Zato se kroz blok menja odnos volumena i intenziteta."</i>
-///
-/// Tri modela pokrivaju tri načina da se taj odnos menja:
+/// Three models cover three ways of moving that balance:
 ///
 /// <list type="bullet">
-/// <item><b>Ravan</b> — isti propis svake nedelje. Napredak nosi dupla progresija
-/// (ponavljanja pa opterećenje), ne raspored. Četiri nedelje; ovo je ponašanje koje je
-/// sistem imao i pre uvođenja modela, pa ostaje podrazumevano.</item>
-/// <item><b>Linearan</b> — počinje volumenom (više ponavljanja, lakše serije), završava
-/// intenzitetom (manje ponavljanja, bliže otkazu). Klasičan raspored za blok koji vodi ka
-/// snazi.</item>
-/// <item><b>Obrnut</b> — ista dva kraja, obrnutim redom: teško dok si svež, volumen kada
-/// je opterećenje već visoko podiglo zamor. Koristan kada blok vodi ka hipertrofiji.</item>
+/// <item><b>Flat</b> — the same prescription every week over four weeks. Progress comes
+/// from double progression, not from the schedule. This is what the system did before
+/// models existed, so it stays the default.</item>
+/// <item><b>Linear</b> — volume first (more reps, easier sets), intensity last (fewer
+/// reps, closer to failure). The classic shape for a block leading to strength.</item>
+/// <item><b>Inverse</b> — the same two ends in the opposite order: heavy while fresh,
+/// volume once load has already driven fatigue up.</item>
 /// </list>
 ///
-/// Propis se izražava kao <b>pomeraj u odnosu na cilj</b>, ne kao apsolutni broj — isti
-/// raspored tako radi i za snagu (3-6 ponavljanja) i za hipertrofiju (8-12), a nivo
-/// iskustva i dalje određuje polazni broj serija.
+/// A week is expressed as a <b>shift from the goal's base</b> rather than as absolute
+/// numbers, which is what lets one schedule serve both strength (3-6 reps) and hypertrophy
+/// (8-12) while the experience level still sets the starting number of sets.
 /// </summary>
 public static class Periodization
 {
-    /// <summary>Ravan blok traje četiri nedelje: tri akumulacije i deload.</summary>
-    public const int FlatDurationWeeks = 4;
-
-    /// <summary>
-    /// Periodizovan blok traje šest nedelja: dve nedelje po fazi, jedna prelazna i deload.
-    /// Kraći blok ne bi imao mesta da pomeri odnos volumena i intenziteta.
-    /// </summary>
-    public const int PeriodizedDurationWeeks = 6;
-
-    /// <summary>Koliko se ponavljanja dodaje u fazi volumena.</summary>
+    /// <summary>Reps added during the volume phase.</summary>
     public const int VolumeRepShift = 3;
 
-    /// <summary>Koliko se ponavljanja oduzima u fazi intenziteta.</summary>
+    /// <summary>Reps removed during the transition into the intensity phase.</summary>
+    public const int TransitionRepShift = 1;
+
+    /// <summary>Reps removed during the intensity phase.</summary>
     public const int IntensityRepShift = 2;
 
-    /// <summary>Najmanji broj ponavljanja koji plan sme da propiše.</summary>
+    /// <summary>Fewest reps a week may prescribe.</summary>
     public const int MinReps = 3;
 
-    /// <summary>Najveći broj ponavljanja koji plan sme da propiše.</summary>
-    public const int MaxReps = 20;
+    /// <summary>
+    /// Most reps a week may prescribe.
+    ///
+    /// Tied to the Epley cap on purpose. Sets logged above it produce no e1RM estimate,
+    /// and three separate things read that estimate: the strength trend, personal-record
+    /// detection, and the e1RM term of the fatigue score. A volume week pushed past the cap
+    /// would therefore go dark exactly where the block is heaviest — the plan would look
+    /// fine while the system stopped measuring it.
+    /// </summary>
+    public const int MaxReps = TrainingConstants.EpleyRepCap;
 
-    /// <summary>Granice ciljnog RIR-a: 0 je otkaz, iznad 4 serija prestaje da stimuliše.</summary>
-    public const int MinRir = 0;
+    /// <summary>
+    /// Lowest target RIR a week may prescribe, and it is deliberately not zero.
+    ///
+    /// Fatigue is measured as the shortfall between the target RIR and what the lifter
+    /// actually managed. Below a target of zero there is no shortfall to measure — reps in
+    /// reserve cannot go negative — so a week prescribed to failure silently drops the
+    /// largest term of the fatigue score and can never trigger an early deload. Leaving one
+    /// rep in reserve keeps the signal readable.
+    /// </summary>
+    public const int MinRir = 1;
+
+    /// <summary>Above four reps in reserve a set stops driving adaptation.</summary>
     public const int MaxRir = 4;
 
-    /// <summary>Ispod dve serije po vežbi trening prestaje da bude trening.</summary>
+    /// <summary>Below two sets an exercise stops being trained.</summary>
     public const int MinSets = 2;
 
-    /// <summary>Pomeraji jedne nedelje u odnosu na propis cilja.</summary>
+    /// <summary>One week's shifts away from the goal's base prescription.</summary>
     private sealed record WeekShape(int RepShift, int RirShift, int SetShift, bool IsDeload = false);
 
     private static readonly WeekShape Base = new(0, 0, 0);
@@ -77,13 +87,14 @@ public static class Periodization
     private static readonly WeekShape[] FlatWeeks = [Base, Base, Base, Deload];
 
     // Linearan: volumen -> osnova -> intenzitet. RIR pada kroz blok, jer se serije
-    // vode sve bliže otkazu kako se volumen povlači.
+    // vode sve bliže otkazu kako se volumen povlači. Kod hipertrofije (osnovni RIR 1) taj
+    // pad brzo udari u donju granicu, pa intenzitet dalje nose ponavljanja i serije.
     private static readonly WeekShape[] LinearWeeks =
     [
         new(VolumeRepShift, 1, 1),
         new(VolumeRepShift, 0, 1),
         Base,
-        new(0, -1, 0),
+        new(-TransitionRepShift, -1, 0),
         new(-IntensityRepShift, -1, -1),
         Deload
     ];
@@ -94,7 +105,7 @@ public static class Periodization
         new(-IntensityRepShift, 1, -1),
         new(-IntensityRepShift, 0, -1),
         Base,
-        new(0, -1, 0),
+        new(TransitionRepShift, -1, 0),
         new(VolumeRepShift, -1, 1),
         Deload
     ];
@@ -106,17 +117,17 @@ public static class Periodization
         _ => FlatWeeks
     };
 
-    /// <summary>Koliko nedelja blok traje po ovom modelu.</summary>
+    /// <summary>How many weeks a block of this model runs.</summary>
     public static int DurationWeeks(PeriodizationModel model)
     {
         return ShapesFor(model).Length;
     }
 
     /// <summary>
-    /// Propis za jednu nedelju. <paramref name="weekNumber"/> se broji od 1.
+    /// One week's prescription; <paramref name="weekNumber"/> counts from 1.
     ///
-    /// Deload nedelja zadržava rep-opseg i RIR cilja, a serije se polove — opterećenje
-    /// se spušta posebno, na 90% stvarno korišćenog, tek kada se prethodna nedelja završi.
+    /// A deload week keeps the goal's rep range and RIR and halves the sets. Its load is
+    /// set separately, to 90% of what was actually used, once the previous week finishes.
     /// </summary>
     public static WeekPrescription ForWeek(
         PeriodizationModel model,
@@ -167,13 +178,44 @@ public static class Periodization
             TargetRir: Math.Clamp(baseTargetRir + shape.RirShift, MinRir, MaxRir));
     }
 
-    /// <summary>Deload polovi serije, ali nikada ispod jedne.</summary>
+    /// <summary>
+    /// How many sets a training week carries, given the block's base set count.
+    /// Throws for a deload week, whose halving cannot be inverted.
+    /// </summary>
+    public static int SetsForWeek(PeriodizationModel model, int weekNumber, int baseSets)
+    {
+        return ForWeek(model, weekNumber, MinReps, MinReps + 1, MinRir, baseSets).Sets;
+    }
+
+    /// <summary>
+    /// Recovers the block's base set count from what a training week actually carries.
+    ///
+    /// The deload logic needs it: it has stored plans, not the profile that produced them,
+    /// and reading the experience level again would silently re-shape a block in progress
+    /// for anyone who changed their level part-way through.
+    /// </summary>
+    public static int BaseSetsFrom(PeriodizationModel model, int weekNumber, int weekSets)
+    {
+        var shapes = ShapesFor(model);
+
+        if (weekNumber < 1 || weekNumber > shapes.Length || shapes[weekNumber - 1].IsDeload)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(weekNumber),
+                weekNumber,
+                "Base sets can only be recovered from a training week of this block.");
+        }
+
+        return Math.Max(MinSets, weekSets - shapes[weekNumber - 1].SetShift);
+    }
+
+    /// <summary>A deload halves the sets, but never below one.</summary>
     public static int DeloadSets(int baseSets)
     {
         return Math.Max(1, (int)Math.Ceiling(baseSets / 2m));
     }
 
-    /// <summary>Ceo blok, nedelja po nedelja.</summary>
+    /// <summary>The whole block, week by week.</summary>
     public static IReadOnlyList<WeekPrescription> ForBlock(
         PeriodizationModel model,
         int baseRepRangeMin,

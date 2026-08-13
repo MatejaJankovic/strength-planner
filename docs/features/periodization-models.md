@@ -43,19 +43,26 @@ Ovo je ono što čini da jedan raspored radi za oba cilja. Linearni blok za hipe
 
 | Nedelja | Hipertrofija | Snaga |
 |---|---|---|
-| 1 | 5 × 11–15, RIR 2 | 5 × 6–9, RIR 3 |
-| 2 | 5 × 11–15, RIR 1 | 5 × 6–9, RIR 2 |
+| 1 | 5 × 11–12, RIR 2 | 5 × 6–9, RIR 3 |
+| 2 | 5 × 11–12, RIR 1 | 5 × 6–9, RIR 2 |
 | 3 | 4 × 8–12, RIR 1 | 4 × 3–6, RIR 2 |
-| 4 | 4 × 8–12, RIR 0 | 4 × 3–6, RIR 1 |
-| 5 | 3 × 6–10, RIR 0 | 3 × 3–4, RIR 1 |
+| 4 | 4 × 7–11, RIR 1 | 4 × 3–5, RIR 1 |
+| 5 | 3 × 6–10, RIR 1 | 3 × 3–4, RIR 1 |
 | 6 | 2 × 8–12, RIR 1 (deload) | 2 × 3–6, RIR 2 (deload) |
 
-Donja granica je tri ponavljanja. Blok snage već stoji na 3–6, pa fazu intenziteta kod
-njega nosi **RIR, a ne još kraći opseg** — ispod tri ponavljanja to prestaje da bude isti
-trenažni zadatak. Test pokriva i to.
+Dve granice su tvrde i obe postoje zbog sistema oko njih, ne zbog trenažne teorije:
 
-RIR opada kroz blok kod oba periodizovana modela: zamor raste, pa se serije vode sve bliže
-otkazu — do deload-a, koji vraća polazni RIR i polovi serije.
+- **Gornja granica ponavljanja je Epley granica (12).** Serija iznad nje ne daje procenu
+  1RM-a, a tu procenu čitaju tri stvari: trend snage, prepoznavanje rekorda i član ocene
+  umora. Nedelja volumena propisana na 11–15 izgledala bi uredno, a sistem bi u njoj
+  prestao da meri.
+- **Najniži ciljni RIR je 1, ne 0.** Umor se meri kao *manjak* u odnosu na cilj, a ispod
+  nule manjka nema — ponavljanja u rezervi ne idu u minus. Nedelja propisana do otkaza tiho
+  bi izgubila najteži član ocene umora (0.35) i nikada ne bi mogla da pokrene raniji deload.
+
+Donja granica je tri ponavljanja. Blok snage već stoji na 3–6, pa fazu intenziteta kod
+njega nosi **RIR, a ne još kraći opseg**. Kod hipertrofije je obrnuto: osnovni RIR je već 1,
+pa tamo intenzitet nose ponavljanja i serije. Oba slučaja su pokrivena testovima.
 
 ### Opterećenje se preračunava kada se propis promeni
 
@@ -88,12 +95,13 @@ Promenljiva dužina bloka dodiruje više mesta nego što se čini:
   četvoronedeljni blok ne sme da ostavi izbor na nedelji koje tamo nema.
 - **Ekran „Plan"** je računao trajanje kao `broj blokova × 4`. Sada sabira stvarna trajanja
   blokova, koja server šalje uz svaki blok.
-- **Planirani deload** je bio „poslednja nedelja od četiri". Sve provere oko deload-a već
-  su radile sa relativnim brojevima nedelja, pa su prošle bez izmene — što je i provereno.
+- **Deload je morao da nauči za propis.** Provere oko deload-a rade sa relativnim brojevima
+  nedelja, pa je *raspored* prošao bez izmene — ali *sadržaj* nije. Vidi „Šta je revizija
+  našla" ispod; ovo je bila najozbiljnija greška u grani.
 
 ## Provera
 
-- `dotnet build`, `dotnet test` (**204 testa**, bilo 182), `npm run build` — sve prolazi.
+- `dotnet build`, `dotnet test` (**208 testova**, bilo 182), `npm run build` — sve prolazi.
 - Migracija `AddPeriodizationModel` napravljena **i primenjena** na lokalnu bazu. Zatečeni
   redovi dobijaju `Flat`, što odgovara njihovom stvarnom sadržaju — bez dopune podataka.
 - End-to-end kroz pokrenutu aplikaciju, ista vežba i isti 1RM (čučanj 140 kg):
@@ -101,7 +109,7 @@ Promenljiva dužina bloka dodiruje više mesta nego što se čini:
   | Model | Nedelja | Prva nedelja |
   |---|---|---|
   | Ravan | 4 | 4 × 8–12, RIR 1 @ 107.5 kg |
-  | Linearan | 6 | 5 × 11–15, RIR 2 @ 97.5 kg |
+  | Linearan | 6 | 5 × 11–12, RIR 2 @ 97.5 kg |
   | Obrnut | 6 | 3 × 6–10, RIR 2 @ 110.0 kg |
 
   Ista snaga, tri različita polazna opterećenja — jer se izvode iz propisa te nedelje.
@@ -116,12 +124,57 @@ Promenljiva dužina bloka dodiruje više mesta nego što se čini:
   6 nedelja se pravi i prikazuje, analitika prikazuje 6 nedelja i vraća izbor na 4 pri
   prelasku na kraći blok, a čarobnjak dugoročnog plana ima model po bloku i ukupno trajanje
   koje se menja sa izborom (12 → 10 nedelja).
+- **Auto-deload usred periodizovanog bloka, odigran nad bazom.** Nedelja 1 linearnog bloka
+  odrađena kroz otkaz → nedelja 2 (bila 5 × 11–12) postaje deload sa **2 × 8–12 RIR 1**, a
+  nedelja 6 se oslobađa i preuzima propis žrtvovane nedelje: **5 × 11–12 RIR 1**. Blok i
+  dalje ima tačno jedno rasterećenje.
+- **Ista provera na ravnom bloku:** nedelja 2 → 2 × 8–12 RIR 1, nedelja 4 oslobođena kao
+  4 × 8–12 RIR 1. Ponašanje nepromenjeno u odnosu na zatečeno.
 
 ## Nađeno usput
 
 Kontroler za `POST /mesocycles` je pravio dugoročan plan sa jednim blokom i pri tome
 **gubio izabrani model** — svaki zahtev bi završio kao ravan blok. Uhvaćeno prvim
 end-to-end prolazom, jer su sva tri modela vratila isti četvoronedeljni raspored.
+
+## Šta je revizija koda našla
+
+Dve greške su bile ozbiljne i obe su iz istog korena: deload logika je pisana kad su sve
+nedelje bloka imale **isti** propis, pa je taj propis prećutno smatrala datim.
+
+### Auto-deload je zadržavao propis faze — deload do otkaza
+
+`ApplyDeloadAsync` je polovila serije i spuštala opterećenje, ali **nije dirala rep-opseg
+ni RIR**. Na ravnom bloku to nije smetalo jer su već bili ciljni. Na periodizovanom je
+značilo da nedelja faze intenziteta, pretvorena u „rasterećenje", zadrži svoj RIR. Uz
+prvobitni raspored (koji je išao do RIR 0) to je bio deload sa serijama do otkaza.
+
+Sada deload uvek dobija rep-opseg i RIR **cilja**, a serije se polove u odnosu na polazni
+broj bloka — ne u odnosu na ono što ta nedelja nosi, jer bi nedelja volumena (serija više)
+dala preobiman deload.
+
+### Oslobođena nedelja je dobijala propis koji ne postoji ni u jednom modelu
+
+Kada umor povuče deload ranije, planirani deload na kraju se vraća u trenažnu nedelju.
+Broj serija se uzimao kao `Max` preko ostalih nedelja — što je na ravnom bloku tačno, a na
+periodizovanom uvek bira fazu volumena. Rep-opseg i RIR se nisu vraćali uopšte, pa su
+ostajali na deload vrednostima. Rezultat: najveći volumen u bloku spojen sa osnovnim
+intenzitetom, i to kao poslednja nedelja bloka koji bi trebalo da *završi* intenzitetom.
+
+Sada oslobođena nedelja preuzima **ceo propis one nedelje koja je žrtvovana za deload** —
+taj deo bloka nije izgubljen nego pomeren za nedelju dana. Polazni broj serija se izvodi iz
+zatečenog plana, a ne iz profila: korisnik koji je usred bloka promenio nivo iskustva ne
+sme time da promeni oblik već napravljenog plana.
+
+### Ostalo
+
+- **Opterećenje se izvodilo iz rekorda bez vremenskog prozora.** Generator namerno gleda
+  samo skorašnjih 56 dana; preračun nije, pa je rekord od pre pola godine mogao da postane
+  ciljno opterećenje naredne nedelje. Sada koristi isti prozor.
+- Model periodizacije se **nije proveravao** pri upisu; nepoznata vrednost bi se ponašala
+  kao ravan blok, ali bi se upisala u bazu i vraćala klijentu.
+- Promena cilja bloka u čarobnjaku nije povlačila model, iako ga dodavanje bloka i predlog
+  sa servera povlače.
 
 ## Poznata ograničenja
 
@@ -133,4 +186,9 @@ end-to-end prolazom, jer su sva tri modela vratila isti četvoronedeljni raspore
   a ne samo njegovu težinu.
 - **Automatski deload i dalje troši planirani.** Blok nosi jedno rasterećenje bez obzira na
   dužinu, pa šestonedeljni blok koji rano uđe u auto-deload završava sa pet trenažnih
-  nedelja i jednim deload-om — isto pravilo kao i ranije, samo na dužem bloku.
+  nedelja i jednim deload-om — isto pravilo kao i ranije, samo na dužem bloku. Redosled faza
+  se pri tome pomera: žrtvovana nedelja se odrađuje na kraju, posle onih koje su je u
+  originalnom rasporedu sledile.
+- **Kod hipertrofije RIR ne opada kroz blok.** Osnovni RIR je 1, a niže se ne ide (vidi
+  gore), pa intenzifikaciju nose ponavljanja i serije. Kod snage (osnovni RIR 2) pad
+  postoji.

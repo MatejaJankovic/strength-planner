@@ -16,7 +16,7 @@ public static class MacrocyclePlanner
     /// <summary>Fewest blocks a long-term plan can hold — one block is a plain mesocycle.</summary>
     public const int MinBlocks = 1;
 
-    /// <summary>Most blocks a plan can hold; six four-week blocks is already half a year.</summary>
+    /// <summary>Most blocks a plan can hold; six blocks run half a year to nine months.</summary>
     public const int MaxBlocks = 6;
 
     /// <summary>
