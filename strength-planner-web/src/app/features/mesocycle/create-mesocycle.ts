@@ -4,12 +4,25 @@ import { Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { extractErrorMessage } from '../../core/api/http-error';
 import { MesocycleService } from '../../core/api/mesocycle.service';
-import { Goal, GenerateMesocycleRequest, WorkoutTemplateDto } from '../../core/models/training.models';
+import {
+  Goal,
+  GenerateMesocycleRequest,
+  PeriodizationModel,
+  WorkoutTemplateDto,
+} from '../../core/models/training.models';
 import { Loading } from '../../shared/components/loading/loading';
 
 interface GoalOption {
   value: Goal;
   label: string;
+  detail: string;
+}
+
+interface ModelOption {
+  value: PeriodizationModel;
+  label: string;
+  /** Već u ispravnom obliku množine: 4 nedelje, 6 nedelja. */
+  weeks: string;
   detail: string;
 }
 
@@ -46,6 +59,32 @@ export class CreateMesocycle {
     },
   ];
 
+  protected readonly model = signal<PeriodizationModel>(PeriodizationModel.Flat);
+
+  protected readonly modelOptions: ModelOption[] = [
+    {
+      value: PeriodizationModel.Flat,
+      label: 'Ravan',
+      weeks: '4 nedelje',
+      detail:
+        'Isti propis svake nedelje; napredak nosi dupla progresija — prvo ponavljanja, pa opterećenje.',
+    },
+    {
+      value: PeriodizationModel.Linear,
+      label: 'Linearan',
+      weeks: '6 nedelja',
+      detail:
+        'Počinje volumenom (više ponavljanja, lakše serije), završava intenzitetom (manje ponavljanja, bliže otkazu).',
+    },
+    {
+      value: PeriodizationModel.Inverse,
+      label: 'Obrnut',
+      weeks: '6 nedelja',
+      detail:
+        'Teško dok si svež, volumen pred kraj — obrnut redosled u odnosu na linearan.',
+    },
+  ];
+
   protected readonly form = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.maxLength(128)]],
     startDate: [todayIso(), [Validators.required]],
@@ -53,6 +92,10 @@ export class CreateMesocycle {
 
   protected readonly selectedGoalDetail = computed(
     () => this.goalOptions.find((option) => option.value === this.goal())?.detail ?? '',
+  );
+
+  protected readonly selectedModel = computed(
+    () => this.modelOptions.find((option) => option.value === this.model()) ?? this.modelOptions[0],
   );
 
   constructor() {
@@ -112,6 +155,7 @@ export class CreateMesocycle {
     const request: GenerateMesocycleRequest = {
       templateKey: key,
       goal: this.goal(),
+      periodizationModel: this.model(),
       name: raw.name.trim(),
       startDate: raw.startDate,
     };

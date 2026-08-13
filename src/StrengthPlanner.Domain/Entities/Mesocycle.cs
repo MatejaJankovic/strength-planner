@@ -3,7 +3,8 @@ using StrengthPlanner.Domain.Enums;
 namespace StrengthPlanner.Domain.Entities;
 
 /// <summary>
-/// Mezociklus — blok treninga (podrazumevano 4 nedelje) sa jednim ciljem.
+/// Mezociklus — blok treninga sa jednim ciljem. Trajanje zavisi od modela periodizacije:
+/// ravan blok traje 4 nedelje, periodizovani 6.
 /// </summary>
 public class Mesocycle
 {
@@ -14,6 +15,10 @@ public class Mesocycle
 
     public string Name { get; set; } = null!;
     public Goal Goal { get; set; }
+
+    // Kako se propis menja kroz nedelje. Zatečeni blokovi su ravni (0).
+    public PeriodizationModel PeriodizationModel { get; set; } = PeriodizationModel.Flat;
+
     public DateTime StartDate { get; set; }
     public int DurationWeeks { get; set; } = 4;
     public bool IsActive { get; set; }

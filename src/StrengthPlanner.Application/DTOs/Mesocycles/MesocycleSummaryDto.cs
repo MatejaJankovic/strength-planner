@@ -9,5 +9,8 @@ public class MesocycleSummaryDto
     public Goal Goal { get; set; }
     public DateTime StartDate { get; set; }
     public int DurationWeeks { get; set; }
+
+    /// <summary>Model periodizacije bloka.</summary>
+    public PeriodizationModel PeriodizationModel { get; set; }
     public bool IsActive { get; set; }
 }

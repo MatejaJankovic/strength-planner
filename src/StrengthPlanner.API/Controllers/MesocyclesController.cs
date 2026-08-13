@@ -20,9 +20,10 @@ public class MesocyclesController : AuthorizedControllerBase
         _mesocycleService = mesocycleService;
     }
 
-    /// <summary>Generiše novi četvoronedeljni mezociklus.</summary>
+    /// <summary>Generiše novi mezociklus; trajanje zavisi od modela periodizacije.</summary>
     /// <remarks>
-    /// Primer body-ja: { "templateKey": "full-body", "goal": "Hypertrophy", "name": "Base Hypertrophy", "startDate": "2026-07-06" }
+    /// Primer body-ja: { "templateKey": "full-body", "goal": 1, "periodizationModel": 1,
+    /// "name": "Base Hypertrophy", "startDate": "2026-07-06" }
     ///
     /// Svaki mezociklus pripada dugoročnom planu; ovaj put pravi plan sa jednim blokom,
     /// pa se ponaša isto kao ranije, ali se kasnije može produžiti.
@@ -43,7 +44,12 @@ public class MesocyclesController : AuthorizedControllerBase
                 StartDate = request.StartDate,
                 Blocks =
                 [
-                    new CreateMacrocycleBlockDto { Goal = request.Goal, TemplateKey = request.TemplateKey }
+                    new CreateMacrocycleBlockDto
+                    {
+                        Goal = request.Goal,
+                        TemplateKey = request.TemplateKey,
+                        PeriodizationModel = request.PeriodizationModel
+                    }
                 ]
             },
             cancellationToken);

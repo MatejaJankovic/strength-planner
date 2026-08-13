@@ -96,6 +96,21 @@ ponašanje, zadržati kao podrazumevano), *linearni* ili *inverzni*.
 **Zašto vredi:** ovo je najveći raskorak između onoga što rad tvrdi i onoga što kod radi,
 a nadovezuje se pravo na tek isporučene makrociklusе — svaki blok bi nosio svoj model.
 
+> **Status: urađeno** — grana [`feature/periodization-models`](features/periodization-models.md).
+>
+> Tri modela: **ravan** (4 nedelje, podrazumevan i identičan ranijem ponašanju), **linearan**
+> i **obrnut** (po 6 nedelja). Model se bira po bloku dugoročnog plana i određuje i trajanje
+> bloka.
+>
+> Propis nije upisan u `TrainingWeek` nego u `ExercisePlan`, gde serije, rep-opseg i RIR
+> ionako već stoje — pa nije trebala nijedna nova kolona za sam propis, samo `PeriodizationModel`
+> na mezociklusu i na bloku plana.
+>
+> Uz to je moralo i opterećenje: kada naredna nedelja traži drugačiji rep-opseg, težina se
+> **preračunava iz najsvežijeg e1RM-a** umesto da se nosi iz prethodne nedelje uvećana za
+> korak. Bez toga bi periodizacija menjala ponavljanja, a opterećenje bi ostalo od nekog
+> drugog zadatka.
+
 ---
 
 ## 4. Nivo iskustva se prikuplja, a ne koristi

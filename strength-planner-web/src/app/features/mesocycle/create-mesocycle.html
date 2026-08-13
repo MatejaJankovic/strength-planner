@@ -1,7 +1,7 @@
 <header class="feature-header">
   <p class="eyebrow">Novi plan</p>
   <h1>Napravi mezociklus</h1>
-  <p>Četiri nedelje: tri nedelje akumulacije i planirani deload u četvrtoj.</p>
+  <p>Blok treninga sa jednim ciljem; poslednja nedelja je planirani deload.</p>
 </header>
 
 @if (loading()) {
@@ -79,6 +79,27 @@
         }
       </div>
       <p class="goals__detail">{{ selectedGoalDetail() }}</p>
+    </section>
+
+    <section class="block">
+      <h2 class="block__title">Raspored kroz nedelje</h2>
+      <div class="goals">
+        @for (option of modelOptions; track option.value) {
+          <button
+            type="button"
+            class="goal"
+            [class.is-selected]="model() === option.value"
+            [attr.aria-pressed]="model() === option.value"
+            (click)="model.set(option.value)"
+          >
+            {{ option.label }}
+          </button>
+        }
+      </div>
+      <p class="goals__detail">
+        <strong class="numeric">{{ selectedModel().weeks }}</strong> —
+        {{ selectedModel().detail }}
+      </p>
     </section>
 
     <section class="block">

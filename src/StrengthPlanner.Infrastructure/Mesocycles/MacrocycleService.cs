@@ -87,7 +87,8 @@ public class MacrocycleService : IMacrocycleService
                 Id = Guid.NewGuid(),
                 Order = index + 1,
                 Goal = block.Goal,
-                TemplateKey = block.TemplateKey
+                TemplateKey = block.TemplateKey,
+                PeriodizationModel = block.PeriodizationModel
             });
         }
 
@@ -132,7 +133,16 @@ public class MacrocycleService : IMacrocycleService
 
         return MacrocyclePlanner
             .AlternatingGoals(blockCount, firstGoal)
-            .Select(goal => new CreateMacrocycleBlockDto { Goal = goal, TemplateKey = templateKey })
+            // Prvi blok gradi volumen, naredni ga pretvara u snagu — pa se i model
+            // periodizacije smenjuje zajedno sa ciljem.
+            .Select(goal => new CreateMacrocycleBlockDto
+            {
+                Goal = goal,
+                TemplateKey = templateKey,
+                PeriodizationModel = goal == Goal.Strength
+                    ? PeriodizationModel.Linear
+                    : PeriodizationModel.Inverse
+            })
             .ToList();
     }
 
@@ -403,6 +413,7 @@ public class MacrocycleService : IMacrocycleService
         {
             TemplateKey = block.TemplateKey,
             Goal = block.Goal,
+            PeriodizationModel = block.PeriodizationModel,
             Name = BuildBlockName(macrocycle.Name, block.Order, blockCount, template.Name),
             StartDate = startDate
         };
@@ -486,6 +497,10 @@ public class MacrocycleService : IMacrocycleService
                         Id = block.Id,
                         Order = block.Order,
                         Goal = block.Goal,
+                        PeriodizationModel = block.PeriodizationModel,
+                        // Trajanje se izvodi iz modela, pa plan zna svoju dužinu i pre
+                        // nego što je blok uopšte generisan.
+                        DurationWeeks = Periodization.DurationWeeks(block.PeriodizationModel),
                         TemplateKey = block.TemplateKey,
                         TemplateName = WorkoutTemplateCatalog.GetByKey(block.TemplateKey)?.Name
                                        ?? block.TemplateKey,

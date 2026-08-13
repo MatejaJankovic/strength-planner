@@ -236,12 +236,14 @@ public class SessionService : ISessionService
 
             if (nextPlan is not null)
             {
-                // Deload = 90% STVARNE težine iz ove nedelje (bez +2.5 progresije).
-                var nextWeight = nextPlan.WorkoutSession.TrainingWeek.IsDeload
-                    ? WeightMath.RoundToStep(
-                        usedWeight * TrainingConstants.DeloadWeightFactor,
-                        weightStepKg)
-                    : progression.NextWeightKg;
+                previousMaxByExerciseId.TryGetValue(plan.ExerciseId, out var storedMax);
+                var nextWeight = NextTargetWeight(
+                    plan,
+                    nextPlan,
+                    progression.NextWeightKg,
+                    usedWeight,
+                    bestEstimate ?? (storedMax > 0 ? storedMax : null),
+                    weightStepKg);
 
                 nextPlan.TargetWeightKg = nextWeight;
                 summary.NextWeightKg = nextWeight;
@@ -376,6 +378,52 @@ public class SessionService : ISessionService
             .Include(workoutSession => workoutSession.ExercisePlans)
                 .ThenInclude(plan => plan.SetLogs)
             .Where(workoutSession => workoutSession.TrainingWeek.Mesocycle.UserId == userId);
+    }
+
+    /// <summary>
+    /// Opterećenje za istu vežbu u narednoj nedelji.
+    ///
+    /// Tri slučaja, i razlikuju se suštinski:
+    ///
+    /// <list type="bullet">
+    /// <item><b>Deload</b> — 90% <i>stvarno</i> korišćene težine, bez progresije.</item>
+    /// <item><b>Naredna nedelja traži drugačiji propis</b> (periodizacija) — nošenje iste
+    /// težine nema smisla: nedelja koja pada sa 10 na 5 ponavljanja mora da bude teža, a ne
+    /// ista uvećana za jedan korak. Opterećenje se izvodi iz najsvežije procene 1RM-a i
+    /// propisa te nedelje, isto kao pri generisanju prve nedelje.</item>
+    /// <item><b>Isti propis</b> — obična dupla progresija, ponašanje nepromenjeno.</item>
+    /// </list>
+    ///
+    /// Ako procene 1RM-a nema (nijedna serija nije upisana, ili je nedelja bila deload pa
+    /// se e1RM namerno ne beleži), ostaje progresija — pogrešnija, ali bolja od praznog polja.
+    /// </summary>
+    private decimal NextTargetWeight(
+        ExercisePlan plan,
+        ExercisePlan nextPlan,
+        decimal progressionWeightKg,
+        decimal usedWeightKg,
+        decimal? oneRepMaxKg,
+        decimal weightStepKg)
+    {
+        if (nextPlan.WorkoutSession.TrainingWeek.IsDeload)
+        {
+            return WeightMath.RoundToStep(usedWeightKg * TrainingConstants.DeloadWeightFactor, weightStepKg);
+        }
+
+        var samePrescription = nextPlan.RepRangeMin == plan.RepRangeMin
+                               && nextPlan.RepRangeMax == plan.RepRangeMax
+                               && nextPlan.TargetRir == plan.TargetRir;
+
+        if (samePrescription || oneRepMaxKg is null)
+        {
+            return progressionWeightKg;
+        }
+
+        return _e1RmCalculator.WorkingWeightFor(
+            oneRepMaxKg.Value,
+            nextPlan.RepRangeMin,
+            nextPlan.TargetRir,
+            weightStepKg);
     }
 
     private decimal? EstimateBestOneRepMax(IReadOnlyList<SetLog> logs)

@@ -30,8 +30,7 @@ export class Volume {
 
   readonly mesocycles = input<MesocycleSummaryDto[]>([]);
 
-  protected readonly weeks = [1, 2, 3, 4];
-  protected readonly week = signal(1);
+  private readonly chosenWeek = signal(1);
 
   protected readonly resetting = signal(false);
   protected readonly confirmingReset = signal(false);
@@ -45,6 +44,24 @@ export class Volume {
   private readonly chosenMesoId = signal<string | null>(null);
   protected readonly selectedMesoId = computed(
     () => this.chosenMesoId() ?? this.mesocycles()[0]?.id ?? null,
+  );
+
+  /**
+   * Blok više ne traje uvek četiri nedelje — periodizovani traje šest. Spisak nedelja
+   * se zato izvodi iz samog mezociklusa, a ne iz zakucane liste.
+   */
+  protected readonly weeks = computed(() => {
+    const selected = this.mesocycles().find((meso) => meso.id === this.selectedMesoId());
+
+    return Array.from({ length: selected?.durationWeeks ?? 4 }, (_, index) => index + 1);
+  });
+
+  /**
+   * Izabrana nedelja, ograničena na dužinu bloka: prelazak sa šestonedeljnog na
+   * četvoronedeljni ne sme da ostavi izbor na nedelji koje tamo nema.
+   */
+  protected readonly week = computed(() =>
+    Math.min(this.chosenWeek(), Math.max(1, this.weeks().length)),
   );
 
   private readonly state = toSignal(
@@ -111,7 +128,7 @@ export class Volume {
   }
 
   protected selectWeek(week: number): void {
-    this.week.set(week);
+    this.chosenWeek.set(week);
   }
 
   protected requestReset(): void {

@@ -10,6 +10,7 @@ import {
   Goal,
   CreateMacrocycleBlockDto,
   MacrocycleBlockDto,
+  PeriodizationModel,
   WorkoutTemplateDto,
 } from '../../core/models/training.models';
 import { EmptyState } from '../../shared/components/empty-state/empty-state';
@@ -47,6 +48,12 @@ export class PlanHome {
     { value: Goal.Strength, label: 'Snaga' },
   ];
 
+  protected readonly modelOptions = [
+    { value: PeriodizationModel.Flat, label: 'Ravan', weeks: 4 },
+    { value: PeriodizationModel.Linear, label: 'Linearan', weeks: 6 },
+    { value: PeriodizationModel.Inverse, label: 'Obrnut', weeks: 6 },
+  ];
+
   // --- wizard ------------------------------------------------------------------
 
   protected readonly creating = signal(false);
@@ -63,8 +70,10 @@ export class PlanHome {
     () => this.planName().trim().length > 0 && !this.creating(),
   );
 
-  /** Ukupno trajanje plana: svaki blok je četvoronedeljni mezociklus. */
-  protected readonly totalWeeks = computed(() => this.blocks().length * 4);
+  /** Ukupno trajanje plana. Blok traje 4 ili 6 nedelja, zavisno od modela. */
+  protected readonly totalWeeks = computed(() =>
+    this.blocks().reduce((weeks, block) => weeks + this.modelWeeks(block.periodizationModel), 0),
+  );
 
   constructor() {
     this.load();
@@ -128,8 +137,16 @@ export class PlanHome {
       next: (blocks) => this.blocks.set(blocks),
       error: () =>
         this.blocks.set([
-          { goal: Goal.Hypertrophy, templateKey: key },
-          { goal: Goal.Strength, templateKey: key },
+          {
+            goal: Goal.Hypertrophy,
+            templateKey: key,
+            periodizationModel: PeriodizationModel.Inverse,
+          },
+          {
+            goal: Goal.Strength,
+            templateKey: key,
+            periodizationModel: PeriodizationModel.Linear,
+          },
         ]),
     });
   }
@@ -156,7 +173,11 @@ export class PlanHome {
       const last = blocks[blocks.length - 1];
       const goal = last.goal === Goal.Hypertrophy ? Goal.Strength : Goal.Hypertrophy;
 
-      return [...blocks, { goal, templateKey: last.templateKey }];
+      // Blok snage gradi intenzitet, blok hipertrofije volumen — model prati cilj.
+      const periodizationModel =
+        goal === Goal.Strength ? PeriodizationModel.Linear : PeriodizationModel.Inverse;
+
+      return [...blocks, { goal, templateKey: last.templateKey, periodizationModel }];
     });
   }
 
@@ -179,6 +200,22 @@ export class PlanHome {
     this.blocks.update((blocks) =>
       blocks.map((block, i) => (i === index ? { ...block, templateKey } : block)),
     );
+  }
+
+  protected setBlockModel(index: number, raw: string): void {
+    const periodizationModel = Number(raw) as PeriodizationModel;
+    this.blocks.update((blocks) =>
+      blocks.map((block, i) => (i === index ? { ...block, periodizationModel } : block)),
+    );
+  }
+
+  /** Koliko nedelja nosi blok sa datim modelom. */
+  protected modelWeeks(model: PeriodizationModel): number {
+    return this.modelOptions.find((option) => option.value === model)?.weeks ?? 4;
+  }
+
+  protected modelLabel(model: PeriodizationModel): string {
+    return this.modelOptions.find((option) => option.value === model)?.label ?? 'Ravan';
   }
 
   protected create(): void {
@@ -214,6 +251,11 @@ export class PlanHome {
   }
 
   // --- display helpers ----------------------------------------------------------
+
+  /** Ukupno trajanje postojećeg plana; blokovi mogu biti različite dužine. */
+  protected planWeeks(plan: { blocks: MacrocycleBlockDto[] }): number {
+    return plan.blocks.reduce((weeks, block) => weeks + block.durationWeeks, 0);
+  }
 
   protected goalLabel(goal: Goal): string {
     return goal === Goal.Strength ? 'Snaga' : 'Hipertrofija';

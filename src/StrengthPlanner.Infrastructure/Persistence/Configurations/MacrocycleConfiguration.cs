@@ -37,6 +37,11 @@ public class MacrocycleBlockConfiguration : IEntityTypeConfiguration<MacrocycleB
             .HasConversion<string>()
             .HasMaxLength(16);
 
+        builder.Property(block => block.PeriodizationModel)
+            .HasConversion<string>()
+            .HasMaxLength(16)
+            .HasDefaultValue(Domain.Enums.PeriodizationModel.Flat);
+
         // Jedan blok po rednom broju unutar plana.
         builder.HasIndex(block => new { block.MacrocycleId, block.Order })
             .IsUnique();
