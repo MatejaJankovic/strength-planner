@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { AuthService } from './auth.service';
 import { AuthTokenStorage } from './auth-token-storage';
@@ -18,6 +18,7 @@ import { OneRepMaxService } from '../api/one-rep-max.service';
  */
 describe('AuthService — čišćenje keševa pri promeni identiteta', () => {
   let auth: AuthService;
+  let http: HttpTestingController;
   let exercises: ExerciseService;
   let mesocycles: MesocycleService;
   let macrocycles: MacrocycleService;
@@ -36,15 +37,22 @@ describe('AuthService — čišćenje keševa pri promeni identiteta', () => {
     });
 
     auth = TestBed.inject(AuthService);
+    http = TestBed.inject(HttpTestingController);
     exercises = TestBed.inject(ExerciseService);
     mesocycles = TestBed.inject(MesocycleService);
     macrocycles = TestBed.inject(MacrocycleService);
     oneRepMaxes = TestBed.inject(OneRepMaxService);
   });
 
-  /** Puni svaki keš nečim prepoznatljivim, zaobilazeći HTTP. */
+  afterEach(() => http.verify());
+
+  /** Puni svaki keš nečim prepoznatljivim. Vežbe idu kroz pravi HTTP put. */
   function fillCaches(): void {
-    setSignal(exercises, 'exercisesSignal', [{ id: 'e1', name: 'Tajna vežba' }]);
+    exercises.load().subscribe();
+    http.expectOne((request) => request.url.endsWith('/exercises')).flush([
+      { id: 'e1', name: 'Tajna vežba' },
+    ]);
+
     setSignal(mesocycles, 'activeSignal', { id: 'm1', name: 'Tajni plan' });
     setSignal(macrocycles, 'activeSignal', { id: 'p1', name: 'Tajni dugoročni plan' });
     setSignal(oneRepMaxes, 'oneRepMaxesSignal', [{ exerciseId: 'e1', valueKg: 200 }]);
@@ -63,15 +71,35 @@ describe('AuthService — čišćenje keševa pri promeni identiteta', () => {
     return value === null || (Array.isArray(value) && value.length === 0);
   }
 
+  function expectAllCachesEmpty(when: string): void {
+    readCaches().forEach((value, index) =>
+      expect(isEmpty(value), `keš ${index} nije ispražnjen ${when}`).toBe(true),
+    );
+  }
+
   it('odjava prazni SVE keševe korisnika', () => {
     fillCaches();
-    expect(readCaches().every(isEmpty)).toBe(false);
+    readCaches().forEach((value, index) =>
+      expect(isEmpty(value), `keš ${index} nije napunjen pre provere`).toBe(false),
+    );
 
     auth.logout();
 
-    readCaches().forEach((value, index) =>
-      expect(isEmpty(value), `keš ${index} nije ispražnjen pri odjavi`).toBe(true),
-    );
+    expectAllCachesEmpty('pri odjavi');
+  });
+
+  /**
+   * `ExerciseService.reset()` radi dve stvari: prazni signal i pušta keširani
+   * `shareReplay(1)` zahtev. Provera samo signala je propuštala drugu — bez nje bi
+   * sledeći korisnik dobio spisak vežbi prethodnog iz replay-a, bez ijednog HTTP poziva.
+   */
+  it('odjava pušta i keširani zahtev za vežbama, ne samo signal', () => {
+    fillCaches();
+
+    auth.logout();
+
+    exercises.load().subscribe();
+    http.expectOne((request) => request.url.endsWith('/exercises')).flush([]);
   });
 
   it('odjava briše token iz localStorage', () => {
@@ -84,20 +112,46 @@ describe('AuthService — čišćenje keševa pri promeni identiteta', () => {
     expect(auth.currentUser()).toBeNull();
   });
 
+  /**
+   * Ide kroz pravi `login()`, a ne kroz internu metodu — inače test ne bi primetio da je
+   * neko iz prijave izostavio čišćenje keševa.
+   */
   it('prijava novog korisnika prazni keševe prethodnog', () => {
-    // Bez ovoga bi korisnik koji se prijavi odmah posle drugog (bez osvežavanja stranice)
-    // zatekao tuđe podatke na ekranu.
     fillCaches();
 
-    handleAuthenticated(auth, {
-      token: 'novi-token',
+    auth.login({ email: 'drugi@primer.com', password: 'DovoljnoDugaLozinka1' }).subscribe();
+    http.expectOne((request) => request.url.endsWith('/auth/login')).flush({
       userId: 'u2',
       email: 'drugi@primer.com',
+      token: 'novi-token',
+      expiresAt: new Date().toISOString(),
     });
 
-    readCaches().forEach((value, index) =>
-      expect(isEmpty(value), `keš ${index} nije ispražnjen pri prijavi`).toBe(true),
-    );
+    expectAllCachesEmpty('pri prijavi');
+    expect(localStorage.getItem('strength-planner.token')).toBe('novi-token');
+  });
+
+  it('registracija takođe prazni keševe prethodnog korisnika', () => {
+    fillCaches();
+
+    auth
+      .register({
+        email: 'treci@primer.com',
+        password: 'DovoljnoDugaLozinka1',
+        age: 30,
+        bodyweightKg: 80,
+        experienceLevel: 1,
+        trainingDaysPerWeek: 3,
+      })
+      .subscribe();
+    http.expectOne((request) => request.url.endsWith('/auth/register')).flush({
+      userId: 'u3',
+      email: 'treci@primer.com',
+      token: 'token-trojke',
+      expiresAt: new Date().toISOString(),
+    });
+
+    expectAllCachesEmpty('pri registraciji');
   });
 });
 
@@ -105,8 +159,4 @@ describe('AuthService — čišćenje keševa pri promeni identiteta', () => {
 function setSignal(service: object, field: string, value: unknown): void {
   const signal = (service as Record<string, { set(next: unknown): void }>)[field];
   signal.set(value);
-}
-
-function handleAuthenticated(auth: AuthService, response: unknown): void {
-  (auth as unknown as { handleAuthenticated(value: unknown): void }).handleAuthenticated(response);
 }

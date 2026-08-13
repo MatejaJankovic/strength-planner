@@ -71,7 +71,8 @@ export class AuthService {
    *
    * Servisi žive na nivou cele aplikacije, pa promena identiteta bez osvežavanja stranice
    * ostavlja podatke prethodnog korisnika u memoriji. **Svaki servis koji kešira korisničke
-   * podatke mora da bude naveden ovde** — `auth.service.spec.ts` čuva to pravilo.
+   * podatke mora da bude naveden ovde.** `auth.service.spec.ts` proverava ova četiri —
+   * peti, dodat kasnije, neće biti pokriven dok se i tamo ne doda.
    */
   private resetUserCaches(): void {
     this.exerciseService.reset();
