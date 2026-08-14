@@ -1,0 +1,50 @@
+# TLS ispred aplikacije, kao dopuna osnovnom compose fajlu.
+#
+# Ovo postoji zato što je TLS bio jedina preostala stavka koju kod nije mogao da reši, a
+# uputstvo koje kaže „stavi neki reverse proxy" u praksi znači da niko to ne uradi. Caddy
+# sam pribavlja i obnavlja Let's Encrypt sertifikat i sam preusmerava HTTP na HTTPS, pa je
+# ceo posao jedna promenljiva okruženja i jedna naredba.
+#
+#   APP_DOMAIN=tvoj-domen.rs TLS_EMAIL=ti@primer.com \
+#     docker compose -f docker-compose.yml -f docker-compose.tls.yml up -d
+#
+# Uslovi koje Let's Encrypt traži: domen mora da pokazuje na ovu mašinu, a portovi 80 i 443
+# moraju da budu dostupni sa interneta.
+
+services:
+  # Tek sada API sme da traži HTTPS: šemu pravog zahteva čita iz X-Forwarded-Proto, koje
+  # Caddy postavlja a nginx prosleđuje dalje umesto da ga prepiše. Bez TLS-a bi ovo pravilo
+  # petlju preusmeravanja, pa stoji ovde a ne u osnovnom fajlu.
+  #
+  # ProxyCount je 2 jer sada ispred API-ja stoje dva proxy-ja: Caddy upiše adresu klijenta
+  # u X-Forwarded-For, a nginx dopiše Caddy-jevu. Sa podrazumevanom jedinicom bi se uzeo
+  # samo poslednji upis, pa bi svi korisnici delili jednu particiju ograničenja broja
+  # zahteva — jedan posetilac bi iscrpeo registraciju za sve.
+  api:
+    environment:
+      Security__RequireHttps: "true"
+      Security__ProxyCount: "2"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - web
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?Postavi APP_DOMAIN (domen koji pokazuje na ovu masinu)}
+      TLS_EMAIL: ${TLS_EMAIL:?Postavi TLS_EMAIL (adresa za obavestenja o isteku sertifikata)}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      # Sertifikati i ključevi. Bez trajnog volumena Caddy pri svakom restartu traži nov
+      # sertifikat i brzo udari u ograničenje broja zahteva kod Let's Encrypt-a.
+      - caddy_data:/data
+      - caddy_config:/config
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  caddy_data:
+  caddy_config:

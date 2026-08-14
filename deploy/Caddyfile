@@ -1,0 +1,27 @@
+# Caddy pribavlja i obnavlja Let's Encrypt sertifikat sam, i sam preusmerava HTTP na
+# HTTPS. Zato ovde nema ni putanja do sertifikata ni preusmeravanja — to nije izostavljeno
+# nego se ne piše.
+
+{
+	email {$TLS_EMAIL}
+}
+
+{$APP_DOMAIN} {
+	# Sve ide na nginx (web servis), koji služi aplikaciju i prosleđuje /api dalje.
+	# Bezbednosna zaglavlja ostaju tamo gde jesu — Caddy ih ne dira.
+	#
+	# X-Forwarded-Proto i X-Forwarded-For postavlja sam reverse_proxy, pa se ne pišu ručno.
+	# Da bi „https" preživelo i drugi skok, nginx to zaglavlje prosleđuje umesto da ga
+	# prepiše svojim $scheme — vidi map blok u strength-planner-web/nginx.conf.
+	reverse_proxy web:8080
+
+	encode gzip zstd
+
+	# HSTS se šalje odavde, jer je ovo jedino mesto koje pouzdano zna da TLS postoji.
+	# U nginx konfiguraciji ga namerno nema: preko čistog HTTP-a ga pregledači ignorišu, a
+	# aplikaciju bi zaključao ako se ikada posluži bez TLS-a.
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+}

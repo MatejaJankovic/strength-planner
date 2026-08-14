@@ -39,4 +39,21 @@ public class RegisterDto
 
     [Range(1, 7)]
     public int TrainingDaysPerWeek { get; set; }
+
+    /// <summary>
+    /// Zamka za automate. Polje je u formularu sakriveno i označeno kao „ne popunjavaj";
+    /// čovek ga nikada ne vidi, pa svaka vrednost u njemu znači da formular nije popunio
+    /// čovek nego skripta koja redom puni sva polja.
+    ///
+    /// Namerno se zove <c>Website</c>, jer je to naziv koji automati traže i sami popune.
+    ///
+    /// Ovo nije zamena za CAPTCHA-u i ne zaustavlja nekoga ko je čitao ovaj kod. Zaustavlja
+    /// opšte automate, ne košta ništa, i — za razliku od CAPTCHA-e — ne šalje IP adresu
+    /// svakog korisnika trećoj strani niti traži rupu u CSP-u. Pravu granicu ovde postavlja
+    /// ograničenje broja registracija po adresi.
+    /// </summary>
+    // Granica kao i na svakom drugom tekstualnom polju: sadržaj se odbacuje, ali nema
+    // razloga da neograničen tekst uopšte prođe kroz validaciju i poruke o greškama.
+    [MaxLength(256)]
+    public string? Website { get; set; }
 }

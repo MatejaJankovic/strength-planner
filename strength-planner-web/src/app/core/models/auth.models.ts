@@ -20,6 +20,11 @@ export interface RegisterDto {
   bodyweightKg: number;
   experienceLevel: ExperienceLevel;
   trainingDaysPerWeek: number;
+  /**
+   * Zamka za automate — vidi RegisterDto.Website na serveru. Polje je sakriveno, pa je
+   * kod čoveka uvek prazno; popunjeno znači da formular nije popunio čovek.
+   */
+  website?: string | null;
 }
 
 export interface LoginDto {

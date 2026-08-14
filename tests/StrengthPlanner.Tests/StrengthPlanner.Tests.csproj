@@ -35,6 +35,9 @@
          filter vlasništva" može da se proveri samo nad stvarnim EF modelom. Gradnja
          modela ne otvara vezu ka bazi, pa test ostaje običan unit test. -->
     <ProjectReference Include="..\..\src\StrengthPlanner.Infrastructure\StrengthPlanner.Infrastructure.csproj" />
+
+    <!-- Zbog ApiSecurityHeaderTests: skup zaglavlja koja API šalje živi u API projektu. -->
+    <ProjectReference Include="..\..\src\StrengthPlanner.API\StrengthPlanner.API.csproj" />
   </ItemGroup>
 
 </Project>

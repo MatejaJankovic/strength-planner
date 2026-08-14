@@ -40,13 +40,24 @@ public class AuthService : IAuthService
     /// </summary>
     private const string InvalidCredentials = "Pogrešan email ili lozinka.";
 
+    /// <summary>
+    /// Jedina poruka koju registracija vraća pri neuspehu, iz istog razloga:
+    /// zauzet email i uhvaćen automat ne smeju da izgledaju različito.
+    /// </summary>
+    private const string RegistrationFailed = "Registracija nije uspela. Proveri podatke i pokušaj ponovo.";
+
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
     {
+        // Zamka za automate: polje je u formularu sakriveno, pa ga čovek ne može popuniti.
+        // Odgovor je isti kao za svaki drugi neuspeh, da se ne oda šta je otkrilo automat.
+        if (!string.IsNullOrWhiteSpace(dto.Website))
+            throw new AuthException(RegistrationFailed);
+
         // Poruka namerno ne razlikuje zauzet email od ostalih razloga: ranija je bila
         // spisak postojećih naloga za svakoga ko probije redom. Prava zaštita bi bila
         // potvrda email-om, ali dok je nema, bar se ne odgovara na pitanje direktno.
         if (await _userManager.FindByEmailAsync(dto.Email) is not null)
-            throw new AuthException("Registracija nije uspela. Proveri podatke i pokušaj ponovo.");
+            throw new AuthException(RegistrationFailed);
 
         // Profil se kreira zajedno sa nalogom (1:1, isti Guid Id preko FK-a).
         var user = new ApplicationUser
