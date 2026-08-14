@@ -1,0 +1,149 @@
+# Provere koje su do sada postojale samo kao navika: build, testovi i pregled zavisnosti.
+#
+# Postoje zato što je „provereno jednom" nešto sasvim drugo od „proverava se". Nalaz iz
+# skeniranja zavisnosti stari sam od sebe — paket koji je danas čist objavi ranjivost
+# sledeće nedelje, bez ijedne izmene u ovom repozitorijumu. Zato ovo radi i po rasporedu, a
+# ne samo na izmenu.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Ponedeljkom ujutru: hvata ranjivosti objavljene u međuvremenu, bez ijednog commita.
+    - cron: "0 6 * * 1"
+
+# Nova izmena poništava prethodno pokretanje na istoj grani. Bez ovoga tri brza push-a
+# vrte tri pune matrice, od kojih su prve dve već nebitne kad se završe.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: .NET build i testovi
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          # global.json drži verziju; ovde se ne ponavlja da se ne bi razišle.
+          global-json-file: global.json
+
+      - run: dotnet restore
+
+      - run: dotnet build --no-restore --configuration Release
+
+      - run: dotnet test --no-build --configuration Release --verbosity normal
+
+  frontend:
+    name: Angular build i testovi
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: strength-planner-web/package-lock.json
+
+      - run: npm ci
+        working-directory: strength-planner-web
+
+      - run: npm run build
+        working-directory: strength-planner-web
+
+      - run: npm test
+        working-directory: strength-planner-web
+
+  dependencies:
+    name: Ranjive zavisnosti
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: strength-planner-web/package-lock.json
+
+      - run: dotnet restore
+
+      # `dotnet list package --vulnerable` uvek izlazi sa nulom, pa nalaz mora da se
+      # pročita iz ispisa — bez ovoga bi korak bio zelen i kada nešto nađe.
+      #
+      # Čita se JSON, a ne tekst. Traženje engleske rečenice u ispisu radi dok se ta
+      # rečenica ne promeni u nekoj verziji SDK-a ili dok runner ne bude na drugom jeziku —
+      # a onda korak tiho postane zelen nad projektom punim ranjivih paketa. Greška u
+      # bezopasnom smeru je ovde najopasnija.
+      - name: dotnet list package --vulnerable
+        run: |
+          dotnet list package --vulnerable --include-transitive --format json > vulnerable.json
+          python3 - <<'PY'
+          import json, sys
+
+          with open("vulnerable.json", encoding="utf-8-sig") as handle:
+              report = json.load(handle)
+
+          hits = [
+              (project.get("path", "?"), package.get("id"), package.get("resolvedVersion"), vuln.get("severity"))
+              for project in report.get("projects", [])
+              for framework in project.get("frameworks") or []
+              for package in (framework.get("topLevelPackages") or []) + (framework.get("transitivePackages") or [])
+              for vuln in package.get("vulnerabilities") or []
+          ]
+
+          for path, package_id, version, severity in hits:
+              print(f"::error file={path}::{package_id} {version} — {severity}")
+
+          print(f"Ranjivih paketa: {len(hits)}")
+          sys.exit(1 if hits else 0)
+          PY
+
+      - run: npm ci
+        working-directory: strength-planner-web
+
+      # Ono što se isporučuje mora da bude čisto: ovaj korak obara build.
+      - name: npm audit (isporučene zavisnosti)
+        run: npm audit --omit=dev --audit-level=low
+        working-directory: strength-planner-web
+
+      # Razvojne zavisnosti se ne isporučuju korisniku, pa nalaz ovde prijavljuje a ne
+      # obara — inače bi ranjivost u alatu zaustavila rad na aplikaciji.
+      - name: npm audit (uključujući razvojne)
+        run: npm audit || true
+        working-directory: strength-planner-web
+
+  secrets:
+    name: Tajne u istoriji
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # gitleaks nalaz upisuje na sam pull request. Bez ovoga bi ostao samo u logu — dakle
+      # tamo gde ga autor izmene ne vidi, a to je jedino mesto gde bi mu koristio.
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Cela istorija: smisao je da se uhvati i tajna koja je ušla ranije pa je
+          # kasnije uklonjena iz radnog stabla — u istoriji ostaje.
+          fetch-depth: 0
+
+      # Zakačeno za commit, ne za `v2` oznaku. Oznakom upravlja tuđi repozitorijum i može
+      # da se pomeri; ovaj korak radi sa tokenom ovog repozitorijuma, pa bi pomerena
+      # oznaka značila tuđi kod sa našim pravima. Dependabot je podešen da ovo diže.
+      - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: .gitleaks.toml

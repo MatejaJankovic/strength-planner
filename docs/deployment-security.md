@@ -3,35 +3,34 @@
 Šta je u isporuci već podešeno, i šta moraš da uradiš sam pre nego što aplikacija postane
 dostupna sa interneta.
 
-## Ono što moraš sam: TLS
-
-**Ovo je jedina stavka koju kod ne može da reši umesto tebe, i najvažnija je.**
+## TLS
 
 `docker compose up` diže aplikaciju na čistom HTTP-u. Lokalno je to u redu. Čim je adresa
 dostupna nekom drugom, lozinka pri prijavi i svaki JWT putuju u čitljivom obliku — ko god je
 na putanji (isti Wi-Fi, kompromitovan ruter, provajder) čita ih i preuzima nalog.
 
-Aplikacija je pripremljena da radi iza TLS terminacije: nginx već prosleđuje
-`X-Forwarded-Proto`, a API čita prosleđena zaglavlja.
+**Zato TLS više nije uputstvo nego dodatni compose fajl:**
 
-Najjednostavnije rešenje je reverse proxy koji sam pribavlja sertifikat. Primer sa Caddy-jem
-ispred `web` servisa:
-
-```
-tvoj-domen.rs {
-    reverse_proxy web:8080
-}
+```bash
+APP_DOMAIN=tvoj-domen.rs TLS_EMAIL=ti@primer.com \
+  docker compose -f docker-compose.yml -f docker-compose.tls.yml up -d
 ```
 
-Caddy sam vadi i obnavlja Let's Encrypt sertifikat i sam preusmerava HTTP na HTTPS.
+Caddy sam pribavlja i obnavlja Let's Encrypt sertifikat, sam preusmerava HTTP na HTTPS i sam
+šalje HSTS. Uz njega se pale i `Security__RequireHttps` i `Security__ProxyCount` na API-ju —
+sve u istom fajlu, pa nema koraka koji se zaboravlja.
 
-Ako TLS terminiraš u samom nginx-u, dodaj i HSTS — namerno ga nema u isporučenoj
-konfiguraciji, jer ga pregledači preko čistog HTTP-a ignorišu, a ako se aplikacija ikada
-posluži preko HTTP-a posle HTTPS-a, zaključao bi je:
+Šta Let's Encrypt traži da bi izdao sertifikat: domen mora da pokazuje na tu mašinu, a
+portovi 80 i 443 moraju da budu dostupni sa interneta. Traži se i Docker Compose v2.24 ili
+noviji.
 
-```
-add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-```
+> **Nije pokrenuto.** Docker nije bio dostupan pri pisanju ovoga, pa su compose fajl i
+> Caddyfile provereni čitanjem. Posle prvog dizanja proveri da odgovor nosi
+> `Strict-Transport-Security` i da `http://` završava na `https://`.
+
+HSTS namerno šalje Caddy, a ne nginx: preko čistog HTTP-a ga pregledači ignorišu, a ako se
+aplikacija ikada posluži preko HTTP-a posle HTTPS-a, zaključao bi je. Caddy je jedino mesto
+koje pouzdano zna da TLS postoji.
 
 ## Šta je već podešeno
 
@@ -130,11 +129,11 @@ openssl rand -base64 48
 
 ## Šta ostaje na tebi
 
-- **TLS**, kao gore.
 - **Rezervne kopije baze.** Volumen `strengthplanner_pgdata` je jedino mesto gde podaci
   postoje.
 - **Nadogradnja osnovnih imidža.** `postgres:16`, `aspnet:8.0` i `nginx-unprivileged:1.27`
-  dobijaju bezbednosne ispravke; povremeno uradi `docker compose build --pull`.
+  dobijaju bezbednosne ispravke. Dependabot sada mesečno otvara PR za njih, ali sam build
+  moraš da pustiš: `docker compose build --pull`.
 - **Migracije se izvršavaju pri svakom startu API-ja.** Zgodno za demo. Za pravu produkciju je
   uobičajeno razdvojiti korak migracije od pokretanja aplikacije, da nadogradnja ne bi menjala
   šemu u trenutku kad se dižu instance.
@@ -153,9 +152,9 @@ openssl rand -base64 48
   statusnim kodom (400 naspram 200). Pravo rešenje je potvrda email-om.
 
 - **Ograničenje broja zahteva deli budžet po IP adresi.** Više korisnika iza istog NAT-a
-  (kućni ruter, teretana, fakultet) deli 10 zahteva u minutu na auth rutama. Za prijavu i
-  registraciju je to prihvatljivo; ako postane smetnja, granica je na jednom mestu u
-  `Program.cs`.
+  (kućni ruter, teretana, fakultet) deli 20 zahteva u minutu na auth rutama, i 5 na sat na
+  registraciji. Za prijavu je to prihvatljivo; ako postane smetnja, obe granice su na
+  jednom mestu u `Program.cs`.
 - **JWT stoji u `localStorage`.** Uobičajen kompromis za SPA — kolačić sa `httpOnly` bi tražio
   zaštitu od CSRF-a. CSP je ono što ovde nosi odbranu.
 - **Odjava je i dalje bez stanja.** Token važi do isteka (60 minuta). Promena lozinke ga
