@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using StrengthPlanner.Application.Security;
 using StrengthPlanner.Domain.Enums;
 
 namespace StrengthPlanner.Application.DTOs.Auth;
@@ -17,7 +18,10 @@ public class UpdateProfileDto
     [Range(20, 400)]
     public decimal BodyweightKg { get; set; }
 
+    // Bez provere je "experienceLevel": 999 prolazilo, upisivalo se u profil i vraćalo
+    // klijentu kao nivo koji nijedan ekran ne prikazuje.
     [Required]
+    [DefinedEnum]
     public ExperienceLevel ExperienceLevel { get; set; }
 
     [Range(1, 7)]

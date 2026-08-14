@@ -10,9 +10,11 @@ namespace StrengthPlanner.Application.DTOs.Auth;
 public class ChangePasswordDto
 {
     [Required]
+    [MaxLength(PasswordPolicy.MaximumLength)]
     public string CurrentPassword { get; set; } = string.Empty;
 
     [Required]
     [MinLength(PasswordPolicy.MinimumLength)]
+    [MaxLength(PasswordPolicy.MaximumLength)]
     public string NewPassword { get; set; } = string.Empty;
 }

@@ -8,25 +8,35 @@
 # Nalog dobija pravo nad podacima i nad postojećim objektima, plus podrazumevana prava
 # na sve što migracije naprave kasnije. Ostaje mu i pravo da pravi tabele u javnoj šemi,
 # jer migracije rade pod njim — ali nije superkorisnik, pa ne može van svoje baze.
+#
+# Vrednosti se prosleđuju kao psql promenljive, a ne ubacuju u tekst upita.
+# Ranije su išle direktno u SQL, pa je lozinka sa apostrofom prekidala string: u najboljem
+# slučaju skripta pukne i baza ostane bez naloga, u najgorem se ostatak lozinke protumači
+# kao SQL. Ovde `:'ime'` znači „ubaci kao literal, sa navodnicima i escape-om", a `:"ime"`
+# isto to za identifikator — isti posao koji parametrizovan upit radi u kodu.
+#
+# Heredoc je pod navodnicima ('EOSQL'), pa ljuska ništa ne razrešava unutra; sve vrednosti
+# ulaze isključivo kroz -v.
 set -e
 
-psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
-    DO \$\$
-    BEGIN
-        IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '${APP_DB_USER}') THEN
-            CREATE ROLE ${APP_DB_USER} LOGIN PASSWORD '${APP_DB_PASSWORD}';
-        END IF;
-    END
-    \$\$;
+psql -v ON_ERROR_STOP=1 \
+    --username "$POSTGRES_USER" \
+    --dbname "$POSTGRES_DB" \
+    -v app_user="$APP_DB_USER" \
+    -v app_password="$APP_DB_PASSWORD" \
+    -v db_name="$POSTGRES_DB" <<'EOSQL'
+SELECT format('CREATE ROLE %I LOGIN PASSWORD %L', :'app_user', :'app_password')
+WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = :'app_user')
+\gexec
 
-    GRANT CONNECT ON DATABASE ${POSTGRES_DB} TO ${APP_DB_USER};
-    GRANT USAGE, CREATE ON SCHEMA public TO ${APP_DB_USER};
+GRANT CONNECT ON DATABASE :"db_name" TO :"app_user";
+GRANT USAGE, CREATE ON SCHEMA public TO :"app_user";
 
-    GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO ${APP_DB_USER};
-    GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ${APP_DB_USER};
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO :"app_user";
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO :"app_user";
 
-    ALTER DEFAULT PRIVILEGES IN SCHEMA public
-        GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO ${APP_DB_USER};
-    ALTER DEFAULT PRIVILEGES IN SCHEMA public
-        GRANT USAGE, SELECT ON SEQUENCES TO ${APP_DB_USER};
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO :"app_user";
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+    GRANT USAGE, SELECT ON SEQUENCES TO :"app_user";
 EOSQL
