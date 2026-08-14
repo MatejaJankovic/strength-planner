@@ -11,7 +11,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using StrengthPlanner.API.Security;
 using StrengthPlanner.Application.Exceptions;
+using StrengthPlanner.Application.Interfaces;
 using StrengthPlanner.Infrastructure;
 using StrengthPlanner.Infrastructure.Authentication;
 using StrengthPlanner.Infrastructure.Identity;
@@ -131,6 +133,16 @@ builder.Services.AddSwaggerGen(options =>
     options.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme, scheme);
     options.AddSecurityRequirement(new OpenApiSecurityRequirement { { scheme, Array.Empty<string>() } });
 });
+
+// ---------------------------------------------------------------------------
+// Identitet zahteva, dostupan i sloju podataka.
+//
+// AppDbContext preko ovoga ograničava svaki upit nad korisničkim podacima na vlasnika,
+// pa upit koji zaboravi uslov po userId vrati prazno umesto tuđih redova. Vrednost dolazi
+// iz `sub` claim-a već validiranog tokena — nikada iz tela zahteva, rute ili query stringa.
+// ---------------------------------------------------------------------------
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUser, HttpContextCurrentUser>();
 
 // ---------------------------------------------------------------------------
 // Infrastruktura: EF Core (PostgreSQL / Npgsql), Identity, auth servisi.
