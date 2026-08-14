@@ -53,6 +53,18 @@ public static class DependencyInjection
             .AddRoles<IdentityRole<Guid>>()
             .AddEntityFrameworkStores<AppDbContext>();
 
+        // Lozinke hešira Identity (PBKDF2-HMAC-SHA512, so po lozinci). Broj iteracija je
+        // jedini deo koji ima smisla dizati: on određuje koliko košta pogađanje ako baza
+        // ikada iscuri. .NET 8 podrazumeva 100.000; OWASP za SHA-512 preporučuje 210.000.
+        //
+        // Izmena je unazad kompatibilna — broj iteracija je upisan u sam heš, pa se
+        // zatečene lozinke i dalje proveravaju svojim starim brojem. Cena je jedno
+        // heširanje po prijavi, a ne po zahtevu.
+        services.Configure<PasswordHasherOptions>(options =>
+        {
+            options.IterationCount = 210_000;
+        });
+
         // JWT postavke + servisi.
         services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
         services.AddScoped<ITokenService, JwtTokenService>();

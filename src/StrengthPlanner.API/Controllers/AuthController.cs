@@ -21,7 +21,7 @@ public class AuthController : ControllerBase
     }
 
     [AllowAnonymous]
-    [EnableRateLimiting("auth")]
+    [EnableRateLimiting("registration")]
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterDto dto)
     {

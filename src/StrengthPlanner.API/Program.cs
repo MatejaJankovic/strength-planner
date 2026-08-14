@@ -22,10 +22,43 @@ using StrengthPlanner.Infrastructure.Persistence;
 var builder = WebApplication.CreateBuilder(args);
 
 // ---------------------------------------------------------------------------
+// Kestrel ne objavljuje svoje ime.
+//
+// "Server: Kestrel" na svakom odgovoru je besplatan podatak napadaču o tome šta se traži i
+// koje ranjivosti okvira ima smisla probati. nginx isto krije svoju verziju
+// (server_tokens off), pa je ovo isti potez na drugom kraju.
+// ---------------------------------------------------------------------------
+builder.WebHost.ConfigureKestrel(options => options.AddServerHeader = false);
+
+// ---------------------------------------------------------------------------
+// TLS iza proxy-ja.
+//
+// U kontejneru API sluša čist HTTP, a TLS se prekida ispred njega, pa preusmeravanje ovde
+// ne sme da bude podrazumevano — bez proxy-ja bi napravilo petlju. Uključuje se
+// konfiguracijom (`Security__RequireHttps=true`) kada TLS zaista postoji, i tek tada ima
+// smisla i HSTS.
+//
+// Šemu pravog zahteva čita iz X-Forwarded-Proto, koji se obrađuje niže i to samo sa
+// privatnih adresa.
+// ---------------------------------------------------------------------------
+var requireHttps = builder.Configuration.GetValue("Security:RequireHttps", defaultValue: false);
+
+if (requireHttps)
+{
+    // Godinu dana, jer kraći rok znači da prvi zahtev posle isteka opet sme preko HTTP-a.
+    builder.Services.AddHsts(options =>
+    {
+        options.MaxAge = TimeSpan.FromDays(365);
+        options.IncludeSubDomains = true;
+    });
+}
+
+// ---------------------------------------------------------------------------
 // CORS: Angular dev server (radi se kasnije) sme da poziva ovaj API.
 // ---------------------------------------------------------------------------
 const string AllowAngular = "AllowAngular";
 const string AuthRateLimitPolicy = "auth";
+const string RegistrationRateLimitPolicy = "registration";
 
 // Zahtev bez adrese pošiljaoca ne sme da deli budžet sa svima ostalima; preko TCP-a se
 // ne dešava, ali ime govori šta je u pitanju ako se ikad desi.
@@ -67,6 +100,28 @@ builder.Services.AddRateLimiter(options =>
             {
                 PermitLimit = 20,
                 Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+
+    // Registracija dobija svoju, mnogo užu granicu.
+    //
+    // Zajednička auth granica (20/min) je postavljena tako da prijava ostane upotrebljiva i
+    // kada nekoliko ljudi deli izlaznu adresu. Za registraciju je to previše: nalog se pravi
+    // jednom, a dvadeset naloga u minutu je isključivo automat. Bez ovoga se baza puni
+    // praznim nalozima, i to je jedini deo aplikacije gde neko ko nije prijavljen može da
+    // pravi zapise.
+    //
+    // Ovo je i jedina odbrana od automata koja ne traži treću stranu: CAPTCHA bi značila
+    // slanje IP adrese korisnika Google-u ili Cloudflare-u pri svakoj registraciji, i
+    // rupu u CSP-u za njihove skripte.
+    options.AddPolicy(RegistrationRateLimitPolicy, httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString()
+                          ?? UnknownClientPartition,
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromHours(1),
                 QueueLimit = 0
             }));
 
@@ -292,6 +347,16 @@ foreach (var (prefix, length) in new (string Prefix, int Length)[]
 }
 
 app.UseForwardedHeaders(forwardedHeaders);
+
+// Zaglavlja idu odmah posle prosleđenih, pre svega ostalog: i odgovor iz rukovaoca
+// greškama i onaj iz ograničenja broja zahteva moraju da ih ponesu.
+app.UseApiSecurityHeaders();
+
+if (requireHttps)
+{
+    app.UseHsts();
+    app.UseHttpsRedirection();
+}
 
 app.UseExceptionHandler(exceptionHandlerApp =>
 {

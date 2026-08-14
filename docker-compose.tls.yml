@@ -1,0 +1,50 @@
+# TLS ispred aplikacije, kao dopuna osnovnom compose fajlu.
+#
+# Ovo postoji zato što je TLS bio jedina preostala stavka koju kod nije mogao da reši, a
+# uputstvo koje kaže „stavi neki reverse proxy" u praksi znači da niko to ne uradi. Caddy
+# sam pribavlja i obnavlja Let's Encrypt sertifikat i sam preusmerava HTTP na HTTPS, pa je
+# ceo posao jedna promenljiva okruženja i jedna naredba.
+#
+#   APP_DOMAIN=tvoj-domen.rs TLS_EMAIL=ti@primer.com \
+#     docker compose -f docker-compose.yml -f docker-compose.tls.yml up -d
+#
+# Uslovi koje Let's Encrypt traži: domen mora da pokazuje na ovu mašinu, a portovi 80 i 443
+# moraju da budu dostupni sa interneta.
+
+services:
+  # Sa TLS-om web servis više ne treba da bude izložen spolja — do njega se dolazi kroz
+  # Caddy. Vezuje se za petlju, kao i API.
+  web:
+    ports: !override
+      - "127.0.0.1:${WEB_PORT:-8080}:8080"
+
+  # Tek sada API sme da traži HTTPS: šemu pravog zahteva čita iz X-Forwarded-Proto, koji
+  # Caddy postavlja, a nginx prosleđuje dalje. Bez TLS-a bi ovo pravilo petlju
+  # preusmeravanja, pa i stoji ovde a ne u osnovnom fajlu.
+  api:
+    environment:
+      Security__RequireHttps: "true"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - web
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?Postavi APP_DOMAIN (domen koji pokazuje na ovu masinu)}
+      TLS_EMAIL: ${TLS_EMAIL:?Postavi TLS_EMAIL (adresa za obavestenja o isteku sertifikata)}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      # Sertifikati i ključevi. Bez trajnog volumena Caddy pri svakom restartu traži nov
+      # sertifikat i brzo udari u ograničenje broja zahteva kod Let's Encrypt-a.
+      - caddy_data:/data
+      - caddy_config:/config
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  caddy_data:
+  caddy_config:

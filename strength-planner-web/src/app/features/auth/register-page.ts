@@ -49,6 +49,8 @@ export class RegisterPage {
       ],
     ],
     sex: [''],
+    // Zamka za automate: sakrivena je u prikazu, pa je kod čoveka uvek prazna.
+    website: [''],
     age: ['', [Validators.required, Validators.min(14), Validators.max(90)]],
     bodyweightKg: ['', [Validators.required, Validators.min(30), Validators.max(300)]],
     experienceLevel: ['', [Validators.required]],
@@ -78,6 +80,7 @@ export class RegisterPage {
       bodyweightKg: Number(raw.bodyweightKg),
       experienceLevel: Number(raw.experienceLevel) as ExperienceLevel,
       trainingDaysPerWeek: Number(raw.trainingDaysPerWeek),
+      website: raw.website ? raw.website : null,
     };
 
     this.submitting.set(true);

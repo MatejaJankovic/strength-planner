@@ -19,6 +19,26 @@
     }
 
     <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <!--
+        Zamka za automate. Skriveno je i od prikaza i od čitača ekrana, izvučeno iz reda
+        tabulatora i sa isključenim automatskim popunjavanjem — čovek do njega ne može da
+        dođe nijednim putem, pa je kod njega uvek prazno. Automat koji redom puni polja ga
+        popuni, i server takvu registraciju odbija.
+
+        Skriva se stilom, a ne atributom hidden ni tipom hidden, jer jednostavniji automati
+        upravo ta dva preskaču.
+      -->
+      <div aria-hidden="true" style="position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden">
+        <label for="reg-website">Ne popunjavaj ovo polje</label>
+        <input
+          id="reg-website"
+          type="text"
+          formControlName="website"
+          tabindex="-1"
+          autocomplete="off"
+        />
+      </div>
+
       <div class="field">
         <label class="field__label" for="reg-email">Email</label>
         <input
