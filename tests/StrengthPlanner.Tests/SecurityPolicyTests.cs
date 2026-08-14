@@ -3,6 +3,7 @@ using StrengthPlanner.Application.DTOs.Auth;
 using StrengthPlanner.Application.DTOs.Exercises;
 using StrengthPlanner.Application.Security;
 using StrengthPlanner.Application.Templates;
+using StrengthPlanner.Domain.Enums;
 
 namespace StrengthPlanner.Tests;
 
@@ -69,6 +70,122 @@ public class SecurityPolicyTests
         Assert.Contains(
             Validate(dto),
             result => result.MemberNames.Contains(nameof(ChangePasswordDto.NewPassword)));
+    }
+
+    [Theory]
+    [InlineData(999)]
+    [InlineData(-1)]
+    [InlineData(0x7FFFFFFF)]
+    public void Registration_RejectsAnExperienceLevelThatDoesNotExist(int level)
+    {
+        // Model binder prima bilo koji ceo broj za enum. Bez provere je "experienceLevel":
+        // 999 vraćalo 200, upisivalo se u profil i vraćalo klijentu kao nivo koji nijedan
+        // ekran ne prikazuje, dok bi algoritmi na njega odgovarali podrazumevanom granom.
+        var dto = ValidRegistration(new string('x', PasswordPolicy.MinimumLength));
+        dto.ExperienceLevel = (ExperienceLevel)level;
+
+        Assert.Contains(
+            Validate(dto),
+            result => result.MemberNames.Contains(nameof(RegisterDto.ExperienceLevel)));
+    }
+
+    public static IEnumerable<object[]> DefinedExperienceLevels() =>
+        Enum.GetValues<ExperienceLevel>().Select(level => new object[] { level });
+
+    [Theory]
+    [MemberData(nameof(DefinedExperienceLevels))]
+    public void Registration_AcceptsEveryExperienceLevelTheSystemDefines(ExperienceLevel level)
+    {
+        // Slučaj po nivou, a ne petlja u jednom testu: test postoji da uhvati nivo koji je
+        // greškom ispao, pa mora i da kaže koji.
+        var dto = ValidRegistration(new string('x', PasswordPolicy.MinimumLength));
+        dto.ExperienceLevel = level;
+
+        Assert.DoesNotContain(
+            Validate(dto),
+            result => result.MemberNames.Contains(nameof(RegisterDto.ExperienceLevel)));
+    }
+
+    /// <summary>
+    /// Prazna vrednost pripada [Required] atributu. Grana postoji zbog nullable enum-a,
+    /// kojih u zahtevima trenutno nema, pa je bez ovoga niko ne bi ni izvršio.
+    /// </summary>
+    [Fact]
+    public void DefinedEnum_LeavesEmptyValuesToRequired()
+    {
+        Assert.True(new DefinedEnumAttribute().IsValid(null));
+    }
+
+    [Fact]
+    public void DefinedEnum_RefusesToJudgeSomethingThatIsNotAnEnum()
+    {
+        // Ćutke vraćeno „nije ispravno" bi izgledalo kao loš unos korisnika, a greška je
+        // u tome gde je atribut stavljen.
+        Assert.Throws<InvalidOperationException>(() => new DefinedEnumAttribute().IsValid(42));
+    }
+
+    [Fact]
+    public void ProfileUpdate_RejectsAnExperienceLevelThatDoesNotExist()
+    {
+        // Ista provera i ovde: inače je izmena profila zaobilaznica oko registracije.
+        var dto = new UpdateProfileDto
+        {
+            Age = 30,
+            BodyweightKg = 80,
+            TrainingDaysPerWeek = 3,
+            ExperienceLevel = (ExperienceLevel)999
+        };
+
+        Assert.Contains(
+            Validate(dto),
+            result => result.MemberNames.Contains(nameof(UpdateProfileDto.ExperienceLevel)));
+    }
+
+    [Fact]
+    public void Registration_RejectsAnEmailLongerThanTheColumnThatStoresIt()
+    {
+        // Granica prati Identity kolonu. Bez nje je adresa od 400 znakova prolazila
+        // validaciju i padala tek pri upisu — izmereno, vraćala je 500 umesto 400.
+        var dto = ValidRegistration(new string('x', PasswordPolicy.MinimumLength));
+        dto.Email = new string('a', EmailPolicy.MaximumLength) + "@primer.com";
+
+        Assert.Contains(
+            Validate(dto),
+            result => result.MemberNames.Contains(nameof(RegisterDto.Email)));
+    }
+
+    [Fact]
+    public void Registration_RejectsAPasswordLongerThanThePolicyAllows()
+    {
+        var dto = ValidRegistration(new string('x', PasswordPolicy.MaximumLength + 1));
+
+        Assert.Contains(
+            Validate(dto),
+            result => result.MemberNames.Contains(nameof(RegisterDto.Password)));
+    }
+
+    [Fact]
+    public void Login_HoldsEmailAndPasswordToTheSameBounds()
+    {
+        // Prijava prima ista polja i troši isti posao na njima; bez granica bi bila put
+        // oko onih postavljenih na registraciji.
+        var dto = new LoginDto
+        {
+            Email = new string('a', EmailPolicy.MaximumLength) + "@primer.com",
+            Password = new string('x', PasswordPolicy.MaximumLength + 1)
+        };
+
+        var results = Validate(dto);
+
+        Assert.Contains(results, result => result.MemberNames.Contains(nameof(LoginDto.Email)));
+        Assert.Contains(results, result => result.MemberNames.Contains(nameof(LoginDto.Password)));
+    }
+
+    [Fact]
+    public void PasswordBounds_LeaveRoomForARealPassword()
+    {
+        // Da se donja i gornja granica ne bi jednog dana ukrstile.
+        Assert.True(PasswordPolicy.MaximumLength > PasswordPolicy.MinimumLength);
     }
 
     [Fact]

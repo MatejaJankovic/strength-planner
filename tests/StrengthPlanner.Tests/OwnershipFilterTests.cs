@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using StrengthPlanner.Application.Interfaces;
 using StrengthPlanner.Domain.Entities;
+using StrengthPlanner.Application.Security;
+using StrengthPlanner.Infrastructure.Identity;
 using StrengthPlanner.Infrastructure.Persistence;
 
 namespace StrengthPlanner.Tests;
@@ -136,5 +138,22 @@ public class OwnershipFilterTests
         Expression<Func<Mesocycle, bool>> passesEverything = mesocycle => true;
 
         Assert.False(ReadsCurrentUser(passesEverything));
+    }
+
+    /// <summary>
+    /// Granica email adrese u validaciji mora da odgovara koloni koja je čuva.
+    ///
+    /// Ista vrsta razmimoilaženja je već jednom napravila štetu: <c>Equipment</c> je u DTO-u
+    /// imao 64 znaka a u koloni 32, pa je ispravan-na-oko zahtev padao kao 500 umesto 400.
+    /// Ovde se granica čita iz samog EF modela, pa ne može da odluta od stvarnosti.
+    /// </summary>
+    [Fact]
+    public void EmailLimit_MatchesTheColumnThatStoresIt()
+    {
+        var column = Model.FindEntityType(typeof(ApplicationUser))!
+            .GetProperty(nameof(ApplicationUser.Email))
+            .GetMaxLength();
+
+        Assert.Equal(column, EmailPolicy.MaximumLength);
     }
 }
