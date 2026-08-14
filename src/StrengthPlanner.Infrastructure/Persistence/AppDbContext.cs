@@ -21,11 +21,16 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
     /// <c>HttpContext.User</c> još nije postavljen. Vrednost zapamćena tada ostala bi
     /// prazna do kraja zahteva, pa bi korisnik svoje podatke video kao nepostojeće.
     ///
-    /// <see cref="Guid.Empty"/> znači „nema korisnika": migracije i seed pri pokretanju,
-    /// i anonimne rute. Nijedan korisnički red nema takvog vlasnika, pa u tom stanju
+    /// <c>null</c> znači „nema korisnika": migracije i seed pri pokretanju, i anonimne
+    /// rute. Poređenje sa <c>null</c> u SQL-u nije tačno ni za jedan red, pa u tom stanju
     /// filteri ne propuštaju ništa — što je i namera.
+    ///
+    /// Namerno <c>null</c>, a ne <see cref="Guid.Empty"/>. Prazan Guid je vrednost kao i
+    /// svaka druga: red koji bi ga iz bilo kog razloga poneo u koloni vlasnika postao bi
+    /// vidljiv baš u kontekstu bez korisnika. Danas takav red ne može da nastane, ali tu
+    /// sigurnost onda nosi podatak, a ne filter.
     /// </summary>
-    private Guid CurrentUserId => _currentUser.UserId ?? Guid.Empty;
+    private Guid? CurrentUserId => _currentUser.UserId;
 
     public AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUser currentUser)
         : base(options)
@@ -95,11 +100,19 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
 
         // Sistemske vežbe su zajedničke i vidi ih svako; custom vežba pripada onome ko ju
         // je napravio. Isto pravilo koje ExerciseService već piše ručno.
+        //
+        // Provera da korisnik postoji stoji ispred poređenja zato što su OBE strane
+        // nullable: EF za takvo poređenje generiše i granu „oba su NULL", pa bi custom
+        // vežba bez upisanog tvorca inače bila vidljiva baš kad korisnika nema.
         modelBuilder.Entity<Exercise>()
-            .HasQueryFilter(exercise => !exercise.IsCustom || exercise.CreatedByUserId == CurrentUserId);
+            .HasQueryFilter(exercise => !exercise.IsCustom
+                                        || (CurrentUserId != null
+                                            && exercise.CreatedByUserId == CurrentUserId));
 
         modelBuilder.Entity<ExerciseMuscle>()
-            .HasQueryFilter(link => !link.Exercise.IsCustom || link.Exercise.CreatedByUserId == CurrentUserId);
+            .HasQueryFilter(link => !link.Exercise.IsCustom
+                                    || (CurrentUserId != null
+                                        && link.Exercise.CreatedByUserId == CurrentUserId));
 
         modelBuilder.Entity<MacrocycleBlock>()
             .HasQueryFilter(block => block.Macrocycle.UserId == CurrentUserId);
