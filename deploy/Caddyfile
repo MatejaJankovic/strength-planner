@@ -9,11 +9,11 @@
 {$APP_DOMAIN} {
 	# Sve ide na nginx (web servis), koji služi aplikaciju i prosleđuje /api dalje.
 	# Bezbednosna zaglavlja ostaju tamo gde jesu — Caddy ih ne dira.
+	#
+	# X-Forwarded-Proto i X-Forwarded-For postavlja sam reverse_proxy, pa se ne pišu ručno.
+	# Da bi „https" preživelo i drugi skok, nginx to zaglavlje prosleđuje umesto da ga
+	# prepiše svojim $scheme — vidi map blok u strength-planner-web/nginx.conf.
 	reverse_proxy web:8080
-
-	# Bez ovoga API iza dva proxy-ja vidi šemu poslednjeg skoka, dakle http, pa bi
-	# preusmeravanje na HTTPS ušlo u petlju.
-	header_up X-Forwarded-Proto {scheme}
 
 	encode gzip zstd
 

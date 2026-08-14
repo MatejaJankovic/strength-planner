@@ -52,5 +52,8 @@ public class RegisterDto
     /// svakog korisnika trećoj strani niti traži rupu u CSP-u. Pravu granicu ovde postavlja
     /// ograničenje broja registracija po adresi.
     /// </summary>
+    // Granica kao i na svakom drugom tekstualnom polju: sadržaj se odbacuje, ali nema
+    // razloga da neograničen tekst uopšte prođe kroz validaciju i poruke o greškama.
+    [MaxLength(256)]
     public string? Website { get; set; }
 }

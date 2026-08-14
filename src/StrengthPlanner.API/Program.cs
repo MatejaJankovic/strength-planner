@@ -51,6 +51,15 @@ if (requireHttps)
         options.MaxAge = TimeSpan.FromDays(365);
         options.IncludeSubDomains = true;
     });
+
+    // Port se MORA reći. Preusmeravanje ga inače traži među adresama na kojima sluša
+    // Kestrel, a on iza proxy-ja sluša samo čist HTTP — pa middleware ne nađe nijedan,
+    // zapiše „Failed to determine the https port for redirect" i propusti zahtev dalje.
+    // Izmereno: bez ovoga je zahtev preko HTTP-a vraćao 401 umesto preusmeravanja.
+    builder.Services.AddHttpsRedirection(options =>
+    {
+        options.HttpsPort = builder.Configuration.GetValue("Security:HttpsPort", defaultValue: 443);
+    });
 }
 
 // ---------------------------------------------------------------------------
@@ -316,10 +325,19 @@ await DbSeeder.SeedAsync(app.Services);
 // postavi X-Forwarded-For i za svaki zahtev dobije svoju particiju, čime bi ograničenje
 // prestalo da postoji.
 // ---------------------------------------------------------------------------
+// Broj proxy-ja koje treba proći unazad da bi se stiglo do prave adrese klijenta.
+//
+// Bez TLS-a je lanac klijent → nginx → API, dakle jedan. Sa docker-compose.tls.yml ispred
+// dolazi i Caddy, pa ih je dva: Caddy upiše klijenta u X-Forwarded-For, a nginx dopiše
+// Caddy-jevu adresu. Sa vrednošću 1 bi se uzeo samo poslednji upis — Caddy — pa bi SVAKI
+// korisnik dobio istu adresu, a ograničenja broja zahteva jednu zajedničku particiju:
+// jedan posetilac bi iscrpeo registraciju za sve.
+//
+// Podešava se uz TLS, u istom fajlu koji taj drugi proxy i dodaje.
 var forwardedHeaders = new ForwardedHeadersOptions
 {
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
-    ForwardLimit = 1
+    ForwardLimit = builder.Configuration.GetValue("Security:ProxyCount", defaultValue: 1)
 };
 
 forwardedHeaders.KnownNetworks.Clear();
@@ -352,6 +370,8 @@ app.UseForwardedHeaders(forwardedHeaders);
 // greškama i onaj iz ograničenja broja zahteva moraju da ih ponesu.
 app.UseApiSecurityHeaders();
 
+// Jedno mesto za preusmeravanje, i u razvoju i u isporuci. Ranije je stajalo i ovde i u
+// Development grani, pa su dva registrovanja govorila dve različite stvari o istoj odluci.
 if (requireHttps)
 {
     app.UseHsts();
@@ -379,10 +399,6 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-
-    // HTTPS redirect samo u lokalnom razvoju; u kontejneru API sluša čist HTTP
-    // iza nginx proxy-ja (redirect bi ovde samo pravio problem).
-    app.UseHttpsRedirection();
 }
 
 app.UseCors(AllowAngular);

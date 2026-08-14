@@ -12,18 +12,18 @@
 # moraju da budu dostupni sa interneta.
 
 services:
-  # Sa TLS-om web servis više ne treba da bude izložen spolja — do njega se dolazi kroz
-  # Caddy. Vezuje se za petlju, kao i API.
-  web:
-    ports: !override
-      - "127.0.0.1:${WEB_PORT:-8080}:8080"
-
-  # Tek sada API sme da traži HTTPS: šemu pravog zahteva čita iz X-Forwarded-Proto, koji
-  # Caddy postavlja, a nginx prosleđuje dalje. Bez TLS-a bi ovo pravilo petlju
-  # preusmeravanja, pa i stoji ovde a ne u osnovnom fajlu.
+  # Tek sada API sme da traži HTTPS: šemu pravog zahteva čita iz X-Forwarded-Proto, koje
+  # Caddy postavlja a nginx prosleđuje dalje umesto da ga prepiše. Bez TLS-a bi ovo pravilo
+  # petlju preusmeravanja, pa stoji ovde a ne u osnovnom fajlu.
+  #
+  # ProxyCount je 2 jer sada ispred API-ja stoje dva proxy-ja: Caddy upiše adresu klijenta
+  # u X-Forwarded-For, a nginx dopiše Caddy-jevu. Sa podrazumevanom jedinicom bi se uzeo
+  # samo poslednji upis, pa bi svi korisnici delili jednu particiju ograničenja broja
+  # zahteva — jedan posetilac bi iscrpeo registraciju za sve.
   api:
     environment:
       Security__RequireHttps: "true"
+      Security__ProxyCount: "2"
 
   caddy:
     image: caddy:2-alpine

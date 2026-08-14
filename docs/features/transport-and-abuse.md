@@ -53,9 +53,37 @@ HSTS namerno šalje Caddy, jer je on jedino mesto koje pouzdano zna da TLS posto
 konfiguraciji ga i dalje nema: preko čistog HTTP-a ga pregledači ignorišu, a aplikaciju bi
 zaključao ako se ikada posluži bez TLS-a.
 
-> **Nije pokrenuto.** Docker nije bio dostupan pri radu, pa su compose fajl i Caddyfile
-> provereni čitanjem, ne izvršavanjem. Pre oslanjanja uraditi `docker compose ... up` na
-> domenu koji zaista pokazuje na tu mašinu.
+### Dva proxy-ja, tri stvari koje su morale da se poklope
+
+Prva verzija ovoga nije radila ništa, i to se videlo tek merenjem. Sa
+`Security__RequireHttps=true` i zahtevom preko čistog HTTP-a odgovor je bio **401, bez
+preusmeravanja i bez HSTS-a**, uz `Failed to determine the https port for redirect` u logu.
+Tri odvojena uzroka:
+
+1. **Preusmeravanje nije znalo port.** `UseHttpsRedirection` ga traži među adresama na
+   kojima Kestrel sluša, a iza proxy-ja on sluša samo čist HTTP — pa ga ne nađe, zapiše
+   upozorenje i propusti zahtev. Sada se port zadaje eksplicitno. Izmereno posle ispravke:
+   307 na `https://.../api/templates`, i upozorenja više nema.
+
+2. **nginx je prepisivao šemu.** Caddy prekine TLS i dalje šalje čist HTTP, a nginx je
+   slao `X-Forwarded-Proto $scheme` — dakle svoju šemu, „http" — preko onoga što je Caddy
+   postavio. API bi zato i pod punim TLS-om svaki zahtev video kao HTTP: HSTS se ne bi
+   slao nikada, a da je preusmeravanje radilo, vrtelo bi se u petlji. Sada nginx prosleđuje
+   zaglavlje koje je dobio, a svoju šemu koristi samo kada ga nema.
+
+3. **Adresa klijenta bi se izgubila.** `ForwardLimit` je bio 1, što odgovara lancu
+   klijent → nginx → API. Sa Caddy-jem ih je dva: Caddy upiše klijenta u `X-Forwarded-For`,
+   nginx dopiše Caddy-jevu adresu. Uzimao bi se samo poslednji upis, pa bi **svi korisnici
+   dobili istu adresu i jednu zajedničku particiju** ograničenja broja zahteva — jedan
+   posetilac bi iscrpeo registraciju za sve. Broj proxy-ja se sada podešava, i
+   `docker-compose.tls.yml` ga postavlja na 2 jer taj drugi proxy sam i dodaje.
+
+> **Šta jeste, a šta nije pokrenuto.** Preusmeravanje i odsustvo upozorenja su izmereni nad
+> pokrenutim API-jem. Ostalo — prosleđivanje šeme kroz nginx, broj proxy-ja, i sam Caddy —
+> traži pokrenutu Docker mrežu, a Docker nije bio dostupan: prosleđena zaglavlja se namerno
+> uzimaju u obzir samo sa privatnih adresa, pa se lanac ne može odglumiti sa petlje. Pre
+> oslanjanja uraditi `docker compose ... up` na domenu koji zaista pokazuje na tu mašinu i
+> proveriti da odgovor nosi `Strict-Transport-Security`.
 
 ## Heširanje lozinki
 

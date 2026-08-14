@@ -17,8 +17,11 @@ public static class SecurityHeaders
 {
     /// <summary>
     /// Zaglavlja su statična, pa se prave jednom umesto po zahtevu.
+    ///
+    /// Vidljiva su spolja da bi mogla da se provere testom: lista se briše jednim potezom,
+    /// a odgovor bez nje izgleda potpuno isto.
     /// </summary>
-    private static readonly (string Name, string Value)[] Headers =
+    public static readonly (string Name, string Value)[] All =
     {
         // API vraća isključivo JSON. Zabrana svega je ovde tačna, a ne stroga.
         ("Content-Security-Policy",
@@ -44,7 +47,7 @@ public static class SecurityHeaders
             // počne, zaglavlja se više ne mogu menjati.
             context.Response.OnStarting(() =>
             {
-                foreach (var (name, value) in Headers)
+                foreach (var (name, value) in All)
                 {
                     // Ne prepisuj ako je neki endpoint svesno postavio svoje.
                     if (!context.Response.Headers.ContainsKey(name))
