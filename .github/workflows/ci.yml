@@ -28,7 +28,7 @@ jobs:
     name: .NET build i testovi
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-dotnet@v4
         with:
@@ -45,7 +45,7 @@ jobs:
     name: Angular build i testovi
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v4
         with:
@@ -66,7 +66,7 @@ jobs:
     name: Ranjive zavisnosti
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-dotnet@v4
         with:
@@ -134,7 +134,7 @@ jobs:
       # tamo gde ga autor izmene ne vidi, a to je jedino mesto gde bi mu koristio.
       pull-requests: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # Cela istorija: smisao je da se uhvati i tajna koja je ušla ranije pa je
           # kasnije uklonjena iz radnog stabla — u istoriji ostaje.
