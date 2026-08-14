@@ -30,6 +30,11 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\StrengthPlanner.Domain\StrengthPlanner.Domain.csproj" />
     <ProjectReference Include="..\..\src\StrengthPlanner.Application\StrengthPlanner.Application.csproj" />
+
+    <!-- Zbog OwnershipFilterTests: pravilo „svaka tabela sa korisničkim podacima ima
+         filter vlasništva" može da se proveri samo nad stvarnim EF modelom. Gradnja
+         modela ne otvara vezu ka bazi, pa test ostaje običan unit test. -->
+    <ProjectReference Include="..\..\src\StrengthPlanner.Infrastructure\StrengthPlanner.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
