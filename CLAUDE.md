@@ -156,7 +156,26 @@ still open are in [`docs/security.md`](docs/security.md); deployment steps in
 | `fix/deployment-hardening` | Security headers, non-root containers, least-privilege DB role, dependencies | #14 |
 
 The review found **no IDOR and no SQL injection** — cross-user access was tested against the
-running API, not just read. TLS is the one item that cannot be fixed from inside the repo.
+running API, not just read.
+
+**Round 4 — second security pass, against a 20-item checklist.** Everything is folded into
+[`docs/security.md`](docs/security.md), which now answers each of the twenty items and says
+plainly which three are not "done" and why.
+
+| Branch | What it fixed | PR |
+|---|---|---|
+| `fix/row-level-security` | Row ownership enforced in the data layer, not only in each query | #16 |
+| `fix/request-validation` | Enum tampering, unbounded email/password, SQL built in the DB init script | #17 |
+| `fix/transport-and-abuse` | API security headers, working TLS, PBKDF2 iterations, bot protection | #18 |
+| `chore/supply-chain` | Dev-dependency advisories, CI, Dependabot, gitleaks, purged backup branches | #19 |
+
+TLS is no longer an item the repo cannot fix: `docker-compose.tls.yml` ships it, though it
+has not been executed here because Docker was unavailable.
+
+Three measurements in that round contradicted the expectation behind the change, and each is
+recorded next to the fix rather than quietly dropped: the HTTPS redirect that redirected
+nothing, the 500,000-character password that cost 130 ms rather than exhausting a core, and
+the query filter that had to be switched off to prove it was doing the work.
 
 **Do not commit a document that lists unfixed weaknesses of the live app: this repository is
 public.** Security notes describe what is closed and how it is verified; anything still open

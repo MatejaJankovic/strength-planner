@@ -1,0 +1,50 @@
+# Nadogradnje zavisnosti kao predlog, ne kao posao koji se pamti.
+#
+# Skeniranje govori šta je ranjivo; ovo donosi ispravku. Bez toga nalaz stoji dok se neko ne
+# seti da ga reši, a to je tačno ono stanje u kom je repozitorijum i bio.
+version: 2
+
+updates:
+  - package-ecosystem: nuget
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # Ceo Microsoft.* lanac se izdaje zajedno i mora se dizati zajedno; pojedinačni PR-ovi
+      # bi napravili kombinacije verzija koje niko nije testirao.
+      microsoft:
+        patterns:
+          - "Microsoft.*"
+          - "System.*"
+
+  - package-ecosystem: npm
+    directory: "/strength-planner-web"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      angular:
+        patterns:
+          - "@angular/*"
+          - "@angular-devkit/*"
+          - "zone.js"
+          - "typescript"
+
+  # Same GitHub akcije su takođe zavisnosti, i to one koje rade sa tokenom repozitorijuma.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+
+  # Osnovni imidži dobijaju bezbednosne ispravke; deployment-security.md je do sada tražio
+  # da se toga neko seti sam.
+  - package-ecosystem: docker
+    directory: "/src/StrengthPlanner.API"
+    schedule:
+      interval: monthly
+
+  - package-ecosystem: docker
+    directory: "/strength-planner-web"
+    schedule:
+      interval: monthly
