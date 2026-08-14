@@ -17,7 +17,18 @@
 #
 # Heredoc je pod navodnicima ('EOSQL'), pa ljuska ništa ne razrešava unutra; sve vrednosti
 # ulaze isključivo kroz -v.
-set -e
+set -eu
+
+# Prazna vrednost ne sme da prođe tiho. Sa praznom lozinkom PostgreSQL napravi nalog bez
+# lozinke (provereno: rolpassword ostaje NULL), pa se aplikacija posle ne može prijaviti —
+# a greška se vidi tek kao neuspela veza pri startu API-ja, daleko od mesta gde je nastala.
+for required in POSTGRES_USER POSTGRES_DB APP_DB_USER APP_DB_PASSWORD; do
+    eval "value=\${$required:-}"
+    if [ -z "$value" ]; then
+        echo "01-app-role.sh: $required nije postavljen. Vidi .env.example." >&2
+        exit 1
+    fi
+done
 
 psql -v ON_ERROR_STOP=1 \
     --username "$POSTGRES_USER" \

@@ -11,7 +11,12 @@ import { forkJoin } from 'rxjs';
 import { extractErrorMessage } from '../../core/api/http-error';
 import { ExerciseService } from '../../core/api/exercise.service';
 import { AuthService } from '../../core/auth/auth.service';
-import { ExperienceLevel, PASSWORD_MIN_LENGTH, UpdateProfileDto } from '../../core/models/auth.models';
+import {
+  ExperienceLevel,
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+  UpdateProfileDto,
+} from '../../core/models/auth.models';
 import { CreateExerciseRequest, ExerciseDto } from '../../core/models/training.models';
 import { Loading } from '../../shared/components/loading/loading';
 
@@ -68,7 +73,14 @@ export class ProfileHome {
   protected readonly passwordForm = this.fb.nonNullable.group(
     {
       currentPassword: ['', [Validators.required]],
-      newPassword: ['', [Validators.required, Validators.minLength(PASSWORD_MIN_LENGTH)]],
+      newPassword: [
+        '',
+        [
+          Validators.required,
+          Validators.minLength(PASSWORD_MIN_LENGTH),
+          Validators.maxLength(PASSWORD_MAX_LENGTH),
+        ],
+      ],
       confirmPassword: ['', [Validators.required]],
     },
     { validators: [matchingPasswords] },

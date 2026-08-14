@@ -90,16 +90,19 @@ superkorisničkih prava. Ranije se aplikacija povezivala nalogom iz `POSTGRES_US
 > **Pažnja pri nadogradnji postojeće instalacije.** Skripte iz
 > `/docker-entrypoint-initdb.d` postgres pokreće **samo pri prvom pravljenju baze**. Ako već
 > imaš `strengthplanner_pgdata` volumen, nalog neće biti napravljen i API neće moći da se
-> poveže. Napravi ga jednom ručno:
+> poveže.
+>
+> Pusti istu skriptu ručno, umesto da prepisuješ naredbe. Ona lozinku prosleđuje kao psql
+> promenljivu; prepisana `CREATE ROLE ... PASSWORD '...'` naredba se lomi na lozinci sa
+> apostrofom, a to je tačno ono zbog čega skripta i izgleda ovako:
 >
 > ```bash
-> docker compose exec db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
->   "CREATE ROLE strengthplanner_app LOGIN PASSWORD 'lozinka-iz-.env';"
-> docker compose exec db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
->   "GRANT USAGE, CREATE ON SCHEMA public TO strengthplanner_app;
->    GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO strengthplanner_app;
->    GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO strengthplanner_app;"
+> docker compose exec -e APP_DB_USER -e APP_DB_PASSWORD -e POSTGRES_USER -e POSTGRES_DB \
+>   db sh /docker-entrypoint-initdb.d/01-app-role.sh
 > ```
+>
+> Skripta je idempotentna — provereno, drugo pokretanje preskače pravljenje naloga i samo
+> ponovi grantove — pa je bezbedno pustiti je i kad nisi siguran da li nalog već postoji.
 >
 > **Uz to prepiši vlasništvo nad zatečenim tabelama.** Migracije se izvršavaju pri svakom
 > startu i menjaju šemu; tabele koje je napravio stari superkorisnički nalog ostaju u

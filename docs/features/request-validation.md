@@ -85,3 +85,34 @@ Da provere ne bi delovale kao da su bile potrebne svuda:
 
 Poslednji red je i odgovor na pitanje o otpremanju fajlova: aplikacija nema nijednu rutu
 koja prima fajl, pa ih okvir odbija pre nego što ijedan naš kod bude pozvan.
+
+## Dopune posle pregleda koda
+
+**Uputstvo za nadogradnju je i dalje govorilo da se lozinka ukuca u SQL.** Skripta je
+popravljena, ali je `deployment-security.md` operatera sa zatečenim volumenom slao da ručno
+otkuca `CREATE ROLE ... PASSWORD '...'` — dakle baš onu naredbu koja se lomi na apostrofu.
+A to je i put koji se najčešće koristi, jer se init skripte pokreću samo pri prvom pravljenju
+baze. Sada uputstvo pušta samu skriptu, koja je i idempotentna (provereno: drugo pokretanje
+preskače pravljenje naloga).
+
+**Frontend nije znao za gornju granicu lozinke.** Postavljena je na serveru i na DTO-u, a
+`Validators` u pregledaču su imali samo donju — pa bi korisnik koji nalepi dugu lozinku iz
+menadžera prošao svaku proveru pa dobio goli 400 bez označenog polja. To je tačno ono
+razmimoilaženje zbog kog `PasswordPolicy` i postoji. Provereno u pregledaču nad pravim
+formularom: 9 znakova → greška o minimumu, 10 i 128 → ispravno, 129 → greška o maksimumu.
+
+**Granicu email adrese sada drži test.** Vrednost 256 je odgovarala koloni, ali je nije
+ništa vezivalo za nju. Test je čita iz samog EF modela — isto što već rade provere za broj
+mišićnih grupa i za `Equipment`, koja i postoji zato što je ta ista vrsta razmimoilaženja
+jednom pretvorila 400 u 500.
+
+**Skripta proverava svoje ulazne promenljive.** Sa praznim `APP_DB_PASSWORD` je ranije
+izlazila sa nulom i pravila nalog bez lozinke (provereno: `rolpassword` ostaje NULL), pa se
+aplikacija posle nije mogla prijaviti — a greška se videla tek kao neuspela veza pri startu
+API-ja. Sada odbija da se izvrši i kaže šta nedostaje.
+
+**`[DefinedEnum]` sada pada glasno na pogrešnoj upotrebi.** Nad tipom koji nije enum i nad
+`[Flags]` enum-om (gde `Enum.IsDefined` odbija ispravne kombinacije zastavica) baca izuzetak
+umesto da tiho vrati „neispravno" — greška je u tome gde je atribut stavljen, a ne u
+korisnikovom unosu. Suvišno raspakivanje `Nullable<T>` je uklonjeno: CLR pakuje nullable
+vrednost kao `null` ili kao samu vrednost, pa ta grana nikada nije mogla da se izvrši.

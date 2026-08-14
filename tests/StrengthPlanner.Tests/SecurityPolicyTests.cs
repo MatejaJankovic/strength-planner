@@ -89,18 +89,39 @@ public class SecurityPolicyTests
             result => result.MemberNames.Contains(nameof(RegisterDto.ExperienceLevel)));
     }
 
-    [Fact]
-    public void Registration_AcceptsEveryExperienceLevelTheSystemDefines()
-    {
-        foreach (var level in Enum.GetValues<ExperienceLevel>())
-        {
-            var dto = ValidRegistration(new string('x', PasswordPolicy.MinimumLength));
-            dto.ExperienceLevel = level;
+    public static IEnumerable<object[]> DefinedExperienceLevels() =>
+        Enum.GetValues<ExperienceLevel>().Select(level => new object[] { level });
 
-            Assert.DoesNotContain(
-                Validate(dto),
-                result => result.MemberNames.Contains(nameof(RegisterDto.ExperienceLevel)));
-        }
+    [Theory]
+    [MemberData(nameof(DefinedExperienceLevels))]
+    public void Registration_AcceptsEveryExperienceLevelTheSystemDefines(ExperienceLevel level)
+    {
+        // Slučaj po nivou, a ne petlja u jednom testu: test postoji da uhvati nivo koji je
+        // greškom ispao, pa mora i da kaže koji.
+        var dto = ValidRegistration(new string('x', PasswordPolicy.MinimumLength));
+        dto.ExperienceLevel = level;
+
+        Assert.DoesNotContain(
+            Validate(dto),
+            result => result.MemberNames.Contains(nameof(RegisterDto.ExperienceLevel)));
+    }
+
+    /// <summary>
+    /// Prazna vrednost pripada [Required] atributu. Grana postoji zbog nullable enum-a,
+    /// kojih u zahtevima trenutno nema, pa je bez ovoga niko ne bi ni izvršio.
+    /// </summary>
+    [Fact]
+    public void DefinedEnum_LeavesEmptyValuesToRequired()
+    {
+        Assert.True(new DefinedEnumAttribute().IsValid(null));
+    }
+
+    [Fact]
+    public void DefinedEnum_RefusesToJudgeSomethingThatIsNotAnEnum()
+    {
+        // Ćutke vraćeno „nije ispravno" bi izgledalo kao loš unos korisnika, a greška je
+        // u tome gde je atribut stavljen.
+        Assert.Throws<InvalidOperationException>(() => new DefinedEnumAttribute().IsValid(42));
     }
 
     [Fact]

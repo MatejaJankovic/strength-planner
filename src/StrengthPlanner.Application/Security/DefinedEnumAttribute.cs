@@ -16,16 +16,32 @@ public sealed class DefinedEnumAttribute : ValidationAttribute
 {
     public override bool IsValid(object? value)
     {
-        // Prazna vrednost je briga [Required] atributa, ne ovog.
+        // Prazna vrednost je briga [Required] atributa, ne ovog. Ovde se završava i
+        // nullable enum bez vrednosti: CLR pakuje Nullable<T> kao null ili kao T, pa
+        // sve što stigne dalje već jeste sama enum vrednost.
         if (value is null)
         {
             return true;
         }
 
-        var type = value.GetType();
-        var enumType = Nullable.GetUnderlyingType(type) ?? type;
+        var enumType = value.GetType();
+        if (!enumType.IsEnum)
+        {
+            throw new InvalidOperationException(
+                $"[DefinedEnum] je stavljen na {enumType.Name}, a radi samo nad enum tipom.");
+        }
 
-        return enumType.IsEnum && Enum.IsDefined(enumType, value);
+        // Enum.IsDefined ne prepoznaje kombinacije bit-zastavica kao ispravne, pa bi ovakav
+        // enum tiho odbijao ispravan unos. Trenutno ga u projektu nema; ako se pojavi, neka
+        // to bude greška u programiranju umesto 400 koji niko ne ume da objasni.
+        if (enumType.IsDefined(typeof(FlagsAttribute), inherit: false))
+        {
+            throw new InvalidOperationException(
+                $"[DefinedEnum] ne ume da proveri [Flags] enum {enumType.Name}: Enum.IsDefined "
+                + "odbija ispravne kombinacije zastavica.");
+        }
+
+        return Enum.IsDefined(enumType, value);
     }
 
     public override string FormatErrorMessage(string name)

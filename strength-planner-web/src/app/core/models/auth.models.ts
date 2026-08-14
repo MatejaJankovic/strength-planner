@@ -1,6 +1,17 @@
 /** Mora da prati PasswordPolicy.MinimumLength na serveru. */
 export const PASSWORD_MIN_LENGTH = 10;
 
+/**
+ * Mora da prati PasswordPolicy.MaximumLength na serveru.
+ *
+ * Bez ove granice ovde korisnik koji nalepi dugu lozinku iz menadžera lozinki prođe svaku
+ * proveru u pregledaču pa dobije goli 400 sa servera, bez označenog polja.
+ */
+export const PASSWORD_MAX_LENGTH = 128;
+
+/** Mora da prati EmailPolicy.MaximumLength na serveru. */
+export const EMAIL_MAX_LENGTH = 256;
+
 export interface RegisterDto {
   email: string;
   password: string;
