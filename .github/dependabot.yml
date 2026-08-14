@@ -48,3 +48,12 @@ updates:
     directory: "/strength-planner-web"
     schedule:
       interval: monthly
+
+  # Imidži iz compose fajlova — postgres i caddy. Ekosistem `docker` čita samo Dockerfile-ove,
+  # pa bi bez ovoga baza i komponenta koja prekida TLS, dakle dva najosetljivija imidža u
+  # celoj isporuci, ostali bez ijednog predloga za nadogradnju — dok dokumentacija tvrdi da
+  # su pokriveni.
+  - package-ecosystem: docker-compose
+    directory: "/"
+    schedule:
+      interval: monthly

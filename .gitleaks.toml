@@ -1,0 +1,39 @@
+# Podešavanje za gitleaks u CI-ju.
+#
+# Postoji zbog jedne konkretne opasnosti: skener koji pri prvom pokretanju pocrveni na
+# vrednostima koje su namerno lažne nauči ljude da ga preskaču. Tada prestaje da bude
+# skener. Zato su placeholder vrednosti ovde izuzete poimence, a ne pravilom koje bi usput
+# propustilo i pravu tajnu.
+[extend]
+useDefault = true
+
+[[rules]]
+# Ostavljeno prazno namerno: sopstvenih pravila nema, koriste se podrazumevana.
+id = "placeholder-noop"
+description = "Nikad se ne poklapa; postoji da [[rules]] blok ne bude prazan."
+regex = '''$^'''
+
+[allowlist]
+description = "Vrednosti koje su namerno lažne i tu su da bi se videlo šta treba postaviti."
+
+paths = [
+    # Sadrži isključivo primere; prave vrednosti idu u .env, koji je u .gitignore.
+    '''^\.env\.example$''',
+    # Nosi uputstvo kako se postavljaju user-secrets, sa vrednostima tipa "<min-32-bajta>".
+    '''^src/StrengthPlanner\.API/appsettings\.Development\.json$''',
+    # Opisuju bezbednosne provere i navode primere vrednosti koje su korišćene pri merenju.
+    '''^docs/''',
+]
+
+regexes = [
+    # Razvojni JWT ključ koji je jednom prošao kroz istoriju. Vrednost po imenu kaže da je
+    # razvojna, nikada nije korišćena van lokalne mašine, i uklonjena je prepisivanjem
+    # istorije — ali se pominje u dokumentaciji kao deo objašnjenja šta je urađeno.
+    '''dev-only-super-secret-key-change-me''',
+    # Placeholderi iz .env.example, ako se citiraju drugde.
+    '''replace-with-at-least-32-characters-for-local-demo''',
+    '''change-me-(local|app)-password''',
+    # Lozinka korišćena u testovima skripte za bazu, navedena u dokumentaciji kao dokaz da
+    # se apostrof više ne prosleđuje u SQL.
+    '''ab'c;DROP ROLE postgres;--''',
+]

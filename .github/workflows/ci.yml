@@ -14,6 +14,12 @@ on:
     # Ponedeljkom ujutru: hvata ranjivosti objavljene u međuvremenu, bez ijednog commita.
     - cron: "0 6 * * 1"
 
+# Nova izmena poništava prethodno pokretanje na istoj grani. Bez ovoga tri brza push-a
+# vrte tri pune matrice, od kojih su prve dve već nebitne kad se završe.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -76,14 +82,34 @@ jobs:
 
       # `dotnet list package --vulnerable` uvek izlazi sa nulom, pa nalaz mora da se
       # pročita iz ispisa — bez ovoga bi korak bio zelen i kada nešto nađe.
+      #
+      # Čita se JSON, a ne tekst. Traženje engleske rečenice u ispisu radi dok se ta
+      # rečenica ne promeni u nekoj verziji SDK-a ili dok runner ne bude na drugom jeziku —
+      # a onda korak tiho postane zelen nad projektom punim ranjivih paketa. Greška u
+      # bezopasnom smeru je ovde najopasnija.
       - name: dotnet list package --vulnerable
         run: |
-          dotnet list package --vulnerable --include-transitive > vulnerable.txt 2>&1
-          cat vulnerable.txt
-          if grep -qiE "has the following vulnerable packages" vulnerable.txt; then
-            echo "::error::Ranjivi NuGet paketi — vidi ispis iznad."
-            exit 1
-          fi
+          dotnet list package --vulnerable --include-transitive --format json > vulnerable.json
+          python3 - <<'PY'
+          import json, sys
+
+          with open("vulnerable.json", encoding="utf-8-sig") as handle:
+              report = json.load(handle)
+
+          hits = [
+              (project.get("path", "?"), package.get("id"), package.get("resolvedVersion"), vuln.get("severity"))
+              for project in report.get("projects", [])
+              for framework in project.get("frameworks") or []
+              for package in (framework.get("topLevelPackages") or []) + (framework.get("transitivePackages") or [])
+              for vuln in package.get("vulnerabilities") or []
+          ]
+
+          for path, package_id, version, severity in hits:
+              print(f"::error file={path}::{package_id} {version} — {severity}")
+
+          print(f"Ranjivih paketa: {len(hits)}")
+          sys.exit(1 if hits else 0)
+          PY
 
       - run: npm ci
         working-directory: strength-planner-web
@@ -102,6 +128,11 @@ jobs:
   secrets:
     name: Tajne u istoriji
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # gitleaks nalaz upisuje na sam pull request. Bez ovoga bi ostao samo u logu — dakle
+      # tamo gde ga autor izmene ne vidi, a to je jedino mesto gde bi mu koristio.
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -109,6 +140,10 @@ jobs:
           # kasnije uklonjena iz radnog stabla — u istoriji ostaje.
           fetch-depth: 0
 
-      - uses: gitleaks/gitleaks-action@v2
+      # Zakačeno za commit, ne za `v2` oznaku. Oznakom upravlja tuđi repozitorijum i može
+      # da se pomeri; ovaj korak radi sa tokenom ovog repozitorijuma, pa bi pomerena
+      # oznaka značila tuđi kod sa našim pravima. Dependabot je podešen da ovo diže.
+      - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: .gitleaks.toml

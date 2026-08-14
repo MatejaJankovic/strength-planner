@@ -14,6 +14,13 @@ diranja same verzije Angulara.
 Provereno da to ništa ne lomi: produkcijski build prolazi, svih 7 frontend testova prolazi,
 `npm audit` je nula i sa razvojnim zavisnostima.
 
+> **Kada ovo ukloniti.** `overrides` je tup alat: nameće verziju svakom paketu koji zavisi od
+> nje, bez obzira na opseg koji je taj paket tražio. Danas je to tačno, ali važi zauvek — kad
+> Angular objavi verziju čiji alat traži drugi `esbuild`, npm će i dalje forsirati ovaj, a
+> greška će izaći daleko od ovog fajla i neće ličiti na svoj uzrok. `package.json` ne trpi
+> komentare, pa je uslov zapisan ovde: **obrisati oba unosa čim `npm audit` bude nula i bez
+> njih** (najlakše posle Dependabot PR-a koji diže `@angular/build`).
+
 ## Tajne u istoriji
 
 Kroz istoriju je jednom prošao JWT ključ — `dev-only-super-secret-key-change-me-…`, vrednost
@@ -57,3 +64,25 @@ tražio da se vlasnik sam seti da povuče nove osnovne imidže.
 
 Microsoft/System paketi i Angular paketi su grupisani, jer se izdaju zajedno: pojedinačni
 PR-ovi bi pravili kombinacije verzija koje niko nije testirao.
+
+Compose fajlovi imaju svoj unos (`docker-compose`), odvojen od `docker`. To nije uredno
+razvrstavanje nego nužnost: ekosistem `docker` čita samo Dockerfile-ove, pa bi `postgres:16`
+i `caddy:2-alpine` — baza i komponenta koja prekida TLS — ostali bez ijednog predloga za
+nadogradnju, dok bi dokumentacija tvrdila da su pokriveni. To je gore od nepokrivenosti, jer
+vlasnik prestane da gleda baš ono što niko ne gleda.
+
+## Sitnice koje su se pokazale bitnim
+
+Skener koji pri prvom pokretanju pocrveni na vrednostima koje su namerno lažne nauči ljude da
+ga preskaču — i tada prestaje da bude skener. Zato `.gitleaks.toml` poimence izuzima
+`.env.example`, uputstvo za user-secrets i dokumentaciju, u kojoj se placeholder vrednosti
+navode kao deo objašnjenja.
+
+Provera ranjivih NuGet paketa čita **JSON**, a ne traži englesku rečenicu u ispisu. Prva
+verzija je radila `grep` po tekstu; to radi dok se rečenica ne promeni u nekoj verziji SDK-a
+ili dok runner ne bude na drugom jeziku, a onda korak tiho postane zelen nad projektom punim
+ranjivih paketa. Greška u bezopasnom smeru je kod ovakve provere najopasnija.
+
+gitleaks je zakačen za commit, a ne za oznaku `v2`. Oznakom upravlja tuđi repozitorijum i
+može da se pomeri, a taj korak radi sa tokenom ovog repozitorijuma. U izmeni koja se bavi
+lancem snabdevanja, jedina uvedena tuđa zavisnost ne sme da bude ona koja visi u vazduhu.
