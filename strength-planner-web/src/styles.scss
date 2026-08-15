@@ -98,6 +98,15 @@ a {
   margin: 0;
 }
 
+// Naslov koji nosi korisnikov naziv plana, a ne kratku etiketu ekrana. Na displej
+// veličini je naziv iz dugoročnog plana ("Zima 2026 - blok 1 (Push/Pull/Legs x2)")
+// zauzimao pola ekrana telefona pre nego što se vidi prvi trening.
+.feature-header--dynamic h1 {
+  font-size: clamp(1.5rem, 7vw, 2.25rem);
+  line-height: 1.08;
+  overflow-wrap: break-word;
+}
+
 .feature-header p {
   color: var(--color-muted);
   margin: 0;

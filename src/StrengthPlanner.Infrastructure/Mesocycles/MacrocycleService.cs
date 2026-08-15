@@ -445,7 +445,7 @@ public class MacrocycleService : IMacrocycleService
             return planName;
         }
 
-        var name = $"{planName} — blok {order} ({templateName})";
+        var name = $"{planName} - blok {order} ({templateName})";
 
         return name.Length <= 128 ? name : name[..128];
     }

@@ -13,7 +13,7 @@
     </select>
   </div>
 
-  <div class="control">
+  <div class="control control--weeks">
     <span class="control__label">Nedelja</span>
     <div class="weeks" role="group" aria-label="Izbor nedelje">
       @for (w of weeks(); track w) {
@@ -75,7 +75,7 @@
     </div>
     <p class="legend__note">
       Boja pokazuje da li si unutar pojasa: ispod MEV-a nema stimulusa, iznad MRV-a nema
-      oporavka. Unutar pojasa gađaj marker cilja (MAV) — volumen na kome telo najbolje
+      oporavka. Unutar pojasa gađaj marker cilja (MAV) - volumen na kome telo najbolje
       napreduje bez ulaska u prekomeran zamor.
     </p>
     <p class="legend__note">
@@ -87,7 +87,7 @@
       <p class="legend__note">
         Granice za {{ personalCount() }}
         {{ personalCount() === 1 ? 'mišićnu grupu su prilagođene' : 'mišićnih grupa su prilagođene' }}
-        tvom odgovoru na volumen — pomeraju se najviše za jednu seriju po završenoj nedelji.
+        tvom odgovoru na volumen - pomeraju se najviše za jednu seriju po završenoj nedelji.
       </p>
       @if (confirmingReset()) {
         <p class="legend__note">
@@ -119,7 +119,7 @@
       }
     } @else {
       <p class="legend__note">
-        Granice su još podrazumevane — prilagođavaju se same kad odradiš celu nedelju.
+        Granice su još podrazumevane - prilagođavaju se same kad odradiš celu nedelju.
       </p>
     }
 

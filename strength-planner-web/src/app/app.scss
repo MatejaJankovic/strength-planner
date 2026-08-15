@@ -68,7 +68,9 @@
   box-shadow: 0 -14px 32px rgb(20 21 26 / 8%);
   display: grid;
   gap: 0.25rem;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  // Svaki tab dobija svoju kolonu: sa četiri stavke u tri kolone "Profil" je
+  // padao u drugi red i gurao sadržaj ispod trake.
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   left: 0;
   min-height: calc(68px + env(safe-area-inset-bottom));
   padding: 0.45rem max(0.75rem, env(safe-area-inset-left)) calc(0.45rem + env(safe-area-inset-bottom));
@@ -82,13 +84,24 @@
   border-radius: 0.55rem;
   color: var(--color-muted);
   display: grid;
-  font-size: 0.76rem;
+  // "Analitika" je najduži naziv: na 320px u četvrtini trake staje samo ako se
+  // slova skupe zajedno sa ekranom.
+  font-size: clamp(0.66rem, 3vw, 0.76rem);
   font-weight: 800;
   gap: 0.1rem;
   justify-items: center;
   min-height: 54px;
-  padding: 0.3rem 0.45rem;
+  min-width: 0;
+  padding: 0.3rem 0.2rem;
   text-decoration: none;
+}
+
+.bottom-nav__item span {
+  // Naziv taba se ne prelama u dva reda; radije se skrati.
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .bottom-nav__item mat-icon {

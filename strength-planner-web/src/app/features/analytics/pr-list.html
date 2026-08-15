@@ -1,5 +1,5 @@
 @if (records().length === 0) {
-  <p class="pr-empty">Još nema rekorda — završi trening da bi se pojavili.</p>
+  <p class="pr-empty">Još nema rekorda - završi trening da bi se pojavili.</p>
 } @else {
   <ul class="prs">
     @for (pr of records(); track pr.exerciseId) {
@@ -12,13 +12,13 @@
           <div class="pr__metric">
             <span class="pr__label">Najbolji e1RM</span>
             <span class="pr__value numeric">
-              {{ pr.bestE1Rm != null ? (pr.bestE1Rm | number: '1.0-1') + ' kg' : '—' }}
+              {{ pr.bestE1Rm != null ? (pr.bestE1Rm | number: '1.0-1') + ' kg' : '-' }}
             </span>
           </div>
           <div class="pr__metric">
             <span class="pr__label">Najveća težina</span>
             <span class="pr__value numeric">
-              {{ pr.bestWeight != null ? (pr.bestWeight | number: '1.0-1') + ' kg' : '—' }}
+              {{ pr.bestWeight != null ? (pr.bestWeight | number: '1.0-1') + ' kg' : '-' }}
             </span>
           </div>
         </div>

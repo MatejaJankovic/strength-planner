@@ -22,7 +22,7 @@
 } @else {
   <section class="card">
     <h2 class="card__title">Osnovni podaci</h2>
-    <p class="card__hint">Telesna masa i iskustvo se menjaju — drži ih ažurnim.</p>
+    <p class="card__hint">Telesna masa i iskustvo se menjaju - drži ih ažurnim.</p>
 
     @if (profileError(); as message) {
       <p class="alert alert--error" role="alert">
@@ -117,7 +117,7 @@
   <section class="card">
     <h2 class="card__title">Lozinka</h2>
     <p class="card__hint">
-      Promena lozinke odjavljuje sve ostale uređaje — ranije izdati tokeni prestaju da važe.
+      Promena lozinke odjavljuje sve ostale uređaje - ranije izdati tokeni prestaju da važe.
     </p>
 
     <form [formGroup]="passwordForm" (ngSubmit)="changePassword()" novalidate>
@@ -166,7 +166,7 @@
       </div>
 
       <p class="field__hint">
-        Nema oporavka lozinke — ako je zaboraviš, nalog i podaci u njemu se ne mogu vratiti.
+        Nema oporavka lozinke - ako je zaboraviš, nalog i podaci u njemu se ne mogu vratiti.
       </p>
 
       @if (passwordError(); as message) {
@@ -271,7 +271,7 @@
   <section class="card">
     <h2 class="card__title">Moje vežbe</h2>
     <p class="card__hint">
-      Dodaj vežbu koje nema u katalogu — ulazi u analitiku volumena preko izabranih mišićnih grupa.
+      Dodaj vežbu koje nema u katalogu - ulazi u analitiku volumena preko izabranih mišićnih grupa.
     </p>
 
     @if (customExercises().length > 0) {

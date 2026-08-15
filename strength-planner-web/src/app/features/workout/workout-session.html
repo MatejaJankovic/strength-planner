@@ -42,11 +42,11 @@
             <p>
               Nedelja {{ deload.triggeredByWeek }} pokazala je nakupljen umor
               (ocena {{ deload.fatigueScore | number: '1.0-2' }} od 1). Serije su
-              prepolovljene, a opterećenje spušteno na 90% — pa da se vratiš jači.
+              prepolovljene, a opterećenje spušteno na 90% - pa da se vratiš jači.
             </p>
             @if (deload.plannedDeloadReleasedWeek; as released) {
               <p>
-                Planirani deload u nedelji {{ released }} je otpao — mezociklus nosi
+                Planirani deload u nedelji {{ released }} je otpao - mezociklus nosi
                 jedno rasterećenje, a ono je sada ranije.
               </p>
             }
@@ -60,7 +60,7 @@
             <strong>Predlog serija je prilagođen za ostatak nedelje.</strong>
             <p>
               Ovaj trening je promenio nedeljni volumen, pa treninzi koji tek predstoje nose
-              nov predlog — da bi nedelja završila u ciljnoj zoni.
+              nov predlog - da bi nedelja završila u ciljnoj zoni.
             </p>
             <ul class="adjustments">
               @for (change of result.volumeAdjustments; track change.sessionId + change.exerciseName) {
@@ -180,7 +180,7 @@
         />
 
         @if (plan.targetWeightKg == null) {
-          <p class="card__hint">Nema 1RM za ovu vežbu — unesi težinu po osećaju.</p>
+          <p class="card__hint">Nema 1RM za ovu vežbu - unesi težinu po osećaju.</p>
         }
 
         @if (isInProgress()) {
@@ -259,11 +259,11 @@
                 <p class="entry__hint" role="status" aria-live="polite">
                   @if (draft.reps < plan.repRangeMin) {
                     Promašeno {{ plan.repRangeMin - draft.reps }} ponavljanja do donje granice
-                    opsega — sledeći put predlažemo osetno manje opterećenje.
+                    opsega - sledeći put predlažemo osetno manje opterećenje.
                   } @else if (draft.reps >= plan.repRangeMax) {
-                    Otkaz na vrhu opsega — opterećenje se zadržava, a ne diže.
+                    Otkaz na vrhu opsega - opterećenje se zadržava, a ne diže.
                   } @else {
-                    Otkaz unutar opsega — RIR je 0.
+                    Otkaz unutar opsega - RIR je 0.
                   }
                 </p>
               }
@@ -324,7 +324,7 @@
             }
           </ul>
         } @else if (isInProgress()) {
-          <p class="card__hint">Još nema serija — dodaj prvu iznad.</p>
+          <p class="card__hint">Još nema serija - dodaj prvu iznad.</p>
         }
       </section>
     }
