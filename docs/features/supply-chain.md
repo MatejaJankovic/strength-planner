@@ -19,7 +19,7 @@ Provereno da to ništa ne lomi: produkcijski build prolazi, svih 7 frontend test
 > Angular objavi verziju čiji alat traži drugi `esbuild`, npm će i dalje forsirati ovaj, a
 > greška će izaći daleko od ovog fajla i neće ličiti na svoj uzrok. `package.json` ne trpi
 > komentare, pa je uslov zapisan ovde: **obrisati oba unosa čim `npm audit` bude nula i bez
-> njih** (najlakše posle Dependabot PR-a koji diže `@angular/build`).
+> njih** (najlakše posle ručne nadogradnje `@angular/build`).
 
 ## Tajne u istoriji
 
@@ -57,19 +57,27 @@ ovom repozitorijumu.
 Raspored postoji zbog te druge vrste nalaza: bez njega bi ranjivost objavljena u nedelji kad
 niko ništa ne menja čekala sledeći commit.
 
-**Dependabot** (`.github/dependabot.yml`) donosi same ispravke: NuGet i npm nedeljno, GitHub
-akcije i Docker osnovne imidže mesečno. Bez toga nalaz stoji dok se neko ne seti da ga reši,
-a to je tačno stanje u kom je repozitorijum i bio — `deployment-security.md` je do sada
-tražio da se vlasnik sam seti da povuče nove osnovne imidže.
+**Dependabot je bio uključen pa isključen.** Otvarao je po jedan pull request za svaku
+nadogradnju i za jedan dan ih je bilo sedamnaest, uz email za svaki. Za projekat koji se još
+ne isporučuje nikome to je bila samo buka koja zaklanja pravu poruku — a poenta CI-ja je da
+crveno nešto znači.
 
-Microsoft/System paketi i Angular paketi su grupisani, jer se izdaju zajedno: pojedinačni
-PR-ovi bi pravili kombinacije verzija koje niko nije testirao.
+Provere ostaju; nedostaje samo automatsko donošenje ispravke. Kada nalaz iskoči, nadogradnja
+se radi ručno:
 
-Compose fajlovi imaju svoj unos (`docker-compose`), odvojen od `docker`. To nije uredno
-razvrstavanje nego nužnost: ekosistem `docker` čita samo Dockerfile-ove, pa bi `postgres:16`
-i `caddy:2-alpine` — baza i komponenta koja prekida TLS — ostali bez ijednog predloga za
-nadogradnju, dok bi dokumentacija tvrdila da su pokriveni. To je gore od nepokrivenosti, jer
-vlasnik prestane da gleda baš ono što niko ne gleda.
+```bash
+npm --prefix strength-planner-web outdated
+dotnet list package --outdated
+```
+
+Config je obrisan, a ne zakomentarisan — ako ikada zatreba, vraća ga
+`git show <ovaj-commit>^:.github/dependabot.yml`. Pre uključivanja spustiti
+`open-pull-requests-limit` i interval na mesečni, jer je nedeljni ritam i napravio gomilu.
+
+Dva PR-a koja je stigao da otvori vredelo je videti pre nego što su zatvoreni: nadogradnja
+Swashbuckle-a sa 6.6.2 na 10.2.3 i grupa Microsoft paketa **obarale su build**. To je CI
+odradio svoj posao — velike verzije nisu bezbolne, i dobro je da se to vidi na PR-u a ne
+posle merge-a.
 
 ## Sitnice koje su se pokazale bitnim
 

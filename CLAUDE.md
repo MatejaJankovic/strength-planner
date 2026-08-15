@@ -167,7 +167,7 @@ plainly which three are not "done" and why.
 | `fix/row-level-security` | Row ownership enforced in the data layer, not only in each query | #16 |
 | `fix/request-validation` | Enum tampering, unbounded email/password, SQL built in the DB init script | #17 |
 | `fix/transport-and-abuse` | API security headers, working TLS, PBKDF2 iterations, bot protection | #18 |
-| `chore/supply-chain` | Dev-dependency advisories, CI, Dependabot, gitleaks, purged backup branches | #19 |
+| `chore/supply-chain` | Dev-dependency advisories, CI, gitleaks, purged backup branches | #19 |
 
 TLS is no longer an item the repo cannot fix: `docker-compose.tls.yml` ships it, though it
 has not been executed here because Docker was unavailable.

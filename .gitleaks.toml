@@ -4,18 +4,15 @@
 # vrednostima koje su namerno lažne nauči ljude da ga preskaču. Tada prestaje da bude
 # skener. Zato su placeholder vrednosti ovde izuzete poimence, a ne pravilom koje bi usput
 # propustilo i pravu tajnu.
+#
+# Sopstvenih [[rules]] nema namerno — koriste se podrazumevana pravila iz gitleaks-a.
+# Ranije je ovde stajalo prazno pravilo `placeholder-noop` sa regexom `$^`, stavljeno uz
+# pretpostavku da blok pravila ne sme da bude prazan i da se takav izraz nikada ne poklapa.
+# Oboje je bilo netačno: u Go regex mašini `$^` se poklapa sa praznim redom, pa je pravilo
+# prijavljivalo „tajnu" praktično u svakom commit-u. Upravo lažna uzbuna od koje ovaj fajl
+# treba da čuva.
 [extend]
 useDefault = true
-
-[[rules]]
-# Ostavljeno prazno namerno: sopstvenih pravila nema, koriste se podrazumevana.
-id = "placeholder-noop"
-description = "Nikad se ne poklapa; postoji da [[rules]] blok ne bude prazan."
-# Bilo je '''$^''' — zamisao je bila „kraj teksta pa odmah početak", dakle nemoguće.
-# Na praznom fragmentu je ipak poklapalo, jer je nulta pozicija istovremeno i kraj i
-# početak, pa je pravilo prijavljivalo nalaz nasred obične izmene koda (entropija 0.000000).
-# Prazna klasa znakova nema tu rupu: „nije razmak i nije ne-razmak" ne može biti ništa.
-regex = '''[^\s\S]'''
 
 [allowlist]
 description = "Vrednosti koje su namerno lažne i tu su da bi se videlo šta treba postaviti."

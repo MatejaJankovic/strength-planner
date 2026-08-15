@@ -444,9 +444,11 @@ repozitorijumu. Zato:
   istorijom. Korak sa NuGet-om čita ispis, jer ta naredba uvek izlazi sa nulom — bez toga bi
   bio zelen i kada nešto nađe. `npm audit --omit=dev` obara build; nalaz u razvojnim
   zavisnostima samo prijavljuje, da ranjivost u alatu ne zaustavi rad na aplikaciji.
-- **Dependabot** (`.github/dependabot.yml`) donosi same nadogradnje — NuGet i npm nedeljno,
-  GitHub akcije i Docker osnovne imidže mesečno. Bez toga nalaz stoji dok se neko ne seti da
-  ga reši, a to je tačno stanje u kom je repozitorijum i bio.
+**Dependabot je probno bio uključen pa isključen.** Za jedan dan je otvorio sedamnaest
+pull request-ova, uz email za svaki; za projekat koji se još ne isporučuje to je bila buka
+koja zaklanja pravu poruku. Nadogradnja se za sada radi ručno kada skeniranje nešto prijavi
+(`npm outdated`, `dotnet list package --outdated`). To znači da **nalaz stoji dok ga vlasnik
+ne reši** — svesno, dok aplikacija nije javno dostupna.
 
 ---
 
