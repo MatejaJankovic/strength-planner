@@ -177,6 +177,39 @@ Day C  Hammer Curl      5 → 3  (Biceps)
 
 ## Šta je provera pokvarila
 
+**Balansiranje je poništavalo automatski deload koji je nastao u istom zahtevu.** Ovo je
+bila najozbiljnija greška u grani i našla ju je tek revizija koda.
+
+`DeloadService` pretvaranje nedelje u deload ostavlja u change trackeru — `nextWeek.IsDeload
+= true` nije upisano dok ne dođe `SaveChanges`. Raspodela je pozivana **pre** tog upisa, a
+ona bazu pita koje su nedelje deload. Baza je i dalje govorila `false`, pa je sveže
+rasterećena nedelja uzimana kao obična i njene prepolovljene serije su vraćane ka MAV-u.
+
+Izmereno na pokrenutoj aplikaciji, nedelja 1 odrađena sa svim serijama do otkaza (ocena
+umora 0.70), nedelja 2 pretvorena u deload:
+
+```
+Back Squat             propis=2  predlog=4
+Bench Press            propis=2  predlog=4
+Leg Curl               propis=2  predlog=4
+Straight-Arm Pulldown  propis=2  predlog=4
+Cable Fly              propis=2  predlog=4
+Lateral Raise          propis=2  predlog=3
+```
+
+Propis je bio tačan, oznaka deload-a je bila tačna — samo je predlog, jedino što korisnik
+zaista vidi, bio vraćen na pun trenažni volumen. Korisnik bi dobio „deload" nedelju sa
+istim brojem serija kao svaka druga, i to baš kada je sistem procenio da mu treba
+rasterećenje.
+
+Ispravka je premeštanje raspodele iza `SaveChanges`. Isti prozor je krio i suprotan slučaj:
+nedelja koju `RestorePlannedDeloadAsync` vraća u trenažnu (`IsDeload = false`, takođe
+neupisano) bila je preskočena u tom prolazu. Redosled je sada objašnjen komentarom na licu
+mesta, jer se iz koda ne vidi da je nosiv.
+
+Posle ispravke, ista nedelja: `propis=2, predlog=2` na svih šest vežbi, dok nedelja 3
+ostaje izbalansirana (3-5-3-4-5-2).
+
 **Prvo objašnjenje izmene bilo je pogrešno postavljeno.** Mišić koji stoji uz izmenu tražen
 je u stanju **pre** raspodele: „koji mišić je najdalje od cilja". Za Hammer Curl je izlazio
 prazan.

@@ -293,17 +293,28 @@ public class SessionService : ISessionService
             RefreshSummariesAfterDeload(summaries, nextPlans);
         }
 
-        // Predlog serija se preračunava POSLE deload-a: rasterećenje menja i propis, a
-        // balansiranje volumena polazi upravo od njega. Ovim treningom je deo nedeljnog
-        // volumena upisan (ili propušten), pa treninzi koji u toj nedelji tek predstoje
-        // dobijaju predlog koji nedelju vraća u ciljnu zonu.
+        // Sve što se tiče samog treninga mora da bude upisano pre prelaska na sledeći
+        // blok — generator ispod poziva svoj SaveChanges, pa se na njega ne oslanjamo.
+        await _db.SaveChangesAsync(cancellationToken);
+
+        // Predlog serija se preračunava POSLE deload-a, i to tek pošto je deload UPISAN.
+        // Oba dela ovog redosleda nose težinu:
+        //
+        // Posle deload-a, jer rasterećenje menja propis od koga balansiranje polazi.
+        // Posle upisa, jer balansiranje pita bazu koje su nedelje deload — a DeloadService
+        // pretvaranje nedelje ostavlja u change trackeru. Bez SaveChanges iznad, upit i
+        // dalje vidi staro stanje, sveže rasterećenu nedelju uzima kao običnu i vraća joj
+        // prepolovljene serije na četiri: korisnik dobije „deload" sa volumenom pune
+        // trenažne nedelje. Izmereno pre ispravke — cela nedelja se vratila sa dve na
+        // četiri serije po vežbi.
+        //
+        // Ovim treningom je deo nedeljnog volumena upisan (ili propušten), pa treninzi koji
+        // u toj nedelji tek predstoje dobijaju predlog koji nedelju vraća u ciljnu zonu.
         var volumeAdjustments = await _setPlanner.RebalanceAsync(
             userId,
             session.TrainingWeek.MesocycleId,
             cancellationToken);
 
-        // Sve što se tiče samog treninga mora da bude upisano pre prelaska na sledeći
-        // blok — generator ispod poziva svoj SaveChanges, pa se na njega ne oslanjamo.
         await _db.SaveChangesAsync(cancellationToken);
 
         // Kada je ovim treningom ceo blok zaokružen, sledeći iz plana se generiše odmah,
