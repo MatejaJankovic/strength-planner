@@ -59,7 +59,7 @@
                 </p>
               } @else {
                 <p class="tblock__count">
-                  Generiše se kad prethodni blok bude gotov — da krene od tvojih tadašnjih 1RM.
+                  Generiše se kad prethodni blok bude gotov - da krene od tvojih tadašnjih 1RM.
                 </p>
               }
             </div>
@@ -76,7 +76,7 @@
     <app-empty-state
       icon="calendar_month"
       title="Još nemaš dugoročni plan"
-      message="Poveži nekoliko blokova u plan koji smenjuje hipertrofiju i snagu — sistem sam otvara sledeći kad prethodni završiš."
+      message="Poveži nekoliko blokova u plan koji smenjuje hipertrofiju i snagu - sistem sam otvara sledeći kad prethodni završiš."
       action="Napravi plan"
       (actionClick)="openWizard()"
     />
@@ -131,15 +131,25 @@
       <ol class="blocks">
         @for (block of blocks(); track $index) {
           <li class="brow">
-            <span class="brow__index numeric">{{ $index + 1 }}</span>
+            <div class="brow__head">
+              <span class="brow__index numeric">Blok {{ $index + 1 }}</span>
+              <button
+                class="iconbtn"
+                type="button"
+                [disabled]="!canRemoveBlock()"
+                [attr.aria-label]="'Ukloni blok ' + ($index + 1)"
+                (click)="removeBlock($index)"
+              >
+                <mat-icon aria-hidden="true">delete_outline</mat-icon>
+              </button>
+            </div>
 
             <div class="field">
-              <label class="sr-only" [attr.for]="'block-goal-' + $index">
-                Cilj bloka {{ $index + 1 }}
-              </label>
+              <label class="field__label" [attr.for]="'block-goal-' + $index">Cilj</label>
               <select
                 class="control control--compact"
                 [attr.id]="'block-goal-' + $index"
+                [attr.aria-label]="'Cilj bloka ' + ($index + 1)"
                 (change)="setBlockGoal($index, $any($event.target).value)"
               >
                 @for (option of goalOptions; track option.value) {
@@ -151,12 +161,11 @@
             </div>
 
             <div class="field">
-              <label class="sr-only" [attr.for]="'block-model-' + $index">
-                Raspored bloka {{ $index + 1 }}
-              </label>
+              <label class="field__label" [attr.for]="'block-model-' + $index">Raspored</label>
               <select
                 class="control control--compact"
                 [attr.id]="'block-model-' + $index"
+                [attr.aria-label]="'Raspored bloka ' + ($index + 1)"
                 (change)="setBlockModel($index, $any($event.target).value)"
               >
                 @for (option of modelOptions; track option.value) {
@@ -171,12 +180,13 @@
             </div>
 
             <div class="field">
-              <label class="sr-only" [attr.for]="'block-template-' + $index">
-                Šablon bloka {{ $index + 1 }}
+              <label class="field__label" [attr.for]="'block-template-' + $index">
+                Šablon treninga
               </label>
               <select
                 class="control control--compact"
                 [attr.id]="'block-template-' + $index"
+                [attr.aria-label]="'Šablon treninga bloka ' + ($index + 1)"
                 (change)="setBlockTemplate($index, $any($event.target).value)"
               >
                 @for (template of templates(); track template.key) {
@@ -186,16 +196,6 @@
                 }
               </select>
             </div>
-
-            <button
-              class="iconbtn"
-              type="button"
-              [disabled]="!canRemoveBlock()"
-              [attr.aria-label]="'Ukloni blok ' + ($index + 1)"
-              (click)="removeBlock($index)"
-            >
-              <mat-icon aria-hidden="true">delete_outline</mat-icon>
-            </button>
 
             @if (templateNote(block.templateKey); as note) {
               <p class="brow__note">

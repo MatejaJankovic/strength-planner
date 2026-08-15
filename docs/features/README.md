@@ -31,6 +31,12 @@ Analiza sa ishodom po stavci: [`../analiza-prirucnika.md`](../analiza-prirucnika
 |---|---|---|
 | [Predlog serija po nedeljnom volumenu](weekly-volume-set-targets.md) | Broj serija se bira tako da nedelja padne u ciljnu zonu svakog mišića, i prilagođava se kada trening ne ispuni predlog | #37 |
 
+## Šesti krug — ispravke po spisku korisnika
+
+| Grana | O čemu je | PR |
+|---|---|---|
+| [Raspored na telefonu i tekst](mobile-layout-and-copy.md) | Navigacija u dva reda, izbor nedelje prelomljen, naslov plana preko pola ekrana, meniji bloka nečitljivi; plus izmene teksta i uklanjanje dugih crta | #39 |
+
 ## Ako čitaš samo jedno
 
 [Periodizacija po nedeljama](periodization-models.md) — to je bio najveći raskorak između

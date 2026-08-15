@@ -67,7 +67,7 @@ export class CreateMesocycle {
       label: 'Ravan',
       weeks: '4 nedelje',
       detail:
-        'Isti propis svake nedelje; napredak nosi dupla progresija — prvo ponavljanja, pa opterećenje.',
+        'Isti propis svake nedelje; napredak nosi dupla progresija - prvo ponavljanja, pa opterećenje.',
     },
     {
       value: PeriodizationModel.Linear,
@@ -81,7 +81,7 @@ export class CreateMesocycle {
       label: 'Obrnut',
       weeks: '6 nedelja',
       detail:
-        'Teško dok si svež, volumen pred kraj — obrnut redosled u odnosu na linearan.',
+        'Teško dok si svež, volumen pred kraj - obrnut redosled u odnosu na linearan.',
     },
   ];
 
