@@ -15,11 +15,16 @@ public class MacrocycleService : IMacrocycleService
 {
     private readonly AppDbContext _db;
     private readonly IMesocycleGenerator _generator;
+    private readonly IWorkoutTemplateResolver _templateResolver;
 
-    public MacrocycleService(AppDbContext db, IMesocycleGenerator generator)
+    public MacrocycleService(
+        AppDbContext db,
+        IMesocycleGenerator generator,
+        IWorkoutTemplateResolver templateResolver)
     {
         _db = db;
         _generator = generator;
+        _templateResolver = templateResolver;
     }
 
     public async Task<MacrocycleDto> CreateAsync(
@@ -43,7 +48,9 @@ public class MacrocycleService : IMacrocycleService
 
         foreach (var block in request.Blocks)
         {
-            if (WorkoutTemplateCatalog.GetByKey(block.TemplateKey) is null)
+            // Ključ se proverava kroz resolver, ne kroz katalog: lični šablon je isto tako
+            // ispravan izbor za blok, a resolver ujedno odbija tuđi šablon.
+            if (await _templateResolver.NameForAsync(userId, block.TemplateKey, cancellationToken) is null)
             {
                 throw new MesocycleGenerationException($"Unknown workout template: '{block.TemplateKey}'.");
             }
@@ -123,10 +130,12 @@ public class MacrocycleService : IMacrocycleService
         return await GetByIdAsync(userId, macrocycle.Id, cancellationToken);
     }
 
-    public IReadOnlyList<CreateMacrocycleBlockDto> SuggestBlocks(
+    public async Task<IReadOnlyList<CreateMacrocycleBlockDto>> SuggestBlocksAsync(
+        Guid userId,
         int blockCount,
         Goal firstGoal,
-        string templateKey)
+        string templateKey,
+        CancellationToken cancellationToken = default)
     {
         if (!MacrocyclePlanner.IsValidBlockCount(blockCount))
         {
@@ -134,7 +143,7 @@ public class MacrocycleService : IMacrocycleService
                 $"A plan holds between {MacrocyclePlanner.MinBlocks} and {MacrocyclePlanner.MaxBlocks} blocks.");
         }
 
-        if (WorkoutTemplateCatalog.GetByKey(templateKey) is null)
+        if (await _templateResolver.NameForAsync(userId, templateKey, cancellationToken) is null)
         {
             throw new MesocycleGenerationException($"Unknown workout template: '{templateKey}'.");
         }
@@ -416,13 +425,19 @@ public class MacrocycleService : IMacrocycleService
         DateTime now,
         CancellationToken cancellationToken)
     {
-        var template = WorkoutTemplateCatalog.GetByKey(block.TemplateKey)!;
+        // Lični šablon je mogao da bude obrisan otkako je plan napravljen. Naziv tada pada
+        // na ključ, a generator ispod svakako odbija blok koji više nema šablon - poruka o
+        // tome je jasnija od izuzetka zbog praznog naziva.
+        var templateName =
+            await _templateResolver.NameForAsync(userId, block.TemplateKey, cancellationToken)
+            ?? block.TemplateKey;
+
         var request = new GenerateMesocycleRequest
         {
             TemplateKey = block.TemplateKey,
             Goal = block.Goal,
             PeriodizationModel = block.PeriodizationModel,
-            Name = BuildBlockName(macrocycle.Name, block.Order, blockCount, template.Name),
+            Name = BuildBlockName(macrocycle.Name, block.Order, blockCount, templateName),
             StartDate = startDate
         };
 
@@ -432,6 +447,22 @@ public class MacrocycleService : IMacrocycleService
         block.GeneratedAt ??= now;
 
         return mesocycle;
+    }
+
+    /// <summary>
+    /// Naziv šablona za prikaz. Lični šablon koji je u međuvremenu obrisan pada na svoj
+    /// ključ, isto kao i nepoznat ugrađeni - plan ostaje čitljiv umesto da pukne.
+    /// </summary>
+    private static string TemplateNameFor(
+        string templateKey,
+        IReadOnlyDictionary<Guid, string> customTemplateNames)
+    {
+        if (CustomTemplateKey.TryParse(templateKey, out var templateId))
+        {
+            return customTemplateNames.GetValueOrDefault(templateId, templateKey);
+        }
+
+        return WorkoutTemplateCatalog.GetByKey(templateKey)?.Name ?? templateKey;
     }
 
     /// <summary>
@@ -480,6 +511,28 @@ public class MacrocycleService : IMacrocycleService
             })
             .ToDictionaryAsync(item => item.MesocycleId, cancellationToken);
 
+        // Nazivi ličnih šablona se dohvataju odjednom, pre projekcije: sinhroni Select
+        // ispod ne može da čeka upit, a poziv po bloku bi bio N upita za jedan pregled.
+        var customTemplateIds = macrocycle.Blocks
+            .Select(block => CustomTemplateKey.TryParse(block.TemplateKey, out var id)
+                ? (Guid?)id
+                : null)
+            .Where(id => id.HasValue)
+            .Select(id => id!.Value)
+            .Distinct()
+            .ToList();
+
+        var customTemplateNames = customTemplateIds.Count == 0
+            ? new Dictionary<Guid, string>()
+            : await _db.UserWorkoutTemplates
+                .AsNoTracking()
+                .Where(template => customTemplateIds.Contains(template.Id)
+                                   && template.UserId == macrocycle.UserId)
+                .ToDictionaryAsync(
+                    template => template.Id,
+                    template => template.Name,
+                    cancellationToken);
+
         return new MacrocycleDto
         {
             Id = macrocycle.Id,
@@ -510,8 +563,7 @@ public class MacrocycleService : IMacrocycleService
                         // nego što je blok uopšte generisan.
                         DurationWeeks = Periodization.DurationWeeks(block.PeriodizationModel),
                         TemplateKey = block.TemplateKey,
-                        TemplateName = WorkoutTemplateCatalog.GetByKey(block.TemplateKey)?.Name
-                                       ?? block.TemplateKey,
+                        TemplateName = TemplateNameFor(block.TemplateKey, customTemplateNames),
                         MesocycleId = block.MesocycleId,
                         CompletedSessions = completed,
                         TotalSessions = total,

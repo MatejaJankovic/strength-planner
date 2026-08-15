@@ -53,6 +53,11 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
     public DbSet<VolumeLandmark> VolumeLandmarks => Set<VolumeLandmark>();
     public DbSet<UserExerciseSetting> UserExerciseSettings => Set<UserExerciseSetting>();
     public DbSet<UserVolumeLandmark> UserVolumeLandmarks => Set<UserVolumeLandmark>();
+    public DbSet<UserWorkoutTemplate> UserWorkoutTemplates => Set<UserWorkoutTemplate>();
+    public DbSet<UserWorkoutTemplateDay> UserWorkoutTemplateDays => Set<UserWorkoutTemplateDay>();
+
+    public DbSet<UserWorkoutTemplateExercise> UserWorkoutTemplateExercises =>
+        Set<UserWorkoutTemplateExercise>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -97,6 +102,16 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
 
         modelBuilder.Entity<UserVolumeLandmark>()
             .HasQueryFilter(landmark => landmark.UserId == CurrentUserId);
+
+        modelBuilder.Entity<UserWorkoutTemplate>()
+            .HasQueryFilter(template => template.UserId == CurrentUserId);
+
+        modelBuilder.Entity<UserWorkoutTemplateDay>()
+            .HasQueryFilter(day => day.UserWorkoutTemplate.UserId == CurrentUserId);
+
+        modelBuilder.Entity<UserWorkoutTemplateExercise>()
+            .HasQueryFilter(exercise =>
+                exercise.UserWorkoutTemplateDay.UserWorkoutTemplate.UserId == CurrentUserId);
 
         // Sistemske vežbe su zajedničke i vidi ih svako; custom vežba pripada onome ko ju
         // je napravio. Isto pravilo koje ExerciseService već piše ručno.

@@ -199,6 +199,22 @@ database — the deload week came back carrying four sets per exercise instead o
 That last one is the reason `SessionService.CompleteAsync` saves before it rebalances. The
 ordering is load-bearing and commented as such.
 
+**Round 6 — a list of fixes the user filed after using the app on a phone.** Every layout
+bug on that list was invisible on a desktop.
+
+| Branch | What it fixed | PR |
+|---|---|---|
+| `fix/mobile-layout-and-copy` | Nav bar wrapping to two rows and covering content, week picker breaking after week 4, plan title filling half the screen, unreadable block dropdowns; copy changes and em dashes | #39 |
+| `fix/profile-fields` | Sex was free text, so registration wrote `male` and the profile offered `M` and never matched; now an enum. `TrainingDaysPerWeek` removed entirely | #40 |
+| `feature/custom-workout-templates` | User-built templates: own days, exercises, sets and rep ranges, with periodization, deload and MAV rebalancing still applied on top | #41 |
+
+The set-count decision worth remembering: a custom template's numbers are the **week-1
+prescription and the anchor**, not the final answer. `Periodization.ForWeek` already took the
+base as a parameter, so custom templates needed no new algorithm — but the auto-deload path
+did, because it recovered the base from the goal. `ExercisePlan.BaseRepRangeMin/Max` exist
+because the rep shift cannot be inverted: `ForWeek` clamps, so two different bases produce
+the same week.
+
 **Do not commit a document that lists unfixed weaknesses of the live app: this repository is
 public.** Security notes describe what is closed and how it is verified; anything still open
 is stated at a level useful to the owner, not to an attacker.

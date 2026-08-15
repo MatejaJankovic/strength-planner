@@ -48,9 +48,61 @@ export interface WorkoutTemplateDayDto {
 export interface WorkoutTemplateDto {
   key: string;
   name: string;
+  /** Šablon koji je korisnik sam sastavio; ne skraćuje se na nivo iskustva. */
+  isCustom: boolean;
   /** Upozorenje o poznatom ograničenju šablona, ako ga ima. */
   note: string | null;
   days: WorkoutTemplateDayDto[];
+}
+
+/**
+ * Granice unosa za lični šablon. Prate Periodization i TrainingConstants na serveru;
+ * šire granice ovde znače da korisnik unese broj koji mu propis nedelje tiho promeni.
+ */
+export const TEMPLATE_LIMITS = {
+  maxDays: 7,
+  maxExercisesPerDay: 12,
+  minSets: 2,
+  maxSets: 10,
+  minReps: 3,
+  maxReps: 12,
+} as const;
+
+export interface CustomTemplateExerciseDto {
+  exerciseId: string;
+  exerciseName: string;
+  sets: number;
+  repRangeMin: number;
+  repRangeMax: number;
+}
+
+export interface CustomTemplateDayDto {
+  name: string;
+  exercises: CustomTemplateExerciseDto[];
+}
+
+export interface CustomTemplateDto {
+  id: string;
+  key: string;
+  name: string;
+  days: CustomTemplateDayDto[];
+}
+
+export interface SaveCustomTemplateExerciseDto {
+  exerciseId: string;
+  sets: number;
+  repRangeMin: number;
+  repRangeMax: number;
+}
+
+export interface SaveCustomTemplateDayDto {
+  name: string;
+  exercises: SaveCustomTemplateExerciseDto[];
+}
+
+export interface SaveCustomTemplateRequest {
+  name: string;
+  days: SaveCustomTemplateDayDto[];
 }
 
 export interface GenerateMesocycleRequest {

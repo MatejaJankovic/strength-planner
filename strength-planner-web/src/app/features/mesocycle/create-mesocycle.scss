@@ -67,6 +67,44 @@ form {
   gap: 0.45rem;
 }
 
+.block__head {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.block__link {
+  align-items: center;
+  color: var(--color-primary);
+  display: inline-flex;
+  font-size: 0.86rem;
+  font-weight: 700;
+  gap: 0.25rem;
+  min-height: 44px;
+  text-decoration: none;
+
+  mat-icon {
+    font-size: 1.1rem;
+    height: 1.1rem;
+    width: 1.1rem;
+  }
+}
+
+// Šablon koji je korisnik sam sastavio.
+.template__badge {
+  background: var(--color-primary);
+  border-radius: 999px;
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 0.15rem 0.5rem;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
 .template__count {
   color: var(--color-muted);
   font-size: 0.82rem;

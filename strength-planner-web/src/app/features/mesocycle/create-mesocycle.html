@@ -20,7 +20,13 @@
 } @else {
   <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
     <section class="block">
-      <h2 class="block__title">Šablon</h2>
+      <div class="block__head">
+        <h2 class="block__title">Šablon</h2>
+        <a class="block__link" routerLink="/templates">
+          <mat-icon aria-hidden="true">tune</mat-icon>
+          Moji šabloni
+        </a>
+      </div>
       <div class="templates">
         @for (template of templates(); track template.key) {
           <button
@@ -31,7 +37,12 @@
             (click)="selectTemplate(template)"
           >
             <div class="template__head">
-              <span class="template__name">{{ template.name }}</span>
+              <span class="template__name">
+                {{ template.name }}
+                @if (template.isCustom) {
+                  <span class="template__badge">moj šablon</span>
+                }
+              </span>
               <span class="template__meta">
                 <span class="template__check" aria-hidden="true">
                   <mat-icon>check_circle</mat-icon>
@@ -74,6 +85,12 @@
         }
       </div>
       <p class="goals__detail">{{ selectedGoalDetail() }}</p>
+      @if (isCustomSelected()) {
+        <p class="goals__detail">
+          Za lični šablon važe ponavljanja koja si sam upisao; cilj i dalje određuje RIR i
+          način progresije.
+        </p>
+      }
     </section>
 
     <section class="block">

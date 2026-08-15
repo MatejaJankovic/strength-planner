@@ -17,8 +17,16 @@ public interface IMacrocycleService
     /// <summary>
     /// Predlog blokova sa smenjujućim ciljevima — jedina definicija tog pravila živi u
     /// domenu, pa ga klijent ne ponavlja svojom logikom.
+    ///
+    /// Asinhrono je otkako ključ šablona može da bude i lični šablon: provera da on postoji
+    /// i da pripada ovom korisniku traži bazu.
     /// </summary>
-    IReadOnlyList<CreateMacrocycleBlockDto> SuggestBlocks(int blockCount, Goal firstGoal, string templateKey);
+    Task<IReadOnlyList<CreateMacrocycleBlockDto>> SuggestBlocksAsync(
+        Guid userId,
+        int blockCount,
+        Goal firstGoal,
+        string templateKey,
+        CancellationToken cancellationToken = default);
 
     Task<MacrocycleDto> GetActiveAsync(Guid userId, CancellationToken cancellationToken = default);
 

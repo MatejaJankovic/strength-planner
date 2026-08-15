@@ -40,12 +40,18 @@ public class MacrocyclesController : AuthorizedControllerBase
     [HttpGet("suggested-blocks")]
     [ProducesResponseType(typeof(IReadOnlyList<CreateMacrocycleBlockDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    public IActionResult GetSuggestedBlocks(
+    public async Task<IActionResult> GetSuggestedBlocks(
+        CancellationToken cancellationToken,
         [FromQuery] int blockCount = 2,
         [FromQuery] Goal firstGoal = Goal.Hypertrophy,
         [FromQuery] string templateKey = "upper-lower")
     {
-        return Ok(_macrocycleService.SuggestBlocks(blockCount, firstGoal, templateKey));
+        return Ok(await _macrocycleService.SuggestBlocksAsync(
+            GetUserId(),
+            blockCount,
+            firstGoal,
+            templateKey,
+            cancellationToken));
     }
 
     /// <summary>Vraća aktivan dugoročan plan sa svim blokovima.</summary>

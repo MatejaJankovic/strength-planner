@@ -109,6 +109,10 @@ zatečeni planovi ne bi promenili datume.
 - šablon koji odgovara broju njegovih trenažnih dana nosi oznaku `isSuggested` i unapred
   je izabran, uz značku „predlog za tebe".
 
+> **Kasnija izmena.** Značka „predlog za tebe" više ne postoji: polje „Treninga nedeljno"
+> koje ju je hranilo uklonjeno je u [`profile-fields`](profile-fields.md), jer je isti
+> podatak korisnik ionako birao izborom šablona.
+
 Ako tačnog nema, bira se najduži koji **staje** u broj dana koje korisnik ima — bolje je
 odraditi ceo kraći plan nego stalno preskakati treninge iz dužeg. Sedam dana dobija
 šestodnevni, jedan dan dobija dvodnevni.

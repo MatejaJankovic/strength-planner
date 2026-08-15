@@ -249,11 +249,15 @@ public sealed class DeloadService
 
             // Nedelja preuzima propis one koja je postala deload — dakle faze koja bi
             // inače ispala iz bloka.
+            //
+            // Osnovni opseg se čita iz samog plana, ne iz cilja: vežba iz ličnog šablona
+            // nosi opseg koji je korisnik uneo, pa bi opseg cilja ovde tiho prepisao njegov
+            // unos. Za ugrađen šablon su te dve vrednosti iste, pa se ponaša kao i ranije.
             var prescription = Periodization.ForWeek(
                 model,
                 autoDeloadWeekNumber,
-                goal?.RepRangeMin ?? plan.RepRangeMin,
-                goal?.RepRangeMax ?? plan.RepRangeMax,
+                plan.BaseRepRangeMin,
+                plan.BaseRepRangeMax,
                 goal?.TargetRir ?? plan.TargetRir,
                 baseSets);
 
@@ -332,13 +336,17 @@ public sealed class DeloadService
             plan.TargetSets = Periodization.DeloadSets(baseSets);
             plan.PrescribedSets = plan.TargetSets;
 
-            // Rasterećenje vraća rep-opseg i RIR cilja. Kod ravnog bloka su već takvi, pa
-            // se ništa ne menja; kod periodizovanog je ovo jedina stvar koja sprečava
-            // deload propisan do otkaza.
+            // Rasterećenje vraća osnovni rep-opseg i RIR cilja. Kod ravnog bloka su već
+            // takvi, pa se ništa ne menja; kod periodizovanog je ovo jedina stvar koja
+            // sprečava deload propisan do otkaza.
+            //
+            // Osnova je opseg tog plana, a ne cilja: kod ličnog šablona to je opseg koji je
+            // korisnik uneo za tu vežbu. Za ugrađen šablon su iste vrednosti.
+            plan.RepRangeMin = plan.BaseRepRangeMin;
+            plan.RepRangeMax = plan.BaseRepRangeMax;
+
             if (goal is not null)
             {
-                plan.RepRangeMin = goal.RepRangeMin;
-                plan.RepRangeMax = goal.RepRangeMax;
                 plan.TargetRir = goal.TargetRir;
             }
 

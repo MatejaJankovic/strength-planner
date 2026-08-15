@@ -10,6 +10,12 @@ public sealed class WorkoutTemplateDto
 
     public string Name { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Šablon koji je korisnik sam sastavio. Ekran ga prikazuje odvojeno, a i ponaša se
+    /// drugačije: ne skraćuje se na nivo iskustva i nosi svoje serije i ponavljanja.
+    /// </summary>
+    public bool IsCustom { get; set; }
+
     /// <summary>Upozorenje o poznatom ograničenju šablona, ako ga ima.</summary>
     public string? Note { get; set; }
 
