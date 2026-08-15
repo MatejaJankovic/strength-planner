@@ -205,8 +205,15 @@ bug on that list was invisible on a desktop.
 | Branch | What it fixed | PR |
 |---|---|---|
 | `fix/mobile-layout-and-copy` | Nav bar wrapping to two rows and covering content, week picker breaking after week 4, plan title filling half the screen, unreadable block dropdowns; copy changes and em dashes | #39 |
-| `fix/profile-fields` | Sex was free text, so registration wrote `male` and the profile offered `M` and never matched; now an enum. `TrainingDaysPerWeek` removed entirely | #40 |
+| `fix/profile-fields` | Sex was free text, so registration wrote `male` and the profile offered `M` and never matched; now an enum. `TrainingDaysPerWeek` removed entirely | #40 → #42 |
 | `feature/custom-workout-templates` | User-built templates: own days, exercises, sets and rep ranges, with periodization, deload and MAV rebalancing still applied on top | #41 |
+
+Round 6 was reviewed as a **stack** — each PR opened on top of the previous one so all three
+were reviewable before the first merged. That cost one mistake worth remembering: GitHub does
+**not** retarget a stacked PR when its base merges while the base branch still exists, so
+merging #40 put it back into `fix/mobile-layout-and-copy` instead of `main`. #42 landed the
+same commits on `main`. Either delete the base branch on merge, or retarget the child to
+`main` first (`gh pr edit <n> --base main`), which is what #41 did.
 
 The set-count decision worth remembering: a custom template's numbers are the **week-1
 prescription and the anchor**, not the final answer. `Periodization.ForWeek` already took the
