@@ -8,6 +8,7 @@ using StrengthPlanner.Domain.Entities;
 using StrengthPlanner.Domain.Enums;
 using StrengthPlanner.Infrastructure.Exercises;
 using StrengthPlanner.Infrastructure.Persistence;
+using StrengthPlanner.Infrastructure.Templates;
 
 namespace StrengthPlanner.Infrastructure.Mesocycles;
 
@@ -15,12 +16,17 @@ public class MesocycleGenerator : IMesocycleGenerator
 {
     private readonly AppDbContext _db;
     private readonly WeeklySetPlanner _setPlanner;
+    private readonly IWorkoutTemplateResolver _templateResolver;
     private readonly E1RmCalculator _e1RmCalculator = new();
 
-    public MesocycleGenerator(AppDbContext db, WeeklySetPlanner setPlanner)
+    public MesocycleGenerator(
+        AppDbContext db,
+        WeeklySetPlanner setPlanner,
+        IWorkoutTemplateResolver templateResolver)
     {
         _db = db;
         _setPlanner = setPlanner;
+        _templateResolver = templateResolver;
     }
 
     public async Task<MesocycleDto> GenerateAsync(
@@ -30,54 +36,42 @@ public class MesocycleGenerator : IMesocycleGenerator
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var template = WorkoutTemplateCatalog.GetByKey(request.TemplateKey)
-            ?? throw new MesocycleGenerationException($"Unknown workout template: '{request.TemplateKey}'.");
-
         var name = request.Name.Trim();
         if (name.Length == 0)
         {
             throw new MesocycleGenerationException("Mesocycle name is required.");
         }
 
-        var goalSettings = GoalPrescriptions.ForGoal(request.Goal);
-        var exerciseNames = template.Days
-            .SelectMany(day => day.Exercises)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
-
-        var exercises = await _db.Exercises
-            .AsNoTracking()
-            .Where(exercise => exerciseNames.Contains(exercise.Name)
-                               && (!exercise.IsCustom || exercise.CreatedByUserId == userId))
-            .ToListAsync(cancellationToken);
-
-        // Korisnik sme da ima svoju vežbu istog naziva kao sistemska (provera pri
-        // pravljenju ne gleda velika i mala slova na isti način kao ovaj upit), pa se
-        // po nazivu mogu vratiti dva reda. Šablon uvek misli na sistemsku vežbu —
-        // grupisanje sprečava izuzetak zbog dvostrukog ključa i bira pravu.
-        var exerciseByName = exercises
-            .GroupBy(exercise => exercise.Name, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(
-                group => group.Key,
-                group => group.OrderBy(exercise => exercise.IsCustom).First(),
-                StringComparer.OrdinalIgnoreCase);
-        var missingExercises = exerciseNames
-            .Where(exerciseName => !exerciseByName.ContainsKey(exerciseName))
-            .ToList();
-
-        if (missingExercises.Count > 0)
+        ResolvedTemplate? template;
+        try
         {
-            throw new MesocycleGenerationException(
-                $"Template references exercises missing from seed: {string.Join(", ", missingExercises)}.");
+            template = await _templateResolver.ResolveAsync(userId, request.TemplateKey, cancellationToken);
+        }
+        catch (MissingTemplateExercisesException exception)
+        {
+            throw new MesocycleGenerationException(exception.Message);
         }
 
-        // Nivo iskustva određuje i koliko vežbi trening nosi i koliko serija svaka.
-        // Profil ga prikuplja pri registraciji; do sada se nigde nije čitao.
+        if (template is null)
+        {
+            throw new MesocycleGenerationException($"Unknown workout template: '{request.TemplateKey}'.");
+        }
+
+        var goalSettings = GoalPrescriptions.ForGoal(request.Goal);
+
+        // Nivo iskustva određuje koliko serija vežba nosi na startu. Koliko vežbi trening
+        // nosi, odlučeno je već u razrešavanju šablona - lični šablon se ne skraćuje.
         var experienceLevel = await _db.Profiles
             .AsNoTracking()
             .Where(profile => profile.UserId == userId)
             .Select(profile => (ExperienceLevel?)profile.ExperienceLevel)
             .FirstOrDefaultAsync(cancellationToken) ?? ExperienceLevel.Intermediate;
+
+        var exercises = template.Days
+            .SelectMany(day => day.Exercises)
+            .Select(planned => planned.Exercise)
+            .DistinctBy(exercise => exercise.Id)
+            .ToList();
 
         var exerciseIds = exercises.Select(exercise => exercise.Id).ToList();
         var weightStepByExerciseId = await WeightStepResolver.ResolveAsync(
@@ -135,7 +129,6 @@ public class MesocycleGenerator : IMesocycleGenerator
             startDate,
             template,
             goalSettings,
-            exerciseByName,
             oneRepMaxByExerciseId,
             weightStepByExerciseId,
             experienceLevel,
@@ -165,9 +158,8 @@ public class MesocycleGenerator : IMesocycleGenerator
         string name,
         Goal goal,
         DateTime startDate,
-        WorkoutTemplate template,
+        ResolvedTemplate template,
         GoalPrescription goalSettings,
-        IReadOnlyDictionary<string, Exercise> exerciseByName,
         IReadOnlyDictionary<Guid, decimal> oneRepMaxByExerciseId,
         IReadOnlyDictionary<Guid, decimal> weightStepByExerciseId,
         ExperienceLevel experienceLevel,
@@ -216,21 +208,33 @@ public class MesocycleGenerator : IMesocycleGenerator
                     Status = SessionStatus.Planned
                 };
 
-                // Šablon nudi pun spisak; nivo iskustva bira koliko i kojih vežbi ulazi
-                // u trening — početnik dobija manje vežbi težište na složenima, napredni
-                // jednu složenu i više izolacija.
-                var dayExercises = SessionComposition.ForLevel(
-                    templateDay.Exercises.Select(name => exerciseByName[name]).ToList(),
-                    exercise => exercise.Type == ExerciseType.Compound,
-                    experienceLevel);
+                var dayExercises = templateDay.Exercises;
 
                 for (var exerciseIndex = 0; exerciseIndex < dayExercises.Count; exerciseIndex++)
                 {
-                    var exercise = dayExercises[exerciseIndex];
+                    var planned = dayExercises[exerciseIndex];
+                    var exercise = planned.Exercise;
+
+                    // Vežba iz ličnog šablona nosi svoje serije i opseg; ista periodizacija
+                    // ih pomera kroz blok kao što pomera propis izveden iz cilja, jer
+                    // ForWeek i inače prima "osnovu" kao parametar. RIR ostaje iz cilja.
+                    var baseRepRangeMin = planned.RepRangeMin ?? goalSettings.RepRangeMin;
+                    var baseRepRangeMax = planned.RepRangeMax ?? goalSettings.RepRangeMax;
+
+                    var exercisePrescription = planned.Sets is null
+                        ? prescription
+                        : Periodization.ForWeek(
+                            periodizationModel,
+                            weekNumber,
+                            baseRepRangeMin,
+                            baseRepRangeMax,
+                            goalSettings.TargetRir,
+                            planned.Sets.Value);
+
                     var targetWeightKg = GetInitialTargetWeight(
                         weekNumber,
                         exercise.Id,
-                        prescription,
+                        exercisePrescription,
                         oneRepMaxByExerciseId,
                         WeightStepResolver.StepFor(weightStepByExerciseId, exercise.Id));
 
@@ -241,11 +245,13 @@ public class MesocycleGenerator : IMesocycleGenerator
                         Order = exerciseIndex + 1,
                         // Propis nedelje je polazna vrednost i za predlog i za sidro;
                         // balansiranje volumena ispod pomera samo predlog.
-                        TargetSets = prescription.Sets,
-                        PrescribedSets = prescription.Sets,
-                        RepRangeMin = prescription.RepRangeMin,
-                        RepRangeMax = prescription.RepRangeMax,
-                        TargetRir = prescription.TargetRir,
+                        TargetSets = exercisePrescription.Sets,
+                        PrescribedSets = exercisePrescription.Sets,
+                        RepRangeMin = exercisePrescription.RepRangeMin,
+                        RepRangeMax = exercisePrescription.RepRangeMax,
+                        BaseRepRangeMin = baseRepRangeMin,
+                        BaseRepRangeMax = baseRepRangeMax,
+                        TargetRir = exercisePrescription.TargetRir,
                         TargetWeightKg = targetWeightKg
                     });
                 }

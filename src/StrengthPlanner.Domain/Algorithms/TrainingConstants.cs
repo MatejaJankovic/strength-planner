@@ -17,4 +17,25 @@ public static class TrainingConstants
 
     // Prozor u kome se traži najbolji 1RM za start novog mezociklusa.
     public const int OneRepMaxLookbackDays = 56;
+
+    // --- granice ličnog šablona ---
+    //
+    // Donje granice za serije i ponavljanja NISU ovde: njih već drži Periodization
+    // (MinSets, MinReps, MaxReps), pa se odatle i čitaju. Da su prepisane, korisnik bi
+    // mogao da unese vrednost koju bi mu propis nedelje tiho pomerio.
+
+    /// <summary>Nedelja ima sedam dana, pa toliko ima i najviše treninga u njoj.</summary>
+    public const int MaxTemplateDays = 7;
+
+    /// <summary>
+    /// Najviše vežbi u jednom danu. Šest je pun trening i za naprednog vežbača; dvanaest
+    /// ostavlja prostora onome ko hoće više, a zaustavlja spisak od sto vežbi.
+    /// </summary>
+    public const int MaxTemplateExercisesPerDay = 12;
+
+    /// <summary>Najviše serija po vežbi koje šablon sme da propiše.</summary>
+    public const int MaxTemplateSets = 10;
+
+    /// <summary>Koliko ličnih šablona jedan nalog sme da drži.</summary>
+    public const int MaxTemplatesPerUser = 20;
 }

@@ -125,7 +125,7 @@ export class PlanHome {
         // Prazan padajući spisak bi zaključao izbor šablona; jedna stavka je dovoljna
         // da čarobnjak ostane upotrebljiv.
         this.templates.set([
-          { key: FALLBACK_TEMPLATE_KEY, name: 'Upper/Lower', note: null, days: [] },
+          { key: FALLBACK_TEMPLATE_KEY, name: 'Upper/Lower', isCustom: false, note: null, days: [] },
         ]);
         this.seedBlocks(FALLBACK_TEMPLATE_KEY);
       },

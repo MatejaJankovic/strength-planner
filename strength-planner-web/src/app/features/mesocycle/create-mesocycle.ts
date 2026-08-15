@@ -1,6 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { extractErrorMessage } from '../../core/api/http-error';
 import { MesocycleService } from '../../core/api/mesocycle.service';
@@ -28,7 +28,7 @@ interface ModelOption {
 
 @Component({
   selector: 'app-create-mesocycle',
-  imports: [ReactiveFormsModule, MatIconModule, Loading],
+  imports: [ReactiveFormsModule, RouterLink, MatIconModule, Loading],
   templateUrl: './create-mesocycle.html',
   styleUrl: './create-mesocycle.scss',
 })
@@ -96,6 +96,11 @@ export class CreateMesocycle {
 
   protected readonly selectedModel = computed(
     () => this.modelOptions.find((option) => option.value === this.model()) ?? this.modelOptions[0],
+  );
+
+  /** Kod ličnog šablona cilj više ne određuje opseg ponavljanja, pa se to i kaže. */
+  protected readonly isCustomSelected = computed(
+    () => this.templates().find((template) => template.key === this.selectedKey())?.isCustom ?? false,
   );
 
   constructor() {

@@ -49,6 +49,12 @@ export const routes: Routes = [
       import('./features/mesocycle/create-mesocycle').then((m) => m.CreateMesocycle),
   },
   {
+    path: 'templates',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/templates/custom-templates').then((m) => m.CustomTemplates),
+  },
+  {
     path: 'session/:id',
     canActivate: [authGuard],
     loadComponent: () =>

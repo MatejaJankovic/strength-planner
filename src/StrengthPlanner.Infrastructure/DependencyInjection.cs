@@ -71,6 +71,8 @@ public static class DependencyInjection
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IExerciseService, ExerciseService>();
         services.AddScoped<ITemplateService, TemplateService>();
+        services.AddScoped<ICustomTemplateService, CustomTemplateService>();
+        services.AddScoped<IWorkoutTemplateResolver, WorkoutTemplateResolver>();
         services.AddScoped<IMesocycleGenerator, MesocycleGenerator>();
         services.AddScoped<IMesocycleService, MesocycleService>();
         services.AddScoped<IMacrocycleService, MacrocycleService>();

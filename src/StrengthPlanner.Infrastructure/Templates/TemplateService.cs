@@ -15,6 +15,9 @@ namespace StrengthPlanner.Infrastructure.Templates;
 /// skraćivao po nivou iskustva — naprednom vežbaču je obećavao šest vežbi, a davao tri.
 /// Ovde se ista funkcija (<see cref="SessionComposition.ForLevel{T}"/>) primenjuje na
 /// prikaz, pa je ono što korisnik bira ono što i dobija.
+///
+/// Lični šabloni idu kroz isti spisak, ali <b>neskraćeni</b>: njih je korisnik sastavio
+/// vežbu po vežbu, pa se prikazuju onako kako će i biti odrađeni.
 /// </summary>
 public class TemplateService : ITemplateService
 {
@@ -35,12 +38,13 @@ public class TemplateService : ITemplateService
             .Select(profile => (ExperienceLevel?)profile.ExperienceLevel)
             .FirstOrDefaultAsync(cancellationToken) ?? ExperienceLevel.Intermediate;
 
-        return WorkoutTemplateCatalog
+        var builtIn = WorkoutTemplateCatalog
             .GetAll()
             .Select(template => new WorkoutTemplateDto
             {
                 Key = template.Key,
                 Name = template.Name,
+                IsCustom = false,
                 Note = template.Note,
                 Days = template.Days
                     .Select(day => new WorkoutTemplateDayDto
@@ -56,6 +60,38 @@ public class TemplateService : ITemplateService
                     })
                     .ToList()
             })
+            .ToList();
+
+        var custom = await _db.UserWorkoutTemplates
+            .AsNoTracking()
+            .Include(template => template.Days)
+                .ThenInclude(day => day.Exercises)
+                    .ThenInclude(exercise => exercise.Exercise)
+            .Where(template => template.UserId == userId)
+            .OrderBy(template => template.Name)
+            .ToListAsync(cancellationToken);
+
+        // Lični šabloni idu prvi: korisnik koji ih je napravio traži njih, a ne katalog.
+        return custom
+            .Select(template => new WorkoutTemplateDto
+            {
+                Key = CustomTemplateKey.For(template.Id),
+                Name = template.Name,
+                IsCustom = true,
+                Note = null,
+                Days = template.Days
+                    .OrderBy(day => day.Order)
+                    .Select(day => new WorkoutTemplateDayDto
+                    {
+                        Name = day.Name,
+                        Exercises = day.Exercises
+                            .OrderBy(exercise => exercise.Order)
+                            .Select(exercise => exercise.Exercise.Name)
+                            .ToList()
+                    })
+                    .ToList()
+            })
+            .Concat(builtIn)
             .ToList();
     }
 }

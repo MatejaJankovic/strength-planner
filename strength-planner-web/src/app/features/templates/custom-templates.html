@@ -1,0 +1,273 @@
+<header class="feature-header">
+  <p class="eyebrow">Šabloni</p>
+  <h1>Moji šabloni</h1>
+  <p>Sam biraš dane, vežbe, serije i ponavljanja.</p>
+</header>
+
+@if (loading()) {
+  <app-loading label="Učitavam šablone…" />
+} @else if (error(); as message) {
+  <section class="card">
+    <p class="alert alert--error" role="alert">
+      <mat-icon aria-hidden="true">cloud_off</mat-icon>
+      <span>{{ message }}</span>
+    </p>
+    <button class="btn btn--ghost" type="button" (click)="load()">
+      <mat-icon aria-hidden="true">refresh</mat-icon>
+      Pokušaj ponovo
+    </button>
+  </section>
+} @else {
+  @if (saveError(); as message) {
+    <p class="alert alert--error" role="alert">
+      <mat-icon aria-hidden="true">error_outline</mat-icon>
+      <span>{{ message }}</span>
+    </p>
+  }
+
+  @if (!isEditorOpen()) {
+    @if (templates().length === 0) {
+      <section class="card">
+        <h2 class="card__title">Još nemaš svoj šablon</h2>
+        <p class="card__hint">
+          Ugrađeni šabloni su ponuda iz koje sistem bira vežbe po tvom nivou iskustva. Lični
+          šablon je propis: u trening ulazi tačno ono što izabereš, onim redom kojim
+          izabereš.
+        </p>
+        <button class="btn btn--primary" type="button" (click)="startNew()">
+          <mat-icon aria-hidden="true">add</mat-icon>
+          Napravi šablon
+        </button>
+      </section>
+    } @else {
+      <ul class="tlist">
+        @for (template of templates(); track template.id) {
+          <li class="tcard">
+            <div class="tcard__head">
+              <h2 class="tcard__name">{{ template.name }}</h2>
+              <span class="tcard__count numeric">{{ template.days.length }}× nedeljno</span>
+            </div>
+
+            <ul class="tdays">
+              @for (day of template.days; track day.name) {
+                <li class="tday">
+                  <span class="tday__name">{{ day.name }}</span>
+                  <ul class="tday__exercises">
+                    @for (exercise of day.exercises; track exercise.exerciseId) {
+                      <li class="tday__exercise">
+                        <span>{{ exercise.exerciseName }}</span>
+                        <span class="numeric">
+                          {{ exercise.sets }}×{{ exercise.repRangeMin }}-{{ exercise.repRangeMax }}
+                        </span>
+                      </li>
+                    }
+                  </ul>
+                </li>
+              }
+            </ul>
+
+            <div class="tcard__actions">
+              <button class="btn btn--ghost" type="button" (click)="startEdit(template)">
+                <mat-icon aria-hidden="true">edit</mat-icon>
+                Izmeni
+              </button>
+
+              @if (confirmingDeleteId() === template.id) {
+                <button
+                  class="btn btn--danger"
+                  type="button"
+                  [disabled]="deletingId() === template.id"
+                  (click)="confirmDelete(template.id)"
+                >
+                  {{ deletingId() === template.id ? 'Brišem…' : 'Potvrdi brisanje' }}
+                </button>
+                <button class="btn btn--ghost" type="button" (click)="cancelDelete()">
+                  Odustani
+                </button>
+              } @else {
+                <button class="btn btn--ghost" type="button" (click)="requestDelete(template.id)">
+                  <mat-icon aria-hidden="true">delete_outline</mat-icon>
+                  Obriši
+                </button>
+              }
+            </div>
+          </li>
+        }
+      </ul>
+
+      <div class="pagebar">
+        <button class="btn btn--primary" type="button" (click)="startNew()">
+          <mat-icon aria-hidden="true">add</mat-icon>
+          Novi šablon
+        </button>
+        <button class="btn btn--ghost" type="button" (click)="goToMesocycle()">
+          Napravi plan od šablona
+        </button>
+      </div>
+    }
+  } @else {
+    <section class="card">
+      <h2 class="card__title">{{ editingId() ? 'Izmena šablona' : 'Novi šablon' }}</h2>
+      <p class="card__hint">
+        Serije i ponavljanja koja ovde upišeš važe za prvu nedelju. Periodizacija ih dalje
+        pomera kroz blok, a predlog serija ih vuče ka nedeljnom cilju volumena - tvoja
+        vrednost ostaje sidro od kojeg se meri.
+      </p>
+
+      <div class="field">
+        <label class="field__label" for="tpl-name">Naziv šablona</label>
+        <input
+          id="tpl-name"
+          class="control"
+          type="text"
+          maxlength="128"
+          placeholder="npr. Moj Upper/Lower"
+          [value]="name()"
+          (input)="name.set($any($event.target).value)"
+        />
+      </div>
+    </section>
+
+    @for (day of days(); track $index) {
+      <section class="card day">
+        <div class="day__head">
+          <div class="field field--grow">
+            <label class="field__label" [attr.for]="'day-name-' + $index">
+              Naziv dana {{ $index + 1 }}
+            </label>
+            <input
+              class="control"
+              type="text"
+              maxlength="64"
+              [attr.id]="'day-name-' + $index"
+              [value]="day.name"
+              (input)="setDayName($index, $any($event.target).value)"
+            />
+          </div>
+          <button
+            class="iconbtn"
+            type="button"
+            [attr.aria-label]="'Ukloni dan ' + ($index + 1)"
+            (click)="removeDay($index)"
+          >
+            <mat-icon aria-hidden="true">delete_outline</mat-icon>
+          </button>
+        </div>
+
+        @if (day.exercises.length === 0) {
+          <p class="card__hint">Dodaj bar jednu vežbu u ovaj dan.</p>
+        }
+
+        <ul class="exlist">
+          @for (exercise of day.exercises; track $index; let exerciseIndex = $index) {
+            <li class="exrow">
+              <div class="exrow__head">
+                <span class="exrow__name">{{ exerciseName(exercise.exerciseId) }}</span>
+                <button
+                  class="iconbtn"
+                  type="button"
+                  [attr.aria-label]="'Ukloni ' + exerciseName(exercise.exerciseId)"
+                  (click)="removeExercise($index, exerciseIndex)"
+                >
+                  <mat-icon aria-hidden="true">close</mat-icon>
+                </button>
+              </div>
+
+              <div class="exrow__numbers">
+                <div class="field">
+                  <label class="field__label" [attr.for]="'sets-' + $index + '-' + exerciseIndex">
+                    Serija
+                  </label>
+                  <input
+                    class="control numeric"
+                    type="number"
+                    inputmode="numeric"
+                    [attr.id]="'sets-' + $index + '-' + exerciseIndex"
+                    [min]="limits.minSets"
+                    [max]="limits.maxSets"
+                    [value]="exercise.sets"
+                    (change)="setExerciseNumber($index, exerciseIndex, 'sets', $any($event.target).value)"
+                  />
+                </div>
+
+                <div class="field">
+                  <label class="field__label" [attr.for]="'rmin-' + $index + '-' + exerciseIndex">
+                    Ponavljanja od
+                  </label>
+                  <input
+                    class="control numeric"
+                    type="number"
+                    inputmode="numeric"
+                    [attr.id]="'rmin-' + $index + '-' + exerciseIndex"
+                    [min]="limits.minReps"
+                    [max]="limits.maxReps"
+                    [value]="exercise.repRangeMin"
+                    (change)="setExerciseNumber($index, exerciseIndex, 'repRangeMin', $any($event.target).value)"
+                  />
+                </div>
+
+                <div class="field">
+                  <label class="field__label" [attr.for]="'rmax-' + $index + '-' + exerciseIndex">
+                    do
+                  </label>
+                  <input
+                    class="control numeric"
+                    type="number"
+                    inputmode="numeric"
+                    [attr.id]="'rmax-' + $index + '-' + exerciseIndex"
+                    [min]="limits.minReps"
+                    [max]="limits.maxReps"
+                    [value]="exercise.repRangeMax"
+                    (change)="setExerciseNumber($index, exerciseIndex, 'repRangeMax', $any($event.target).value)"
+                  />
+                </div>
+              </div>
+            </li>
+          }
+        </ul>
+
+        @if (canAddExercise($index)) {
+          <div class="field">
+            <label class="field__label" [attr.for]="'add-ex-' + $index">Dodaj vežbu</label>
+            <select
+              class="control"
+              [attr.id]="'add-ex-' + $index"
+              (change)="addExercise($index, $any($event.target).value); $any($event.target).value = ''"
+            >
+              <option value="">Izaberi vežbu…</option>
+              @for (candidate of exercises(); track candidate.id) {
+                <option [value]="candidate.id">{{ candidate.name }}</option>
+              }
+            </select>
+          </div>
+        } @else {
+          <p class="card__hint">Dan je pun ({{ limits.maxExercisesPerDay }} vežbi).</p>
+        }
+      </section>
+    }
+
+    <div class="pagebar">
+      <button class="btn btn--ghost" type="button" [disabled]="!canAddDay()" (click)="addDay()">
+        <mat-icon aria-hidden="true">add</mat-icon>
+        Dodaj dan
+      </button>
+      <p class="card__hint numeric">
+        {{ days().length }} dana · {{ exerciseCount() }} vežbi
+      </p>
+    </div>
+
+    <div class="pagebar">
+      <button
+        class="btn btn--primary"
+        type="button"
+        [disabled]="!canSave() || saving()"
+        (click)="save()"
+      >
+        {{ saving() ? 'Čuvam…' : 'Sačuvaj šablon' }}
+      </button>
+      <button class="btn btn--ghost" type="button" [disabled]="saving()" (click)="closeEditor()">
+        Odustani
+      </button>
+    </div>
+  }
+}
