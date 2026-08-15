@@ -181,6 +181,31 @@ public class CustomTemplateService : ICustomTemplateService
                         "Donja granica ponavljanja ne sme da bude veća od gornje.");
                 }
             }
+
+            // Ista vežba dvaput u istom danu nije samo neuredna. Automatski deload izvodi
+            // polazni broj serija po paru (naziv dana, vežba) i uzima prvi pogodak, pa bi
+            // drugi unos dobio tuđu vrednost.
+            var duplicateExercise = day.Exercises
+                .GroupBy(exercise => exercise.ExerciseId)
+                .Any(group => group.Count() > 1);
+
+            if (duplicateExercise)
+            {
+                throw new MesocycleGenerationException(
+                    $"Dan \"{day.Name.Trim()}\" sadrži istu vežbu dvaput.");
+            }
+        }
+
+        // Naziv dana postaje DayLabel treninga, a deload po njemu prepoznaje dan. Dva dana
+        // istog naziva bi značila da se polazni broj serija čita iz pogrešnog treninga.
+        var duplicateDay = request.Days
+            .GroupBy(day => day.Name.Trim(), StringComparer.OrdinalIgnoreCase)
+            .FirstOrDefault(group => group.Count() > 1);
+
+        if (duplicateDay is not null)
+        {
+            throw new MesocycleGenerationException(
+                $"Dva dana nose isti naziv (\"{duplicateDay.Key}\"). Nazivi dana moraju da se razlikuju.");
         }
 
         var exerciseIds = request.Days

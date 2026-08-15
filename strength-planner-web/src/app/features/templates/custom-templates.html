@@ -49,7 +49,7 @@
             </div>
 
             <ul class="tdays">
-              @for (day of template.days; track day.name) {
+              @for (day of template.days; track $index) {
                 <li class="tday">
                   <span class="tday__name">{{ day.name }}</span>
                   <ul class="tday__exercises">
@@ -128,27 +128,27 @@
       </div>
     </section>
 
-    @for (day of days(); track $index) {
+    @for (day of days(); track $index; let dayIndex = $index) {
       <section class="card day">
         <div class="day__head">
           <div class="field field--grow">
-            <label class="field__label" [attr.for]="'day-name-' + $index">
-              Naziv dana {{ $index + 1 }}
+            <label class="field__label" [attr.for]="'day-name-' + dayIndex">
+              Naziv dana {{ dayIndex + 1 }}
             </label>
             <input
               class="control"
               type="text"
               maxlength="64"
-              [attr.id]="'day-name-' + $index"
+              [attr.id]="'day-name-' + dayIndex"
               [value]="day.name"
-              (input)="setDayName($index, $any($event.target).value)"
+              (input)="setDayName(dayIndex, $any($event.target).value)"
             />
           </div>
           <button
             class="iconbtn"
             type="button"
-            [attr.aria-label]="'Ukloni dan ' + ($index + 1)"
-            (click)="removeDay($index)"
+            [attr.aria-label]="'Ukloni dan ' + (dayIndex + 1)"
+            (click)="removeDay(dayIndex)"
           >
             <mat-icon aria-hidden="true">delete_outline</mat-icon>
           </button>
@@ -167,7 +167,7 @@
                   class="iconbtn"
                   type="button"
                   [attr.aria-label]="'Ukloni ' + exerciseName(exercise.exerciseId)"
-                  (click)="removeExercise($index, exerciseIndex)"
+                  (click)="removeExercise(dayIndex, exerciseIndex)"
                 >
                   <mat-icon aria-hidden="true">close</mat-icon>
                 </button>
@@ -175,50 +175,59 @@
 
               <div class="exrow__numbers">
                 <div class="field">
-                  <label class="field__label" [attr.for]="'sets-' + $index + '-' + exerciseIndex">
+                  <label
+                    class="field__label"
+                    [attr.for]="'sets-' + dayIndex + '-' + exerciseIndex"
+                  >
                     Serija
                   </label>
                   <input
                     class="control numeric"
                     type="number"
                     inputmode="numeric"
-                    [attr.id]="'sets-' + $index + '-' + exerciseIndex"
+                    [attr.id]="'sets-' + dayIndex + '-' + exerciseIndex"
                     [min]="limits.minSets"
                     [max]="limits.maxSets"
                     [value]="exercise.sets"
-                    (change)="setExerciseNumber($index, exerciseIndex, 'sets', $any($event.target).value)"
+                    (change)="setExerciseNumber(dayIndex, exerciseIndex, 'sets', $any($event.target).value)"
                   />
                 </div>
 
                 <div class="field">
-                  <label class="field__label" [attr.for]="'rmin-' + $index + '-' + exerciseIndex">
+                  <label
+                    class="field__label"
+                    [attr.for]="'rmin-' + dayIndex + '-' + exerciseIndex"
+                  >
                     Ponavljanja od
                   </label>
                   <input
                     class="control numeric"
                     type="number"
                     inputmode="numeric"
-                    [attr.id]="'rmin-' + $index + '-' + exerciseIndex"
+                    [attr.id]="'rmin-' + dayIndex + '-' + exerciseIndex"
                     [min]="limits.minReps"
                     [max]="limits.maxReps"
                     [value]="exercise.repRangeMin"
-                    (change)="setExerciseNumber($index, exerciseIndex, 'repRangeMin', $any($event.target).value)"
+                    (change)="setExerciseNumber(dayIndex, exerciseIndex, 'repRangeMin', $any($event.target).value)"
                   />
                 </div>
 
                 <div class="field">
-                  <label class="field__label" [attr.for]="'rmax-' + $index + '-' + exerciseIndex">
+                  <label
+                    class="field__label"
+                    [attr.for]="'rmax-' + dayIndex + '-' + exerciseIndex"
+                  >
                     do
                   </label>
                   <input
                     class="control numeric"
                     type="number"
                     inputmode="numeric"
-                    [attr.id]="'rmax-' + $index + '-' + exerciseIndex"
+                    [attr.id]="'rmax-' + dayIndex + '-' + exerciseIndex"
                     [min]="limits.minReps"
                     [max]="limits.maxReps"
                     [value]="exercise.repRangeMax"
-                    (change)="setExerciseNumber($index, exerciseIndex, 'repRangeMax', $any($event.target).value)"
+                    (change)="setExerciseNumber(dayIndex, exerciseIndex, 'repRangeMax', $any($event.target).value)"
                   />
                 </div>
               </div>
@@ -226,16 +235,16 @@
           }
         </ul>
 
-        @if (canAddExercise($index)) {
+        @if (canAddExercise(dayIndex)) {
           <div class="field">
-            <label class="field__label" [attr.for]="'add-ex-' + $index">Dodaj vežbu</label>
+            <label class="field__label" [attr.for]="'add-ex-' + dayIndex">Dodaj vežbu</label>
             <select
               class="control"
-              [attr.id]="'add-ex-' + $index"
-              (change)="addExercise($index, $any($event.target).value); $any($event.target).value = ''"
+              [attr.id]="'add-ex-' + dayIndex"
+              (change)="addExercise(dayIndex, $any($event.target).value); $any($event.target).value = ''"
             >
               <option value="">Izaberi vežbu…</option>
-              @for (candidate of exercises(); track candidate.id) {
+              @for (candidate of availableFor(dayIndex); track candidate.id) {
                 <option [value]="candidate.id">{{ candidate.name }}</option>
               }
             </select>
@@ -255,6 +264,10 @@
         {{ days().length }} dana · {{ exerciseCount() }} vežbi
       </p>
     </div>
+
+    @if (saveBlockedReason(); as reason) {
+      <p class="card__hint" role="status">{{ reason }}</p>
+    }
 
     <div class="pagebar">
       <button

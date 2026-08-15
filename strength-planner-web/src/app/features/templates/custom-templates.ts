@@ -68,12 +68,42 @@ export class CustomTemplates {
    * Šablon bez ijedne vežbe ne bi napravio nijedan trening, a server bi ga odbio tek posle
    * poziva. Dugme je zato zaključano dok se to ne ispuni.
    */
-  protected readonly canSave = computed(
-    () =>
+  protected readonly canSave = computed(() => {
+    const days = this.days();
+    const names = days.map((day) => day.name.trim().toLocaleLowerCase('sr'));
+
+    return (
       this.name().trim().length > 0 &&
-      this.days().length > 0 &&
-      this.days().every((day) => day.name.trim().length > 0 && day.exercises.length > 0),
-  );
+      days.length > 0 &&
+      days.every((day) => day.name.trim().length > 0 && day.exercises.length > 0) &&
+      new Set(names).size === names.length
+    );
+  });
+
+  /** Poruka uz zaključano dugme, da se ne pogađa šta nedostaje. */
+  protected readonly saveBlockedReason = computed(() => {
+    const days = this.days();
+
+    if (this.name().trim().length === 0) {
+      return 'Unesi naziv šablona.';
+    }
+    if (days.length === 0) {
+      return 'Dodaj bar jedan dan.';
+    }
+    if (days.some((day) => day.name.trim().length === 0)) {
+      return 'Svaki dan mora da ima naziv.';
+    }
+    if (days.some((day) => day.exercises.length === 0)) {
+      return 'Svaki dan mora da ima bar jednu vežbu.';
+    }
+
+    const names = days.map((day) => day.name.trim().toLocaleLowerCase('sr'));
+    if (new Set(names).size !== names.length) {
+      return 'Nazivi dana moraju da se razlikuju.';
+    }
+
+    return null;
+  });
 
   constructor() {
     this.load();
@@ -142,12 +172,25 @@ export class CustomTemplates {
     return { name: `Dan ${index}`, exercises: [] };
   }
 
+  /**
+   * Naziv novog dana mora da bude slobodan: server odbija dva dana istog naziva, jer naziv
+   * postaje oznaka treninga po kojoj deload prepoznaje dan.
+   */
   protected addDay(): void {
     if (!this.canAddDay()) {
       return;
     }
 
-    this.days.update((days) => [...days, this.newDay(days.length + 1)]);
+    this.days.update((days) => {
+      const taken = new Set(days.map((day) => day.name.trim().toLocaleLowerCase('sr')));
+      let candidate = days.length + 1;
+
+      while (taken.has(`dan ${candidate}`)) {
+        candidate += 1;
+      }
+
+      return [...days, this.newDay(candidate)];
+    });
   }
 
   protected removeDay(dayIndex: number): void {
@@ -164,6 +207,16 @@ export class CustomTemplates {
 
   protected canAddExercise(dayIndex: number): boolean {
     return (this.days()[dayIndex]?.exercises.length ?? 0) < this.limits.maxExercisesPerDay;
+  }
+
+  /**
+   * Vežbe koje dan još nema. Server odbija istu vežbu dvaput u danu - automatski deload
+   * izvodi polazni broj serija po paru (dan, vežba) - pa se ovde i ne nudi.
+   */
+  protected availableFor(dayIndex: number): ExerciseDto[] {
+    const taken = new Set(this.days()[dayIndex]?.exercises.map((item) => item.exerciseId) ?? []);
+
+    return this.exercises().filter((exercise) => !taken.has(exercise.id));
   }
 
   /**
