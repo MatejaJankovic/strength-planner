@@ -124,8 +124,48 @@ Brisanje takvog šablona se zato odbija sa objašnjenjem, umesto da plan kasnije
 - Tri migracije primenjene na lokalnu bazu; popunjavanje osnovnog opsega provereno upitom.
 - API se podiže čist sa novim grafom zavisnosti.
 
-Ekran za pravljenje šablona je iza prijave, pa vizuelni prolaz kroz aplikaciju ostaje za
-sesiju sa prijavljenim nalogom.
+### Prolaz kroz aplikaciju sa prijavljenim nalogom
+
+Napravljen je lični šablon **"Moj Upper/Lower"** sa namerno neuobičajenim brojevima, da bi
+se u planu videlo čiji su:
+
+| Dan | Vežba | Uneto |
+|---|---|---|
+| Dan 1 | Bench Press | 6 serija, 5-8 |
+| Dan 1 | Barbell Row | 4 serije, 6-10 |
+| Dan 2 | Back Squat | 5 serija, 4-6 |
+
+Od njega je napravljen mezociklus, cilj hipertrofija, **linearan** raspored, nalog na
+naprednom nivou. Rezultat:
+
+**Trening nosi tačno izabrane vežbe.** Dan 1 ima dve, Dan 2 jednu. Ugrađen šablon bi
+naprednom vežbaču dao šest vežbi po danu - `SessionComposition` se za lični šablon ne
+primenjuje, kako je i namera.
+
+**Nedelja 3 je osnova i vraća unos neizmenjen:** Bench Press 6×5-8, Barbell Row 4×6-10,
+Back Squat 5×4-6.
+
+**Ostale nedelje su pomerene istim rasporedom kao propis cilja.** Za Bench Press:
+
+| Nedelja | Faza | Serije | Ponavljanja | RIR |
+|---|---|---|---|---|
+| 1 | volumen (+3 pon., +1 serija) | 7 | 8-11 | 2 |
+| 3 | osnova | 6 | 5-8 | 1 |
+| 5 | intenzitet (-2 pon., -1 serija) | 5 | 3-6 | 1 |
+| 6 | deload | **3** | **5-8** | 1 |
+
+Dva reda u toj tabeli su ono zbog čega je pola ovog posla i urađeno:
+
+- **deload polovi 6 na 3**, a ne podrazumevane 4 na 2 - dakle polazi od korisnikovog broja;
+- **deload vraća 5-8**, a ne 8-12 iz cilja. Bez `BaseRepRangeMin/Max` upravo bi tu unos bio
+  tiho prepisan.
+
+**Preraspodela ka MAV-u radi i dalje**, i vidi se da sidro ostaje korisnikovo: Barbell Row
+u nedelji 1 stoji na `propisano 5 / predloženo 6`, u nedelji 3 na `4 / 6`.
+
+**Lični šablon je ponuđen i u dugoročnom planu** - izabran u bloku čarobnjaka, a pregled
+plana ispisuje njegov naziv ("Moj Upper/Lower · Linearan, 6 ned."), što proverava i
+razrešavanje naziva po ključu `custom:{guid}`.
 
 ## Poznata ograničenja
 
