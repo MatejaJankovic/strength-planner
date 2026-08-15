@@ -36,7 +36,7 @@ Analiza sa ishodom po stavci: [`../analiza-prirucnika.md`](../analiza-prirucnika
 | Grana | O čemu je | PR |
 |---|---|---|
 | [Raspored na telefonu i tekst](mobile-layout-and-copy.md) | Navigacija u dva reda, izbor nedelje prelomljen, naslov plana preko pola ekrana, meniji bloka nečitljivi; plus izmene teksta i uklanjanje dugih crta | #39 |
-| [Polja profila](profile-fields.md) | Pol je bio slobodan tekst pa se izabrana vrednost nije prikazivala; sada je enum. Uklonjeno "Treninga nedeljno", koje je služilo samo oznaci "predlog za tebe" | #40 |
+| [Polja profila](profile-fields.md) | Pol je bio slobodan tekst pa se izabrana vrednost nije prikazivala; sada je enum. Uklonjeno "Treninga nedeljno", koje je služilo samo oznaci "predlog za tebe" | #40 → #42 |
 | [Lični šabloni treninga](custom-workout-templates.md) | Sam biraš dane, vežbe, serije i opseg ponavljanja; auto-regulacija nastavlja da radi nad tvojim brojevima | #41 |
 
 ## Ako čitaš samo jedno
