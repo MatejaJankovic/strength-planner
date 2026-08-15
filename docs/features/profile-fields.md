@@ -60,12 +60,15 @@ Korisnik je prijavio da pol ne ostaje označen ni **posle čuvanja na profilu**.
 putanju je ispravan: `loadMe()` je običan GET bez keširanja, a `"M"` sačuvan sa profila bi
 se pri povratku poklopio sa opcijom `M`.
 
-Vrlo verovatno objašnjenje je druga greška sa istog spiska: na priloženom snimku ekrana
-dugme **"Sačuvaj profil" stoji ispod donje navigacije**, koja je zbog preloma u dva reda
-bila viša nego što `padding-bottom` na `.app-shell` predviđa. Klik na dugme je pogađao
-navigaciju. To je ispravljeno u
-[`mobile-layout-and-copy`](mobile-layout-and-copy.md) - navigacija je sada u jednom redu i
-ne prekriva sadržaj.
+Objašnjenje je druga greška sa istog spiska, i ono **više nije pretpostavka nego merenje**.
+Na priloženom snimku ekrana dugme "Sačuvaj profil" stoji ispod donje navigacije. Izmereno
+na 375px sa zatečenim stilom (tri kolone za četiri stavke): traka je visoka **127px**, a
+`.app-shell` ispod sadržaja rezerviše **82px** - dakle poslednjih **45px** ekrana je pod
+trakom. Dugme je visoko 48px.
+
+Klik na "Sačuvaj profil" je pogađao navigaciju, profil se nije ni čuvao, i pol se pri
+povratku očekivano nije video. Sa četiri kolone traka je 69px i ne prekriva ništa; vidi
+[`mobile-layout-and-copy`](mobile-layout-and-copy.md).
 
 ## Problem 2: "Treninga nedeljno" nije imalo šta da radi
 
@@ -90,11 +93,20 @@ da dugme ne bi bilo zaključano na otvaranju.
 
 ## Provera
 
-- `dotnet build`, `dotnet test` (270 testova), `npm run build`, `npm test` (7 testova) -
-  sve prolazi.
-- Dva nova testa: `[DefinedEnum]` odbija pol koji enum ne definiše, i propušta prazan pol.
+- `dotnet build`, `dotnet test`, `npm run build`, `npm test` - sve prolazi.
+- Dva nova xUnit testa: `[DefinedEnum]` odbija pol koji enum ne definiše, i propušta
+  prazan pol.
+- **Šest novih testova komponente** (`profile-home.spec.ts`) idu kroz ceo put koji je bio
+  pokvaren: odgovor servera → označena opcija → telo zahteva pri čuvanju. Pokriveni su i
+  slučajevi koji se lako previde:
+  - vrednost koju enum ne definiše (zatečeno `"Male"`) ostavlja polje prazno umesto da
+    obori ekran,
+  - "ne želim da navedem" šalje `null`, a ne nulu - `Number('')` je nula, a nula je
+    `Male`, pa se prazan string proverava pre pretvaranja,
+  - `trainingDaysPerWeek` se više ne pojavljuje u telu zahteva.
 - Migracija primenjena na lokalnu bazu; broj redova pre i posle proveren upitom.
-- Prolaz kroz aplikaciju - rezultat se upisuje ovde posle provere u pregledaču.
+- Registracija proverena u živoj aplikaciji: polje "Treninga nedeljno" ga nema, a opcije
+  pola nose vrednosti `0` i `1`.
 
 ## Poznato ograničenje
 
