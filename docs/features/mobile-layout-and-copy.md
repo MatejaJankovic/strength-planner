@@ -133,9 +133,18 @@ je korisnik sam ukucao u naziv plana.
 - `dotnet build`, `dotnet test`, `npm run build`, `npm test` — sve prolazi.
 - Migracija primenjena na lokalnu bazu; provereno upitom da nijedan naziv mezociklusa
   više ne sadrži dugu crtu (126 redova).
-- **Navigacija izmerena u pregledaču** na 375px i 320px, nad stvarnim prevedenim stilovima:
-  četiri jednake kolone, sve stavke na istoj visini (jedan red), nijedan naziv skraćen,
-  visina trake 69px naspram 82px koje `.app-shell` rezerviše.
+- **Prolaz kroz aplikaciju sa prijavljenim nalogom, na 375×812.** Sve četiri stavke sa
+  spiska su proverene u živoj aplikaciji, ne samo u kodu:
 
-Izbor nedelje, naslov plana i kartica bloka su iza prijave, pa ostaju za prolaz kroz
-aplikaciju sa prijavljenim nalogom.
+| Šta | Mereno | Rezultat |
+|---|---|---|
+| Navigacija | visina trake i broj redova, na 375px i 320px | 4 kolone, **jedan red**, 69px naspram 82px koje `.app-shell` rezerviše; nijedan naziv skraćen |
+| Izbor nedelje | šestonedeljni blok u analitici | **svih 6 u jednom redu**, dugmad 48×44px |
+| Naslov plana | naziv sa snimka ekrana, `Zima 2026 - blok 1 (Push/Pull/Legs x2)` | **6 redova (173px) → 2 reda (57px)** |
+| Kartica bloka | čarobnjak dugoročnog plana | polja jedno ispod drugog, meniji široki 284px, "Obrnut · 6 ned." (114px) i "Moj Upper/Lower" (131px) staju celi |
+
+Poslednji red je poređenje sa zatečenim stanjem: u zatečenoj verziji su ista tri menija
+delila jedan red i pokazivala `Hipe…`, `Obrn…`, `Upp…`.
+
+Naslov je meren tako što je modifikator privremeno uklonjen sa istog elementa i naslov
+ponovo izmeren - dakle razlika dolazi iz same izmene, a ne iz razlike u tekstu.
