@@ -149,6 +149,7 @@
               <select
                 class="control control--compact"
                 [attr.id]="'block-goal-' + $index"
+                [attr.aria-label]="'Cilj bloka ' + ($index + 1)"
                 (change)="setBlockGoal($index, $any($event.target).value)"
               >
                 @for (option of goalOptions; track option.value) {
@@ -164,6 +165,7 @@
               <select
                 class="control control--compact"
                 [attr.id]="'block-model-' + $index"
+                [attr.aria-label]="'Raspored bloka ' + ($index + 1)"
                 (change)="setBlockModel($index, $any($event.target).value)"
               >
                 @for (option of modelOptions; track option.value) {
@@ -184,6 +186,7 @@
               <select
                 class="control control--compact"
                 [attr.id]="'block-template-' + $index"
+                [attr.aria-label]="'Šablon treninga bloka ' + ($index + 1)"
                 (change)="setBlockTemplate($index, $any($event.target).value)"
               >
                 @for (template of templates(); track template.key) {

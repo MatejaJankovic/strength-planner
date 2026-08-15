@@ -21,9 +21,23 @@ grid-template-columns: repeat(3, minmax(0, 1fr));
 Traka je zbog toga bila dvostruko viša nego što je `padding-bottom` na `.app-shell`
 predviđao, pa je preko sadržaja prekrivala poslednji trening u nedelji.
 
-Kolona je sada četiri. Uz to, naziv taba više ne sme sam da se prelomi (`white-space:
-nowrap`), a veličina slova prati širinu ekrana — `clamp(0.66rem, 3vw, 0.76rem)` — jer
-"Analitika" je najduži naziv i na 320px u četvrtini trake staje samo skupljen.
+Kolona je sada četiri, i to je cela ispravka. Naziv taba uz to više ne sme sam da se
+prelomi (`white-space: nowrap`), kao osigurač da se viša traka ne vrati.
+
+Prva verzija je uz to skupljala i slova (`clamp(0.66rem, 3vw, 0.76rem)`), pod
+pretpostavkom da "Analitika" ne staje u četvrtinu trake na uskom ekranu. **Merenje je tu
+pretpostavku oborilo.** Sa stvarnim fontom (Inter, težina 800) na 320px:
+
+| Naziv | Širina na 0.76rem | Raspoloživo |
+|---|---|---|
+| Analitika | 53.6px | 61.4px |
+| Trening | 46.3px | 61.4px |
+| Profil | 32.3px | 61.4px |
+| Plan | 26.3px | 61.4px |
+
+Najduži naziv ima skoro 8px viška i pri **nepromenjenoj** veličini slova. Skupljanje teksta je
+zato uklonjeno: rešavalo je problem koji ne postoji, a uvodilo je ponašanje (tekst koji se
+menja sa širinom prozora) koje niko nije tražio. Ostao je samo broj kolona.
 
 ### 2. Šestonedeljni blok je lomio izbor nedelje na dva reda
 
@@ -81,7 +95,7 @@ nigde nije koristila.
 ## Crtice
 
 Sve **duge crte** (`—`) u tekstu koji korisnik vidi zamenjene su običnom crticom (`-`):
-25 mesta u Angular šablonima i dva niza u `create-mesocycle.ts`. Komentari u kodu, XML
+26 mesta u Angular šablonima i dva niza u `create-mesocycle.ts`. Komentari u kodu, XML
 dokumentacija i `docs/` nisu dirani — njih korisnik aplikacije ne vidi.
 
 **Kratke crte u opsezima ostaju kratke crte** (`3–12 ponavljanja`, `MEV 7–14`, `RIR 0–3`).
