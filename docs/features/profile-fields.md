@@ -105,8 +105,17 @@ da dugme ne bi bilo zaključano na otvaranju.
     `Male`, pa se prazan string proverava pre pretvaranja,
   - `trainingDaysPerWeek` se više ne pojavljuje u telu zahteva.
 - Migracija primenjena na lokalnu bazu; broj redova pre i posle proveren upitom.
-- Registracija proverena u živoj aplikaciji: polje "Treninga nedeljno" ga nema, a opcije
-  pola nose vrednosti `0` i `1`.
+- **Prolaz kroz aplikaciju sa prijavljenim nalogom**, tačno onim redosledom koji je bio
+  prijavljen kao pokvaren:
+  1. nalog napravljen sa polom "Muški" → server vraća `sex: 0`, a `trainingDaysPerWeek`
+     više nije ni u odgovoru;
+  2. ekran "Profil" pokazuje **"Muški"** - dakle pol izabran pri registraciji se konačno
+     vidi, što je izvorna greška;
+  3. promena na "Ženski" → "Sačuvaj profil" (`PUT /api/auth/profile` → 200) → odlazak na
+     drugi ekran → povratak na profil → **i dalje "Ženski"**.
+- Provereno i da dugme "Sačuvaj profil" više ne stoji ispod donje navigacije, što je i bio
+  razlog zbog kog čuvanje ranije nije ni polazilo.
+- Polja "Treninga nedeljno" nema ni na registraciji ni na profilu.
 
 ## Poznato ograničenje
 
