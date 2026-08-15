@@ -10,9 +10,6 @@ public sealed class WorkoutTemplateDto
 
     public string Name { get; set; } = string.Empty;
 
-    /// <summary>Šablon koji odgovara broju trenažnih dana iz profila.</summary>
-    public bool IsSuggested { get; set; }
-
     /// <summary>Upozorenje o poznatom ograničenju šablona, ako ga ima.</summary>
     public string? Note { get; set; }
 

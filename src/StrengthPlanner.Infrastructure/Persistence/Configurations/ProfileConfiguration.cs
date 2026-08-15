@@ -14,6 +14,5 @@ public class ProfileConfiguration : IEntityTypeConfiguration<Profile>
         builder.HasKey(p => p.UserId);
 
         builder.Property(p => p.BodyweightKg).HasPrecision(6, 2);
-        builder.Property(p => p.Sex).HasMaxLength(16);
     }
 }

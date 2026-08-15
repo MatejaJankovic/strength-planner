@@ -141,7 +141,6 @@ describe('AuthService — čišćenje keševa pri promeni identiteta', () => {
         age: 30,
         bodyweightKg: 80,
         experienceLevel: 1,
-        trainingDaysPerWeek: 3,
       })
       .subscribe();
     http.expectOne((request) => request.url.endsWith('/auth/register')).flush({
