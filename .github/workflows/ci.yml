@@ -142,7 +142,7 @@ jobs:
 
       # Zakačeno za commit, ne za `v2` oznaku. Oznakom upravlja tuđi repozitorijum i može
       # da se pomeri; ovaj korak radi sa tokenom ovog repozitorijuma, pa bi pomerena
-      # oznaka značila tuđi kod sa našim pravima. Dependabot je podešen da ovo diže.
+      # oznaka značila tuđi kod sa našim pravima. Verziju treba dizati ručno, povremeno.
       - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

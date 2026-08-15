@@ -132,8 +132,7 @@ openssl rand -base64 48
 - **Rezervne kopije baze.** Volumen `strengthplanner_pgdata` je jedino mesto gde podaci
   postoje.
 - **Nadogradnja osnovnih imidža.** `postgres:16`, `aspnet:8.0` i `nginx-unprivileged:1.27`
-  dobijaju bezbednosne ispravke. Dependabot sada mesečno otvara PR za njih, ali sam build
-  moraš da pustiš: `docker compose build --pull`.
+  dobijaju bezbednosne ispravke; povremeno uradi `docker compose build --pull`.
 - **Migracije se izvršavaju pri svakom startu API-ja.** Zgodno za demo. Za pravu produkciju je
   uobičajeno razdvojiti korak migracije od pokretanja aplikacije, da nadogradnja ne bi menjala
   šemu u trenutku kad se dižu instance.
