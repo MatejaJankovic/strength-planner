@@ -29,7 +29,7 @@ Analiza sa ishodom po stavci: [`../analiza-prirucnika.md`](../analiza-prirucnika
 
 | Grana | O čemu je | PR |
 |---|---|---|
-| [Predlog serija po nedeljnom volumenu](weekly-volume-set-targets.md) | Broj serija se bira tako da nedelja padne u ciljnu zonu svakog mišića, i prilagođava se kada trening ne ispuni predlog | #20 |
+| [Predlog serija po nedeljnom volumenu](weekly-volume-set-targets.md) | Broj serija se bira tako da nedelja padne u ciljnu zonu svakog mišića, i prilagođava se kada trening ne ispuni predlog | #37 |
 
 ## Ako čitaš samo jedno
 

@@ -182,7 +182,7 @@ the query filter that had to be switched off to prove it was doing the work.
 
 | Branch | What it added | PR |
 |---|---|---|
-| `feature/weekly-volume-set-targets` | Sets per exercise chosen so the week lands on each muscle's MAV, and re-balanced for the week's remaining sessions whenever one is completed | #20 |
+| `feature/weekly-volume-set-targets` | Sets per exercise chosen so the week lands on each muscle's MAV, and re-balanced for the week's remaining sessions whenever one is completed | #37 |
 
 MAV had existed since round 2 and was never read by the planner: every exercise got the same
 set count from the experience level, so weekly volume per muscle was whatever the template
