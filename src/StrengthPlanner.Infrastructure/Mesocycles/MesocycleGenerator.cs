@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using StrengthPlanner.Application.DTOs.Mesocycles;
 using StrengthPlanner.Application.Exceptions;
 using StrengthPlanner.Application.Interfaces;
@@ -14,11 +14,13 @@ namespace StrengthPlanner.Infrastructure.Mesocycles;
 public class MesocycleGenerator : IMesocycleGenerator
 {
     private readonly AppDbContext _db;
+    private readonly WeeklySetPlanner _setPlanner;
     private readonly E1RmCalculator _e1RmCalculator = new();
 
-    public MesocycleGenerator(AppDbContext db)
+    public MesocycleGenerator(AppDbContext db, WeeklySetPlanner setPlanner)
     {
         _db = db;
+        _setPlanner = setPlanner;
     }
 
     public async Task<MesocycleDto> GenerateAsync(
@@ -142,6 +144,13 @@ public class MesocycleGenerator : IMesocycleGenerator
         _db.Mesocycles.Add(mesocycle);
         await _db.SaveChangesAsync(cancellationToken);
 
+        // Propis daje svakoj vežbi isti broj serija, pa nedeljni volumen po mišiću ispadne
+        // onako kako se šablon slučajno sabere. Ovde se serije preraspoređuju tako da
+        // nedelja padne u ciljnu zonu svakog mišića koji trenira. Radi nad upravo upisanim
+        // (praćenim) planovima, pa je i DTO ispod već izbalansiran.
+        await _setPlanner.RebalanceAsync(userId, mesocycle.Id, cancellationToken);
+        await _db.SaveChangesAsync(cancellationToken);
+
         if (transaction is not null)
         {
             await transaction.CommitAsync(cancellationToken);
@@ -230,7 +239,10 @@ public class MesocycleGenerator : IMesocycleGenerator
                         Id = Guid.NewGuid(),
                         ExerciseId = exercise.Id,
                         Order = exerciseIndex + 1,
+                        // Propis nedelje je polazna vrednost i za predlog i za sidro;
+                        // balansiranje volumena ispod pomera samo predlog.
                         TargetSets = prescription.Sets,
+                        PrescribedSets = prescription.Sets,
                         RepRangeMin = prescription.RepRangeMin,
                         RepRangeMax = prescription.RepRangeMax,
                         TargetRir = prescription.TargetRir,
@@ -321,6 +333,7 @@ public class MesocycleGenerator : IMesocycleGenerator
                                     ExerciseName = exerciseNameById.GetValueOrDefault(plan.ExerciseId, string.Empty),
                                     Order = plan.Order,
                                     TargetSets = plan.TargetSets,
+                                    PrescribedSets = plan.PrescribedSets,
                                     RepRangeMin = plan.RepRangeMin,
                                     RepRangeMax = plan.RepRangeMax,
                                     TargetRir = plan.TargetRir,

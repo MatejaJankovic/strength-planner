@@ -177,6 +177,28 @@ recorded next to the fix rather than quietly dropped: the HTTPS redirect that re
 nothing, the 500,000-character password that cost 130 ms rather than exhausting a core, and
 the query filter that had to be switched off to prove it was doing the work.
 
+**Round 5 — the set count finally aims at the volume target.** Write-up in
+[`docs/features/weekly-volume-set-targets.md`](docs/features/weekly-volume-set-targets.md).
+
+| Branch | What it added | PR |
+|---|---|---|
+| `feature/weekly-volume-set-targets` | Sets per exercise chosen so the week lands on each muscle's MAV, and re-balanced for the week's remaining sessions whenever one is completed | #37 |
+
+MAV had existed since round 2 and was never read by the planner: every exercise got the same
+set count from the experience level, so weekly volume per muscle was whatever the template
+happened to add up to. `TargetSets` was not rendered on any screen either.
+
+Three measurements from that round are recorded next to the change rather than dropped: the
+greedy search piled the whole correction onto the week's first day until distance from the
+prescription was made to cost something; the first attribution of *why* a proposal moved
+looked at the state before balancing, where the pressure that caused the move does not exist
+yet; and balancing cancelled an auto-deload created in the same request, because
+`DeloadService` leaves `IsDeload` in the change tracker while the allocator asks the
+database — the deload week came back carrying four sets per exercise instead of two.
+
+That last one is the reason `SessionService.CompleteAsync` saves before it rebalances. The
+ordering is load-bearing and commented as such.
+
 **Do not commit a document that lists unfixed weaknesses of the live app: this repository is
 public.** Security notes describe what is closed and how it is verified; anything still open
 is stated at a level useful to the owner, not to an attacker.

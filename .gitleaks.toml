@@ -11,7 +11,11 @@ useDefault = true
 # Ostavljeno prazno namerno: sopstvenih pravila nema, koriste se podrazumevana.
 id = "placeholder-noop"
 description = "Nikad se ne poklapa; postoji da [[rules]] blok ne bude prazan."
-regex = '''$^'''
+# Bilo je '''$^''' — zamisao je bila „kraj teksta pa odmah početak", dakle nemoguće.
+# Na praznom fragmentu je ipak poklapalo, jer je nulta pozicija istovremeno i kraj i
+# početak, pa je pravilo prijavljivalo nalaz nasred obične izmene koda (entropija 0.000000).
+# Prazna klasa znakova nema tu rupu: „nije razmak i nije ne-razmak" ne može biti ništa.
+regex = '''[^\s\S]'''
 
 [allowlist]
 description = "Vrednosti koje su namerno lažne i tu su da bi se videlo šta treba postaviti."

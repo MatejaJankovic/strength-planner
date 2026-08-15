@@ -13,7 +13,7 @@ import {
   WorkoutSessionDto,
 } from '../../core/models/training.models';
 import { WeightStepper } from '../../shared/components/weight-stepper/weight-stepper';
-import { StatChip } from '../../shared/components/stat-chip/stat-chip';
+import { StatChip, StatChipTone } from '../../shared/components/stat-chip/stat-chip';
 import { EmptyState } from '../../shared/components/empty-state/empty-state';
 import { Loading } from '../../shared/components/loading/loading';
 
@@ -103,6 +103,18 @@ export class WorkoutSession {
       };
     }
     this.drafts.set(drafts);
+  }
+
+  /**
+   * Boja brojača serija. Zeleno tek kada je predlog ispunjen, crveno tek kada je trening
+   * zatvoren ispod njega — dok trening traje, manjak serija nije greška nego stanje.
+   */
+  protected setsTone(plan: ExercisePlanDto): StatChipTone {
+    if (plan.setLogs.length >= plan.targetSets) {
+      return 'optimal';
+    }
+
+    return this.isCompleted() ? 'below' : 'neutral';
   }
 
   // --- draft accessors ------------------------------------------------------

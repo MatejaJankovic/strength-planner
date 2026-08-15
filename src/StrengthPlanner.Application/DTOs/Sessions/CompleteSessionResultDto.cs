@@ -6,11 +6,40 @@ public class CompleteSessionResultDto
     public string Status { get; set; } = string.Empty;
     public List<CompletedExerciseSummaryDto> Exercises { get; set; } = new();
 
+    /// <summary>
+    /// Predlozi serija koje je ovaj trening pomerio u treninzima koji u istoj nedelji tek
+    /// predstoje. Prazno kada nedelja i dalje pada u ciljnu zonu volumena.
+    /// </summary>
+    public List<SetAdjustmentDto> VolumeAdjustments { get; set; } = new();
+
     /// <summary>Popunjeno samo kada je ovaj trening zatvorio nedelju i pokrenuo deload.</summary>
     public AutoDeloadDto? AutoDeload { get; set; }
 
     /// <summary>Popunjeno kada je ovaj trening zatvorio blok i otvorio sledeći iz plana.</summary>
     public MacrocycleAdvanceDto? NextBlock { get; set; }
+}
+
+/// <summary>
+/// Jedan predlog serija koji je pomeren da bi nedelja ostala u ciljnoj zoni volumena.
+/// </summary>
+public class SetAdjustmentDto
+{
+    /// <summary>Trening u kome je predlog promenjen.</summary>
+    public Guid SessionId { get; set; }
+
+    /// <summary>Oznaka tog dana, npr. "Push".</summary>
+    public string DayLabel { get; set; } = string.Empty;
+
+    public string ExerciseName { get; set; } = string.Empty;
+
+    /// <summary>Predlog pre izmene — ono što je korisnik do sada video.</summary>
+    public int FromSets { get; set; }
+
+    /// <summary>Predlog koji sada važi.</summary>
+    public int ToSets { get; set; }
+
+    /// <summary>Mišićna grupa čiji nedeljni volumen najbolje objašnjava izmenu.</summary>
+    public string? Muscle { get; set; }
 }
 
 /// <summary>Prelazak na sledeći blok dugoročnog plana.</summary>

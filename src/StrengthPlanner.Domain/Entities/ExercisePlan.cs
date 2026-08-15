@@ -15,7 +15,16 @@ public class ExercisePlan
     public Exercise Exercise { get; set; } = null!;
 
     public int Order { get; set; }
+
+    // Predlog koji korisnik vidi: propis nedelje pomeren tako da nedelja padne u ciljnu
+    // zonu volumena za mišiće koje vežba pogađa.
     public int TargetSets { get; set; }
+
+    // Šta nivo iskustva i periodizacija propisuju za ovu nedelju, pre balansiranja
+    // volumena. Sidro oko koga se predlog pomera i mera koliko je pomeren — zato se
+    // upisuje samo kada se propis stvarno menja (generisanje bloka, deload).
+    public int PrescribedSets { get; set; }
+
     public int RepRangeMin { get; set; }
     public int RepRangeMax { get; set; }
     public int TargetRir { get; set; } // ciljni RIR; RPE = 10 - RIR

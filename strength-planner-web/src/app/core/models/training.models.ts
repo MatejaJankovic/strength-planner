@@ -114,7 +114,10 @@ export interface ExercisePlanDto {
   exerciseId: string;
   exerciseName: string;
   order: number;
+  /** Predlozeni broj radnih serija — propis pomeren ka ciljnoj zoni volumena. */
   targetSets: number;
+  /** Broj serija koji propisuju nivo iskustva i periodizacija, pre balansiranja volumena. */
+  prescribedSets: number;
   repRangeMin: number;
   repRangeMax: number;
   targetRir: number;
@@ -146,10 +149,29 @@ export interface CompleteSessionResultDto {
   sessionId: string;
   status: string;
   exercises: CompletedExerciseSummaryDto[];
+  /**
+   * Predlozi serija koje je ovaj trening pomerio u treninzima koji u istoj nedelji tek
+   * predstoje. Prazno kada nedelja i dalje pada u ciljnu zonu volumena.
+   */
+  volumeAdjustments: SetAdjustmentDto[];
   /** Popunjeno samo kada je ovaj trening zatvorio nedelju i pokrenuo deload. */
   autoDeload?: AutoDeloadDto | null;
   /** Popunjeno kada je ovaj trening zatvorio blok i otvorio sledeci iz plana. */
   nextBlock?: MacrocycleAdvanceDto | null;
+}
+
+/** Jedan predlog serija koji je pomeren da bi nedelja ostala u ciljnoj zoni volumena. */
+export interface SetAdjustmentDto {
+  sessionId: string;
+  /** Oznaka dana ciji je predlog promenjen, npr. "Push". */
+  dayLabel: string;
+  exerciseName: string;
+  /** Predlog pre izmene — ono sto je korisnik do sada video. */
+  fromSets: number;
+  /** Predlog koji sada vazi. */
+  toSets: number;
+  /** Misicna grupa ciji nedeljni volumen najbolje objasnjava izmenu. */
+  muscle?: string | null;
 }
 
 export interface MacrocycleAdvanceDto {
