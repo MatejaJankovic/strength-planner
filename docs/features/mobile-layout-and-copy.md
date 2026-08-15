@@ -18,8 +18,19 @@ grid-template-columns: repeat(3, minmax(0, 1fr));
 ```
 
 "Trening", "Plan" i "Analitika" su popunjavali prvi red, a "Profil" je počinjao drugi.
-Traka je zbog toga bila dvostruko viša nego što je `padding-bottom` na `.app-shell`
-predviđao, pa je preko sadržaja prekrivala poslednji trening u nedelji.
+
+Posledica nije bila samo ružna traka. **Izmereno u pregledaču na 375px, sa stvarnim
+prevedenim stilovima:**
+
+| | Visina trake | `.app-shell` rezerviše | Prekriva sadržaj |
+|---|---|---|---|
+| Tri kolone (zatečeno) | 127px | 82px | **45px** |
+| Četiri kolone | 69px | 82px | 0 |
+
+Poslednjih 45px svakog ekrana je stajalo ispod navigacije. Dugme je visoko 48px, pa je
+dugme na dnu ekrana bilo praktično nedodirljivo - klik je pogađao traku. Zbog toga je ovo
+ispravka i za jednu grešku sa drugog spiska; vidi
+[`profile-fields`](profile-fields.md).
 
 Kolona je sada četiri, i to je cela ispravka. Naziv taba uz to više ne sme sam da se
 prelomi (`white-space: nowrap`), kao osigurač da se viša traka ne vrati.
@@ -30,14 +41,17 @@ pretpostavku oborilo.** Sa stvarnim fontom (Inter, težina 800) na 320px:
 
 | Naziv | Širina na 0.76rem | Raspoloživo |
 |---|---|---|
-| Analitika | 53.6px | 61.4px |
-| Trening | 46.3px | 61.4px |
-| Profil | 32.3px | 61.4px |
-| Plan | 26.3px | 61.4px |
+| Analitika | 54px | 61px |
+| Trening | 46px | 61px |
+| Profil | 32px | 61px |
+| Plan | 26px | 61px |
 
-Najduži naziv ima skoro 8px viška i pri **nepromenjenoj** veličini slova. Skupljanje teksta je
+Najduži naziv ima 7px viška i pri **nepromenjenoj** veličini slova. Skupljanje teksta je
 zato uklonjeno: rešavalo je problem koji ne postoji, a uvodilo je ponašanje (tekst koji se
 menja sa širinom prozora) koje niko nije tražio. Ostao je samo broj kolona.
+
+Provereno na živoj aplikaciji: na 320px traka daje četiri kolone od po 71px, sve četiri
+stavke stoje u jednom redu i nijedan naziv se ne skraćuje.
 
 ### 2. Šestonedeljni blok je lomio izbor nedelje na dva reda
 
@@ -116,7 +130,12 @@ je korisnik sam ukucao u naziv plana.
 
 ## Provera
 
-- `dotnet build`, `dotnet test` (276 testova), `npm run build` — sve prolazi.
-- Migracija primenjena na lokalnu bazu.
-- Prolaz kroz aplikaciju na širini telefona (375×812) — rezultat se upisuje ovde posle
-  provere u pregledaču.
+- `dotnet build`, `dotnet test`, `npm run build`, `npm test` — sve prolazi.
+- Migracija primenjena na lokalnu bazu; provereno upitom da nijedan naziv mezociklusa
+  više ne sadrži dugu crtu (126 redova).
+- **Navigacija izmerena u pregledaču** na 375px i 320px, nad stvarnim prevedenim stilovima:
+  četiri jednake kolone, sve stavke na istoj visini (jedan red), nijedan naziv skraćen,
+  visina trake 69px naspram 82px koje `.app-shell` rezerviše.
+
+Izbor nedelje, naslov plana i kartica bloka su iza prijave, pa ostaju za prolaz kroz
+aplikaciju sa prijavljenim nalogom.
