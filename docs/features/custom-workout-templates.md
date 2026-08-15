@@ -110,9 +110,22 @@ Brisanje takvog šablona se zato odbija sa objašnjenjem, umesto da plan kasnije
 ## Provera
 
 - `dotnet build`, `dotnet test` (282 testa), `npm run build`, `npm test` - sve prolazi.
-- Sedam novih testova u `CustomTemplateTests`.
+- Sedam novih xUnit testova u `CustomTemplateTests`.
+- **Devet novih testova komponente** (`custom-templates.spec.ts`). Editor radi nad
+  ugnježdenim spiskom (dani, pa vežbe u danu), a takav spisak je lako pogrešno adresirati -
+  prva verzija jeste. Testovi zato ne gledaju izgled nego adresiranje i pravila koja server
+  posle odbija:
+  - izmena i brisanje vežbe pogađaju dan koji je zaista izabran (regresija za grešku sa
+    `$index` u ugnježdenom `@for`),
+  - serije i ponavljanja ostaju unutar granica koje propis nedelje ume da izrazi,
+  - opseg ostaje opseg kada se donja granica podigne preko gornje,
+  - dan ne nudi vežbu koju već ima, i dva dana ne mogu da nose isti naziv,
+  - telo zahteva nosi dane i vežbe onim redom kojim su unete.
 - Tri migracije primenjene na lokalnu bazu; popunjavanje osnovnog opsega provereno upitom.
-- Prolaz kroz aplikaciju - rezultat se upisuje ovde posle provere u pregledaču.
+- API se podiže čist sa novim grafom zavisnosti.
+
+Ekran za pravljenje šablona je iza prijave, pa vizuelni prolaz kroz aplikaciju ostaje za
+sesiju sa prijavljenim nalogom.
 
 ## Poznata ograničenja
 
