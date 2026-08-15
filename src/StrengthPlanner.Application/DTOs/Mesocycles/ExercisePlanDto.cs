@@ -8,7 +8,16 @@ public class ExercisePlanDto
     public Guid ExerciseId { get; set; }
     public string ExerciseName { get; set; } = string.Empty;
     public int Order { get; set; }
+
+    /// <summary>Predloženi broj radnih serija — propis pomeren ka ciljnoj zoni volumena.</summary>
     public int TargetSets { get; set; }
+
+    /// <summary>
+    /// Broj serija koji propisuju nivo iskustva i periodizacija. Razlika u odnosu na
+    /// <see cref="TargetSets"/> je tačno ono što je balansiranje volumena pomerilo.
+    /// </summary>
+    public int PrescribedSets { get; set; }
+
     public int RepRangeMin { get; set; }
     public int RepRangeMax { get; set; }
     public int TargetRir { get; set; }

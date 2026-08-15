@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using StrengthPlanner.Application.DTOs.Mesocycles;
 using StrengthPlanner.Application.DTOs.SetLogs;
 using StrengthPlanner.Application.Exceptions;
@@ -150,6 +150,7 @@ public class MesocycleService : IMesocycleService
                                     ExerciseName = plan.Exercise.Name,
                                     Order = plan.Order,
                                     TargetSets = plan.TargetSets,
+                                    PrescribedSets = plan.PrescribedSets,
                                     RepRangeMin = plan.RepRangeMin,
                                     RepRangeMax = plan.RepRangeMax,
                                     TargetRir = plan.TargetRir,

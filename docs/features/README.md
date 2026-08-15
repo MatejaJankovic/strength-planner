@@ -25,6 +25,12 @@ Analiza sa ishodom po stavci: [`../analiza-prirucnika.md`](../analiza-prirucnika
 | [Više šablona](more-templates.md) | Sedam šablona za 2–6 dana nedeljno, plus izolacione vežbe kojih uopšte nije bilo | #10 |
 | [Periodizacija po nedeljama](periodization-models.md) | Nedelje unutar bloka više nisu iste: ravan, linearan i obrnut raspored | #11 |
 
+## Peti krug — predlog serija koji cilja volumen
+
+| Grana | O čemu je | PR |
+|---|---|---|
+| [Predlog serija po nedeljnom volumenu](weekly-volume-set-targets.md) | Broj serija se bira tako da nedelja padne u ciljnu zonu svakog mišića, i prilagođava se kada trening ne ispuni predlog | #20 |
+
 ## Ako čitaš samo jedno
 
 [Periodizacija po nedeljama](periodization-models.md) — to je bio najveći raskorak između

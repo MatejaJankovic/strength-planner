@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using StrengthPlanner.Application.DTOs.Mesocycles;
 using StrengthPlanner.Application.DTOs.Sessions;
 using StrengthPlanner.Application.DTOs.SetLogs;
@@ -9,6 +9,7 @@ using StrengthPlanner.Domain.Entities;
 using StrengthPlanner.Domain.Enums;
 using StrengthPlanner.Infrastructure.Analytics;
 using StrengthPlanner.Infrastructure.Exercises;
+using StrengthPlanner.Infrastructure.Mesocycles;
 using StrengthPlanner.Infrastructure.Persistence;
 
 namespace StrengthPlanner.Infrastructure.TrainingLogs;
@@ -18,6 +19,7 @@ public class SessionService : ISessionService
     private readonly AppDbContext _db;
     private readonly VolumeLandmarkService _volumeLandmarks;
     private readonly DeloadService _deloads;
+    private readonly WeeklySetPlanner _setPlanner;
     private readonly IMacrocycleService _macrocycles;
     private readonly E1RmCalculator _e1RmCalculator = new();
     private readonly ProgressionEngine _progressionEngine = new();
@@ -26,11 +28,13 @@ public class SessionService : ISessionService
         AppDbContext db,
         VolumeLandmarkService volumeLandmarks,
         DeloadService deloads,
+        WeeklySetPlanner setPlanner,
         IMacrocycleService macrocycles)
     {
         _db = db;
         _volumeLandmarks = volumeLandmarks;
         _deloads = deloads;
+        _setPlanner = setPlanner;
         _macrocycles = macrocycles;
     }
 
@@ -289,6 +293,15 @@ public class SessionService : ISessionService
             RefreshSummariesAfterDeload(summaries, nextPlans);
         }
 
+        // Predlog serija se preračunava POSLE deload-a: rasterećenje menja i propis, a
+        // balansiranje volumena polazi upravo od njega. Ovim treningom je deo nedeljnog
+        // volumena upisan (ili propušten), pa treninzi koji u toj nedelji tek predstoje
+        // dobijaju predlog koji nedelju vraća u ciljnu zonu.
+        var volumeAdjustments = await _setPlanner.RebalanceAsync(
+            userId,
+            session.TrainingWeek.MesocycleId,
+            cancellationToken);
+
         // Sve što se tiče samog treninga mora da bude upisano pre prelaska na sledeći
         // blok — generator ispod poziva svoj SaveChanges, pa se na njega ne oslanjamo.
         await _db.SaveChangesAsync(cancellationToken);
@@ -333,6 +346,22 @@ public class SessionService : ISessionService
             SessionId = session.Id,
             Status = session.Status.ToString(),
             Exercises = summaries,
+            // Prijavljuje se samo tekuća nedelja. Balansiranje dodiruje i one koje tek
+            // dolaze (granice volumena su se možda pomerile ovim treningom), ali posledica
+            // OVOG treninga koju korisnik može da vidi na svom planu je ono što mu preostaje
+            // u ovoj nedelji.
+            VolumeAdjustments = volumeAdjustments
+                .Where(adjustment => adjustment.WeekNumber == session.TrainingWeek.WeekNumber)
+                .Select(adjustment => new SetAdjustmentDto
+                {
+                    SessionId = adjustment.SessionId,
+                    DayLabel = adjustment.DayLabel,
+                    ExerciseName = adjustment.ExerciseName,
+                    FromSets = adjustment.FromSets,
+                    ToSets = adjustment.ToSets,
+                    Muscle = adjustment.Muscle
+                })
+                .ToList(),
             AutoDeload = autoDeload is null
                 ? null
                 : new AutoDeloadDto
@@ -482,6 +511,7 @@ public class SessionService : ISessionService
                     ExerciseName = plan.Exercise.Name,
                     Order = plan.Order,
                     TargetSets = plan.TargetSets,
+                    PrescribedSets = plan.PrescribedSets,
                     RepRangeMin = plan.RepRangeMin,
                     RepRangeMax = plan.RepRangeMax,
                     TargetRir = plan.TargetRir,

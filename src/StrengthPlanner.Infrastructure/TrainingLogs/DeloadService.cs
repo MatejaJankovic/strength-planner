@@ -215,11 +215,14 @@ public sealed class DeloadService
             {
                 plan.WorkoutSession.DayLabel,
                 plan.ExerciseId,
-                plan.TargetSets,
+                plan.PrescribedSets,
                 plan.WorkoutSession.TrainingWeek.WeekNumber
             })
             .ToListAsync(cancellationToken);
 
+        // Propisani broj serija, ne predloženi: predlog je pomeren balansiranjem volumena,
+        // pa bi obrtanje periodizacije nad njim vratilo polaznu vrednost koju blok nikada
+        // nije imao.
         var baseSetsByExerciseAndDay = reference
             .GroupBy(item => (item.DayLabel, item.ExerciseId))
             .ToDictionary(
@@ -227,7 +230,7 @@ public sealed class DeloadService
                 group =>
                 {
                     var sample = group.First();
-                    return Periodization.BaseSetsFrom(model, sample.WeekNumber, sample.TargetSets);
+                    return Periodization.BaseSetsFrom(model, sample.WeekNumber, sample.PrescribedSets);
                 });
 
         var plans = await _db.ExercisePlans
@@ -254,7 +257,10 @@ public sealed class DeloadService
                 goal?.TargetRir ?? plan.TargetRir,
                 baseSets);
 
+            // Nedelja dobija nov propis, pa se sidro pomera zajedno sa predlogom;
+            // balansiranje volumena posle ovoga kreće od nove vrednosti.
             plan.TargetSets = prescription.Sets;
+            plan.PrescribedSets = prescription.Sets;
             plan.RepRangeMin = prescription.RepRangeMin;
             plan.RepRangeMax = prescription.RepRangeMax;
             plan.TargetRir = prescription.TargetRir;
@@ -319,8 +325,12 @@ public sealed class DeloadService
             // Serije se polove u odnosu na POLAZNI broj bloka, ne u odnosu na ono što ta
             // nedelja nosi: nedelja faze volumena nosi seriju više, pa bi polovljenje
             // njene vrednosti dalo preobiman deload.
-            var baseSets = Periodization.BaseSetsFrom(model, deloadWeekNumber, plan.TargetSets);
+            // Obrtanje ide nad propisom: predlog je u međuvremenu pomeren balansiranjem
+            // volumena, pa bi polovljenje njegove vrednosti dalo deload izveden iz broja
+            // koji periodizacija nikada nije propisala.
+            var baseSets = Periodization.BaseSetsFrom(model, deloadWeekNumber, plan.PrescribedSets);
             plan.TargetSets = Periodization.DeloadSets(baseSets);
+            plan.PrescribedSets = plan.TargetSets;
 
             // Rasterećenje vraća rep-opseg i RIR cilja. Kod ravnog bloka su već takvi, pa
             // se ništa ne menja; kod periodizovanog je ovo jedina stvar koja sprečava

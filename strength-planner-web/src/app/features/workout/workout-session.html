@@ -53,6 +53,35 @@
           </div>
         </div>
       }
+      @if (result.volumeAdjustments.length > 0) {
+        <div class="deload-note" role="status">
+          <mat-icon aria-hidden="true">tune</mat-icon>
+          <div>
+            <strong>Predlog serija je prilagođen za ostatak nedelje.</strong>
+            <p>
+              Ovaj trening je promenio nedeljni volumen, pa treninzi koji tek predstoje nose
+              nov predlog — da bi nedelja završila u ciljnoj zoni.
+            </p>
+            <ul class="adjustments">
+              @for (change of result.volumeAdjustments; track change.sessionId + change.exerciseName) {
+                <li class="adjustment">
+                  <span class="adjustment__where">{{ change.dayLabel }}</span>
+                  <span class="adjustment__name">{{ change.exerciseName }}</span>
+                  <span class="adjustment__sets numeric">
+                    {{ change.fromSets }} → {{ change.toSets }}
+                    <mat-icon aria-hidden="true">
+                      {{ change.toSets > change.fromSets ? 'arrow_upward' : 'arrow_downward' }}
+                    </mat-icon>
+                  </span>
+                  @if (change.muscle) {
+                    <span class="adjustment__muscle">{{ change.muscle }}</span>
+                  }
+                </li>
+              }
+            </ul>
+          </div>
+        </div>
+      }
       @if (result.nextBlock; as next) {
         <div class="deload-note deload-note--next" role="status">
           <mat-icon aria-hidden="true">flag</mat-icon>
@@ -122,9 +151,24 @@
         <div class="card__head">
           <h2 class="card__name">{{ plan.exerciseName }}</h2>
           <div class="card__chips">
+            <app-stat-chip
+              label="Serije"
+              [value]="plan.setLogs.length + ' / ' + plan.targetSets"
+              [tone]="setsTone(plan)"
+            />
             <app-stat-chip label="Opseg" [value]="plan.repRangeMin + '–' + plan.repRangeMax" />
             <app-stat-chip label="RIR cilj" [value]="plan.targetRir" />
           </div>
+          @if (plan.targetSets !== plan.prescribedSets) {
+            <p class="card__hint card__hint--volume">
+              <mat-icon aria-hidden="true">tune</mat-icon>
+              <span>
+                Predlog serija je {{ plan.targetSets > plan.prescribedSets ? 'podignut' : 'spušten' }}
+                sa {{ plan.prescribedSets }} na {{ plan.targetSets }}, da bi nedelja ostala u
+                ciljnoj zoni volumena.
+              </span>
+            </p>
+          }
         </div>
 
         <app-weight-stepper
