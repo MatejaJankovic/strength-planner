@@ -43,8 +43,9 @@
           <label class="field__label" for="pf-sex">Pol</label>
           <select id="pf-sex" class="control" formControlName="sex">
             <option value="">Ne želim da navedem</option>
-            <option value="M">Muški</option>
-            <option value="F">Ženski</option>
+            @for (option of sexOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
           </select>
         </div>
 
@@ -98,14 +99,6 @@
           </select>
         </div>
 
-        <div class="field">
-          <label class="field__label" for="pf-days">Treninga nedeljno</label>
-          <select id="pf-days" class="control" formControlName="trainingDaysPerWeek">
-            @for (day of dayOptions; track day) {
-              <option [value]="day">{{ day }}</option>
-            }
-          </select>
-        </div>
       </div>
 
       <button class="btn btn--primary" type="submit" [disabled]="savingProfile()">

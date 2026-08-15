@@ -10,6 +10,8 @@ import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
   RegisterDto,
+  Sex,
+  SEX_OPTIONS,
 } from '../../core/models/auth.models';
 
 @Component({
@@ -33,7 +35,7 @@ export class RegisterPage {
     { value: ExperienceLevel.Advanced, label: 'Napredni' },
   ];
 
-  protected readonly dayOptions = [2, 3, 4, 5, 6];
+  protected readonly sexOptions = SEX_OPTIONS;
 
   protected readonly passwordMinLength = PASSWORD_MIN_LENGTH;
   protected readonly passwordMaxLength = PASSWORD_MAX_LENGTH;
@@ -54,7 +56,6 @@ export class RegisterPage {
     age: ['', [Validators.required, Validators.min(14), Validators.max(90)]],
     bodyweightKg: ['', [Validators.required, Validators.min(30), Validators.max(300)]],
     experienceLevel: ['', [Validators.required]],
-    trainingDaysPerWeek: ['3', [Validators.required]],
   });
 
   protected togglePassword(): void {
@@ -75,11 +76,10 @@ export class RegisterPage {
     const dto: RegisterDto = {
       email: raw.email.trim(),
       password: raw.password,
-      sex: raw.sex ? raw.sex : null,
+      sex: raw.sex === '' ? null : (Number(raw.sex) as Sex),
       age: Number(raw.age),
       bodyweightKg: Number(raw.bodyweightKg),
       experienceLevel: Number(raw.experienceLevel) as ExperienceLevel,
-      trainingDaysPerWeek: Number(raw.trainingDaysPerWeek),
       website: raw.website ? raw.website : null,
     };
 

@@ -12,9 +12,8 @@ public class Profile
     // FK ka Identity nalogu (ApplicationUser živi u Infrastructure sloju).
     public Guid UserId { get; set; }
 
-    public string? Sex { get; set; }
+    public Sex? Sex { get; set; }
     public int Age { get; set; }
     public decimal BodyweightKg { get; set; }
     public ExperienceLevel ExperienceLevel { get; set; }
-    public int TrainingDaysPerWeek { get; set; }
 }

@@ -22,8 +22,10 @@ public class RegisterDto
     public string Password { get; set; } = string.Empty;
 
     // --- osnovni profil ---
-    [MaxLength(16)]
-    public string? Sex { get; set; }
+    // Opciono polje, pa nema [Required]; [DefinedEnum] propušta null i odbija sve što
+    // enum ne definiše.
+    [DefinedEnum]
+    public Sex? Sex { get; set; }
 
     [Range(10, 100)]
     public int Age { get; set; }
@@ -36,9 +38,6 @@ public class RegisterDto
     [Required]
     [DefinedEnum]
     public ExperienceLevel ExperienceLevel { get; set; }
-
-    [Range(1, 7)]
-    public int TrainingDaysPerWeek { get; set; }
 
     /// <summary>
     /// Zamka za automate. Polje je u formularu sakriveno i označeno kao „ne popunjavaj";

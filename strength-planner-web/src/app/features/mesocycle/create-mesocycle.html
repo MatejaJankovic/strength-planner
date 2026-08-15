@@ -31,12 +31,7 @@
             (click)="selectTemplate(template)"
           >
             <div class="template__head">
-              <span class="template__name">
-                {{ template.name }}
-                @if (template.isSuggested) {
-                  <span class="template__badge">predlog za tebe</span>
-                }
-              </span>
+              <span class="template__name">{{ template.name }}</span>
               <span class="template__meta">
                 <span class="template__check" aria-hidden="true">
                   <mat-icon>check_circle</mat-icon>

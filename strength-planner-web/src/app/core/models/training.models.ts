@@ -10,16 +10,6 @@ export enum PeriodizationModel {
   Inverse = 2,
 }
 
-export interface ProfileDto {
-  userId: string;
-  email: string;
-  sex?: string | null;
-  age: number;
-  bodyweightKg: number;
-  experienceLevel: string;
-  trainingDaysPerWeek: number;
-}
-
 export interface MuscleContributionDto {
   muscleGroup: string;
   contribution: number;
@@ -58,8 +48,6 @@ export interface WorkoutTemplateDayDto {
 export interface WorkoutTemplateDto {
   key: string;
   name: string;
-  /** Šablon koji odgovara broju trenažnih dana iz profila. */
-  isSuggested: boolean;
   /** Upozorenje o poznatom ograničenju šablona, ako ga ima. */
   note: string | null;
   days: WorkoutTemplateDayDto[];

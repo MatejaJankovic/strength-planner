@@ -219,41 +219,6 @@ public class WorkoutTemplateCatalogTests
         }
     }
 
-    [Theory]
-    [InlineData(2)]
-    [InlineData(3)]
-    [InlineData(4)]
-    [InlineData(5)]
-    [InlineData(6)]
-    public void SuggestedFor_MatchesTheProfileExactlyWhenItCan(int daysPerWeek)
-    {
-        Assert.Equal(daysPerWeek, WorkoutTemplateCatalog.SuggestedFor(daysPerWeek).Days.Count);
-    }
-
-    [Fact]
-    public void SuggestedFor_FallsBackToTheLongestPlanThatStillFits()
-    {
-        // Sedam trenažnih dana: nema šablona, pa se nudi šestodnevni umesto ničega.
-        Assert.Equal(6, WorkoutTemplateCatalog.SuggestedFor(7).Days.Count);
-    }
-
-    [Fact]
-    public void SuggestedFor_FallsBackToTheShortestPlanWhenNothingFits()
-    {
-        // Jedan dan nedeljno nema svoj šablon; bolje ponuditi najkraći nego pasti.
-        Assert.Equal(2, WorkoutTemplateCatalog.SuggestedFor(1).Days.Count);
-    }
-
-    [Fact]
-    public void SuggestedFor_NeverReturnsNullForAnyAllowedProfileValue()
-    {
-        // Profil dozvoljava 1-7 trenažnih dana.
-        for (var days = 1; days <= 7; days++)
-        {
-            Assert.NotNull(WorkoutTemplateCatalog.SuggestedFor(days));
-        }
-    }
-
     [Fact]
     public void GetByKey_IsCaseInsensitiveAndReturnsNullForUnknownKeys()
     {

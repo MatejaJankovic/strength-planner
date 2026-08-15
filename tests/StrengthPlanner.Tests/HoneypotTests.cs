@@ -24,7 +24,6 @@ public class HoneypotTests
         Password = "dovoljno-duga-lozinka",
         Age = 30,
         BodyweightKg = 80,
-        TrainingDaysPerWeek = 3,
         Website = website
     };
 

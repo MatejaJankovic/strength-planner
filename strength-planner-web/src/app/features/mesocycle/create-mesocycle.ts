@@ -111,11 +111,11 @@ export class CreateMesocycle {
         this.templates.set(templates);
         this.loading.set(false);
 
-        // Server označava šablon koji odgovara broju trenažnih dana iz profila.
-        // Izabran je unapred, ali korisnik i dalje bira šta hoće.
-        const suggested = templates.find((template) => template.isSuggested);
-        if (suggested && !this.selectedKey()) {
-          this.selectTemplate(suggested);
+        // Prvi šablon je izabran unapred samo da dugme "Napravi plan" ne bi bilo
+        // zaključano na otvaranju ekrana; korisnik bira šta hoće.
+        const first = templates[0];
+        if (first && !this.selectedKey()) {
+          this.selectTemplate(first);
         }
       },
       error: (err: unknown) => {
