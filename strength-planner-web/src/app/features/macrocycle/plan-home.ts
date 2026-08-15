@@ -113,18 +113,19 @@ export class PlanHome {
     this.showWizard.set(true);
     this.createError.set(null);
 
-    // Spisak šablona dolazi sa servera — ekran ga više ne drži zakucanog, pa se novi
-    // šabloni pojave i ovde. Server ujedno kaže koji odgovara broju trenažnih dana.
+    // Spisak šablona dolazi sa servera - ekran ga više ne drži zakucanog, pa se novi
+    // šabloni pojave i ovde. Prvi u spisku je samo polazna vrednost padajućeg menija;
+    // koji šablon blok nosi bira korisnik.
     this.mesocycleService.templates().subscribe({
       next: (templates) => {
         this.templates.set(templates);
-        this.seedBlocks(templates.find((template) => template.isSuggested)?.key);
+        this.seedBlocks(templates[0]?.key);
       },
       error: () => {
         // Prazan padajući spisak bi zaključao izbor šablona; jedna stavka je dovoljna
         // da čarobnjak ostane upotrebljiv.
         this.templates.set([
-          { key: FALLBACK_TEMPLATE_KEY, name: 'Upper/Lower', isSuggested: false, note: null, days: [] },
+          { key: FALLBACK_TEMPLATE_KEY, name: 'Upper/Lower', note: null, days: [] },
         ]);
         this.seedBlocks(FALLBACK_TEMPLATE_KEY);
       },

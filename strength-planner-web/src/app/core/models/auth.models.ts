@@ -15,11 +15,10 @@ export const EMAIL_MAX_LENGTH = 256;
 export interface RegisterDto {
   email: string;
   password: string;
-  sex?: string | null;
+  sex?: Sex | null;
   age: number;
   bodyweightKg: number;
   experienceLevel: ExperienceLevel;
-  trainingDaysPerWeek: number;
   /**
    * Zamka za automate — vidi RegisterDto.Website na serveru. Polje je sakriveno, pa je
    * kod čoveka uvek prazno; popunjeno znači da formular nije popunio čovek.
@@ -47,11 +46,10 @@ export interface ChangePasswordDto {
 export interface CurrentUserDto {
   id: string;
   email: string;
-  sex?: string | null;
+  sex?: Sex | string | null;
   age?: number | null;
   bodyweightKg?: number | null;
   experienceLevel?: string | null;
-  trainingDaysPerWeek?: number | null;
 }
 
 export enum ExperienceLevel {
@@ -60,10 +58,29 @@ export enum ExperienceLevel {
   Advanced = 2,
 }
 
+/**
+ * Mora da prati Domain.Enums.Sex na serveru.
+ *
+ * Bio je slobodan string na obe strane, pa su se registracija ("male"/"female") i profil
+ * ("M"/"F") razišli i izabrani pol se na profilu nije prikazivao.
+ */
+export enum Sex {
+  Male = 0,
+  Female = 1,
+}
+
+/**
+ * Jedini spisak ponuđenih polova. Registracija i profil su svaki imali svoj, pa su se
+ * razišli; dok ga oba ekrana čitaju odavde, to više ne može da se ponovi.
+ */
+export const SEX_OPTIONS: ReadonlyArray<{ value: Sex; label: string }> = [
+  { value: Sex.Male, label: 'Muški' },
+  { value: Sex.Female, label: 'Ženski' },
+];
+
 export interface UpdateProfileDto {
-  sex?: string | null;
+  sex?: Sex | null;
   age: number;
   bodyweightKg: number;
   experienceLevel: ExperienceLevel;
-  trainingDaysPerWeek: number;
 }

@@ -15,6 +15,8 @@ import {
   ExperienceLevel,
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
+  Sex,
+  SEX_OPTIONS,
   UpdateProfileDto,
 } from '../../core/models/auth.models';
 import { CreateExerciseRequest, ExerciseDto } from '../../core/models/training.models';
@@ -48,14 +50,13 @@ export class ProfileHome {
     { value: ExperienceLevel.Advanced, label: 'Napredni' },
   ];
 
-  protected readonly dayOptions = [2, 3, 4, 5, 6];
+  protected readonly sexOptions = SEX_OPTIONS;
 
   protected readonly profileForm = this.fb.nonNullable.group({
     sex: [''],
     age: ['', [Validators.required, Validators.min(14), Validators.max(90)]],
     bodyweightKg: ['', [Validators.required, Validators.min(30), Validators.max(300)]],
     experienceLevel: ['', [Validators.required]],
-    trainingDaysPerWeek: ['3', [Validators.required]],
   });
 
   // --- custom vežbe ------------------------------------------------------------
@@ -147,12 +148,10 @@ export class ProfileHome {
       next: ({ me, muscles }) => {
         this.muscleGroups.set(muscles);
         this.profileForm.patchValue({
-          sex: me.sex ?? '',
+          sex: this.sexToValue(me.sex),
           age: me.age != null ? String(me.age) : '',
           bodyweightKg: me.bodyweightKg != null ? String(me.bodyweightKg) : '',
           experienceLevel: this.experienceLevelToValue(me.experienceLevel),
-          trainingDaysPerWeek:
-            me.trainingDaysPerWeek != null ? String(me.trainingDaysPerWeek) : '3',
         });
         this.loading.set(false);
       },
@@ -210,11 +209,10 @@ export class ProfileHome {
 
     const raw = this.profileForm.getRawValue();
     const dto: UpdateProfileDto = {
-      sex: raw.sex ? raw.sex : null,
+      sex: raw.sex === '' ? null : (Number(raw.sex) as Sex),
       age: Number(raw.age),
       bodyweightKg: Number(raw.bodyweightKg),
       experienceLevel: Number(raw.experienceLevel) as ExperienceLevel,
-      trainingDaysPerWeek: Number(raw.trainingDaysPerWeek),
     };
 
     this.savingProfile.set(true);
@@ -370,6 +368,28 @@ export class ProfileHome {
 
   protected logout(): void {
     this.auth.logout();
+  }
+
+  /**
+   * Vrednost za `<option>` iz onoga što server pošalje.
+   *
+   * Prazan string je "ne želim da navedem" i jedina je vrednost koja sme da ostavi meni
+   * neoznačen. Ovde je ranije stajalo `me.sex ?? ''`, pa je svaki pol upisan pri
+   * registraciji ("male"/"female") padao van ponuđenih opcija ("M"/"F") i Angular je
+   * ostavljao prazan meni - tačno ono što se videlo na profilu.
+   */
+  private sexToValue(sex?: string | number | null): string {
+    // Backend serijalizuje enum kao broj; string imena su fallback, isto kao za nivo.
+    switch (sex) {
+      case Sex.Male:
+      case 'Male':
+        return String(Sex.Male);
+      case Sex.Female:
+      case 'Female':
+        return String(Sex.Female);
+      default:
+        return '';
+    }
   }
 
   private experienceLevelToValue(level?: string | number | null): string {

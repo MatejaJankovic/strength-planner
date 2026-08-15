@@ -26,8 +26,7 @@ public class SecurityPolicyTests
         Email = "korisnik@primer.com",
         Password = password,
         Age = 30,
-        BodyweightKg = 80,
-        TrainingDaysPerWeek = 3
+        BodyweightKg = 80
     };
 
     [Fact]
@@ -132,13 +131,48 @@ public class SecurityPolicyTests
         {
             Age = 30,
             BodyweightKg = 80,
-            TrainingDaysPerWeek = 3,
             ExperienceLevel = (ExperienceLevel)999
         };
 
         Assert.Contains(
             Validate(dto),
             result => result.MemberNames.Contains(nameof(UpdateProfileDto.ExperienceLevel)));
+    }
+
+    [Fact]
+    public void ProfileUpdate_RejectsASexThatTheEnumDoesNotDefine()
+    {
+        // Pol je bio slobodan string sa granicom dužine, pa je primao bilo šta - uključujući
+        // vrednost koju nijedan ekran ne ume da prikaže, što je i bio uzrok praznog padajućeg
+        // menija na profilu.
+        var dto = new UpdateProfileDto
+        {
+            Age = 30,
+            BodyweightKg = 80,
+            ExperienceLevel = ExperienceLevel.Intermediate,
+            Sex = (Sex)7
+        };
+
+        Assert.Contains(
+            Validate(dto),
+            result => result.MemberNames.Contains(nameof(UpdateProfileDto.Sex)));
+    }
+
+    [Fact]
+    public void ProfileUpdate_AcceptsAProfileWithoutASex()
+    {
+        // "Ne želim da navedem" je ponuđena opcija, pa prazna vrednost mora da prođe.
+        var dto = new UpdateProfileDto
+        {
+            Age = 30,
+            BodyweightKg = 80,
+            ExperienceLevel = ExperienceLevel.Intermediate,
+            Sex = null
+        };
+
+        Assert.DoesNotContain(
+            Validate(dto),
+            result => result.MemberNames.Contains(nameof(UpdateProfileDto.Sex)));
     }
 
     [Fact]

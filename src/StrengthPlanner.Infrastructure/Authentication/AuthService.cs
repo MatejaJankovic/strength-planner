@@ -70,8 +70,7 @@ public class AuthService : IAuthService
                 Sex = dto.Sex,
                 Age = dto.Age,
                 BodyweightKg = dto.BodyweightKg,
-                ExperienceLevel = dto.ExperienceLevel,
-                TrainingDaysPerWeek = dto.TrainingDaysPerWeek
+                ExperienceLevel = dto.ExperienceLevel
             }
         };
 
@@ -128,8 +127,7 @@ public class AuthService : IAuthService
             Sex = profile?.Sex,
             Age = profile?.Age,
             BodyweightKg = profile?.BodyweightKg,
-            ExperienceLevel = profile?.ExperienceLevel,
-            TrainingDaysPerWeek = profile?.TrainingDaysPerWeek
+            ExperienceLevel = profile?.ExperienceLevel
         };
     }
 
@@ -147,7 +145,6 @@ public class AuthService : IAuthService
         profile.Age = dto.Age;
         profile.BodyweightKg = dto.BodyweightKg;
         profile.ExperienceLevel = dto.ExperienceLevel;
-        profile.TrainingDaysPerWeek = dto.TrainingDaysPerWeek;
 
         await _db.SaveChangesAsync();
 
@@ -161,8 +158,7 @@ public class AuthService : IAuthService
             Sex = profile.Sex,
             Age = profile.Age,
             BodyweightKg = profile.BodyweightKg,
-            ExperienceLevel = profile.ExperienceLevel,
-            TrainingDaysPerWeek = profile.TrainingDaysPerWeek
+            ExperienceLevel = profile.ExperienceLevel
         };
     }
 

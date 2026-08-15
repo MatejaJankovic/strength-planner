@@ -29,16 +29,11 @@ public class TemplateService : ITemplateService
         Guid userId,
         CancellationToken cancellationToken = default)
     {
-        var profile = await _db.Profiles
+        var experienceLevel = await _db.Profiles
             .AsNoTracking()
             .Where(profile => profile.UserId == userId)
-            .Select(profile => new { profile.ExperienceLevel, profile.TrainingDaysPerWeek })
-            .FirstOrDefaultAsync(cancellationToken);
-
-        var experienceLevel = profile?.ExperienceLevel ?? ExperienceLevel.Intermediate;
-        var suggestedKey = profile is null
-            ? null
-            : WorkoutTemplateCatalog.SuggestedFor(profile.TrainingDaysPerWeek).Key;
+            .Select(profile => (ExperienceLevel?)profile.ExperienceLevel)
+            .FirstOrDefaultAsync(cancellationToken) ?? ExperienceLevel.Intermediate;
 
         return WorkoutTemplateCatalog
             .GetAll()
@@ -46,7 +41,6 @@ public class TemplateService : ITemplateService
             {
                 Key = template.Key,
                 Name = template.Name,
-                IsSuggested = template.Key == suggestedKey,
                 Note = template.Note,
                 Days = template.Days
                     .Select(day => new WorkoutTemplateDayDto

@@ -113,8 +113,9 @@
         </label>
         <select id="reg-sex" class="control" formControlName="sex">
           <option value="">Ne želim da navedem</option>
-          <option value="male">Muški</option>
-          <option value="female">Ženski</option>
+          @for (option of sexOptions; track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+          }
         </select>
       </div>
 
@@ -177,39 +178,28 @@
         </div>
       </div>
 
-      <div class="grid-2">
-        <div class="field">
-          <label class="field__label" for="reg-experience">Nivo iskustva</label>
-          <select
-            id="reg-experience"
-            class="control"
-            formControlName="experienceLevel"
-            [class.control--invalid]="
-              form.controls.experienceLevel.invalid && form.controls.experienceLevel.touched
-            "
-            [attr.aria-invalid]="
-              form.controls.experienceLevel.invalid && form.controls.experienceLevel.touched
-            "
-            aria-describedby="reg-experience-error"
-          >
-            <option value="" disabled>Izaberi nivo</option>
-            @for (option of experienceOptions; track option.value) {
-              <option [value]="option.value">{{ option.label }}</option>
-            }
-          </select>
-          @if (form.controls.experienceLevel.touched && form.controls.experienceLevel.invalid) {
-            <p class="field__error" id="reg-experience-error">Izaberi nivo iskustva.</p>
+      <div class="field">
+        <label class="field__label" for="reg-experience">Nivo iskustva</label>
+        <select
+          id="reg-experience"
+          class="control"
+          formControlName="experienceLevel"
+          [class.control--invalid]="
+            form.controls.experienceLevel.invalid && form.controls.experienceLevel.touched
+          "
+          [attr.aria-invalid]="
+            form.controls.experienceLevel.invalid && form.controls.experienceLevel.touched
+          "
+          aria-describedby="reg-experience-error"
+        >
+          <option value="" disabled>Izaberi nivo</option>
+          @for (option of experienceOptions; track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
           }
-        </div>
-
-        <div class="field">
-          <label class="field__label" for="reg-days">Treninga nedeljno</label>
-          <select id="reg-days" class="control numeric" formControlName="trainingDaysPerWeek">
-            @for (day of dayOptions; track day) {
-              <option [value]="day">{{ day }}</option>
-            }
-          </select>
-        </div>
+        </select>
+        @if (form.controls.experienceLevel.touched && form.controls.experienceLevel.invalid) {
+          <p class="field__error" id="reg-experience-error">Izaberi nivo iskustva.</p>
+        }
       </div>
 
       <button class="auth__submit" type="submit" [disabled]="submitting()">

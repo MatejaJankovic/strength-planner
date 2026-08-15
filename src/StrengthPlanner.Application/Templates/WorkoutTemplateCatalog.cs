@@ -224,24 +224,4 @@ public static class WorkoutTemplateCatalog
             string.Equals(template.Key, templateKey, StringComparison.OrdinalIgnoreCase));
     }
 
-    /// <summary>
-    /// Šablon koji odgovara broju trenažnih dana iz profila. Ako tačnog nema, bira se
-    /// najduži koji ne traži više dana nego što korisnik ima — bolje je odraditi ceo
-    /// kraći plan nego stalno preskakati treninge iz dužeg.
-    /// </summary>
-    public static WorkoutTemplate SuggestedFor(int trainingDaysPerWeek)
-    {
-        var exact = Templates.FirstOrDefault(template => template.Days.Count == trainingDaysPerWeek);
-        if (exact is not null)
-        {
-            return exact;
-        }
-
-        var fitting = Templates
-            .Where(template => template.Days.Count <= trainingDaysPerWeek)
-            .OrderByDescending(template => template.Days.Count)
-            .FirstOrDefault();
-
-        return fitting ?? Templates.MinBy(template => template.Days.Count)!;
-    }
 }
