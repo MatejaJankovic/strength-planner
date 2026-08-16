@@ -7,6 +7,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
+import { RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { extractErrorMessage } from '../../core/api/http-error';
 import { ExerciseService } from '../../core/api/exercise.service';
@@ -24,7 +25,7 @@ import { Loading } from '../../shared/components/loading/loading';
 
 @Component({
   selector: 'app-profile-home',
-  imports: [ReactiveFormsModule, MatIconModule, Loading],
+  imports: [ReactiveFormsModule, MatIconModule, RouterLink, Loading],
   templateUrl: './profile-home.html',
   styleUrl: './profile-home.scss',
 })
