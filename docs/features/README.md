@@ -39,6 +39,15 @@ Analiza sa ishodom po stavci: [`../analiza-prirucnika.md`](../analiza-prirucnika
 | [Polja profila](profile-fields.md) | Pol je bio slobodan tekst pa se izabrana vrednost nije prikazivala; sada je enum. Uklonjeno "Treninga nedeljno", koje je služilo samo oznaci "predlog za tebe" | #40 → #42 |
 | [Lični šabloni treninga](custom-workout-templates.md) | Sam biraš dane, vežbe, serije i opseg ponavljanja; auto-regulacija nastavlja da radi nad tvojim brojevima | #41 |
 
+## Sedmi krug — kretanje kroz aplikaciju
+
+| Grana | O čemu je | PR |
+|---|---|---|
+| [Red sa serijama i ponavljanjima](template-editor-layout.md) | Oznaka "Ponavljanja od" se prelamala, pa su tri polja stajala na dve visine | #44 |
+| [Šabloni u profilu](templates-in-profile.md) | "Moji šabloni" se otvaraju iz profila, a ne iz čarobnjaka za mezociklus | #45 |
+| [Trening samo kroz plan](macrocycle-first.md) | Jedan ulaz umesto dva; brisanje na nivou plana, čime prestaje da se vraća obrisano | #46 |
+| [Pregled bloka](macrocycle-block-preview.md) | Klik na blok pokazuje šta nosi - propis ako je generisan, šablon ako čeka red | #47 |
+
 ## Ako čitaš samo jedno
 
 [Periodizacija po nedeljama](periodization-models.md) — to je bio najveći raskorak između

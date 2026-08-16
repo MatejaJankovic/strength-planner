@@ -222,6 +222,36 @@ did, because it recovered the base from the goal. `ExercisePlan.BaseRepRangeMin/
 because the rep shift cannot be inverted: `ForWeek` clamps, so two different bases produce
 the same week.
 
+**Round 7 — a second phone-use list, this one about navigation rather than layout.**
+
+| Branch | What it changed | PR |
+|---|---|---|
+| `fix/template-editor-layout` | Sets/reps row: "Ponavljanja od" wrapped while its neighbours did not, so the three inputs sat at different heights | #44 |
+| `chore/templates-in-profile` | "Moji šabloni" moved out of the mesocycle wizard and into Profil | #45 |
+| `feature/macrocycle-first` | Training is created only through the plan; `/mesocycle` removed, deleting moved to plan level | #46 |
+| `feature/macrocycle-block-preview` | Tap a block to see what is in it; removed the duplicate "Idi na trening" | #47 |
+
+Stacking worked this round: children were retargeted with `gh pr edit <n> --base main`
+before each merge, so nothing landed on the wrong base.
+
+The finding that shaped round 7: **the two creation paths were never two things.**
+`POST /api/mesocycles` built a macrocycle with a single block and returned its mesocycle, so
+every mesocycle already belonged to a plan. Removing the second screen changed no data model
+— it removed a second face on the same operation.
+
+That duplication was also the reported "delete does not work". Deleting a mesocycle left its
+block empty, and `EnsureCurrentBlockAsync` — which runs on **every read** of the plan — reads
+an empty first block as "never generated" and regenerates it. Deletion and self-repair were
+fighting, and self-repair won. The fix was not to weaken the repair but to remove the only
+way to orphan a block: `POST`/`DELETE` on `/api/mesocycles` are gone, and deletion happens at
+plan level, where `DeleteAsync` removes the blocks' mesocycles **explicitly** because the
+block→mesocycle FK is `SetNull`. `PlanDeletionTests` pins that reasoning at the EF model
+level, so flipping the FK later fails loudly instead of silently orphaning rows.
+
+One regression had to be repaired in the same PR: the mesocycle screen was the only place
+that showed a template's days, exercises and warnings, so the block wizard had to learn to
+show them.
+
 **Do not commit a document that lists unfixed weaknesses of the live app: this repository is
 public.** Security notes describe what is closed and how it is verified; anything still open
 is stated at a level useful to the owner, not to an attacker.
