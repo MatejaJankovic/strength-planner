@@ -11,6 +11,7 @@ import {
   CreateMacrocycleBlockDto,
   MacrocycleBlockDto,
   PeriodizationModel,
+  TrainingWeekDto,
   WorkoutTemplateDto,
 } from '../../core/models/training.models';
 import { EmptyState } from '../../shared/components/empty-state/empty-state';
@@ -79,6 +80,18 @@ export class PlanHome {
   protected readonly deleting = signal(false);
   protected readonly confirmingDelete = signal(false);
   protected readonly deleteError = signal<string | null>(null);
+
+  // --- pregled bloka ---------------------------------------------------------------
+
+  protected readonly expandedBlockId = signal<string | null>(null);
+  protected readonly previewLoading = signal(false);
+  protected readonly previewError = signal<string | null>(null);
+
+  /**
+   * Prva nedelja otvorenog bloka. Drži se jedan blok otvoren, pa je jedno mesto dovoljno -
+   * keš po bloku bi rastao bez potrebe, a plan ima najviše šest blokova.
+   */
+  protected readonly previewWeek = signal<TrainingWeekDto | null>(null);
 
   protected readonly planName = signal('');
   protected readonly startDate = signal(new Date().toISOString().slice(0, 10));
@@ -347,6 +360,71 @@ export class PlanHome {
     }
 
     return Math.round((block.completedSessions / block.totalSessions) * 100);
+  }
+
+  /**
+   * Otvara i zatvara pregled bloka.
+   *
+   * Blok koji je generisan ima svoj mezociklus, pa se pokazuje šta u njemu zaista stoji.
+   * Blok koji čeka red ga nema - njegov trening nastaje tek kad mu dođe red, od tadašnjih
+   * 1RM vrednosti - pa se pokazuje šablon iz kog će nastati. To su dve različite stvari i
+   * ekran ih ne sme prikazati kao istu.
+   */
+  protected toggleBlock(block: MacrocycleBlockDto): void {
+    if (this.expandedBlockId() === block.id) {
+      this.expandedBlockId.set(null);
+      return;
+    }
+
+    this.expandedBlockId.set(block.id);
+    this.previewError.set(null);
+    this.previewWeek.set(null);
+
+    if (block.mesocycleId) {
+      this.loadPreviewWeek(block.mesocycleId);
+      return;
+    }
+
+    // Spisak šablona treba i pregledu, ne samo čarobnjaku; učitava se jednom.
+    if (this.templates().length === 0) {
+      this.loadTemplates();
+    }
+  }
+
+  private loadPreviewWeek(mesocycleId: string): void {
+    this.previewLoading.set(true);
+
+    this.mesocycleService.byId(mesocycleId).subscribe({
+      next: (mesocycle) => {
+        this.previewLoading.set(false);
+        this.previewWeek.set(
+          [...mesocycle.weeks].sort((left, right) => left.weekNumber - right.weekNumber)[0] ?? null,
+        );
+      },
+      error: (err: unknown) => {
+        this.previewLoading.set(false);
+        this.previewError.set(
+          extractErrorMessage(err, 'Ne mogu da učitam pregled bloka. Pokušaj ponovo.'),
+        );
+      },
+    });
+  }
+
+  private loadTemplates(): void {
+    this.previewLoading.set(true);
+
+    this.mesocycleService.templates().subscribe({
+      next: (templates) => {
+        this.previewLoading.set(false);
+        this.templates.set(templates);
+      },
+      error: (err: unknown) => {
+        this.previewLoading.set(false);
+        this.previewError.set(
+          extractErrorMessage(err, 'Ne mogu da učitam šablon bloka. Pokušaj ponovo.'),
+        );
+      },
+    });
   }
 
   protected openWorkout(): void {
