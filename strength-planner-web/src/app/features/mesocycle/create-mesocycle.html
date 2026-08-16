@@ -20,13 +20,7 @@
 } @else {
   <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
     <section class="block">
-      <div class="block__head">
-        <h2 class="block__title">Šablon</h2>
-        <a class="block__link" routerLink="/templates">
-          <mat-icon aria-hidden="true">tune</mat-icon>
-          Moji šabloni
-        </a>
-      </div>
+      <h2 class="block__title">Šablon</h2>
       <div class="templates">
         @for (template of templates(); track template.key) {
           <button

@@ -1,6 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { extractErrorMessage } from '../../core/api/http-error';
 import { MesocycleService } from '../../core/api/mesocycle.service';
@@ -28,7 +28,7 @@ interface ModelOption {
 
 @Component({
   selector: 'app-create-mesocycle',
-  imports: [ReactiveFormsModule, RouterLink, MatIconModule, Loading],
+  imports: [ReactiveFormsModule, MatIconModule, Loading],
   templateUrl: './create-mesocycle.html',
   styleUrl: './create-mesocycle.scss',
 })
