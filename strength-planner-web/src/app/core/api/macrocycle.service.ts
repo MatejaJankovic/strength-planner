@@ -50,6 +50,16 @@ export class MacrocycleService {
       .pipe(tap((plan) => this.activeSignal.set(plan)));
   }
 
+  /**
+   * Brise plan sa svim mezociklusima njegovih blokova. Kes se prazni odmah: posle
+   * brisanja aktivnog plana vise nema, pa bi zadrzan plan ostao na ekranu.
+   */
+  delete(macrocycleId: string): Observable<void> {
+    return this.http
+      .delete<void>(`${this.apiUrl}/macrocycles/${macrocycleId}`)
+      .pipe(tap(() => this.activeSignal.set(null)));
+  }
+
   /** Prazni kes — poziva se pri prijavi/odjavi da podaci ne procure izmedju naloga. */
   reset(): void {
     this.activeSignal.set(null);

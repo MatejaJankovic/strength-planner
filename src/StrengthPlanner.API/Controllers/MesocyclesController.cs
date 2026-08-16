@@ -1,63 +1,29 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using StrengthPlanner.Application.DTOs.Macrocycles;
 using StrengthPlanner.Application.DTOs.Mesocycles;
 using StrengthPlanner.Application.Interfaces;
 
 namespace StrengthPlanner.API.Controllers;
 
+/// <summary>
+/// Čitanje mezociklusa. Pravljenja i brisanja ovde nema: mezociklus je blok dugoročnog
+/// plana i nastaje sa njim, pa se i pravi i briše preko <c>api/macrocycles</c>.
+///
+/// Ranije je ovde stajao <c>POST</c> koji je pravio plan sa jednim blokom i vraćao njegov
+/// mezociklus. Taj put je bio samo drugo lice istog posla - i baza to nikada nije videla
+/// drugačije - ali je u aplikaciji davao drugi ekran za istu stvar, sa kog se zatečeni plan
+/// gasio bez upozorenja.
+/// </summary>
 [Authorize]
 [ApiController]
 [Route("api/mesocycles")]
 public class MesocyclesController : AuthorizedControllerBase
 {
-    private readonly IMacrocycleService _macrocycleService;
     private readonly IMesocycleService _mesocycleService;
 
-    public MesocyclesController(IMacrocycleService macrocycleService, IMesocycleService mesocycleService)
+    public MesocyclesController(IMesocycleService mesocycleService)
     {
-        _macrocycleService = macrocycleService;
         _mesocycleService = mesocycleService;
-    }
-
-    /// <summary>Generiše novi mezociklus; trajanje zavisi od modela periodizacije.</summary>
-    /// <remarks>
-    /// Primer body-ja: { "templateKey": "full-body", "goal": 1, "periodizationModel": 1,
-    /// "name": "Base Hypertrophy", "startDate": "2026-07-06" }
-    ///
-    /// Svaki mezociklus pripada dugoročnom planu; ovaj put pravi plan sa jednim blokom,
-    /// pa se ponaša isto kao ranije, ali se kasnije može produžiti.
-    /// </remarks>
-    [HttpPost]
-    [ProducesResponseType(typeof(MesocycleDto), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Generate(
-        GenerateMesocycleRequest request,
-        CancellationToken cancellationToken)
-    {
-        var userId = GetUserId();
-        var plan = await _macrocycleService.CreateAsync(
-            userId,
-            new CreateMacrocycleRequest
-            {
-                Name = request.Name,
-                StartDate = request.StartDate,
-                Blocks =
-                [
-                    new CreateMacrocycleBlockDto
-                    {
-                        Goal = request.Goal,
-                        TemplateKey = request.TemplateKey,
-                        PeriodizationModel = request.PeriodizationModel
-                    }
-                ]
-            },
-            cancellationToken);
-
-        var mesocycleId = plan.Blocks[0].MesocycleId!.Value;
-        var mesocycle = await _mesocycleService.GetByIdAsync(userId, mesocycleId, cancellationToken);
-
-        return CreatedAtAction(nameof(GetById), new { id = mesocycle.Id }, mesocycle);
     }
 
     /// <summary>Vraća listu mezociklusa ulogovanog korisnika.</summary>
@@ -87,15 +53,5 @@ public class MesocyclesController : AuthorizedControllerBase
     {
         var mesocycle = await _mesocycleService.GetByIdAsync(GetUserId(), id, cancellationToken);
         return Ok(mesocycle);
-    }
-
-    /// <summary>Briše mezociklus ulogovanog korisnika.</summary>
-    [HttpDelete("{id:guid}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
-    {
-        await _mesocycleService.DeleteAsync(GetUserId(), id, cancellationToken);
-        return NoContent();
     }
 }

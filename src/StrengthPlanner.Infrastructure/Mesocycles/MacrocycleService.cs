@@ -306,6 +306,49 @@ public class MacrocycleService : IMacrocycleService
         return await ToDtoAsync(macrocycle, cancellationToken);
     }
 
+    public async Task DeleteAsync(
+        Guid userId,
+        Guid macrocycleId,
+        CancellationToken cancellationToken = default)
+    {
+        var macrocycle = await _db.Macrocycles
+            .Include(item => item.Blocks)
+            .FirstOrDefaultAsync(
+                item => item.Id == macrocycleId && item.UserId == userId,
+                cancellationToken);
+
+        if (macrocycle is null)
+        {
+            throw new TrainingLogException(TrainingLogErrorType.NotFound, "Plan was not found.");
+        }
+
+        var mesocycleIds = macrocycle.Blocks
+            .Where(block => block.MesocycleId.HasValue)
+            .Select(block => block.MesocycleId!.Value)
+            .ToList();
+
+        // Kaskada plan → blokovi ne dodiruje mezocikluse: strani ključ bloka na mezociklus
+        // je SetNull, jer brisanje mezociklusa ne sme da obori ceo plan. Ovde je smer
+        // suprotan, pa se mezociklusi brišu izričito - inače bi ostali u bazi bez ijednog
+        // ekrana sa kog se vide.
+        var mesocycles = await _db.Mesocycles
+            .Where(mesocycle => mesocycle.UserId == userId && mesocycleIds.Contains(mesocycle.Id))
+            .ToListAsync(cancellationToken);
+
+        await using var transaction = _db.Database.CurrentTransaction is null
+            ? await _db.Database.BeginTransactionAsync(cancellationToken)
+            : null;
+
+        _db.Mesocycles.RemoveRange(mesocycles);
+        _db.Macrocycles.Remove(macrocycle);
+        await _db.SaveChangesAsync(cancellationToken);
+
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+        }
+    }
+
     /// <summary>
     /// Ako je mezociklus u celosti odrađen a njegov plan ima sledeći blok, generiše ga i
     /// postavlja kao aktivan. Zove se posle završetka treninga, u istoj transakciji.

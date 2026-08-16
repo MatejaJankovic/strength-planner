@@ -374,7 +374,7 @@ export class CustomTemplates {
     });
   }
 
-  protected goToMesocycle(): void {
-    void this.router.navigateByUrl('/mesocycle');
+  protected goToPlan(): void {
+    void this.router.navigateByUrl('/plan');
   }
 }

@@ -43,12 +43,6 @@ export const routes: Routes = [
       import('./features/onboarding/one-rep-max-setup').then((m) => m.OneRepMaxSetup),
   },
   {
-    path: 'mesocycle',
-    canActivate: [authGuard],
-    loadComponent: () =>
-      import('./features/mesocycle/create-mesocycle').then((m) => m.CreateMesocycle),
-  },
-  {
     path: 'templates',
     canActivate: [authGuard],
     loadComponent: () =>

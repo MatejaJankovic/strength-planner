@@ -16,9 +16,4 @@ public interface IMesocycleService
         Guid userId,
         Guid mesocycleId,
         CancellationToken cancellationToken = default);
-
-    Task DeleteAsync(
-        Guid userId,
-        Guid mesocycleId,
-        CancellationToken cancellationToken = default);
 }

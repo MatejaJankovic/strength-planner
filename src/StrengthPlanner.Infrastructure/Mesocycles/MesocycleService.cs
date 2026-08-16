@@ -72,25 +72,6 @@ public class MesocycleService : IMesocycleService
         return ToDto(mesocycle, weightStepOverrides);
     }
 
-    public async Task DeleteAsync(
-        Guid userId,
-        Guid mesocycleId,
-        CancellationToken cancellationToken = default)
-    {
-        var mesocycle = await _db.Mesocycles
-            .FirstOrDefaultAsync(
-                item => item.Id == mesocycleId && item.UserId == userId,
-                cancellationToken);
-
-        if (mesocycle is null)
-        {
-            throw new TrainingLogException(TrainingLogErrorType.NotFound, "Mesocycle was not found.");
-        }
-
-        _db.Mesocycles.Remove(mesocycle);
-        await _db.SaveChangesAsync(cancellationToken);
-    }
-
     private IQueryable<Mesocycle> BuildDetailsQuery(Guid userId)
     {
         return _db.Mesocycles

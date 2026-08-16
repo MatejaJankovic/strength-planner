@@ -73,4 +73,17 @@ public class MacrocyclesController : AuthorizedControllerBase
         var macrocycle = await _macrocycleService.GetByIdAsync(GetUserId(), id, cancellationToken);
         return Ok(macrocycle);
     }
+
+    /// <summary>
+    /// Briše plan sa svim njegovim mezociklusima i odrađenim serijama u njima.
+    /// Otkako se trening pravi samo kroz plan, ovo je jedini put do uklanjanja.
+    /// </summary>
+    [HttpDelete("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    {
+        await _macrocycleService.DeleteAsync(GetUserId(), id, cancellationToken);
+        return NoContent();
+    }
 }
