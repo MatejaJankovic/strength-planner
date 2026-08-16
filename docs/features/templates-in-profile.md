@@ -34,6 +34,8 @@ Broj se ionako vidi čim se ekran otvori.
 
 ## Provera
 
-- `npm run build` i `npm test` (22 testa) prolaze.
-- Prolaz kroz aplikaciju na širini telefona - rezultat se upisuje ovde posle provere u
-  pregledaču.
+- `npm run build` i `npm test` prolaze.
+- **Prolaz kroz aplikaciju na širini telefona.** Profil nosi sekcije ovim redom:
+  `Osnovni podaci`, `Lozinka`, `Korak opterećenja`, **`Moji šabloni`**, `Moje vežbe` -
+  dakle šabloni stoje tačno iznad vežbi, kako je i zamišljeno. Veza vodi na `/templates` i
+  otvara ekran sa uređivačem.

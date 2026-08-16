@@ -97,5 +97,31 @@ razdvaja **„Moji šabloni"** od **„Ugrađeni šabloni"** kroz `optgroup`, ka
 - Četiri nova testa komponente pokrivaju brisanje: da zahtev ide na plan a ne na mezociklus,
   da posle njega ne ostane ni plan ni keširan trening, da potvrda zaista traži potvrdu, i da
   neuspelo brisanje ostavlja plan na ekranu uz poruku.
-- Prolaz kroz aplikaciju na širini telefona - rezultat se upisuje ovde posle provere u
-  pregledaču.
+### Prolaz kroz aplikaciju sa prijavljenim nalogom
+
+**Pravilo je provereno na serveru, ne samo na ekranu** - pozivi su poslati direktno:
+
+| Poziv | Odgovor |
+|---|---|
+| `POST /api/mesocycles` | **405** (metoda više ne postoji) |
+| `DELETE /api/mesocycles/{id}` | **405** |
+| `GET /api/mesocycles` | 200 (čitanje i dalje radi) |
+| `DELETE /api/macrocycles/{tuđ-id}` | 404 (vlasništvo se poštuje) |
+
+**Prijavljena greška više ne postoji.** Napravljen je plan sa dva bloka, obrisan sa ekrana
+„Plan", pa je ponovljen tačno onaj niz koji ju je izazivao - odlazak na „Trening" i povratak
+na „Plan":
+
+- ekran pokazuje prazno stanje, bez ijednog bloka;
+- `GET /macrocycles/active` vraća **404 pri svakom od tri uzastopna čitanja**. To je poziv
+  koji pokreće `EnsureCurrentBlockAsync`, dakle upravo mesto na kom se ranije obrisano
+  vraćalo;
+- `GET /mesocycles/active` takođe 404 - mezociklus je otišao sa planom, a ne ostao u bazi.
+
+**Ekran „Trening" više ništa ne pravi ni ne briše**: na njemu nema ni „Novi plan" ni
+„Obriši plan".
+
+**Sadržaj šablona se vidi u čarobnjaku**: ispod menija svakog bloka stoje dani i vežbe
+(`Day A: Back Squat · Bench Press · …`, `Day B: Overhead Press · …`). Podela na „Moji
+šabloni" i „Ugrađeni šabloni" se pojavljuje tek kad korisnik ima lični šablon; na nalogu bez
+njih meni ostaje ravan, kako i treba.

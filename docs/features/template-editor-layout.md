@@ -48,5 +48,14 @@ oznake, a i testovi komponente ih koriste.
 
 - `npm run build` i `npm test` (22 testa) prolaze; testovi uređivača rade nad istim
   poljima jer su im `id`-jevi ostali isti.
-- Prolaz kroz aplikaciju na širini telefona - rezultat se upisuje ovde posle provere u
-  pregledaču.
+- **Prolaz kroz aplikaciju na širini telefona (375×812).** Sa dodatom vežbom u uređivaču,
+  izmerene su pozicije sva tri polja:
+
+| Mereno | Rezultat |
+|---|---|
+| Gornja ivica polja `serije`, `od`, `do` | **631px, 631px, 631px** - dakle isti red |
+| Vidljive oznake | dve (`Serija`, `Ponavljanja`), umesto tri |
+| Skrivene oznake polja opsega | `Ponavljanja od`, `Ponavljanja do` - obe na mestu |
+
+Jednakost gornjih ivica je i cela poenta: greška se sastojala baš u tome što su se
+razlikovale.
