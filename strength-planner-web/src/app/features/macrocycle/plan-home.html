@@ -33,15 +33,30 @@
           <li class="tblock" [class]="'tblock tblock--' + block.status">
             <div class="tblock__marker" aria-hidden="true">{{ block.order }}</div>
             <div class="tblock__body">
-              <div class="tblock__head">
-                <span class="tblock__goal">{{ goalLabel(block.goal) }}</span>
-                <span class="tblock__status">{{ statusLabel(block) }}</span>
-              </div>
-              <p class="tblock__template">
-                {{ block.templateName }} ·
-                <span class="numeric">{{ modelLabel(block.periodizationModel) }},
-                  {{ block.durationWeeks }} ned.</span>
-              </p>
+              <button
+                class="tblock__toggle"
+                type="button"
+                [attr.aria-expanded]="expandedBlockId() === block.id"
+                [attr.aria-controls]="'block-panel-' + block.id"
+                (click)="toggleBlock(block)"
+              >
+                <span class="tblock__head">
+                  <span class="tblock__goal">{{ goalLabel(block.goal) }}</span>
+                  <span class="tblock__status">{{ statusLabel(block) }}</span>
+                </span>
+                <span class="tblock__template">
+                  {{ block.templateName }} ·
+                  <span class="numeric">{{ modelLabel(block.periodizationModel) }},
+                    {{ block.durationWeeks }} ned.</span>
+                </span>
+                <mat-icon
+                  class="tblock__chevron"
+                  [class.is-open]="expandedBlockId() === block.id"
+                  aria-hidden="true"
+                >
+                  expand_more
+                </mat-icon>
+              </button>
 
               @if (block.totalSessions > 0) {
                 <div
@@ -62,15 +77,56 @@
                   Generiše se kad prethodni blok bude gotov - da krene od tvojih tadašnjih 1RM.
                 </p>
               }
+
+              @if (expandedBlockId() === block.id) {
+                <div class="preview" [attr.id]="'block-panel-' + block.id">
+                  @if (previewLoading()) {
+                    <p class="preview__note">Učitavam…</p>
+                  } @else if (previewError(); as message) {
+                    <p class="preview__note preview__note--error" role="alert">{{ message }}</p>
+                  } @else if (previewWeek(); as week) {
+                    <p class="preview__note">
+                      Prva nedelja bloka. Kasnije nedelje periodizacija pomera.
+                    </p>
+                    @for (session of week.sessions; track session.id) {
+                      <div class="pday">
+                        <span class="pday__name">{{ session.dayLabel }}</span>
+                        <ul class="pday__exercises">
+                          @for (plan of session.exercisePlans; track plan.id) {
+                            <li class="pday__exercise">
+                              <span>{{ plan.exerciseName }}</span>
+                              <span class="numeric">
+                                {{ plan.targetSets }}×{{ plan.repRangeMin }}-{{ plan.repRangeMax }}
+                              </span>
+                            </li>
+                          }
+                        </ul>
+                      </div>
+                    }
+                  } @else if (templateDays(block.templateKey); as days) {
+                    <p class="preview__note">
+                      Blok još nije generisan, pa ovde stoji šablon iz kog nastaje. Serije i
+                      opterećenja se računaju kad mu dođe red.
+                    </p>
+                    @for (day of days; track day.name) {
+                      <div class="pday">
+                        <span class="pday__name">{{ day.name }}</span>
+                        <ul class="pday__exercises">
+                          @for (exercise of day.exercises; track exercise) {
+                            <li class="pday__exercise"><span>{{ exercise }}</span></li>
+                          }
+                        </ul>
+                      </div>
+                    }
+                  } @else {
+                    <p class="preview__note">Nema šta da se prikaže za ovaj blok.</p>
+                  }
+                </div>
+              }
             </div>
           </li>
         }
       </ol>
-
-      <button class="btn btn--primary" type="button" (click)="openWorkout()">
-        <mat-icon aria-hidden="true">fitness_center</mat-icon>
-        Idi na trening
-      </button>
     </section>
   } @else if (notFound()) {
     <app-empty-state

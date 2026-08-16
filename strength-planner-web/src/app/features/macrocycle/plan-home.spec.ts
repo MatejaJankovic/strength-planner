@@ -202,3 +202,114 @@ describe('PlanHome - sadržaj šablona u čarobnjaku', () => {
     expect(component().templateDays('nepostojeci')).toBeNull();
   });
 });
+
+/**
+ * Blok koji je generisan i blok koji čeka red nisu ista stvar: prvi ima svoj mezociklus,
+ * drugi tek šablon iz kog će nastati. Pregled mora da povuče različit izvor za svaki, jer
+ * bi inače za blok na čekanju prikazao serije i opterećenja koja još nisu izračunata.
+ */
+describe('PlanHome - pregled bloka', () => {
+  let fixture: ComponentFixture<PlanHome>;
+  let http: HttpTestingController;
+
+  const generated = {
+    id: 'block-1',
+    order: 1,
+    goal: 1,
+    templateKey: 'upper-lower',
+    templateName: 'Upper/Lower',
+    periodizationModel: 0,
+    durationWeeks: 4,
+    status: 'active',
+    mesocycleId: 'meso-1',
+    completedSessions: 0,
+    totalSessions: 16,
+  };
+
+  const pending = {
+    ...generated,
+    id: 'block-2',
+    order: 2,
+    status: 'planned',
+    mesocycleId: null,
+    totalSessions: 0,
+  };
+
+  beforeEach(async () => {
+    TestBed.configureTestingModule({
+      imports: [PlanHome],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
+    });
+
+    http = TestBed.inject(HttpTestingController);
+    fixture = TestBed.createComponent(PlanHome);
+
+    http.expectOne((request) => request.url.endsWith('/macrocycles/active')).flush({
+      id: 'plan-1',
+      name: 'Zima 2026',
+      startDate: '2026-01-05',
+      isActive: true,
+      blocks: [generated, pending],
+    });
+
+    await fixture.whenStable();
+  });
+
+  afterEach(() => http.verify());
+
+  function component(): any {
+    return fixture.componentInstance as any;
+  }
+
+  it('za generisan blok učitava njegov mezociklus i uzima prvu nedelju', async () => {
+    component().toggleBlock(generated);
+
+    const request = http.expectOne((item) => item.url.endsWith('/mesocycles/meso-1'));
+    expect(request.request.method).toBe('GET');
+
+    // Nedelje namerno stižu van redosleda: pregled mora da pokaže prvu, ne prvu u nizu.
+    request.flush({
+      id: 'meso-1',
+      weeks: [
+        { id: 'w2', weekNumber: 2, sessions: [] },
+        { id: 'w1', weekNumber: 1, sessions: [{ id: 's1', dayLabel: 'Upper', exercisePlans: [] }] },
+      ],
+    });
+    await fixture.whenStable();
+
+    expect(component().previewWeek().weekNumber).toBe(1);
+  });
+
+  it('za blok na čekanju ne traži mezociklus nego šablon', async () => {
+    component().toggleBlock(pending);
+
+    // Mezociklus ne postoji; traženje bi vratilo 404.
+    http.expectNone((item) => item.url.includes('/mesocycles/'));
+    http.expectOne((item) => item.url.endsWith('/templates')).flush([
+      {
+        key: 'upper-lower',
+        name: 'Upper/Lower',
+        isCustom: false,
+        note: null,
+        days: [{ name: 'Upper', exercises: ['Bench Press'] }],
+      },
+    ]);
+    await fixture.whenStable();
+
+    expect(component().previewWeek()).toBeNull();
+    expect(component().templateDays('upper-lower')).not.toBeNull();
+  });
+
+  it('drugi klik zatvara pregled', async () => {
+    component().toggleBlock(generated);
+    http.expectOne((item) => item.url.endsWith('/mesocycles/meso-1')).flush({
+      id: 'meso-1',
+      weeks: [{ id: 'w1', weekNumber: 1, sessions: [] }],
+    });
+    await fixture.whenStable();
+    expect(component().expandedBlockId()).toBe('block-1');
+
+    component().toggleBlock(generated);
+    expect(component().expandedBlockId()).toBeNull();
+  });
+});
