@@ -168,12 +168,39 @@
   overflow-wrap: break-word;
 }
 
-// Tri broja u jednom redu: serije i dve granice opsega. Na 320px svaka kolona
-// nosi oko 90px, što je dovoljno za dvocifren broj i strelice brojčanog polja.
+// Dve grupe, a ne tri polja: serije, pa opseg ponavljanja kao jedna celina.
+// Ranije su ovde stajale tri ravnopravne kolone sa oznakama "Serija",
+// "Ponavljanja od" i "do". Srednja oznaka se jedina prelamala u dva reda, pa su
+// polja ispod nje kretala niže od suseda i red je izgledao razbijeno.
 .exrow__numbers {
+  align-items: start;
   display: grid;
   gap: 0.5rem;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+}
+
+// Oznaka stoji nad oba polja, pa se opseg čita kao jedna vrednost - isto kako se
+// i prikazuje na kartici šablona (3×8-12).
+.reprange {
+  align-items: center;
+  display: grid;
+  gap: 0.35rem;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+}
+
+.reprange__dash {
+  color: var(--color-muted);
+  font-weight: 700;
+}
+
+.sr-only {
+  border: 0;
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
 }
 
 .iconbtn {

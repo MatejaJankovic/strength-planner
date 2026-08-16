@@ -193,42 +193,39 @@
                   />
                 </div>
 
-                <div class="field">
-                  <label
-                    class="field__label"
-                    [attr.for]="'rmin-' + dayIndex + '-' + exerciseIndex"
-                  >
-                    Ponavljanja od
-                  </label>
-                  <input
-                    class="control numeric"
-                    type="number"
-                    inputmode="numeric"
-                    [attr.id]="'rmin-' + dayIndex + '-' + exerciseIndex"
-                    [min]="limits.minReps"
-                    [max]="limits.maxReps"
-                    [value]="exercise.repRangeMin"
-                    (change)="setExerciseNumber(dayIndex, exerciseIndex, 'repRangeMin', $any($event.target).value)"
-                  />
-                </div>
+                <div class="field field--reps">
+                  <span class="field__label">Ponavljanja</span>
+                  <div class="reprange">
+                    <label class="sr-only" [attr.for]="'rmin-' + dayIndex + '-' + exerciseIndex">
+                      Ponavljanja od
+                    </label>
+                    <input
+                      class="control numeric"
+                      type="number"
+                      inputmode="numeric"
+                      [attr.id]="'rmin-' + dayIndex + '-' + exerciseIndex"
+                      [min]="limits.minReps"
+                      [max]="limits.maxReps"
+                      [value]="exercise.repRangeMin"
+                      (change)="setExerciseNumber(dayIndex, exerciseIndex, 'repRangeMin', $any($event.target).value)"
+                    />
 
-                <div class="field">
-                  <label
-                    class="field__label"
-                    [attr.for]="'rmax-' + dayIndex + '-' + exerciseIndex"
-                  >
-                    do
-                  </label>
-                  <input
-                    class="control numeric"
-                    type="number"
-                    inputmode="numeric"
-                    [attr.id]="'rmax-' + dayIndex + '-' + exerciseIndex"
-                    [min]="limits.minReps"
-                    [max]="limits.maxReps"
-                    [value]="exercise.repRangeMax"
-                    (change)="setExerciseNumber(dayIndex, exerciseIndex, 'repRangeMax', $any($event.target).value)"
-                  />
+                    <span class="reprange__dash" aria-hidden="true">-</span>
+
+                    <label class="sr-only" [attr.for]="'rmax-' + dayIndex + '-' + exerciseIndex">
+                      Ponavljanja do
+                    </label>
+                    <input
+                      class="control numeric"
+                      type="number"
+                      inputmode="numeric"
+                      [attr.id]="'rmax-' + dayIndex + '-' + exerciseIndex"
+                      [min]="limits.minReps"
+                      [max]="limits.maxReps"
+                      [value]="exercise.repRangeMax"
+                      (change)="setExerciseNumber(dayIndex, exerciseIndex, 'repRangeMax', $any($event.target).value)"
+                    />
+                  </div>
                 </div>
               </div>
             </li>
