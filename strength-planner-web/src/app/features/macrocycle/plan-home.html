@@ -83,10 +83,50 @@
   }
 
   @if (!showWizard() && plan()) {
-    <button class="btn btn--ghost" type="button" (click)="openWizard()">
-      <mat-icon aria-hidden="true">add</mat-icon>
-      Novi plan
-    </button>
+    <div class="planbar">
+      <button class="btn btn--ghost" type="button" (click)="openWizard()">
+        <mat-icon aria-hidden="true">add</mat-icon>
+        Novi plan
+      </button>
+
+      @if (confirmingDelete()) {
+        <div class="confirm">
+          <p class="confirm__label">
+            Obrisati plan sa svim treninzima i odrađenim serijama? Ovo se ne može vratiti.
+          </p>
+          <div class="confirm__actions">
+            <button
+              class="btn btn--danger"
+              type="button"
+              [disabled]="deleting()"
+              (click)="confirmDelete()"
+            >
+              {{ deleting() ? 'Brišem…' : 'Da, obriši plan' }}
+            </button>
+            <button
+              class="btn btn--ghost"
+              type="button"
+              [disabled]="deleting()"
+              (click)="cancelDelete()"
+            >
+              Odustani
+            </button>
+          </div>
+        </div>
+      } @else {
+        <button class="btn btn--ghost" type="button" (click)="requestDelete()">
+          <mat-icon aria-hidden="true">delete_outline</mat-icon>
+          Obriši plan
+        </button>
+      }
+    </div>
+
+    @if (deleteError(); as message) {
+      <p class="alert alert--error" role="alert">
+        <mat-icon aria-hidden="true">error_outline</mat-icon>
+        <span>{{ message }}</span>
+      </p>
+    }
   }
 
   @if (showWizard()) {
@@ -189,10 +229,33 @@
                 [attr.aria-label]="'Šablon treninga bloka ' + ($index + 1)"
                 (change)="setBlockTemplate($index, $any($event.target).value)"
               >
-                @for (template of templates(); track template.key) {
-                  <option [value]="template.key" [selected]="template.key === block.templateKey">
-                    {{ template.name }}
-                  </option>
+                @if (customTemplates().length > 0) {
+                  <optgroup label="Moji šabloni">
+                    @for (template of customTemplates(); track template.key) {
+                      <option
+                        [value]="template.key"
+                        [selected]="template.key === block.templateKey"
+                      >
+                        {{ template.name }}
+                      </option>
+                    }
+                  </optgroup>
+                  <optgroup label="Ugrađeni šabloni">
+                    @for (template of builtInTemplates(); track template.key) {
+                      <option
+                        [value]="template.key"
+                        [selected]="template.key === block.templateKey"
+                      >
+                        {{ template.name }}
+                      </option>
+                    }
+                  </optgroup>
+                } @else {
+                  @for (template of templates(); track template.key) {
+                    <option [value]="template.key" [selected]="template.key === block.templateKey">
+                      {{ template.name }}
+                    </option>
+                  }
                 }
               </select>
             </div>
@@ -202,6 +265,22 @@
                 <mat-icon aria-hidden="true">info_outline</mat-icon>
                 <span>{{ note }}</span>
               </p>
+            }
+
+            <!--
+              Padajući meni pokazuje samo naziv. Ekran za mezociklus, koji je jedini
+              prikazivao sadržaj šablona, više ne postoji - bez ovoga bi se plan sastavljao
+              od šablona čije vežbe korisnik nigde ne vidi.
+            -->
+            @if (templateDays(block.templateKey); as days) {
+              <ul class="tpldays">
+                @for (day of days; track day.name) {
+                  <li class="tplday">
+                    <span class="tplday__name">{{ day.name }}</span>
+                    <span class="tplday__exercises">{{ day.exercises.join(' · ') }}</span>
+                  </li>
+                }
+              </ul>
             }
           </li>
         }

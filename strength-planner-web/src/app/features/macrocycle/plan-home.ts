@@ -48,6 +48,17 @@ export class PlanHome {
   protected readonly plan = this.macrocycleService.active;
 
   protected readonly templates = signal<WorkoutTemplateDto[]>([]);
+
+  // Lični šabloni se u padajućem meniju odvajaju u svoju grupu: kad ih ima, korisnik ih
+  // traži po imenu koje je sam dao, a ne među sedam ugrađenih.
+  protected readonly customTemplates = computed(() =>
+    this.templates().filter((template) => template.isCustom),
+  );
+
+  protected readonly builtInTemplates = computed(() =>
+    this.templates().filter((template) => !template.isCustom),
+  );
+
   protected readonly goalOptions = [
     { value: Goal.Hypertrophy, label: 'Hipertrofija' },
     { value: Goal.Strength, label: 'Snaga' },
@@ -64,6 +75,10 @@ export class PlanHome {
   protected readonly creating = signal(false);
   protected readonly showWizard = signal(false);
   protected readonly createError = signal<string | null>(null);
+
+  protected readonly deleting = signal(false);
+  protected readonly confirmingDelete = signal(false);
+  protected readonly deleteError = signal<string | null>(null);
 
   protected readonly planName = signal('');
   protected readonly startDate = signal(new Date().toISOString().slice(0, 10));
@@ -279,6 +294,16 @@ export class PlanHome {
   }
 
   /**
+   * Dani i vežbe izabranog šablona. Rezervni šablon nema dane, pa se prazan spisak vraća
+   * kao null da se ne bi prikazao prazan okvir.
+   */
+  protected templateDays(templateKey: string): WorkoutTemplateDto['days'] | null {
+    const days = this.templates().find((template) => template.key === templateKey)?.days;
+
+    return days && days.length > 0 ? days : null;
+  }
+
+  /**
    * Srpski ima tri oblika množine: 1 blok, 2–4 bloka, 5+ blokova. Brojevi 11–14 idu
    * u poslednji oblik bez obzira na poslednju cifru.
    */
@@ -326,5 +351,48 @@ export class PlanHome {
 
   protected openWorkout(): void {
     void this.router.navigateByUrl('/workout');
+  }
+
+  // --- brisanje plana -------------------------------------------------------------
+
+  protected requestDelete(): void {
+    this.deleteError.set(null);
+    this.confirmingDelete.set(true);
+  }
+
+  protected cancelDelete(): void {
+    this.confirmingDelete.set(false);
+  }
+
+  /**
+   * Briše ceo plan, sa mezociklusima svih blokova. Brisanje pojedinačnog mezociklusa više
+   * ne postoji: blok bez svog treninga je stanje koje plan sam popravlja tako što ga
+   * ponovo generiše, pa je ranije obrisan mezociklus umeo da se vrati.
+   */
+  protected confirmDelete(): void {
+    const current = this.plan();
+    if (!current || this.deleting()) {
+      return;
+    }
+
+    this.deleting.set(true);
+    this.deleteError.set(null);
+
+    this.macrocycleService.delete(current.id).subscribe({
+      next: () => {
+        this.deleting.set(false);
+        this.confirmingDelete.set(false);
+        this.notFound.set(true);
+        // Trening je nestao zajedno sa planom; keširani mezociklus više ne postoji.
+        this.mesocycleService.reset();
+      },
+      error: (err: unknown) => {
+        this.deleting.set(false);
+        this.confirmingDelete.set(false);
+        this.deleteError.set(
+          extractErrorMessage(err, 'Brisanje nije uspelo. Pokušaj ponovo.'),
+        );
+      },
+    });
   }
 }

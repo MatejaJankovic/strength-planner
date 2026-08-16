@@ -175,7 +175,7 @@ export class OneRepMaxSetup {
   }
 
   protected continueToPlan(): void {
-    void this.router.navigateByUrl('/mesocycle');
+    void this.router.navigateByUrl('/plan');
   }
 
   private setDraft(exerciseId: string, value: number): void {

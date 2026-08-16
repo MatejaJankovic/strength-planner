@@ -27,8 +27,6 @@ export class WorkoutDashboard {
 
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
-  protected readonly deleting = signal(false);
-  protected readonly confirmingDelete = signal(false);
 
   protected readonly mesocycle = this.mesocycleService.active;
 
@@ -86,35 +84,12 @@ export class WorkoutDashboard {
     }
   }
 
-  protected openCreate(): void {
-    void this.router.navigateByUrl('/mesocycle');
-  }
-
-  protected requestDelete(): void {
-    this.confirmingDelete.set(true);
-  }
-
-  protected cancelDelete(): void {
-    this.confirmingDelete.set(false);
-  }
-
-  protected confirmDelete(): void {
-    const plan = this.mesocycle();
-    if (!plan || this.deleting()) {
-      return;
-    }
-
-    this.deleting.set(true);
-    this.mesocycleService.delete(plan.id).subscribe({
-      next: () => {
-        this.deleting.set(false);
-        this.confirmingDelete.set(false);
-      },
-      error: (err: unknown) => {
-        this.deleting.set(false);
-        this.confirmingDelete.set(false);
-        this.error.set(extractErrorMessage(err, 'Brisanje nije uspelo. Pokušaj ponovo.'));
-      },
-    });
+  /**
+   * Prazno stanje vodi na dugoročni plan, jedino mesto sa kog trening nastaje.
+   * Ekran „Trening" sam ništa ne pravi niti briše: mezociklus je blok plana, pa bi
+   * prekid usred plana ostavio blok bez svog treninga.
+   */
+  protected openPlan(): void {
+    void this.router.navigateByUrl('/plan');
   }
 }

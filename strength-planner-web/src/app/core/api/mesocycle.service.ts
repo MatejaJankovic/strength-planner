@@ -3,7 +3,6 @@ import { inject, Injectable, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { API_BASE_URL } from './api-base';
 import {
-  GenerateMesocycleRequest,
   MesocycleDto,
   MesocycleSummaryDto,
   WorkoutTemplateDto,
@@ -23,9 +22,9 @@ export class MesocycleService {
   }
 
   /**
-   * Ugrađeni šabloni, viđeni očima trenutnog korisnika: dani su skraćeni na njegov nivo
-   * iskustva, a jedan je označen kao predlog za njegov broj trenažnih dana. Zato se i ne
-   * keširaju — izmena profila menja odgovor.
+   * Šabloni viđeni očima trenutnog korisnika: ugrađeni su skraćeni na njegov nivo iskustva,
+   * a spisku se dodaju i njegovi lični. Zato se ne keširaju — i izmena profila i nov lični
+   * šablon menjaju odgovor.
    */
   templates(): Observable<WorkoutTemplateDto[]> {
     return this.http.get<WorkoutTemplateDto[]>(`${this.apiUrl}/templates`);
@@ -34,12 +33,6 @@ export class MesocycleService {
   /** All mesocycles for the current user (summaries, newest-first per backend). */
   list(): Observable<MesocycleSummaryDto[]> {
     return this.http.get<MesocycleSummaryDto[]>(`${this.apiUrl}/mesocycles`);
-  }
-
-  create(request: GenerateMesocycleRequest): Observable<MesocycleDto> {
-    return this.http
-      .post<MesocycleDto>(`${this.apiUrl}/mesocycles`, request)
-      .pipe(tap((mesocycle) => this.activeSignal.set(mesocycle)));
   }
 
   /** Active mesocycle with full week/session structure. 404 when none exists. */
@@ -51,15 +44,5 @@ export class MesocycleService {
 
   byId(id: string): Observable<MesocycleDto> {
     return this.http.get<MesocycleDto>(`${this.apiUrl}/mesocycles/${id}`);
-  }
-
-  delete(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/mesocycles/${id}`).pipe(
-      tap(() => {
-        if (this.activeSignal()?.id === id) {
-          this.activeSignal.set(null);
-        }
-      }),
-    );
   }
 }

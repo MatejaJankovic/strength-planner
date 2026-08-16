@@ -105,14 +105,6 @@ export interface SaveCustomTemplateRequest {
   days: SaveCustomTemplateDayDto[];
 }
 
-export interface GenerateMesocycleRequest {
-  templateKey: string;
-  goal: Goal;
-  periodizationModel: PeriodizationModel;
-  name: string;
-  startDate: string;
-}
-
 export interface MesocycleSummaryDto {
   id: string;
   name: string;

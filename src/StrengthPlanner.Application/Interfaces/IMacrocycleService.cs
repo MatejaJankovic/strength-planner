@@ -33,6 +33,16 @@ public interface IMacrocycleService
     Task<MacrocycleDto> GetByIdAsync(Guid userId, Guid macrocycleId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Briše plan zajedno sa mezociklusima njegovih blokova.
+    ///
+    /// Mezociklusi se moraju brisati izričito: strani ključ bloka na mezociklus je
+    /// <c>SetNull</c>, pa bi kaskada plan → blokovi ostavila mezocikluse iza sebe. Brisanje
+    /// je i jedini put do uklanjanja treninga otkako plan ne može da se napravi mimo
+    /// makrociklusa, pa mezociklus bez plana ni ne postoji.
+    /// </summary>
+    Task DeleteAsync(Guid userId, Guid macrocycleId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Ako je mezociklus u celosti odrađen a plan ima sledeći blok, generiše ga i
     /// postavlja kao aktivan. Vraća null kada nema šta da se prelazi.
     /// </summary>
