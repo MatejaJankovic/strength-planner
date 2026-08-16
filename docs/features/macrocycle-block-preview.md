@@ -52,5 +52,17 @@ markup bi bio neispravan, a traka bi postala deo klikabilne površine bez razlog
 - Testovi drže baš razliku između dva stanja bloka: da generisan blok traži svoj mezociklus
   i uzima nedelju broj 1 i kad nedelje stignu van redosleda, da blok na čekanju **ne** traži
   mezociklus nego šablon, i da drugi klik zatvara pregled.
-- Prolaz kroz aplikaciju na širini telefona - rezultat se upisuje ovde posle provere u
-  pregledaču.
+- **Prolaz kroz aplikaciju na širini telefona (375×812)**, nad planom sa dva bloka - jednim
+  generisanim i jednim na čekanju, dakle oba stanja odjednom:
+
+| Blok | Šta je pregled pokazao |
+|---|---|
+| 1, „U toku" | dani `Day A` i `Day B` sa vežbama i propisom - `Back Squat 5×6-10`, `Bench Press 5×6-10`, … |
+| 2, „Na čekanju" | isti dani, ali **samo nazivi vežbi**, uz objašnjenje da se serije računaju kad bloku dođe red |
+
+- `aria-expanded` prelazi sa `false` na `true` samo na otvorenom bloku, a `aria-controls`
+  pokazuje na `id` panela koji se zaista pojavi.
+- Otvoren je uvek najviše jedan blok (`document.querySelectorAll('.preview').length === 1`).
+- Otvaranje bloka na čekanju **nije poslalo nijedan mrežni zahtev**, jer je spisak šablona
+  već bio učitan - dakle grana koja ga ne traži dvaput radi.
+- Dugmeta „Idi na trening" nema, a navigacija ka treningu i dalje stoji u donjoj traci.
