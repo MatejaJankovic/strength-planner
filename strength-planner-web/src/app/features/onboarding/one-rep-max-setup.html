@@ -1,146 +1,171 @@
-<header class="feature-header">
-  <p class="eyebrow">Onboarding</p>
-  <h1>Poznati maksimumi</h1>
-  <p>
-    Unesi procenu maksimuma za jedno ponavljanje (1RM) - koristimo je za početna radna opterećenja
-    u prvom mezociklusu.
-  </p>
-</header>
-
-@if (loading()) {
-  <app-loading label="Učitavam vežbe…" />
-} @else if (error(); as message) {
-  <section class="setup">
-    <p class="setup__error" role="alert">
-      <mat-icon aria-hidden="true">cloud_off</mat-icon>
-      <span>{{ message }}</span>
-    </p>
-    <button class="retry" type="button" (click)="load()">
-      <mat-icon aria-hidden="true">refresh</mat-icon>
-      Pokušaj ponovo
-    </button>
-  </section>
-} @else {
-  <section class="setup">
-    <p class="setup__progress numeric" aria-live="polite">
-      Sačuvano {{ savedCount() }} / {{ rows().length }}
-    </p>
-
-    @if (saveError(); as message) {
+<!--
+  Isti ekran u dva okvira. Iz registracije stiže kao osmi korak, pa opremu (traku
+  napretka, naslov, dugme „Nastavi na plan") daje `app-wizard-shell`; sa profila stiže
+  samostalno, pa nosi svoje zaglavlje i svoje dugme. Telo je isto u oba slučaja i stoji
+  u `<ng-template>` da ne bi bilo prepisano dvaput.
+-->
+<ng-template #liftsBody>
+  @if (loading()) {
+    <app-loading label="Učitavam vežbe…" />
+  } @else if (error(); as message) {
+    <section class="setup">
       <p class="setup__error" role="alert">
-        <mat-icon aria-hidden="true">error_outline</mat-icon>
+        <mat-icon aria-hidden="true">cloud_off</mat-icon>
         <span>{{ message }}</span>
       </p>
-    }
+      <button class="retry" type="button" (click)="load()">
+        <mat-icon aria-hidden="true">refresh</mat-icon>
+        Pokušaj ponovo
+      </button>
+    </section>
+  } @else {
+    <section class="setup">
+      <p class="setup__progress numeric" aria-live="polite">
+        Sačuvano {{ savedCount() }} / {{ rows().length }}
+      </p>
 
-    <ul class="lifts">
-      @for (row of rows(); track row.exerciseId) {
-        <li class="lift">
-          <div class="lift__info">
-            <span class="lift__name">{{ row.name }}</span>
-            @if (row.savedValueKg !== null && !isDirty(row)) {
-              <span class="lift__saved">
-                <mat-icon aria-hidden="true">check_circle</mat-icon>
-                Sačuvano
-              </span>
-            } @else if (row.savedValueKg !== null) {
-              <span class="lift__current numeric">
-                Trenutno: {{ row.savedValueKg | number: '1.0-1' }} kg
-              </span>
-            }
-          </div>
+      @if (saveError(); as message) {
+        <p class="setup__error" role="alert">
+          <mat-icon aria-hidden="true">error_outline</mat-icon>
+          <span>{{ message }}</span>
+        </p>
+      }
 
-          <div class="lift__control">
-            <div class="stepper">
+      <ul class="lifts">
+        @for (row of rows(); track row.exerciseId) {
+          <li class="lift">
+            <div class="lift__info">
+              <span class="lift__name">{{ row.name }}</span>
+              @if (row.savedValueKg !== null && !isDirty(row)) {
+                <span class="lift__saved">
+                  <mat-icon aria-hidden="true">check_circle</mat-icon>
+                  Sačuvano
+                </span>
+              } @else if (row.savedValueKg !== null) {
+                <span class="lift__current numeric">
+                  Trenutno: {{ row.savedValueKg | number: '1.0-1' }} kg
+                </span>
+              }
+            </div>
+
+            <div class="lift__control">
+              <div class="stepper">
+                <button
+                  class="stepper__button"
+                  type="button"
+                  aria-label="Smanji za 2.5 kg"
+                  [disabled]="valueOf(row) <= 0"
+                  (click)="step(row, -1)"
+                >
+                  −
+                </button>
+                <input
+                  class="stepper__input numeric"
+                  type="number"
+                  inputmode="decimal"
+                  step="2.5"
+                  min="0"
+                  max="500"
+                  placeholder="0"
+                  [attr.aria-label]="'1RM za ' + row.name + ' u kilogramima'"
+                  [value]="valueOf(row) || ''"
+                  (change)="onInput(row, $any($event.target).value)"
+                />
+                <button
+                  class="stepper__button"
+                  type="button"
+                  aria-label="Povećaj za 2.5 kg"
+                  (click)="step(row, 1)"
+                >
+                  +
+                </button>
+              </div>
+              <span class="lift__unit">kg</span>
+
               <button
-                class="stepper__button"
+                class="lift__save"
                 type="button"
-                aria-label="Smanji za 2.5 kg"
-                [disabled]="valueOf(row) <= 0"
-                (click)="step(row, -1)"
+                [disabled]="!canSave(row)"
+                (click)="save(row)"
               >
-                −
-              </button>
-              <input
-                class="stepper__input numeric"
-                type="number"
-                inputmode="decimal"
-                step="2.5"
-                min="0"
-                max="500"
-                placeholder="0"
-                [attr.aria-label]="'1RM za ' + row.name + ' u kilogramima'"
-                [value]="valueOf(row) || ''"
-                (change)="onInput(row, $any($event.target).value)"
-              />
-              <button
-                class="stepper__button"
-                type="button"
-                aria-label="Povećaj za 2.5 kg"
-                (click)="step(row, 1)"
-              >
-                +
+                @if (savingId() === row.exerciseId) {
+                  Čuvam…
+                } @else if (row.savedValueKg === null) {
+                  Sačuvaj
+                } @else if (isDirty(row)) {
+                  Ažuriraj
+                } @else {
+                  Sačuvano
+                }
               </button>
             </div>
-            <span class="lift__unit">kg</span>
+          </li>
+        }
+      </ul>
 
-            <button
-              class="lift__save"
-              type="button"
-              [disabled]="!canSave(row)"
-              (click)="save(row)"
+      @if (addableExercises().length > 0) {
+        <div class="add">
+          <label class="add__label" for="add-exercise">Dodaj vežbu iz kataloga</label>
+          <div class="add__row">
+            <select
+              id="add-exercise"
+              class="add__select"
+              [ngModel]="exerciseToAdd()"
+              (ngModelChange)="exerciseToAdd.set($event)"
             >
-              @if (savingId() === row.exerciseId) {
-                Čuvam…
-              } @else if (row.savedValueKg === null) {
-                Sačuvaj
-              } @else if (isDirty(row)) {
-                Ažuriraj
-              } @else {
-                Sačuvano
+              <option value="">Izaberi vežbu…</option>
+              @for (exercise of addableExercises(); track exercise.id) {
+                <option [value]="exercise.id">{{ exercise.name }}</option>
               }
+            </select>
+            <button
+              class="add__button"
+              type="button"
+              [disabled]="!exerciseToAdd()"
+              (click)="addExercise()"
+            >
+              <mat-icon aria-hidden="true">add</mat-icon>
+              Dodaj
             </button>
           </div>
-        </li>
-      }
-    </ul>
-
-    @if (addableExercises().length > 0) {
-      <div class="add">
-        <label class="add__label" for="add-exercise">Dodaj vežbu iz kataloga</label>
-        <div class="add__row">
-          <select
-            id="add-exercise"
-            class="add__select"
-            [ngModel]="exerciseToAdd()"
-            (ngModelChange)="exerciseToAdd.set($event)"
-          >
-            <option value="">Izaberi vežbu…</option>
-            @for (exercise of addableExercises(); track exercise.id) {
-              <option [value]="exercise.id">{{ exercise.name }}</option>
-            }
-          </select>
-          <button
-            class="add__button"
-            type="button"
-            [disabled]="!exerciseToAdd()"
-            (click)="addExercise()"
-          >
-            <mat-icon aria-hidden="true">add</mat-icon>
-            Dodaj
-          </button>
         </div>
-      </div>
-    }
+      }
 
-    <div class="footer">
-      <button class="footer__continue" type="button" (click)="continueToPlan()">
-        Nastavi na plan
-        <mat-icon aria-hidden="true">arrow_forward</mat-icon>
-      </button>
-      <p class="footer__hint">
-        Ne moraš uneti sve - vežbe bez 1RM prvi put loguješ po osećaju.
-      </p>
-    </div>
-  </section>
+      @if (!inWizard()) {
+        <div class="footer">
+          <button class="footer__continue" type="button" (click)="continueToPlan()">
+            Nastavi na plan
+            <mat-icon aria-hidden="true">arrow_forward</mat-icon>
+          </button>
+          <p class="footer__hint">{{ optionalNote }}</p>
+        </div>
+      }
+    </section>
+  }
+</ng-template>
+
+@if (inWizard()) {
+  <app-wizard-shell
+    title="Poznati maksimumi"
+    subtitle="Procena maksimuma za jedno ponavljanje daje početna opterećenja u prvom bloku."
+    continueLabel="Nastavi na plan"
+    [stepIndex]="stepIndex"
+    [stepCount]="stepCount"
+    [footnote]="optionalNote"
+    [showBack]="false"
+    (next)="continueToPlan()"
+  >
+    <ng-container [ngTemplateOutlet]="liftsBody" />
+  </app-wizard-shell>
+} @else {
+  <header class="feature-header">
+    <p class="eyebrow">Onboarding</p>
+    <h1>Poznati maksimumi</h1>
+    <p>
+      Unesi procenu maksimuma za jedno ponavljanje (1RM) - koristimo je za početna radna
+      opterećenja u prvom mezociklusu.
+    </p>
+  </header>
+
+  <ng-container [ngTemplateOutlet]="liftsBody" />
 }

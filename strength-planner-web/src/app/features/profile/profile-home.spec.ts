@@ -16,7 +16,7 @@ describe('ProfileHome - pol se prikazuje i vraća serveru', () => {
   let fixture: ComponentFixture<ProfileHome>;
   let http: HttpTestingController;
 
-  function load(sex: unknown): void {
+  function load(sex: unknown, extra: Record<string, unknown> = {}): void {
     fixture = TestBed.createComponent(ProfileHome);
 
     http.expectOne((request) => request.url.endsWith('/auth/me')).flush({
@@ -26,6 +26,7 @@ describe('ProfileHome - pol se prikazuje i vraća serveru', () => {
       age: 23,
       bodyweightKg: 120,
       experienceLevel: 2,
+      ...extra,
     });
     http.expectOne((request) => request.url.endsWith('/exercises/muscle-groups')).flush([]);
     http.expectOne((request) => request.url.endsWith('/exercises')).flush([]);
@@ -105,5 +106,59 @@ describe('ProfileHome - pol se prikazuje i vraća serveru', () => {
     expect(request.request.body.sex).toBeNull();
 
     request.flush({ id: 'u1', email: 'ja@primer.com', sex: null, age: 23, bodyweightKg: 120 });
+  });
+
+  /**
+   * `PUT /api/auth/profile` je potpuna zamena profila: polje koje se ne pošalje server
+   * upisuje kao prazno.
+   *
+   * Registracija je postala čarobnjak koji traži ime i visinu, a ovaj ekran ih pre toga
+   * nije imao — pa je prvo čuvanje telesne mase brisalo oboje, a korisnik je video samo
+   * poruku da je profil sačuvan. Test ide istim putem: odgovor servera -> polje -> telo
+   * zahteva.
+   */
+  it('čuvanje profila ne briše ime i visinu unete u registraciji', () => {
+    load(Sex.Male, { displayName: 'Mateja', heightCm: 183 });
+
+    expect(form().controls.displayName.value).toBe('Mateja');
+    expect(form().controls.heightCm.value).toBe('183');
+
+    (fixture.componentInstance as any).saveProfile();
+
+    const request = http.expectOne(
+      (candidate) => candidate.url.endsWith('/auth/profile') && candidate.method === 'PUT',
+    );
+
+    expect(request.request.body.displayName).toBe('Mateja');
+    expect(request.request.body.heightCm).toBe(183);
+
+    request.flush({
+      id: 'u1',
+      email: 'ja@primer.com',
+      displayName: 'Mateja',
+      heightCm: 183,
+      sex: Sex.Male,
+      age: 23,
+      bodyweightKg: 120,
+    });
+  });
+
+  it('prazno ime i prazna visina idu kao null, a ne kao prazan string ili nula', () => {
+    // Number('') je nula, a nula je vrednost koju [Range] odbija — greška bi stigla sa
+    // servera umesto da polje uopšte ne bude poslato kao broj.
+    load(Sex.Male);
+
+    expect(form().controls.displayName.value).toBe('');
+
+    (fixture.componentInstance as any).saveProfile();
+
+    const request = http.expectOne(
+      (candidate) => candidate.url.endsWith('/auth/profile') && candidate.method === 'PUT',
+    );
+
+    expect(request.request.body.displayName).toBeNull();
+    expect(request.request.body.heightCm).toBeNull();
+
+    request.flush({ id: 'u1', email: 'ja@primer.com', sex: Sex.Male, age: 23, bodyweightKg: 120 });
   });
 });

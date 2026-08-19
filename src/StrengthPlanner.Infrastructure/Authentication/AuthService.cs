@@ -67,9 +67,11 @@ public class AuthService : IAuthService
             Email = dto.Email,
             Profile = new Profile
             {
+                DisplayName = dto.DisplayName.Trim(),
                 Sex = dto.Sex,
                 Age = dto.Age,
                 BodyweightKg = dto.BodyweightKg,
+                HeightCm = dto.HeightCm,
                 ExperienceLevel = dto.ExperienceLevel
             }
         };
@@ -124,9 +126,11 @@ public class AuthService : IAuthService
         {
             Id = user.Id,
             Email = user.Email ?? string.Empty,
+            DisplayName = profile?.DisplayName,
             Sex = profile?.Sex,
             Age = profile?.Age,
             BodyweightKg = profile?.BodyweightKg,
+            HeightCm = profile?.HeightCm,
             ExperienceLevel = profile?.ExperienceLevel
         };
     }
@@ -141,9 +145,15 @@ public class AuthService : IAuthService
             _db.Profiles.Add(profile);
         }
 
+        // Prazan unos je "nemam ime", a ne ime od nula znakova: bez ovoga bi razmak iz
+        // polja postao naslov profila.
+        profile.DisplayName = string.IsNullOrWhiteSpace(dto.DisplayName)
+            ? null
+            : dto.DisplayName.Trim();
         profile.Sex = dto.Sex;
         profile.Age = dto.Age;
         profile.BodyweightKg = dto.BodyweightKg;
+        profile.HeightCm = dto.HeightCm;
         profile.ExperienceLevel = dto.ExperienceLevel;
 
         await _db.SaveChangesAsync();
@@ -155,9 +165,11 @@ public class AuthService : IAuthService
         {
             Id = userId,
             Email = user.Email ?? string.Empty,
+            DisplayName = profile.DisplayName,
             Sex = profile.Sex,
             Age = profile.Age,
             BodyweightKg = profile.BodyweightKg,
+            HeightCm = profile.HeightCm,
             ExperienceLevel = profile.ExperienceLevel
         };
     }

@@ -1,14 +1,17 @@
-import { DecimalPipe } from '@angular/common';
+import { DecimalPipe, NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { ActivatedRoute, Router } from '@angular/router';
+import { forkJoin, map } from 'rxjs';
 import { MatIconModule } from '@angular/material/icon';
 import { Loading } from '../../shared/components/loading/loading';
 import { extractErrorMessage } from '../../core/api/http-error';
 import { ExerciseService } from '../../core/api/exercise.service';
 import { OneRepMaxService } from '../../core/api/one-rep-max.service';
+import { REGISTRATION_STEP_COUNT } from '../../core/models/auth.models';
 import { ExerciseDto } from '../../core/models/training.models';
+import { WizardShell } from '../../shared/components/wizard-shell/wizard-shell';
 
 const MAIN_LIFT_NAMES = ['Back Squat', 'Bench Press', 'Deadlift', 'Overhead Press', 'Barbell Row'];
 const STEP = 2.5;
@@ -23,14 +26,38 @@ interface LiftRow {
 
 @Component({
   selector: 'app-one-rep-max-setup',
-  imports: [FormsModule, MatIconModule, DecimalPipe, Loading],
+  imports: [FormsModule, MatIconModule, DecimalPipe, NgTemplateOutlet, Loading, WizardShell],
   templateUrl: './one-rep-max-setup.html',
   styleUrl: './one-rep-max-setup.scss',
 })
 export class OneRepMaxSetup {
+  /**
+   * Napomena da unos nije obavezan. Jedan string, jer ga čitaju oba prikaza ekrana —
+   * ranije je isto rečenica stajala i ovde i u čarobnjaku, i dve kopije su se već
+   * razišle po crtici.
+   */
+  protected readonly optionalNote =
+    'Ne moraš uneti sve - vežbe bez 1RM prvi put loguješ po osećaju.';
+
+  protected readonly stepCount = REGISTRATION_STEP_COUNT;
+  protected readonly stepIndex = REGISTRATION_STEP_COUNT - 1;
+
   private readonly exerciseService = inject(ExerciseService);
   private readonly oneRepMaxService = inject(OneRepMaxService);
   private readonly router = inject(Router);
+
+  /**
+   * Da li je ekran poslednji korak registracije ili samostalna izmena maksimuma.
+   *
+   * Isti ekran služi za oba: čarobnjak ga otvara sa `?wizard=1` i tada nosi traku
+   * napretka i dugme „Nastavi na plan", a sa profila se otvara bez parametra i tada nosi
+   * svoje zaglavlje. Bez toga bi vraćeni korisnik čitao „Korak 8 od 8" nad ekranom koji
+   * nije deo nikakve registracije.
+   */
+  protected readonly inWizard = toSignal(
+    inject(ActivatedRoute).queryParamMap.pipe(map((params) => params.get('wizard') === '1')),
+    { initialValue: false },
+  );
 
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);

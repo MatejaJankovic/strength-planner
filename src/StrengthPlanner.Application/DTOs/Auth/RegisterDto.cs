@@ -22,6 +22,14 @@ public class RegisterDto
     public string Password { get; set; } = string.Empty;
 
     // --- osnovni profil ---
+    /// <summary>
+    /// Ime kojim korisnik naziva sam sebe. Registracija ga traži; kolona je ipak
+    /// nullable, jer nalozi napravljeni pre uvođenja polja nemaju nikakvo ime.
+    /// </summary>
+    [Required]
+    [MaxLength(ProfilePolicy.DisplayNameMaximumLength)]
+    public string DisplayName { get; set; } = string.Empty;
+
     // Opciono polje, pa nema [Required]; [DefinedEnum] propušta null i odbija sve što
     // enum ne definiše.
     [DefinedEnum]
@@ -32,6 +40,10 @@ public class RegisterDto
 
     [Range(20, 400)]
     public decimal BodyweightKg { get; set; }
+
+    // Opciono kao i pol: ne ulazi ni u jedan algoritam, pa prazna vrednost ne kvari plan.
+    [Range(ProfilePolicy.MinimumHeightCm, ProfilePolicy.MaximumHeightCm)]
+    public decimal? HeightCm { get; set; }
 
     // Bez provere je "experienceLevel": 999 prolazilo, upisivalo se u profil i vraćalo
     // klijentu kao nivo koji nijedan ekran ne prikazuje.

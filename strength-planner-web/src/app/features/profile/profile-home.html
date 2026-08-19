@@ -39,6 +39,19 @@
 
     <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" novalidate>
       <div class="grid">
+        <div class="field field--wide">
+          <label class="field__label" for="pf-name">Ime</label>
+          <input
+            id="pf-name"
+            class="control"
+            type="text"
+            formControlName="displayName"
+            autocomplete="nickname"
+            [attr.maxlength]="displayNameMaxLength"
+            placeholder="npr. Mateja"
+          />
+        </div>
+
         <div class="field">
           <label class="field__label" for="pf-sex">Pol</label>
           <select id="pf-sex" class="control" formControlName="sex">
@@ -79,6 +92,25 @@
           />
           @if (profileForm.controls.bodyweightKg.touched && profileForm.controls.bodyweightKg.invalid) {
             <p class="field__error">Unesi telesnu masu (30–300 kg).</p>
+          }
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="pf-height">Visina (cm)</label>
+          <input
+            id="pf-height"
+            class="control numeric"
+            type="number"
+            inputmode="numeric"
+            formControlName="heightCm"
+            [attr.min]="heightMin"
+            [attr.max]="heightMax"
+            [class.control--invalid]="
+              profileForm.controls.heightCm.invalid && profileForm.controls.heightCm.touched
+            "
+          />
+          @if (profileForm.controls.heightCm.touched && profileForm.controls.heightCm.invalid) {
+            <p class="field__error">Visina treba da bude između {{ heightMin }} i {{ heightMax }} cm.</p>
           }
         </div>
 
@@ -259,6 +291,19 @@
         }
       </ul>
     }
+  </section>
+
+  <section class="card">
+    <h2 class="card__title">Poznati maksimumi</h2>
+    <p class="card__hint">
+      Procene maksimuma za jedno ponavljanje daju početna opterećenja. Kada napreduješ,
+      ažuriraj ih ovde - sledeći blok kreće od novih brojeva.
+    </p>
+    <a class="cardlink" routerLink="/onboarding">
+      <mat-icon aria-hidden="true">exercise</mat-icon>
+      <span>Izmeni maksimume (1RM)</span>
+      <mat-icon class="cardlink__go" aria-hidden="true">chevron_right</mat-icon>
+    </a>
   </section>
 
   <section class="card">

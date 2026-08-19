@@ -1,0 +1,50 @@
+<section class="wiz">
+  <header class="wiz__top">
+    @if (showBack()) {
+      <button class="wiz__back" type="button" (click)="back.emit()" aria-label="Nazad">
+        <mat-icon aria-hidden="true">arrow_back</mat-icon>
+      </button>
+    }
+
+    <div
+      class="wiz__progress"
+      role="progressbar"
+      [attr.aria-label]="progressLabel()"
+      [attr.aria-valuenow]="stepIndex() + 1"
+      aria-valuemin="1"
+      [attr.aria-valuemax]="stepCount()"
+    >
+      @for (segment of segments(); track segment) {
+        <span class="wiz__segment" [class.is-done]="segment <= stepIndex()"></span>
+      }
+    </div>
+  </header>
+
+  <div class="wiz__body">
+    <h1 class="wiz__title">{{ title() }}</h1>
+    @if (subtitle(); as text) {
+      <p class="wiz__subtitle">{{ text }}</p>
+    }
+
+    <div class="wiz__content">
+      <ng-content />
+    </div>
+  </div>
+
+  <footer class="wiz__foot">
+    @if (footnote(); as text) {
+      <p class="wiz__footnote">{{ text }}</p>
+    }
+    <button
+      class="wiz__next"
+      type="button"
+      [disabled]="!canContinue() || busy()"
+      (click)="next.emit()"
+    >
+      @if (busy()) {
+        <span class="wiz__spinner" aria-hidden="true"></span>
+      }
+      {{ continueLabel() }}
+    </button>
+  </footer>
+</section>

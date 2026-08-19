@@ -1,5 +1,5 @@
-<div class="app-shell" [class.app-shell--bare]="isAuthRoute()">
-  @if (!isAuthRoute()) {
+<div class="app-shell" [class.app-shell--bare]="isBareRoute()">
+  @if (!isBareRoute()) {
     <header class="topbar">
       <a class="brand" routerLink="/workout" aria-label="Strength Planner početna">
         <img class="brand__mark" src="/logo.png" alt="" />
@@ -15,7 +15,7 @@
     <router-outlet />
   </main>
 
-  @if (!isAuthRoute()) {
+  @if (!isBareRoute()) {
     <nav class="bottom-nav" aria-label="Glavna navigacija">
       @for (item of navItems; track item.route) {
         <a

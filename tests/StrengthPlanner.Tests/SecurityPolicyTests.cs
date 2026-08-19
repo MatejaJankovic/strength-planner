@@ -25,6 +25,7 @@ public class SecurityPolicyTests
     {
         Email = "korisnik@primer.com",
         Password = password,
+        DisplayName = "Mateja",
         Age = 30,
         BodyweightKg = 80
     };

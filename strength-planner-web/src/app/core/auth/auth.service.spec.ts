@@ -138,6 +138,7 @@ describe('AuthService — čišćenje keševa pri promeni identiteta', () => {
       .register({
         email: 'treci@primer.com',
         password: 'DovoljnoDugaLozinka1',
+        displayName: 'Treći',
         age: 30,
         bodyweightKg: 80,
         experienceLevel: 1,

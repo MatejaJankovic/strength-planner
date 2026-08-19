@@ -12,12 +12,33 @@ export const PASSWORD_MAX_LENGTH = 128;
 /** Mora da prati EmailPolicy.MaximumLength na serveru. */
 export const EMAIL_MAX_LENGTH = 256;
 
+/** Mora da prati ProfilePolicy.DisplayNameMaximumLength na serveru. */
+export const DISPLAY_NAME_MAX_LENGTH = 64;
+
+/** Mora da prati ProfilePolicy.MinimumHeightCm na serveru. */
+export const HEIGHT_MIN_CM = 100;
+
+/** Mora da prati ProfilePolicy.MaximumHeightCm na serveru. */
+export const HEIGHT_MAX_CM = 250;
+
+/**
+ * Ukupan broj koraka registracije: sedam pitanja u čarobnjaku plus unos maksimuma.
+ *
+ * Stoji ovde zato što ga čitaju dva ekrana na dve rute — `/register` i `/onboarding` —
+ * a traka napretka mora da pokazuje isti ukupan broj na oba. Da svaki ekran drži svoj,
+ * poslednji korak bi pisao „8 od 8" ili „1 od 1" u zavisnosti od toga koji je zaboravljen.
+ */
+export const REGISTRATION_STEP_COUNT = 8;
+
 export interface RegisterDto {
   email: string;
   password: string;
+  /** Ime koje stoji na profilu. Registracija ga traži; izmena profila ne. */
+  displayName: string;
   sex?: Sex | null;
   age: number;
   bodyweightKg: number;
+  heightCm?: number | null;
   experienceLevel: ExperienceLevel;
   /**
    * Zamka za automate — vidi RegisterDto.Website na serveru. Polje je sakriveno, pa je
@@ -46,9 +67,12 @@ export interface ChangePasswordDto {
 export interface CurrentUserDto {
   id: string;
   email: string;
+  /** Null za naloge napravljene pre uvođenja imena — ekrani padaju nazad na email. */
+  displayName?: string | null;
   sex?: Sex | string | null;
   age?: number | null;
   bodyweightKg?: number | null;
+  heightCm?: number | null;
   experienceLevel?: string | null;
 }
 
@@ -79,8 +103,10 @@ export const SEX_OPTIONS: ReadonlyArray<{ value: Sex; label: string }> = [
 ];
 
 export interface UpdateProfileDto {
+  displayName?: string | null;
   sex?: Sex | null;
   age: number;
   bodyweightKg: number;
+  heightCm?: number | null;
   experienceLevel: ExperienceLevel;
 }

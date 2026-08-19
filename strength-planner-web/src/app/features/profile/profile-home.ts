@@ -13,7 +13,10 @@ import { extractErrorMessage } from '../../core/api/http-error';
 import { ExerciseService } from '../../core/api/exercise.service';
 import { AuthService } from '../../core/auth/auth.service';
 import {
+  DISPLAY_NAME_MAX_LENGTH,
   ExperienceLevel,
+  HEIGHT_MAX_CM,
+  HEIGHT_MIN_CM,
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
   Sex,
@@ -53,10 +56,24 @@ export class ProfileHome {
 
   protected readonly sexOptions = SEX_OPTIONS;
 
+  protected readonly displayNameMaxLength = DISPLAY_NAME_MAX_LENGTH;
+  protected readonly heightMin = HEIGHT_MIN_CM;
+  protected readonly heightMax = HEIGHT_MAX_CM;
+
+  /**
+   * Ime i visina stoje ovde iako ih ovaj ekran nije tražio pre nego što je registracija
+   * postala čarobnjak.
+   *
+   * `PUT /api/auth/profile` je potpuna zamena profila, pa polje koje se ne pošalje server
+   * upisuje kao prazno. Bez ova dva polja bi prvo čuvanje telesne mase brisalo ime i
+   * visinu unete pri registraciji — a korisnik bi video samo da je masa sačuvana.
+   */
   protected readonly profileForm = this.fb.nonNullable.group({
+    displayName: ['', [Validators.maxLength(DISPLAY_NAME_MAX_LENGTH)]],
     sex: [''],
     age: ['', [Validators.required, Validators.min(14), Validators.max(90)]],
     bodyweightKg: ['', [Validators.required, Validators.min(30), Validators.max(300)]],
+    heightCm: ['', [Validators.min(HEIGHT_MIN_CM), Validators.max(HEIGHT_MAX_CM)]],
     experienceLevel: ['', [Validators.required]],
   });
 
@@ -149,9 +166,11 @@ export class ProfileHome {
       next: ({ me, muscles }) => {
         this.muscleGroups.set(muscles);
         this.profileForm.patchValue({
+          displayName: me.displayName ?? '',
           sex: this.sexToValue(me.sex),
           age: me.age != null ? String(me.age) : '',
           bodyweightKg: me.bodyweightKg != null ? String(me.bodyweightKg) : '',
+          heightCm: me.heightCm != null ? String(me.heightCm) : '',
           experienceLevel: this.experienceLevelToValue(me.experienceLevel),
         });
         this.loading.set(false);
@@ -210,9 +229,12 @@ export class ProfileHome {
 
     const raw = this.profileForm.getRawValue();
     const dto: UpdateProfileDto = {
+      // Prazno polje je "nemam ime", pa ide kao null - isto kao pol.
+      displayName: raw.displayName.trim() === '' ? null : raw.displayName.trim(),
       sex: raw.sex === '' ? null : (Number(raw.sex) as Sex),
       age: Number(raw.age),
       bodyweightKg: Number(raw.bodyweightKg),
+      heightCm: raw.heightCm === '' ? null : Number(raw.heightCm),
       experienceLevel: Number(raw.experienceLevel) as ExperienceLevel,
     };
 

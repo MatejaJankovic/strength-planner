@@ -1,6 +1,13 @@
+// Stavka grida podrazumevano ne sme da se skupi ispod svoje min-content širine, pa
+// jedan neuklopiv element razvuče celu kolonu i strana dobije horizontalno skrolovanje.
+// Ovde je to bio <select> „Dodaj vežbu iz kataloga": najduži naziv vežbe (Overhead
+// Triceps Extension) traži 238px, a sa dugmetom „Dodaj" pored sebe 346px - dok unutar
+// .app-main na telefonu od 375px ima 343px. Izmereno: strana je bila široka 396px.
+// minmax(0, 1fr) dopušta koloni da se skupi, pa sadržaj popušta umesto strane.
 :host {
   display: grid;
   gap: 1.1rem;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .feature-header p {
@@ -31,6 +38,7 @@
 .setup {
   display: grid;
   gap: 0.9rem;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .setup__progress {
@@ -207,6 +215,7 @@
   border-radius: 0.65rem;
   display: grid;
   gap: 0.5rem;
+  grid-template-columns: minmax(0, 1fr);
   padding: 0.9rem 1rem;
 }
 
@@ -215,8 +224,10 @@
   font-weight: 700;
 }
 
+// Kada select i dugme ne staju u jedan red, dugme pada ispod umesto da razvuče red.
 .add__row {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
 }
 
