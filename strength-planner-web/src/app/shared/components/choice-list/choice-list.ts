@@ -1,6 +1,14 @@
 import { Component, input, output } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 
+/** Smer koji strelica pomera izbor. Mapa umesto ulančanih ternara. */
+const ARROW_STEPS: Readonly<Record<string, number>> = {
+  ArrowDown: 1,
+  ArrowRight: 1,
+  ArrowUp: -1,
+  ArrowLeft: -1,
+};
+
 /** Jedna ponuda u listi. `hint` je sitniji red ispod naslova (npr. „0-1 godina"). */
 export interface ChoiceOption {
   value: string;
@@ -45,7 +53,7 @@ export class ChoiceList {
    * ponude bi izgledala kao da je izbor poništen.
    */
   protected onKeydown(event: KeyboardEvent, index: number): void {
-    const step = event.key === 'ArrowDown' || event.key === 'ArrowRight' ? 1 : event.key === 'ArrowUp' || event.key === 'ArrowLeft' ? -1 : 0;
+    const step = ARROW_STEPS[event.key] ?? 0;
 
     if (step === 0) {
       return;
@@ -63,8 +71,13 @@ export class ChoiceList {
 
     // Fokus mora da prati izbor, inače naredna strelica kreće od reda koji više nije
     // izabran i izbor „preskače" preko jedne ponude.
-    const list = (event.currentTarget as HTMLElement).parentElement;
-    const target = list?.children.item(next);
+    //
+    // Traži se po klasi, a ne po indeksu među decom: `children.item(next)` bi tiho
+    // fokusirao pogrešan element kada bi se u listu ikada dodao omotač, pa bi se izbor i
+    // fokus razišli — a emitovana vrednost bi ostala ispravna, što takav kvar čini
+    // nevidljivim u testu vrednosti.
+    const list = (event.currentTarget as HTMLElement).closest('.choices');
+    const target = list?.querySelectorAll('.choice').item(next);
     if (target instanceof HTMLElement) {
       target.focus();
     }

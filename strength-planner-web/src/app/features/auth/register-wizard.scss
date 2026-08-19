@@ -1,27 +1,23 @@
+// Polja, kontrole i prikaz lozinke dele se sa prijavom. Ranije su bila prepisana ovde, sa
+// sitnim odstupanjima u visini i radijusu, pa bi izmena zajedničkog izgleda polja hvatala
+// prijavu a promašivala registraciju.
+@use './auth-shell';
+
 :host {
   display: block;
 }
 
-.field {
-  display: grid;
-  gap: 0.35rem;
-  margin-bottom: 1.1rem;
-}
-
-.field__label {
-  font-size: 0.85rem;
-  font-weight: 700;
-}
-
+// Čarobnjak ima jedno pitanje po ekranu, pa su mu polja krupnija od onih na prijavi, gde
+// ih na jednoj kartici stoji šest. Menja se samo to - ostalo dolazi iz zajedničkog fajla.
 .control {
-  appearance: none;
-  background: var(--color-elevated);
-  border: 1px solid var(--color-border);
   border-radius: 0.6rem;
-  color: var(--color-ink);
   min-height: 52px;
-  padding: 0 0.85rem;
-  width: 100%;
+}
+
+.password__toggle {
+  border-radius: 0.6rem;
+  height: 52px;
+  width: 52px;
 }
 
 // Ime je jedino polje na svom ekranu, pa nosi veličinu kojom se i čita.
@@ -31,48 +27,13 @@
   font-weight: 700;
 }
 
-.control:hover {
-  border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
+.field {
+  margin-bottom: 1.1rem;
 }
 
-.control--invalid {
-  border-color: var(--volume-above);
-}
-
-.field__hint {
-  color: var(--color-muted);
-  font-size: 0.78rem;
-  margin: 0;
-}
-
+.field__hint,
 .field__error {
-  color: #8a2f18;
-  font-size: 0.8rem;
-  font-weight: 600;
   margin: 0;
-}
-
-.password {
-  align-items: center;
-  display: flex;
-  gap: 0.4rem;
-}
-
-.password .control {
-  flex: 1;
-}
-
-.password__toggle {
-  align-items: center;
-  background: none;
-  border: 1px solid var(--color-border);
-  border-radius: 0.6rem;
-  color: var(--color-muted);
-  cursor: pointer;
-  display: inline-flex;
-  height: 52px;
-  justify-content: center;
-  width: 52px;
 }
 
 .wizard-error {

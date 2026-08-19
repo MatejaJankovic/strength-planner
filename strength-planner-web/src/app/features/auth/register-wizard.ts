@@ -13,18 +13,15 @@ import {
   HEIGHT_MIN_CM,
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
+  REGISTRATION_STEP_COUNT,
   RegisterDto,
   Sex,
 } from '../../core/models/auth.models';
 import { ChoiceList, ChoiceOption } from '../../shared/components/choice-list/choice-list';
 import { MeasureInput } from '../../shared/components/measure-input/measure-input';
 import { WizardShell } from '../../shared/components/wizard-shell/wizard-shell';
-import { OneRepMaxSetup } from '../onboarding/one-rep-max-setup';
 
-/**
- * Koraci, redom. Vrednosti se nigde ne upisuju, pa smeju da se premeštaju — jedino
- * `OneRepMax` mora da ostane poslednji, jer je jedini koji traži postojeći nalog.
- */
+/** Koraci, redom. Vrednosti se nigde ne upisuju, pa smeju da se premeštaju. */
 enum Step {
   Name,
   Credentials,
@@ -33,10 +30,15 @@ enum Step {
   Height,
   Age,
   Experience,
-  OneRepMax,
 }
 
-const STEP_COUNT = Step.OneRepMax + 1;
+/**
+ * Vrednost kartice „Ne želim da navedem".
+ *
+ * Ne može da bude prazan string, jer `ChoiceList` prazno tumači kao „ništa nije
+ * izabrano" i tada ne bi bilo razlike između neodgovorenog i odbijenog pitanja.
+ */
+const DECLINED_SEX = 'declined';
 
 /** Polazne vrednosti mera. Klizač mora od nečega da krene, a prazan nema gde da stoji. */
 const DEFAULT_BODYWEIGHT_KG = 75;
@@ -51,8 +53,11 @@ const DEFAULT_AGE = 25;
  * ne može ni da dovrši ni da obriše. Cena je što se zauzet email vidi tek na kraju — zato
  * je taj korak drugi po redu, da se do njega dođe u dva dodira.
  *
- * Poslednji korak je unos maksimuma (1RM) i on je posle registracije: traži katalog vežbi
- * sa servera, a njemu se pristupa tek sa tokenom.
+ * Osmi i poslednji korak — unos maksimuma (1RM) — ne stoji ovde nego na `/onboarding`.
+ * Traži katalog vežbi sa servera, dakle postojeći token, pa mora da bude posle
+ * registracije; a da je ostao na ovoj ruti, osvežavanje stranice tokom njega vraćalo bi
+ * već prijavljenog korisnika na prvo pitanje čarobnjaka. Traka napretka je ista na oba
+ * ekrana jer oba čitaju `REGISTRATION_STEP_COUNT`.
  */
 @Component({
   selector: 'app-register-wizard',
@@ -63,7 +68,6 @@ const DEFAULT_AGE = 25;
     WizardShell,
     ChoiceList,
     MeasureInput,
-    OneRepMaxSetup,
   ],
   templateUrl: './register-wizard.html',
   styleUrl: './register-wizard.scss',
@@ -74,21 +78,40 @@ export class RegisterWizard {
   private readonly router = inject(Router);
 
   protected readonly Step = Step;
-  protected readonly stepCount = STEP_COUNT;
+  protected readonly stepCount = REGISTRATION_STEP_COUNT;
 
   protected readonly step = signal(Step.Name);
   protected readonly submitting = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly showPassword = signal(false);
 
+  /**
+   * Napomena na ekranima sa merama.
+   *
+   * Klizač mora od nečega da krene, pa su masa, visina i uzrast unaprijed popunjeni i
+   * dugme „Nastavi" radi bez dodira. Bez ove napomene profil tvrdi tri mere koje korisnik
+   * nikada nije izgovorio, i nigde ne piše da su procena. Formular koji je čarobnjak
+   * zamenio je obe tražio izričito (`Validators.required`).
+   */
+  protected readonly prefilledNote = 'Vrednost je unapred popunjena - pomeri klizač ako nije tačna.';
+
   protected readonly passwordMinLength = PASSWORD_MIN_LENGTH;
   protected readonly displayNameMaxLength = DISPLAY_NAME_MAX_LENGTH;
   protected readonly heightMin = HEIGHT_MIN_CM;
   protected readonly heightMax = HEIGHT_MAX_CM;
 
+  /**
+   * Poslednja ponuda je izričito odbijanje odgovora.
+   *
+   * Bez nje se izbor ne može poništiti: kartice samo postavljaju vrednost, pa ko jednom
+   * dodirne „Muški" nema više načina da se vrati na neizjašnjeno. Pol je na serveru
+   * nullable upravo zato da sme da se ne navede, pa bi ekran bez ove ponude bio stroži
+   * od podatka koji čuva.
+   */
   protected readonly sexOptions: ReadonlyArray<ChoiceOption> = [
     { value: String(Sex.Male), label: 'Muški', icon: 'male' },
     { value: String(Sex.Female), label: 'Ženski', icon: 'female' },
+    { value: DECLINED_SEX, label: 'Ne želim da navedem', icon: 'do_not_disturb_on' },
   ];
 
   protected readonly experienceOptions: ReadonlyArray<ChoiceOption> = [
@@ -158,8 +181,6 @@ export class RegisterWizard {
         return 'Koliko imaš godina?';
       case Step.Experience:
         return 'Koliko dugo treniraš?';
-      case Step.OneRepMax:
-        return 'Poznati maksimumi';
     }
   });
 
@@ -179,8 +200,6 @@ export class RegisterWizard {
         return null;
       case Step.Experience:
         return 'Ovo bira koliko serija i koliko težak plan dobijaš na početku.';
-      case Step.OneRepMax:
-        return 'Procena maksimuma za jedno ponavljanje daje početna opterećenja u prvom bloku.';
     }
   });
 
@@ -206,26 +225,16 @@ export class RegisterWizard {
       case Step.Bodyweight:
       case Step.Height:
       case Step.Age:
-      case Step.OneRepMax:
         return true;
     }
   });
 
-  protected readonly continueLabel = computed(() => {
-    switch (this.step()) {
-      case Step.Experience:
-        return this.submitting() ? 'Pravim nalog…' : 'Napravi nalog';
-      case Step.OneRepMax:
-        return 'Nastavi na plan';
-      default:
-        return 'Nastavi';
-    }
-  });
-
-  protected readonly footnote = computed(() =>
-    this.step() === Step.OneRepMax
-      ? 'Ne moraš uneti sve — vežbe bez 1RM prvi put loguješ po osećaju.'
-      : 'Tvoji podaci ostaju na tvom nalogu.',
+  protected readonly continueLabel = computed(() =>
+    this.step() === Step.Experience
+      ? this.submitting()
+        ? 'Pravim nalog…'
+        : 'Napravi nalog'
+      : 'Nastavi',
   );
 
   protected togglePassword(): void {
@@ -278,11 +287,6 @@ export class RegisterWizard {
       return;
     }
 
-    if (this.step() === Step.OneRepMax) {
-      void this.router.navigateByUrl('/plan');
-      return;
-    }
-
     this.error.set(null);
     this.step.update((step) => step + 1);
   }
@@ -293,7 +297,7 @@ export class RegisterWizard {
       email: raw.email.trim(),
       password: raw.password,
       displayName: raw.displayName.trim(),
-      sex: raw.sex === '' ? null : (Number(raw.sex) as Sex),
+      sex: raw.sex === '' || raw.sex === DECLINED_SEX ? null : (Number(raw.sex) as Sex),
       age: raw.age,
       bodyweightKg: raw.bodyweightKg,
       heightCm: raw.heightCm,
@@ -307,7 +311,9 @@ export class RegisterWizard {
     this.auth.register(dto).subscribe({
       next: () => {
         this.submitting.set(false);
-        this.step.set(Step.OneRepMax);
+        // Osmi korak je na svojoj ruti; `wizard=1` mu kaže da nosi opremu čarobnjaka
+        // (traku napretka i dugme „Nastavi na plan") umesto svog samostalnog zaglavlja.
+        void this.router.navigate(['/onboarding'], { queryParams: { wizard: 1 } });
       },
       error: (err: unknown) => {
         this.submitting.set(false);

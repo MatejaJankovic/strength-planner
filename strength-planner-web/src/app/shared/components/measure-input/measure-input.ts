@@ -1,4 +1,4 @@
-import { Component, computed, input, output } from '@angular/core';
+import { Component, computed, ElementRef, input, output, viewChild } from '@angular/core';
 
 /**
  * Unos jedne brojne mere: veliki prikaz vrednosti, klizač ispod njega i polje za
@@ -20,7 +20,19 @@ export class MeasureInput {
   readonly step = input(1);
   readonly unit = input.required<string>();
   readonly label = input.required<string>();
+
+  /**
+   * Identifikator polja za precizan unos, za vezu sa oznakom.
+   *
+   * Traži se izvana namerno. Ranije se gradio spajanjem sa <see cref="label"/>, pa je
+   * ispadao id sa razmacima („measure-Telesna masa u kilogramima") — što HTML ne
+   * dopušta — i dve mere sa istom oznakom na jednom ekranu dobile bi isti id.
+   */
+  readonly inputId = input.required<string>();
+
   readonly valueChange = output<number>();
+
+  private readonly field = viewChild<ElementRef<HTMLInputElement>>('field');
 
   /**
    * Broj decimala koji se prikazuje izvodi se iz koraka: korak 0.5 traži jednu decimalu,
@@ -40,8 +52,17 @@ export class MeasureInput {
    * kuca „180", međustanje „1" je ispod donje granice i skakalo bi na nju.
    */
   protected onType(raw: string): void {
+    // Prazno polje je „još ne znam", a ne nula. Number('') je nula, pa bi bez ovoga
+    // brisanje sadržaja da bi se ukucalo nešto drugo skočilo na donju granicu — na
+    // koraku telesne mase na 30 kg.
+    if (raw.trim() === '') {
+      this.rewriteField();
+      return;
+    }
+
     const parsed = Number(raw);
     if (Number.isNaN(parsed)) {
+      this.rewriteField();
       return;
     }
 
@@ -52,6 +73,27 @@ export class MeasureInput {
     const clamped = Math.min(Math.max(value, this.min()), this.max());
 
     // toFixed skida float drift kod koraka koji nisu stepen dvojke.
-    this.valueChange.emit(Number(clamped.toFixed(1)));
+    const next = Number(clamped.toFixed(1));
+
+    this.valueChange.emit(next);
+
+    // Odbijena vrednost se mora ručno vratiti u polje.
+    //
+    // Angular ne prepisuje [value] kada se model nije promenio, a odsecanje na granicu
+    // upravo to i daje: ako je vrednost već bila na granici, `next` je isti kao pre, pa
+    // se prikaz ne osvežava i u polju ostaje ono što je korisnik ukucao. Izmereno: model
+    // na 300, ukucano 999 — prikaz i klizač su pokazivali 300, a polje 999. Ista greška
+    // koju `profile-home.ts` već opisuje za korak opterećenja.
+    if (next === this.value()) {
+      this.rewriteField();
+    }
+  }
+
+  /** Vraća u polje vrednost koju komponenta stvarno drži. */
+  private rewriteField(): void {
+    const field = this.field()?.nativeElement;
+    if (field) {
+      field.value = String(this.value());
+    }
   }
 }

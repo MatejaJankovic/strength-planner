@@ -8,6 +8,7 @@
     class="measure__slider"
     type="range"
     [attr.aria-label]="label()"
+    [attr.aria-valuetext]="display() + ' ' + unit()"
     [min]="min()"
     [max]="max()"
     [step]="step()"
@@ -16,15 +17,14 @@
   />
 
   <div class="measure__precise">
-    <label class="measure__precise-label" [attr.for]="'measure-' + label()">
-      Precizan unos
-    </label>
+    <label class="measure__precise-label" [attr.for]="inputId()"> Precizan unos </label>
     <div class="measure__precise-row">
       <input
+        #field
         class="measure__field numeric"
         type="number"
         inputmode="decimal"
-        [attr.id]="'measure-' + label()"
+        [attr.id]="inputId()"
         [min]="min()"
         [max]="max()"
         [step]="step()"

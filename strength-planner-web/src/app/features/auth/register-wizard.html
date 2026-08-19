@@ -7,8 +7,7 @@
     [canContinue]="canContinue()"
     [busy]="submitting()"
     [continueLabel]="continueLabel()"
-    [footnote]="footnote()"
-    [showBack]="step() !== Step.OneRepMax"
+    footnote="Tvoji podaci ostaju na tvom nalogu."
     (back)="back()"
     (next)="next()"
   >
@@ -146,6 +145,7 @@
 
       @case (Step.Bodyweight) {
         <app-measure-input
+          inputId="wz-bodyweight"
           label="Telesna masa u kilogramima"
           unit="kg"
           [min]="30"
@@ -154,10 +154,12 @@
           [value]="form.controls.bodyweightKg.value"
           (valueChange)="setBodyweight($event)"
         />
+        <p class="wizard-note">{{ prefilledNote }}</p>
       }
 
       @case (Step.Height) {
         <app-measure-input
+          inputId="wz-height"
           label="Visina u centimetrima"
           unit="cm"
           [min]="heightMin"
@@ -166,10 +168,12 @@
           [value]="form.controls.heightCm.value"
           (valueChange)="setHeight($event)"
         />
+        <p class="wizard-note">{{ prefilledNote }}</p>
       }
 
       @case (Step.Age) {
         <app-measure-input
+          inputId="wz-age"
           label="Uzrast u godinama"
           unit="god."
           [min]="14"
@@ -178,6 +182,7 @@
           [value]="form.controls.age.value"
           (valueChange)="setAge($event)"
         />
+        <p class="wizard-note">{{ prefilledNote }}</p>
       }
 
       @case (Step.Experience) {
@@ -188,17 +193,11 @@
           (valueChange)="setExperience($event)"
         />
       }
-
-      @case (Step.OneRepMax) {
-        <app-one-rep-max-setup [embedded]="true" />
-      }
     }
   </app-wizard-shell>
 </form>
 
-@if (step() !== Step.OneRepMax) {
-  <p class="wizard-alt">
-    Već imaš nalog?
-    <a routerLink="/login">Prijavi se</a>
-  </p>
-}
+<p class="wizard-alt">
+  Već imaš nalog?
+  <a routerLink="/login">Prijavi se</a>
+</p>
