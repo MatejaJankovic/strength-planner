@@ -130,6 +130,30 @@ na jednom ekranu dobile bi isti `id`. Sada se traži izvana (`inputId`).
 radijusu — pa bi izmena zajedničkog izgleda polja hvatala prijavu a promašivala registraciju.
 Sada se zajednički fajl uvozi, a menja se samo ono što se stvarno razlikuje.
 
+**Osmi korak je nosio traku aplikacije i donju navigaciju.** `/register` je „bare" ruta —
+bez trake i bez navigacije — a `/onboarding` nije, pa je premeštanjem koraka registracija na
+poslednjem ekranu dobila navigaciju ka Treningu i Analitici, ekranima kroz koje korisnik nije
+prošao. Uslov u `app.ts` više nije „je li ovo auth ruta" nego „nosi li ekran svoju opremu",
+i pokriva `/onboarding?wizard=1`. Bez parametra isti ekran je obično odredište i zadržava
+okvir; provereno da ostalih pet ekrana nije izgubilo traku ni navigaciju.
+
+## Zatečena greška nađena usput: horizontalno prelivanje
+
+Ekran maksimuma se prelivao van širine ekrana telefona — strana je bila široka **396px na
+viewportu od 375px**. Ovo **nije unela ova runda**: izmereno je da se samostalni
+`/onboarding` prelivao isto, i to od kada postoji, jer ga niko nije gledao na telefonu.
+
+Uzrok: stavka grida se podrazumevano ne sme skupiti ispod svoje `min-content` širine. U
+bloku „Dodaj vežbu iz kataloga" `<select>` traži širinu najdužeg naziva vežbe („Overhead
+Triceps Extension", 238px), a sa dugmetom „Dodaj" pored sebe 346px — dok unutar `.app-main`
+na 375px ekranu ima 343px. `min-width: 0` na selektu je već stajao i nije bio dovoljan, jer
+`min-width` dopušta skupljanje ali ne menja `min-content` doprinos koji roditelj traži.
+
+Rešeno sa `grid-template-columns: minmax(0, 1fr)` na kontejnerima, što koloni dopušta da se
+skupi, pa popušta sadržaj umesto strane; i `flex-wrap` na redu sa selektom, da dugme padne
+ispod kada ne staje. Isto je dodato okviru čarobnjaka, jer sadržaj koraka dolazi projekcijom
+i okvir ne zna šta je u njemu. Posle popravke: 375 = 375 na svim ekranima.
+
 ## Provereno u živoj aplikaciji
 
 Dva puna prolaska kroz čarobnjaka na širini telefona (375 px), oba do baze:
@@ -146,10 +170,11 @@ Dva puna prolaska kroz čarobnjaka na širini telefona (375 px), oba do baze:
 - dvaput ukucano 999 kg: polje, prikaz i klizač svi pokazuju 300
 - obrisan sadržaj polja ostavlja 68.5, ne skače na 30
 - strelica nadole pomera i izbor i fokus na istu ponudu
+- svih pet ostalih ekrana (`/workout`, `/plan`, `/analytics`, `/profile`, `/templates`)
+  zadržalo traku i navigaciju i nijedan se ne preliva
+- profil prikazuje ime „Mateja" i visinu 183 cm iz registracije, i nosi karticu ka 1RM ekranu
 - bez grešaka u konzoli
 
-**Snimak ekrana nije napravljen.** Browser panel u aplikaciji nije bio prikazan, pa je
-snimanje padalo sa „the Browser pane is not displayed, so the page is not compositing
-frames". Sve gore navedeno je provereno kroz stablo pristupačnosti, mrežne pozive i
-`/auth/me`, ali vizuelni rezultat osam novih ekrana time nije potvrđen — a ovaj PR je
-upravo o tome kako ti ekrani izgledaju.
+Snimljena su sva osam koraka na 375px. Snimci su i pokazali dve stvari koje merenja nisu:
+da osmi korak nosi traku aplikacije i donju navigaciju, i da se sadržaj preliva van ekrana.
+Oba su popravljena i ponovo snimljena.

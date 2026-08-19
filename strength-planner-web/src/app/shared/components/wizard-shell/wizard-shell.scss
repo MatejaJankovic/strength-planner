@@ -6,6 +6,9 @@
   display: grid;
   // Telo uzima sav preostao prostor, pa dugme sedi na dnu ekrana i kad je pitanje kratko.
   grid-template-rows: auto 1fr auto;
+  // Sadržaj koraka dolazi projekcijom i okvir ne zna šta je u njemu; bez minmax(0, 1fr)
+  // bi jedan neuklopiv element razvukao okvir preko širine ekrana.
+  grid-template-columns: minmax(0, 1fr);
   margin: 0 auto;
   min-height: calc(100dvh - 2rem);
   padding: 1rem 0 1.25rem;
