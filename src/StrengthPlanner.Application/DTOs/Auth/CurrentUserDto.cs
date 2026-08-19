@@ -22,4 +22,13 @@ public class CurrentUserDto
     public decimal? BodyweightKg { get; set; }
     public decimal? HeightCm { get; set; }
     public ExperienceLevel? ExperienceLevel { get; set; }
+
+    /// <summary>
+    /// Da li korisnik ima sliku profila.
+    ///
+    /// Same bajtove ovaj DTO ne nosi: profil se čita na svakom ekranu, a slika je do dva
+    /// megabajta. Klijent po ovoj zastavici zna da li ima šta da traži sa
+    /// <c>GET /api/auth/avatar</c>.
+    /// </summary>
+    public bool HasAvatar { get; set; }
 }

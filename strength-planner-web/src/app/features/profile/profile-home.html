@@ -1,8 +1,37 @@
-<header class="feature-header">
-  <p class="eyebrow">Profil</p>
-  <h1>Postavke</h1>
-  @if (user(); as currentUser) {
-    <p class="numeric">{{ currentUser.email }}</p>
+<header class="phead">
+  <div class="phead__row">
+    <div class="phead__ring">
+      @if (avatarUrl(); as url) {
+        <img class="phead__image" [src]="url" alt="Slika profila" />
+      } @else {
+        <span class="phead__initial" aria-hidden="true">{{ initial() }}</span>
+      }
+    </div>
+
+    <div class="phead__who">
+      <p class="eyebrow">Profil</p>
+      <h1 class="phead__title">{{ title() }}</h1>
+      @if (user(); as currentUser) {
+        @if (currentUser.displayName) {
+          <p class="phead__email numeric">{{ currentUser.email }}</p>
+        }
+      }
+    </div>
+
+    <a class="phead__edit" routerLink="/profile/edit" aria-label="Izmeni profil">
+      <mat-icon aria-hidden="true">edit</mat-icon>
+    </a>
+  </div>
+
+  @if (summary().length > 0) {
+    <dl class="psummary">
+      @for (row of summary(); track row.label) {
+        <div class="psummary__row">
+          <dt>{{ row.label }}</dt>
+          <dd class="numeric">{{ row.value }}</dd>
+        </div>
+      }
+    </dl>
   }
 </header>
 
@@ -20,125 +49,6 @@
     </button>
   </section>
 } @else {
-  <section class="card">
-    <h2 class="card__title">Osnovni podaci</h2>
-    <p class="card__hint">Telesna masa i iskustvo se menjaju - drži ih ažurnim.</p>
-
-    @if (profileError(); as message) {
-      <p class="alert alert--error" role="alert">
-        <mat-icon aria-hidden="true">error_outline</mat-icon>
-        <span>{{ message }}</span>
-      </p>
-    }
-    @if (profileSaved()) {
-      <p class="alert alert--ok" role="status">
-        <mat-icon aria-hidden="true">check_circle</mat-icon>
-        <span>Profil sačuvan.</span>
-      </p>
-    }
-
-    <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" novalidate>
-      <div class="grid">
-        <div class="field field--wide">
-          <label class="field__label" for="pf-name">Ime</label>
-          <input
-            id="pf-name"
-            class="control"
-            type="text"
-            formControlName="displayName"
-            autocomplete="nickname"
-            [attr.maxlength]="displayNameMaxLength"
-            placeholder="npr. Mateja"
-          />
-        </div>
-
-        <div class="field">
-          <label class="field__label" for="pf-sex">Pol</label>
-          <select id="pf-sex" class="control" formControlName="sex">
-            <option value="">Ne želim da navedem</option>
-            @for (option of sexOptions; track option.value) {
-              <option [value]="option.value">{{ option.label }}</option>
-            }
-          </select>
-        </div>
-
-        <div class="field">
-          <label class="field__label" for="pf-age">Uzrast</label>
-          <input
-            id="pf-age"
-            class="control numeric"
-            type="number"
-            inputmode="numeric"
-            formControlName="age"
-            [class.control--invalid]="profileForm.controls.age.invalid && profileForm.controls.age.touched"
-          />
-          @if (profileForm.controls.age.touched && profileForm.controls.age.invalid) {
-            <p class="field__error">Unesi uzrast (14–90).</p>
-          }
-        </div>
-
-        <div class="field">
-          <label class="field__label" for="pf-weight">Telesna masa (kg)</label>
-          <input
-            id="pf-weight"
-            class="control numeric"
-            type="number"
-            inputmode="decimal"
-            step="0.5"
-            formControlName="bodyweightKg"
-            [class.control--invalid]="
-              profileForm.controls.bodyweightKg.invalid && profileForm.controls.bodyweightKg.touched
-            "
-          />
-          @if (profileForm.controls.bodyweightKg.touched && profileForm.controls.bodyweightKg.invalid) {
-            <p class="field__error">Unesi telesnu masu (30–300 kg).</p>
-          }
-        </div>
-
-        <div class="field">
-          <label class="field__label" for="pf-height">Visina (cm)</label>
-          <input
-            id="pf-height"
-            class="control numeric"
-            type="number"
-            inputmode="numeric"
-            formControlName="heightCm"
-            [attr.min]="heightMin"
-            [attr.max]="heightMax"
-            [class.control--invalid]="
-              profileForm.controls.heightCm.invalid && profileForm.controls.heightCm.touched
-            "
-          />
-          @if (profileForm.controls.heightCm.touched && profileForm.controls.heightCm.invalid) {
-            <p class="field__error">Visina treba da bude između {{ heightMin }} i {{ heightMax }} cm.</p>
-          }
-        </div>
-
-        <div class="field">
-          <label class="field__label" for="pf-exp">Nivo iskustva</label>
-          <select
-            id="pf-exp"
-            class="control"
-            formControlName="experienceLevel"
-            [class.control--invalid]="
-              profileForm.controls.experienceLevel.invalid && profileForm.controls.experienceLevel.touched
-            "
-          >
-            <option value="" disabled>Izaberi nivo</option>
-            @for (option of experienceOptions; track option.value) {
-              <option [value]="option.value">{{ option.label }}</option>
-            }
-          </select>
-        </div>
-
-      </div>
-
-      <button class="btn btn--primary" type="submit" [disabled]="savingProfile()">
-        {{ savingProfile() ? 'Čuvam…' : 'Sačuvaj profil' }}
-      </button>
-    </form>
-  </section>
-
   <section class="card">
     <h2 class="card__title">Lozinka</h2>
     <p class="card__hint">

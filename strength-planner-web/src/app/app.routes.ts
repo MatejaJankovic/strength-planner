@@ -34,6 +34,16 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () => import('./features/analytics/analytics-home').then((m) => m.AnalyticsHome),
   },
+  // Konkretnija putanja ide prva. Sa obrnutim redom radi samo zato što je 'profile'
+  // terminalna ruta: poklapanje po prefiksu uspe na segmentu 'profile', ne uspe da potroši
+  // 'edit', i router pređe na naredni zapis. Onog dana kada 'profile' dobije `children`,
+  // poklapanje uspeva na roditelju i pada među decom - pa '/profile/edit' počne da završava
+  // na catch-all ruti, a ništa u diff-u ne pokazuje zašto.
+  {
+    path: 'profile/edit',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/profile/profile-edit').then((m) => m.ProfileEdit),
+  },
   {
     path: 'profile',
     canActivate: [authGuard],

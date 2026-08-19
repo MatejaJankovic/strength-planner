@@ -1,0 +1,127 @@
+// Kartice, polja i dugmad dolaze zajedno sa ekranom profila.
+@use './profile-shell';
+
+:host {
+  display: grid;
+  gap: 1rem;
+}
+
+// Zaglavlje sa strelicom nazad, naslovom i potvrdom — kao na uzoru sa slike.
+.edit-top {
+  align-items: center;
+  display: grid;
+  // Naslov u sredini ostaje centriran bez obzira na širinu dugmeta desno, jer su bočne
+  // kolone iste širine.
+  gap: 0.5rem;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+}
+
+.edit-top__back {
+  align-items: center;
+  background: none;
+  border: 0;
+  border-radius: 0.5rem;
+  color: var(--color-ink);
+  cursor: pointer;
+  display: inline-flex;
+  height: 44px;
+  justify-content: center;
+  margin-left: -0.35rem;
+  width: 44px;
+}
+
+.edit-top__title {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  margin: 0;
+  text-align: center;
+}
+
+.edit-top__done {
+  background: var(--color-primary);
+  border: 0;
+  border-radius: 0.5rem;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 800;
+  min-height: 40px;
+  padding: 0 0.9rem;
+  white-space: nowrap;
+}
+
+.edit-top__done:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.avatar {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: center;
+  padding: 0.5rem 0 0.25rem;
+}
+
+.avatar__ring {
+  align-items: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  display: flex;
+  height: 108px;
+  justify-content: center;
+  // Slika je kvadratna samo ako je korisnik takvu izabrao; krug je mora odsecati.
+  overflow: hidden;
+  width: 108px;
+}
+
+.avatar__image {
+  height: 100%;
+  // Bez `cover` bi neproporcionalna slika bila razvučena.
+  object-fit: cover;
+  width: 100%;
+}
+
+.avatar__initial {
+  color: var(--color-muted);
+  font-family: var(--font-display);
+  font-size: 2.75rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+// Pravi <input type="file"> je sakriven, pa oznaka nosi izgled dugmeta.
+.avatar__change {
+  border-radius: 0.4rem;
+  color: var(--color-primary);
+  cursor: pointer;
+  font-weight: 800;
+  min-height: 44px;
+  padding: 0.6rem 0.5rem 0;
+}
+
+// Fokus stiže na sakriveni unos, a vidi se na oznaci. Bez ovoga tabulator nestaje iz
+// vida na ovom ekranu: korisnik tastature stoji na elementu od jednog piksela.
+.sr-only:focus-visible + .avatar__change {
+  outline: 3px solid color-mix(in srgb, var(--focus-ring) 72%, white);
+  outline-offset: 3px;
+}
+
+.avatar__remove {
+  background: none;
+  border: 0;
+  color: var(--color-muted);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 700;
+  min-height: 40px;
+}
+
+.avatar__remove:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.edit-actions {
+  display: grid;
+  gap: 0.5rem;
+}
