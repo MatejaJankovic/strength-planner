@@ -1,0 +1,198 @@
+<header class="edit-top">
+  <button class="edit-top__back" type="button" (click)="cancel()" aria-label="Nazad na profil">
+    <mat-icon aria-hidden="true">arrow_back</mat-icon>
+  </button>
+  <h1 class="edit-top__title">Izmeni profil</h1>
+  <button
+    class="edit-top__done"
+    type="button"
+    [disabled]="saving()"
+    (click)="save()"
+  >
+    {{ saving() ? 'Čuvam…' : 'Gotovo' }}
+  </button>
+</header>
+
+@if (loading()) {
+  <app-loading label="Učitavam profil…" />
+} @else if (error(); as message) {
+  <section class="card">
+    <p class="alert alert--error" role="alert">
+      <mat-icon aria-hidden="true">cloud_off</mat-icon>
+      <span>{{ message }}</span>
+    </p>
+    <button class="btn btn--ghost" type="button" (click)="load()">
+      <mat-icon aria-hidden="true">refresh</mat-icon>
+      Pokušaj ponovo
+    </button>
+  </section>
+} @else {
+  <section class="avatar">
+    <div class="avatar__ring">
+      @if (avatarUrl(); as url) {
+        <img class="avatar__image" [src]="url" alt="Slika profila" />
+      } @else {
+        <span class="avatar__initial" aria-hidden="true">{{ initial() }}</span>
+      }
+    </div>
+
+    <!--
+      Pravi <input type="file"> se ne stilizuje pouzdano, pa stoji sakriven a klik dolazi
+      sa oznake. Oznaka je i dalje pravi element za fokus i tastaturu, pa se ništa ne gubi.
+    -->
+    <label class="avatar__change" for="pe-avatar">
+      {{ avatarBusy() ? 'Čuvam…' : 'Promeni sliku' }}
+    </label>
+    <input
+      id="pe-avatar"
+      class="sr-only"
+      type="file"
+      [attr.accept]="acceptedTypes"
+      [disabled]="avatarBusy()"
+      (change)="pickAvatar($any($event.target))"
+    />
+
+    @if (avatarUrl()) {
+      <button
+        class="avatar__remove"
+        type="button"
+        [disabled]="avatarBusy()"
+        (click)="removeAvatar()"
+      >
+        Ukloni sliku
+      </button>
+    }
+
+    @if (avatarError(); as message) {
+      <p class="alert alert--error" role="alert">
+        <mat-icon aria-hidden="true">error_outline</mat-icon>
+        <span>{{ message }}</span>
+      </p>
+    }
+  </section>
+
+  @if (saveError(); as message) {
+    <p class="alert alert--error" role="alert">
+      <mat-icon aria-hidden="true">error_outline</mat-icon>
+      <span>{{ message }}</span>
+    </p>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="save()" novalidate>
+    <section class="card">
+      <h2 class="card__title">Ime</h2>
+      <p class="card__hint">Stoji kao naslov tvog profila. Ako ga ostaviš prazno, piše email.</p>
+
+      <div class="field">
+        <label class="field__label" for="pe-name">Ime</label>
+        <input
+          id="pe-name"
+          class="control"
+          type="text"
+          formControlName="displayName"
+          autocomplete="nickname"
+          [attr.maxlength]="displayNameMaxLength"
+          placeholder="npr. Mateja"
+        />
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="card__title">Podaci o tebi</h2>
+      <p class="card__hint">
+        Telesna masa i iskustvo se menjaju - drži ih ažurnim. Pol i visina ne ulaze u
+        računicu plana.
+      </p>
+
+      <div class="grid">
+        <div class="field">
+          <label class="field__label" for="pe-sex">Pol</label>
+          <select id="pe-sex" class="control" formControlName="sex">
+            <option value="">Ne želim da navedem</option>
+            @for (option of sexOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="pe-age">Uzrast</label>
+          <input
+            id="pe-age"
+            class="control numeric"
+            type="number"
+            inputmode="numeric"
+            formControlName="age"
+            [class.control--invalid]="form.controls.age.invalid && form.controls.age.touched"
+          />
+          @if (form.controls.age.touched && form.controls.age.invalid) {
+            <p class="field__error">Unesi uzrast (14–90).</p>
+          }
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="pe-weight">Telesna masa (kg)</label>
+          <input
+            id="pe-weight"
+            class="control numeric"
+            type="number"
+            inputmode="decimal"
+            step="0.5"
+            formControlName="bodyweightKg"
+            [class.control--invalid]="
+              form.controls.bodyweightKg.invalid && form.controls.bodyweightKg.touched
+            "
+          />
+          @if (form.controls.bodyweightKg.touched && form.controls.bodyweightKg.invalid) {
+            <p class="field__error">Unesi telesnu masu (30–300 kg).</p>
+          }
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="pe-height">Visina (cm)</label>
+          <input
+            id="pe-height"
+            class="control numeric"
+            type="number"
+            inputmode="numeric"
+            formControlName="heightCm"
+            [attr.min]="heightMin"
+            [attr.max]="heightMax"
+            [class.control--invalid]="
+              form.controls.heightCm.invalid && form.controls.heightCm.touched
+            "
+          />
+          @if (form.controls.heightCm.touched && form.controls.heightCm.invalid) {
+            <p class="field__error">
+              Visina treba da bude između {{ heightMin }} i {{ heightMax }} cm.
+            </p>
+          }
+        </div>
+
+        <div class="field field--wide">
+          <label class="field__label" for="pe-exp">Nivo iskustva</label>
+          <select
+            id="pe-exp"
+            class="control"
+            formControlName="experienceLevel"
+            [class.control--invalid]="
+              form.controls.experienceLevel.invalid && form.controls.experienceLevel.touched
+            "
+          >
+            <option value="" disabled>Izaberi nivo</option>
+            @for (option of experienceOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <div class="edit-actions">
+      <button class="btn btn--primary" type="submit" [disabled]="saving()">
+        {{ saving() ? 'Čuvam…' : 'Sačuvaj' }}
+      </button>
+      <button class="btn btn--ghost" type="button" (click)="cancel()">Odustani</button>
+    </div>
+  </form>
+}

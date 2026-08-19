@@ -27,7 +27,13 @@ public class ProfileReplacementTests
     private static readonly Dictionary<string, string> NotUserEditable = new()
     {
         [nameof(Profile.Id)] = "Surogat ključ; ProfileConfiguration ga i ignoriše.",
-        [nameof(Profile.UserId)] = "Identitet vlasnika, dolazi iz tokena, nikada iz tela zahteva."
+        [nameof(Profile.UserId)] = "Identitet vlasnika, dolazi iz tokena, nikada iz tela zahteva.",
+        // Slika ide svojim endpointom (PUT/DELETE /api/auth/avatar) kao multipart, ne kroz
+        // JSON zamenu profila: base64 u telu zahteva uveća sadržaj za trećinu, a tip slike
+        // mora da utvrdi server iz bajtova. Da su ova dva polja u UpdateProfileDto, svako
+        // čuvanje osnovnih podataka slalo bi i brisalo sliku.
+        [nameof(Profile.AvatarBytes)] = "Otprema se kroz PUT /api/auth/avatar, ne kroz zamenu profila.",
+        [nameof(Profile.AvatarContentType)] = "Utvrđuje ga server iz sadržaja slike, klijent ga ne šalje."
     };
 
     [Fact]

@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using StrengthPlanner.Application.DTOs.Auth;
 using StrengthPlanner.Application.Exceptions;
 using StrengthPlanner.Application.Interfaces;
+using StrengthPlanner.Application.Security;
 using StrengthPlanner.Domain.Entities;
 using StrengthPlanner.Infrastructure.Identity;
 using StrengthPlanner.Infrastructure.Persistence;
@@ -131,19 +132,14 @@ public class AuthService : IAuthService
             Age = profile?.Age,
             BodyweightKg = profile?.BodyweightKg,
             HeightCm = profile?.HeightCm,
-            ExperienceLevel = profile?.ExperienceLevel
+            ExperienceLevel = profile?.ExperienceLevel,
+            HasAvatar = profile?.AvatarBytes != null
         };
     }
 
     public async Task<CurrentUserDto> UpdateProfileAsync(Guid userId, UpdateProfileDto dto)
     {
-        var profile = await _db.Profiles.FirstOrDefaultAsync(p => p.UserId == userId);
-
-        if (profile is null)
-        {
-            profile = new Profile { UserId = userId };
-            _db.Profiles.Add(profile);
-        }
+        var profile = await RequireProfileAsync(userId);
 
         // Prazan unos je "nemam ime", a ne ime od nula znakova: bez ovoga bi razmak iz
         // polja postao naslov profila.
@@ -158,6 +154,80 @@ public class AuthService : IAuthService
 
         await _db.SaveChangesAsync();
 
+        return await BuildCurrentUserAsync(userId, profile);
+    }
+
+    public async Task<CurrentUserDto> SetAvatarAsync(Guid userId, byte[] content)
+    {
+        if (content.Length == 0)
+            throw new AuthException("Slika je prazna.");
+
+        // Granica se proverava i ovde, ne samo u zahtevu: servis je ugovor za sebe, a
+        // veličina je jedini razlog zbog kog ovaj upis može da naškodi bazi.
+        if (content.Length > ImageFormat.MaximumSizeBytes)
+            throw new AuthException(
+                $"Slika je veća od {ImageFormat.MaximumSizeBytes / (1024 * 1024)} MB.");
+
+        // Tip se čita iz bajtova. Da se verovalo zaglavlju zahteva, bilo šta poslato kao
+        // "image/png" vraćalo bi se posle pregledačima pod tim tipom.
+        var contentType = ImageFormat.Detect(content)
+            ?? throw new AuthException($"Podržane su samo slike: {ImageFormat.SupportedFormats}.");
+
+        var profile = await RequireProfileAsync(userId);
+
+        profile.AvatarBytes = content;
+        profile.AvatarContentType = contentType;
+
+        await _db.SaveChangesAsync();
+
+        return await BuildCurrentUserAsync(userId, profile);
+    }
+
+    public async Task<AvatarDto?> GetAvatarAsync(Guid userId)
+    {
+        // Upit je uvek po vlasniku, kao svaki drugi u ovom servisu; bez toga bi slika bila
+        // jedini podatak koji se čita bez provere čiji je.
+        var avatar = await _db.Profiles.AsNoTracking()
+            .Where(profile => profile.UserId == userId)
+            .Select(profile => new { profile.AvatarBytes, profile.AvatarContentType })
+            .FirstOrDefaultAsync();
+
+        return avatar?.AvatarBytes is { Length: > 0 } content && avatar.AvatarContentType is { } type
+            ? new AvatarDto(content, type)
+            : null;
+    }
+
+    public async Task<CurrentUserDto> RemoveAvatarAsync(Guid userId)
+    {
+        var profile = await RequireProfileAsync(userId);
+
+        profile.AvatarBytes = null;
+        profile.AvatarContentType = null;
+
+        await _db.SaveChangesAsync();
+
+        return await BuildCurrentUserAsync(userId, profile);
+    }
+
+    /// <summary>
+    /// Profil ulogovanog korisnika, kreiran ako iz nekog razloga ne postoji — isto kao u
+    /// <see cref="UpdateProfileAsync"/>, da postavljanje slike ne padne na nalogu bez profila.
+    /// </summary>
+    private async Task<Profile> RequireProfileAsync(Guid userId)
+    {
+        var profile = await _db.Profiles.FirstOrDefaultAsync(p => p.UserId == userId);
+
+        if (profile is null)
+        {
+            profile = new Profile { UserId = userId };
+            _db.Profiles.Add(profile);
+        }
+
+        return profile;
+    }
+
+    private async Task<CurrentUserDto> BuildCurrentUserAsync(Guid userId, Profile profile)
+    {
         var user = await _userManager.FindByIdAsync(userId.ToString())
             ?? throw new AuthException("Korisnik ne postoji.");
 
@@ -170,7 +240,8 @@ public class AuthService : IAuthService
             Age = profile.Age,
             BodyweightKg = profile.BodyweightKg,
             HeightCm = profile.HeightCm,
-            ExperienceLevel = profile.ExperienceLevel
+            ExperienceLevel = profile.ExperienceLevel,
+            HasAvatar = profile.AvatarBytes != null
         };
     }
 

@@ -21,4 +21,20 @@ public interface IAuthService
     /// prestaju da važe.
     /// </summary>
     Task<AuthResponseDto> ChangePasswordAsync(Guid userId, ChangePasswordDto dto);
+
+    /// <summary>
+    /// Postavlja sliku profila. Tip se utvrđuje iz sadržaja, a ne iz zaglavlja zahteva.
+    /// </summary>
+    /// <exception cref="Exceptions.AuthException">
+    /// Sadržaj je prazan, veći od dopuštenog, ili nije podržana slika.
+    /// </exception>
+    Task<CurrentUserDto> SetAvatarAsync(Guid userId, byte[] content);
+
+    /// <summary>
+    /// Vraća sliku profila i njen tip, ili <c>null</c> ako korisnik nema sliku.
+    /// </summary>
+    Task<AvatarDto?> GetAvatarAsync(Guid userId);
+
+    /// <summary>Uklanja sliku profila.</summary>
+    Task<CurrentUserDto> RemoveAvatarAsync(Guid userId);
 }

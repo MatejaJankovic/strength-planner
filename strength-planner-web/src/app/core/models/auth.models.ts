@@ -30,6 +30,15 @@ export const HEIGHT_MAX_CM = 250;
  */
 export const REGISTRATION_STEP_COUNT = 8;
 
+/** Mora da prati ImageFormat.MaximumSizeBytes na serveru. */
+export const AVATAR_MAX_BYTES = 2 * 1024 * 1024;
+
+/**
+ * Tipovi koje server prihvata. Stoji i u `accept` atributu birača fajla, ali to je samo
+ * predlog pregledaču — pravu odluku donosi server iz bajtova, ne iz ovog spiska.
+ */
+export const AVATAR_ACCEPTED_TYPES = 'image/jpeg,image/png,image/webp';
+
 export interface RegisterDto {
   email: string;
   password: string;
@@ -74,6 +83,8 @@ export interface CurrentUserDto {
   bodyweightKg?: number | null;
   heightCm?: number | null;
   experienceLevel?: string | null;
+  /** Da li nalog ima sliku profila; same bajtove treba tražiti sa GET /auth/avatar. */
+  hasAvatar?: boolean;
 }
 
 export enum ExperienceLevel {

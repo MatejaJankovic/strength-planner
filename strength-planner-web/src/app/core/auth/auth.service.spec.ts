@@ -46,12 +46,19 @@ describe('AuthService — čišćenje keševa pri promeni identiteta', () => {
 
   afterEach(() => http.verify());
 
-  /** Puni svaki keš nečim prepoznatljivim. Vežbe idu kroz pravi HTTP put. */
+  /** Puni svaki keš nečim prepoznatljivim. Vežbe i slika idu kroz pravi HTTP put. */
   function fillCaches(): void {
     exercises.load().subscribe();
     http.expectOne((request) => request.url.endsWith('/exercises')).flush([
       { id: 'e1', name: 'Tajna vežba' },
     ]);
+
+    // Slika profila je isto korisnički keš: `blob:` URL ostaje upotrebljiv dok se ne
+    // poništi, pa bi bez čišćenja lice prethodnog korisnika stajalo na profilu narednog.
+    auth.loadAvatar().subscribe();
+    http.expectOne((request) => request.url.endsWith('/auth/avatar')).flush(
+      new Blob([new Uint8Array([0xff, 0xd8, 0xff, 0xe0])], { type: 'image/jpeg' }),
+    );
 
     setSignal(mesocycles, 'activeSignal', { id: 'm1', name: 'Tajni plan' });
     setSignal(macrocycles, 'activeSignal', { id: 'p1', name: 'Tajni dugoročni plan' });
@@ -64,6 +71,7 @@ describe('AuthService — čišćenje keševa pri promeni identiteta', () => {
       mesocycles.active(),
       macrocycles.active(),
       oneRepMaxes.oneRepMaxes(),
+      auth.avatarUrl(),
     ];
   }
 
@@ -152,6 +160,73 @@ describe('AuthService — čišćenje keševa pri promeni identiteta', () => {
     });
 
     expectAllCachesEmpty('pri registraciji');
+  });
+
+  /**
+   * Slika je peti keš vezan za korisnika, i prvi koji nije samo signal u memoriji: dok
+   * `blob:` URL nije poništen, pregledač i dalje isporučuje sadržaj sa te adrese.
+   *
+   * Komentar uz `resetUserCaches` traži da svaki nov korisnički keš bude naveden i ovde.
+   * Ovaj test je taj upis.
+   */
+  it('odjava poništava blob URL slike, ne samo referencu na njega', () => {
+    const revoked: string[] = [];
+    const originalRevoke = URL.revokeObjectURL;
+    URL.revokeObjectURL = (url: string) => {
+      revoked.push(url);
+      originalRevoke.call(URL, url);
+    };
+
+    try {
+      fillCaches();
+      const url = auth.avatarUrl();
+      expect(url, 'slika nije napunjena pre provere').not.toBeNull();
+
+      auth.logout();
+
+      expect(auth.avatarUrl()).toBeNull();
+      expect(revoked, 'blob URL nije poništen, samo je referenca obrisana').toContain(url!);
+    } finally {
+      URL.revokeObjectURL = originalRevoke;
+    }
+  });
+
+  it('nova slika pušta prethodnu, da se blobovi ne gomilaju u memoriji', () => {
+    const revoked: string[] = [];
+    const originalRevoke = URL.revokeObjectURL;
+    URL.revokeObjectURL = (url: string) => {
+      revoked.push(url);
+      originalRevoke.call(URL, url);
+    };
+
+    try {
+      auth.loadAvatar().subscribe();
+      http.expectOne((request) => request.url.endsWith('/auth/avatar')).flush(
+        new Blob([new Uint8Array([0xff, 0xd8, 0xff, 0xe0])], { type: 'image/jpeg' }),
+      );
+      const first = auth.avatarUrl()!;
+
+      auth.loadAvatar().subscribe();
+      http.expectOne((request) => request.url.endsWith('/auth/avatar')).flush(
+        new Blob([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], { type: 'image/png' }),
+      );
+
+      expect(revoked).toContain(first);
+      expect(auth.avatarUrl()).not.toBe(first);
+    } finally {
+      URL.revokeObjectURL = originalRevoke;
+    }
+  });
+
+  it('otpremanje slike ide kao multipart, ne kao base64 u JSON-u', () => {
+    auth.uploadAvatar(new File([new Uint8Array([0xff, 0xd8, 0xff])], 'lice.jpg')).subscribe();
+
+    const request = http.expectOne(
+      (candidate) => candidate.url.endsWith('/auth/avatar') && candidate.method === 'PUT',
+    );
+
+    expect(request.request.body).toBeInstanceOf(FormData);
+    request.flush({ id: 'u1', email: 'ja@primer.com', hasAvatar: true });
   });
 });
 

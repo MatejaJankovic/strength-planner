@@ -6,37 +6,20 @@ import { ProfileHome } from './profile-home';
 import { Sex } from '../../core/models/auth.models';
 
 /**
- * Prijavljena greška: izabrani pol se pri povratku na profil nije prikazivao.
+ * Ekran profila je posle izdvajanja forme na `/profile/edit` postao pregled: naslov,
+ * slika i pročitani podaci o vežbaču.
  *
- * Uzrok je bio da registracija upisuje "male"/"female", a profil nudi "M"/"F"; Angular za
- * vrednost koja ne odgovara nijednoj opciji ostavlja meni prazan, bez ijedne poruke. Test
- * ide kroz isti put: odgovor servera -> vrednost polja -> telo zahteva pri čuvanju.
+ * Testovi forme (pol koji se vraća serveru, ime i visina koje čuvanje ne sme da obriše)
+ * preseljeni su u `profile-edit.spec.ts` zajedno sa formom.
  */
-describe('ProfileHome - pol se prikazuje i vraća serveru', () => {
+describe('ProfileHome — pregled profila', () => {
   let fixture: ComponentFixture<ProfileHome>;
   let http: HttpTestingController;
-
-  function load(sex: unknown, extra: Record<string, unknown> = {}): void {
-    fixture = TestBed.createComponent(ProfileHome);
-
-    http.expectOne((request) => request.url.endsWith('/auth/me')).flush({
-      id: 'u1',
-      email: 'ja@primer.com',
-      sex,
-      age: 23,
-      bodyweightKg: 120,
-      experienceLevel: 2,
-      ...extra,
-    });
-    http.expectOne((request) => request.url.endsWith('/exercises/muscle-groups')).flush([]);
-    http.expectOne((request) => request.url.endsWith('/exercises')).flush([]);
-  }
 
   beforeEach(() => {
     localStorage.clear();
 
     TestBed.configureTestingModule({
-      imports: [ProfileHome],
       providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
     });
 
@@ -45,120 +28,99 @@ describe('ProfileHome - pol se prikazuje i vraća serveru', () => {
 
   afterEach(() => http.verify());
 
-  function form(): any {
-    return (fixture.componentInstance as any).profileForm;
+  function load(me: Record<string, unknown>, avatar?: Blob): void {
+    fixture = TestBed.createComponent(ProfileHome);
+
+    http.expectOne((request) => request.url.endsWith('/auth/me')).flush(me);
+    http.expectOne((request) => request.url.endsWith('/exercises/muscle-groups')).flush([]);
+    http.expectOne((request) => request.url.endsWith('/exercises')).flush([]);
+
+    const request = http.expectOne((candidate) => candidate.url.endsWith('/auth/avatar'));
+    if (avatar) {
+      request.flush(avatar);
+    } else {
+      request.flush(null, { status: 404, statusText: 'Not Found' });
+    }
   }
 
-  it('označava pol koji je server vratio', () => {
-    load(Sex.Male);
+  function component(): any {
+    return fixture.componentInstance as any;
+  }
 
-    expect(form().controls.sex.value).toBe('0');
+  it('naslov je ime kada ga nalog ima', () => {
+    load({ id: 'u1', email: 'ja@primer.com', displayName: 'Mateja', age: 27, bodyweightKg: 82.5 });
+
+    expect(component().title()).toBe('Mateja');
   });
 
-  it('označava i drugu vrednost, ne samo prvu', () => {
-    load(Sex.Female);
+  it('naslov pada na email kada imena nema', () => {
+    // Nalozi napravljeni pre uvođenja imena ga nemaju i nema odakle da im se izvede;
+    // prazan naslov bi bio gori od email adrese.
+    load({ id: 'u1', email: 'ja@primer.com', age: 27, bodyweightKg: 82.5 });
 
-    expect(form().controls.sex.value).toBe('1');
+    expect(component().title()).toBe('ja@primer.com');
   });
 
-  it('prazan pol ostaje neoznačen', () => {
-    load(null);
+  it('naslov pada na email i kada je ime samo razmak', () => {
+    load({ id: 'u1', email: 'ja@primer.com', displayName: '   ', age: 27, bodyweightKg: 82.5 });
 
-    expect(form().controls.sex.value).toBe('');
+    expect(component().title()).toBe('ja@primer.com');
   });
 
-  it('vrednost koju enum ne definiše ne obara ekran', () => {
-    // Zatečeni nalozi su imali "M", "Male" i "male" u istoj koloni. Migracija ih prevodi,
-    // ali ekran ne sme da padne ako se takvo šta ipak pojavi.
-    load('nešto sasvim treće');
+  it('slovo u krugu je prvo slovo naslova, veliko', () => {
+    load({ id: 'u1', email: 'ja@primer.com', displayName: 'mateja', age: 27, bodyweightKg: 82.5 });
 
-    expect(form().controls.sex.value).toBe('');
+    expect(component().initial()).toBe('M');
   });
 
-  it('čuva pol kao broj koji server očekuje', () => {
-    load(Sex.Male);
-
-    form().controls.sex.setValue('1');
-    (fixture.componentInstance as any).saveProfile();
-
-    const request = http.expectOne(
-      (candidate) => candidate.url.endsWith('/auth/profile') && candidate.method === 'PUT',
-    );
-
-    expect(request.request.body.sex).toBe(Sex.Female);
-    // Polje je uklonjeno sa oba ekrana i iz DTO-a; ne sme da se vrati kroz telo zahteva.
-    expect(request.request.body.trainingDaysPerWeek).toBeUndefined();
-
-    request.flush({ id: 'u1', email: 'ja@primer.com', sex: Sex.Female, age: 23, bodyweightKg: 120 });
-  });
-
-  it('"ne želim da navedem" šalje prazno, a ne nulu', () => {
-    load(Sex.Male);
-
-    form().controls.sex.setValue('');
-    (fixture.componentInstance as any).saveProfile();
-
-    const request = http.expectOne(
-      (candidate) => candidate.url.endsWith('/auth/profile') && candidate.method === 'PUT',
-    );
-
-    // Number('') je nula, a nula je Male - zato se prazan string proverava pre pretvaranja.
-    expect(request.request.body.sex).toBeNull();
-
-    request.flush({ id: 'u1', email: 'ja@primer.com', sex: null, age: 23, bodyweightKg: 120 });
-  });
-
-  /**
-   * `PUT /api/auth/profile` je potpuna zamena profila: polje koje se ne pošalje server
-   * upisuje kao prazno.
-   *
-   * Registracija je postala čarobnjak koji traži ime i visinu, a ovaj ekran ih pre toga
-   * nije imao — pa je prvo čuvanje telesne mase brisalo oboje, a korisnik je video samo
-   * poruku da je profil sačuvan. Test ide istim putem: odgovor servera -> polje -> telo
-   * zahteva.
-   */
-  it('čuvanje profila ne briše ime i visinu unete u registraciji', () => {
-    load(Sex.Male, { displayName: 'Mateja', heightCm: 183 });
-
-    expect(form().controls.displayName.value).toBe('Mateja');
-    expect(form().controls.heightCm.value).toBe('183');
-
-    (fixture.componentInstance as any).saveProfile();
-
-    const request = http.expectOne(
-      (candidate) => candidate.url.endsWith('/auth/profile') && candidate.method === 'PUT',
-    );
-
-    expect(request.request.body.displayName).toBe('Mateja');
-    expect(request.request.body.heightCm).toBe(183);
-
-    request.flush({
+  it('pregled prikazuje popunjene podatke sa jedinicama', () => {
+    load({
       id: 'u1',
       email: 'ja@primer.com',
       displayName: 'Mateja',
-      heightCm: 183,
       sex: Sex.Male,
-      age: 23,
-      bodyweightKg: 120,
+      age: 27,
+      bodyweightKg: 82.5,
+      heightCm: 183,
+      experienceLevel: 1,
     });
+
+    const rows = component().summary() as { label: string; value: string }[];
+    const byLabel = new Map(rows.map((row) => [row.label, row.value]));
+
+    expect(byLabel.get('Uzrast')).toBe('27');
+    expect(byLabel.get('Telesna masa')).toBe('82.5 kg');
+    expect(byLabel.get('Visina')).toBe('183 cm');
+    expect(byLabel.get('Nivo iskustva')).toBe('Srednji nivo');
+    expect(byLabel.get('Pol')).toBe('Muški');
   });
 
-  it('prazno ime i prazna visina idu kao null, a ne kao prazan string ili nula', () => {
-    // Number('') je nula, a nula je vrednost koju [Range] odbija — greška bi stigla sa
-    // servera umesto da polje uopšte ne bude poslato kao broj.
-    load(Sex.Male);
+  it('prazna polja se ne prikazuju kao prazni redovi', () => {
+    // Visina i pol su opcioni na serveru. Red sa praznom vrednošću izgleda kao greška.
+    load({ id: 'u1', email: 'ja@primer.com', age: 27, bodyweightKg: 82.5, experienceLevel: 0 });
 
-    expect(form().controls.displayName.value).toBe('');
+    const labels = (component().summary() as { label: string }[]).map((row) => row.label);
 
-    (fixture.componentInstance as any).saveProfile();
+    expect(labels).not.toContain('Visina');
+    expect(labels).not.toContain('Pol');
+    expect(labels).toContain('Uzrast');
+  });
 
-    const request = http.expectOne(
-      (candidate) => candidate.url.endsWith('/auth/profile') && candidate.method === 'PUT',
+  it('nalog bez slike ne obara ekran', () => {
+    // `forkJoin` pada na prvoj grešci, pa bi 404 na slici oborio i učitavanje profila.
+    load({ id: 'u1', email: 'ja@primer.com', age: 27, bodyweightKg: 82.5 });
+
+    expect(component().error()).toBeNull();
+    expect(component().loading()).toBe(false);
+    expect(component().avatarUrl()).toBeNull();
+  });
+
+  it('slika naloga se prikazuje kada postoji', () => {
+    load(
+      { id: 'u1', email: 'ja@primer.com', age: 27, bodyweightKg: 82.5, hasAvatar: true },
+      new Blob([new Uint8Array([0xff, 0xd8, 0xff])], { type: 'image/jpeg' }),
     );
 
-    expect(request.request.body.displayName).toBeNull();
-    expect(request.request.body.heightCm).toBeNull();
-
-    request.flush({ id: 'u1', email: 'ja@primer.com', sex: Sex.Male, age: 23, bodyweightKg: 120 });
+    expect(component().avatarUrl()).toMatch(/^blob:/);
   });
 });

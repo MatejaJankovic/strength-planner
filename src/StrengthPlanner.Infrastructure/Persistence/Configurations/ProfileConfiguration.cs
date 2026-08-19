@@ -20,5 +20,9 @@ public class ProfileConfiguration : IEntityTypeConfiguration<Profile>
         // Ista granica kao u validaciji zahteva. Bez nje kolona je neograničen text, pa
         // dugačko ime prolazi bazu i puca tek na prikazu.
         builder.Property(p => p.DisplayName).HasMaxLength(ProfilePolicy.DisplayNameMaximumLength);
+
+        // Tip slike upisuje server iz bajtova, pa je spisak vrednosti kratak i poznat;
+        // granica je tu da kolona ne bude neograničen text.
+        builder.Property(p => p.AvatarContentType).HasMaxLength(32);
     }
 }

@@ -8,20 +8,16 @@ import {
 } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { extractErrorMessage } from '../../core/api/http-error';
 import { ExerciseService } from '../../core/api/exercise.service';
 import { AuthService } from '../../core/auth/auth.service';
 import {
-  DISPLAY_NAME_MAX_LENGTH,
   ExperienceLevel,
-  HEIGHT_MAX_CM,
-  HEIGHT_MIN_CM,
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
   Sex,
-  SEX_OPTIONS,
-  UpdateProfileDto,
 } from '../../core/models/auth.models';
 import { CreateExerciseRequest, ExerciseDto } from '../../core/models/training.models';
 import { Loading } from '../../shared/components/loading/loading';
@@ -42,39 +38,56 @@ export class ProfileHome {
 
   protected readonly user = this.auth.currentUser;
 
-  // --- profil ----------------------------------------------------------------
+  // --- pregled profila -------------------------------------------------------
 
-  protected readonly savingProfile = signal(false);
-  protected readonly profileError = signal<string | null>(null);
-  protected readonly profileSaved = signal(false);
-
-  protected readonly experienceOptions = [
-    { value: ExperienceLevel.Beginner, label: 'Početnik' },
-    { value: ExperienceLevel.Intermediate, label: 'Srednji nivo' },
-    { value: ExperienceLevel.Advanced, label: 'Napredni' },
-  ];
-
-  protected readonly sexOptions = SEX_OPTIONS;
-
-  protected readonly displayNameMaxLength = DISPLAY_NAME_MAX_LENGTH;
-  protected readonly heightMin = HEIGHT_MIN_CM;
-  protected readonly heightMax = HEIGHT_MAX_CM;
+  protected readonly avatarUrl = this.auth.avatarUrl;
 
   /**
-   * Ime i visina stoje ovde iako ih ovaj ekran nije tražio pre nego što je registracija
-   * postala čarobnjak.
+   * Naslov profila: ime ako ga ima, inače email.
    *
-   * `PUT /api/auth/profile` je potpuna zamena profila, pa polje koje se ne pošalje server
-   * upisuje kao prazno. Bez ova dva polja bi prvo čuvanje telesne mase brisalo ime i
-   * visinu unete pri registraciji — a korisnik bi video samo da je masa sačuvana.
+   * Nalozi napravljeni pre uvođenja imena ga nemaju i nema odakle da im se izvede, pa
+   * email ostaje kao rezerva umesto praznog naslova.
    */
-  protected readonly profileForm = this.fb.nonNullable.group({
-    displayName: ['', [Validators.maxLength(DISPLAY_NAME_MAX_LENGTH)]],
-    sex: [''],
-    age: ['', [Validators.required, Validators.min(14), Validators.max(90)]],
-    bodyweightKg: ['', [Validators.required, Validators.min(30), Validators.max(300)]],
-    heightCm: ['', [Validators.min(HEIGHT_MIN_CM), Validators.max(HEIGHT_MAX_CM)]],
-    experienceLevel: ['', [Validators.required]],
+  protected readonly title = computed(() => {
+    const current = this.user();
+    return current?.displayName?.trim() || current?.email || '';
+  });
+
+  /** Slovo u krugu kada slike nema. */
+  protected readonly initial = computed(() =>
+    this.title().charAt(0).toLocaleUpperCase('sr'),
+  );
+
+  /** Podaci o vežbaču, onako kako se čitaju - prazna polja se ne prikazuju. */
+  protected readonly summary = computed(() => {
+    const current = this.user();
+    if (!current) {
+      return [];
+    }
+
+    const rows: { label: string; value: string }[] = [];
+
+    if (current.age != null) {
+      rows.push({ label: 'Uzrast', value: `${current.age}` });
+    }
+    if (current.bodyweightKg != null) {
+      rows.push({ label: 'Telesna masa', value: `${current.bodyweightKg} kg` });
+    }
+    if (current.heightCm != null) {
+      rows.push({ label: 'Visina', value: `${current.heightCm} cm` });
+    }
+
+    const level = experienceLabel(current.experienceLevel);
+    if (level) {
+      rows.push({ label: 'Nivo iskustva', value: level });
+    }
+
+    const sex = sexLabel(current.sex);
+    if (sex) {
+      rows.push({ label: 'Pol', value: sex });
+    }
+
+    return rows;
   });
 
   // --- custom vežbe ------------------------------------------------------------
@@ -162,17 +175,11 @@ export class ProfileHome {
       me: this.auth.loadMe(),
       muscles: this.exerciseService.muscleGroups(),
       exercises: this.exerciseService.load(),
+      // Nalog bez slike vraća 404; to je odgovor, ne greška, pa ne sme da obori ekran.
+      avatar: this.auth.loadAvatar().pipe(catchError(() => of(null))),
     }).subscribe({
-      next: ({ me, muscles }) => {
+      next: ({ muscles }) => {
         this.muscleGroups.set(muscles);
-        this.profileForm.patchValue({
-          displayName: me.displayName ?? '',
-          sex: this.sexToValue(me.sex),
-          age: me.age != null ? String(me.age) : '',
-          bodyweightKg: me.bodyweightKg != null ? String(me.bodyweightKg) : '',
-          heightCm: me.heightCm != null ? String(me.heightCm) : '',
-          experienceLevel: this.experienceLevelToValue(me.experienceLevel),
-        });
         this.loading.set(false);
       },
       error: (err: unknown) => {
@@ -212,46 +219,6 @@ export class ProfileHome {
         this.savingPassword.set(false);
         this.passwordError.set(
           extractErrorMessage(err, 'Lozinka nije promenjena. Proveri podatke i pokušaj ponovo.'),
-        );
-      },
-    });
-  }
-
-  protected saveProfile(): void {
-    if (this.savingProfile()) {
-      return;
-    }
-
-    if (this.profileForm.invalid) {
-      this.profileForm.markAllAsTouched();
-      return;
-    }
-
-    const raw = this.profileForm.getRawValue();
-    const dto: UpdateProfileDto = {
-      // Prazno polje je "nemam ime", pa ide kao null - isto kao pol.
-      displayName: raw.displayName.trim() === '' ? null : raw.displayName.trim(),
-      sex: raw.sex === '' ? null : (Number(raw.sex) as Sex),
-      age: Number(raw.age),
-      bodyweightKg: Number(raw.bodyweightKg),
-      heightCm: raw.heightCm === '' ? null : Number(raw.heightCm),
-      experienceLevel: Number(raw.experienceLevel) as ExperienceLevel,
-    };
-
-    this.savingProfile.set(true);
-    this.profileError.set(null);
-    this.profileSaved.set(false);
-
-    this.auth.updateProfile(dto).subscribe({
-      next: () => {
-        this.savingProfile.set(false);
-        this.profileSaved.set(true);
-        setTimeout(() => this.profileSaved.set(false), 3200);
-      },
-      error: (err: unknown) => {
-        this.savingProfile.set(false);
-        this.profileError.set(
-          extractErrorMessage(err, 'Izmena profila nije sačuvana. Pokušaj ponovo.'),
         );
       },
     });
@@ -393,43 +360,39 @@ export class ProfileHome {
     this.auth.logout();
   }
 
-  /**
-   * Vrednost za `<option>` iz onoga što server pošalje.
-   *
-   * Prazan string je "ne želim da navedem" i jedina je vrednost koja sme da ostavi meni
-   * neoznačen. Ovde je ranije stajalo `me.sex ?? ''`, pa je svaki pol upisan pri
-   * registraciji ("male"/"female") padao van ponuđenih opcija ("M"/"F") i Angular je
-   * ostavljao prazan meni - tačno ono što se videlo na profilu.
-   */
-  private sexToValue(sex?: string | number | null): string {
-    // Backend serijalizuje enum kao broj; string imena su fallback, isto kao za nivo.
-    switch (sex) {
-      case Sex.Male:
-      case 'Male':
-        return String(Sex.Male);
-      case Sex.Female:
-      case 'Female':
-        return String(Sex.Female);
-      default:
-        return '';
-    }
-  }
+}
 
-  private experienceLevelToValue(level?: string | number | null): string {
-    // Backend serijalizuje enum kao broj; string imena su fallback.
-    switch (level) {
-      case ExperienceLevel.Beginner:
-      case 'Beginner':
-        return String(ExperienceLevel.Beginner);
-      case ExperienceLevel.Intermediate:
-      case 'Intermediate':
-        return String(ExperienceLevel.Intermediate);
-      case ExperienceLevel.Advanced:
-      case 'Advanced':
-        return String(ExperienceLevel.Advanced);
-      default:
-        return '';
-    }
+/**
+ * Čitljiv naziv nivoa iskustva. Backend serijalizuje enum kao broj; string imena su
+ * fallback, isto kao za pol.
+ */
+function experienceLabel(level?: string | number | null): string | null {
+  switch (level) {
+    case ExperienceLevel.Beginner:
+    case 'Beginner':
+      return 'Početnik';
+    case ExperienceLevel.Intermediate:
+    case 'Intermediate':
+      return 'Srednji nivo';
+    case ExperienceLevel.Advanced:
+    case 'Advanced':
+      return 'Napredni';
+    default:
+      return null;
+  }
+}
+
+/** Čitljiv naziv pola, ili null kada nije naveden. */
+function sexLabel(sex?: Sex | string | null): string | null {
+  switch (sex) {
+    case Sex.Male:
+    case 'Male':
+      return 'Muški';
+    case Sex.Female:
+    case 'Female':
+      return 'Ženski';
+    default:
+      return null;
   }
 }
 

@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable, tap } from 'rxjs';
+import { map, Observable, tap } from 'rxjs';
 import { API_BASE_URL } from '../api/api-base';
 import { ExerciseService } from '../api/exercise.service';
 import { MacrocycleService } from '../api/macrocycle.service';
@@ -32,6 +32,20 @@ export class AuthService {
 
   private readonly currentUserSignal = signal<CurrentUserDto | null>(null);
   readonly currentUser = this.currentUserSignal.asReadonly();
+
+  /**
+   * Adresa slike profila kao `blob:` URL, ili null ako je nema.
+   *
+   * Slika se ne može staviti u `<img src>` direktno: `GET /api/auth/avatar` traži
+   * Authorization zaglavlje, a `<img>` ga ne šalje. Zato se dohvata kao blob i pravi se
+   * lokalni URL.
+   *
+   * Taj URL je keš vezan za korisnika i mora da se poništi pri promeni identiteta — vidi
+   * `resetUserCaches`. Uz to se `revokeObjectURL` mora pozvati na svakoj zameni, jer
+   * pregledač drži blob u memoriji dok URL postoji.
+   */
+  private readonly avatarUrlSignal = signal<string | null>(null);
+  readonly avatarUrl = this.avatarUrlSignal.asReadonly();
 
   readonly isAuthenticated = computed(() => this.token() !== null);
 
@@ -69,11 +83,66 @@ export class AuthService {
       .pipe(tap((response) => this.tokenStorage.setToken(response.token)));
   }
 
+  /** Dohvata sliku profila. 404 nije greška — znači da nalog nema sliku. */
+  loadAvatar(): Observable<string | null> {
+    return this.http
+      .get(`${this.apiUrl}/auth/avatar`, { responseType: 'blob' })
+      .pipe(map((blob) => this.setAvatarBlob(blob)));
+  }
+
+  /**
+   * Otprema sliku profila kao multipart.
+   *
+   * Namerno ne base64 u JSON-u: base64 uveća sadržaj za trećinu i tera ceo zahtev u
+   * memoriju kao string pre nego što se veličina proveri.
+   */
+  uploadAvatar(file: File): Observable<CurrentUserDto> {
+    const body = new FormData();
+    body.append('file', file, file.name);
+
+    return this.http
+      .put<CurrentUserDto>(`${this.apiUrl}/auth/avatar`, body)
+      .pipe(tap((user) => this.currentUserSignal.set(user)));
+  }
+
+  removeAvatar(): Observable<CurrentUserDto> {
+    return this.http.delete<CurrentUserDto>(`${this.apiUrl}/auth/avatar`).pipe(
+      tap((user) => {
+        this.currentUserSignal.set(user);
+        this.clearAvatar();
+      }),
+    );
+  }
+
   logout(): void {
     this.tokenStorage.clear();
     this.currentUserSignal.set(null);
     this.resetUserCaches();
     void this.router.navigate(['/login']);
+  }
+
+  /** Pravi lokalni URL za sliku i pušta prethodni. */
+  private setAvatarBlob(blob: Blob): string | null {
+    this.clearAvatar();
+
+    if (blob.size === 0) {
+      return null;
+    }
+
+    const url = URL.createObjectURL(blob);
+    this.avatarUrlSignal.set(url);
+
+    return url;
+  }
+
+  private clearAvatar(): void {
+    const previous = this.avatarUrlSignal();
+    if (previous) {
+      // Bez ovoga pregledač drži svaku ranije dohvaćenu sliku u memoriji do osvežavanja
+      // stranice - a slika je do dva megabajta.
+      URL.revokeObjectURL(previous);
+    }
+    this.avatarUrlSignal.set(null);
   }
 
   private handleAuthenticated(response: AuthResponseDto): void {
@@ -96,5 +165,9 @@ export class AuthService {
     this.mesocycleService.reset();
     this.macrocycleService.reset();
     this.oneRepMaxService.reset();
+    // Slika prethodnog naloga je isto keširan korisnički podatak: `blob:` URL ostaje
+    // upotrebljiv dok se ne poništi, pa bi bez ovoga lice prethodnog korisnika stajalo na
+    // profilu narednog do osvežavanja stranice.
+    this.clearAvatar();
   }
 }
