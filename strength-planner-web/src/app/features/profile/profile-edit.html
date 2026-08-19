@@ -38,11 +38,14 @@
 
     <!--
       Pravi <input type="file"> se ne stilizuje pouzdano, pa stoji sakriven a klik dolazi
-      sa oznake. Oznaka je i dalje pravi element za fokus i tastaturu, pa se ništa ne gubi.
+      sa oznake.
+
+      Unos ide PRE oznake namerno. Oznaka nije u redu tabulatora, pa je jedini element koji
+      se fokusira sam unos - a on je vizuelno sakriven. Sa ovim redosledom pravilo
+      `input:focus-visible + label` može da oboji oznaku kada fokus stigne na unos, pa
+      korisnik tastature vidi gde se nalazi. Obrnut red bi tražio selektor za prethodni
+      element, koji CSS nema.
     -->
-    <label class="avatar__change" for="pe-avatar">
-      {{ avatarBusy() ? 'Čuvam…' : 'Promeni sliku' }}
-    </label>
     <input
       id="pe-avatar"
       class="sr-only"
@@ -51,6 +54,9 @@
       [disabled]="avatarBusy()"
       (change)="pickAvatar($any($event.target))"
     />
+    <label class="avatar__change" for="pe-avatar">
+      {{ avatarBusy() ? 'Čuvam…' : 'Promeni sliku' }}
+    </label>
 
     @if (avatarUrl()) {
       <button

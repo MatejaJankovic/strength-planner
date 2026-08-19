@@ -4,6 +4,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideRouter } from '@angular/router';
 import { ProfileEdit } from './profile-edit';
 import { Sex } from '../../core/models/auth.models';
+import { AuthService } from '../../core/auth/auth.service';
 
 /**
  * Ekran za izmenu profila. Testovi su prethodno stajali uz ekran profila, jer je forma
@@ -40,7 +41,7 @@ describe('ProfileEdit', () => {
   afterEach(() => http.verify());
 
   /** Diže ekran i odgovara na oba zahteva koja on šalje pri učitavanju. */
-  function load(sex: unknown, extra: Record<string, unknown> = {}): void {
+  function load(sex: unknown, extra: Record<string, unknown> = {}, avatar?: Blob): void {
     fixture = TestBed.createComponent(ProfileEdit);
 
     http.expectOne((request) => request.url.endsWith('/auth/me')).flush({
@@ -53,14 +54,29 @@ describe('ProfileEdit', () => {
       ...extra,
     });
 
-    // Nalog bez slike vraća 404. To je odgovor, ne greška.
-    http
-      .expectOne((request) => request.url.endsWith('/auth/avatar'))
-      .flush(null, { status: 404, statusText: 'Not Found' });
+    const request = http.expectOne((candidate) => candidate.url.endsWith('/auth/avatar'));
+    if (avatar) {
+      request.flush(avatar);
+    } else {
+      // Nalog bez slike vraća 404. To je odgovor, ne greška.
+      request.flush(null, { status: 404, statusText: 'Not Found' });
+    }
+  }
+
+  function jpeg(): Blob {
+    return new Blob([new Uint8Array([0xff, 0xd8, 0xff, 0xe0])], { type: 'image/jpeg' });
   }
 
   function form(): any {
     return (fixture.componentInstance as any).form;
+  }
+
+  function component(): any {
+    return fixture.componentInstance as any;
+  }
+
+  function auth(): any {
+    return TestBed.inject(AuthService);
   }
 
   function save(): void {
@@ -209,5 +225,52 @@ describe('ProfileEdit', () => {
 
     // Nema zahteva - `afterEach` sa `http.verify()` bi pao da je nešto poslato.
     expect((fixture.componentInstance as any).avatarError()).toContain('2 MB');
+  });
+
+  it('slika naloga se prikazuje i nudi uklanjanje', () => {
+    // Svi ostali testovi na ovom ekranu odgovaraju sa 404, pa bi grana sa slikom - img
+    // umesto slova, i dugme „Ukloni sliku" koje je pod @if - inače ostala nepokrivena.
+    load(Sex.Male, { hasAvatar: true }, jpeg());
+
+    expect(component().avatarUrl()).toMatch(/^blob:/);
+
+    const html: HTMLElement = fixture.nativeElement;
+    fixture.detectChanges();
+
+    expect(html.querySelector('.avatar__image')).not.toBeNull();
+    expect(html.querySelector('.avatar__initial')).toBeNull();
+    expect(html.querySelector('.avatar__remove')).not.toBeNull();
+  });
+
+  it('uklanjanje slike briše prikaz i ne traži je ponovo', () => {
+    load(Sex.Male, { hasAvatar: true }, jpeg());
+
+    component().removeAvatar();
+
+    const request = http.expectOne(
+      (candidate) => candidate.url.endsWith('/auth/avatar') && candidate.method === 'DELETE',
+    );
+    request.flush({ id: 'u1', email: 'ja@primer.com', hasAvatar: false });
+
+    expect(component().avatarUrl()).toBeNull();
+    expect(component().avatarBusy()).toBe(false);
+
+    // Posle brisanja se zna da slike nema; nov zahtev bi bio samo da dobije 404.
+    // `afterEach` sa `http.verify()` pada ako se ipak pošalje.
+    auth().loadAvatar().subscribe();
+  });
+
+  it('neuspelo uklanjanje ostavlja poruku i ne gasi sliku', () => {
+    load(Sex.Male, { hasAvatar: true }, jpeg());
+
+    component().removeAvatar();
+
+    http
+      .expectOne((candidate) => candidate.url.endsWith('/auth/avatar') && candidate.method === 'DELETE')
+      .flush({ errors: ['Profil ne postoji.'] }, { status: 400, statusText: 'Bad Request' });
+
+    expect(component().avatarBusy()).toBe(false);
+    expect(component().avatarError()).not.toBeNull();
+    expect(component().avatarUrl()).toMatch(/^blob:/);
   });
 });

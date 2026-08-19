@@ -1,7 +1,7 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { map, Observable, tap } from 'rxjs';
+import { catchError, map, Observable, of, tap } from 'rxjs';
 import { API_BASE_URL } from '../api/api-base';
 import { ExerciseService } from '../api/exercise.service';
 import { MacrocycleService } from '../api/macrocycle.service';
@@ -47,6 +47,17 @@ export class AuthService {
   private readonly avatarUrlSignal = signal<string | null>(null);
   readonly avatarUrl = this.avatarUrlSignal.asReadonly();
 
+  /**
+   * Da li je slika već tražena od servera u ovoj sesiji.
+   *
+   * Bez ovoga svaki ekran koji prikazuje sliku dohvata do dva megabajta pri svakom
+   * otvaranju, a API na sve odgovore šalje `Cache-Control: no-store`, pa keš pregledača
+   * ne pomaže: profil → izmena → profil bila su tri preuzimanja iste slike. Zastavica se
+   * pamti odvojeno od URL-a, jer „nema sliku" je isto tako odgovor koji ne treba ponovo
+   * tražiti.
+   */
+  private avatarFetched = false;
+
   readonly isAuthenticated = computed(() => this.token() !== null);
 
   login(dto: LoginDto): Observable<AuthResponseDto> {
@@ -83,11 +94,35 @@ export class AuthService {
       .pipe(tap((response) => this.tokenStorage.setToken(response.token)));
   }
 
-  /** Dohvata sliku profila. 404 nije greška — znači da nalog nema sliku. */
+  /**
+   * Dohvata sliku profila, ili vraća već dohvaćenu.
+   *
+   * 404 nije greška nego odgovor: nalog nema sliku. Zato se ovde i hvata — ranije je
+   * greška prolazila do pozivaoca, `setAvatarBlob` se nije izvršio, i prethodno dohvaćena
+   * slika ostajala je na ekranu i posle brisanja na serveru.
+   */
   loadAvatar(): Observable<string | null> {
-    return this.http
-      .get(`${this.apiUrl}/auth/avatar`, { responseType: 'blob' })
-      .pipe(map((blob) => this.setAvatarBlob(blob)));
+    if (this.avatarFetched) {
+      return of(this.avatarUrlSignal());
+    }
+
+    return this.http.get(`${this.apiUrl}/auth/avatar`, { responseType: 'blob' }).pipe(
+      map((blob) => this.setAvatarBlob(blob)),
+      catchError((error: unknown) => {
+        if (error instanceof HttpErrorResponse && error.status === 404) {
+          this.clearAvatar();
+          this.avatarFetched = true;
+          return of(null);
+        }
+
+        throw error;
+      }),
+    );
+  }
+
+  /** Traži sliku ponovo pri sledećem čitanju. */
+  private invalidateAvatar(): void {
+    this.avatarFetched = false;
   }
 
   /**
@@ -100,9 +135,13 @@ export class AuthService {
     const body = new FormData();
     body.append('file', file, file.name);
 
-    return this.http
-      .put<CurrentUserDto>(`${this.apiUrl}/auth/avatar`, body)
-      .pipe(tap((user) => this.currentUserSignal.set(user)));
+    return this.http.put<CurrentUserDto>(`${this.apiUrl}/auth/avatar`, body).pipe(
+      tap((user) => {
+        this.currentUserSignal.set(user);
+        // Nova slika je na serveru; keširana je od sada zastarela.
+        this.invalidateAvatar();
+      }),
+    );
   }
 
   removeAvatar(): Observable<CurrentUserDto> {
@@ -110,6 +149,9 @@ export class AuthService {
       tap((user) => {
         this.currentUserSignal.set(user);
         this.clearAvatar();
+        // Posle uspešnog brisanja se zna da slike nema, pa nema šta da se traži: bez ovoga
+        // bi prvi naredni ekran poslao zahtev samo da dobije 404.
+        this.avatarFetched = true;
       }),
     );
   }
@@ -131,11 +173,13 @@ export class AuthService {
 
     const url = URL.createObjectURL(blob);
     this.avatarUrlSignal.set(url);
+    this.avatarFetched = true;
 
     return url;
   }
 
   private clearAvatar(): void {
+    this.avatarFetched = false;
     const previous = this.avatarUrlSignal();
     if (previous) {
       // Bez ovoga pregledač drži svaku ranije dohvaćenu sliku u memoriji do osvežavanja

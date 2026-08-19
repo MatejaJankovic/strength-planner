@@ -191,7 +191,7 @@ describe('AuthService — čišćenje keševa pri promeni identiteta', () => {
     }
   });
 
-  it('nova slika pušta prethodnu, da se blobovi ne gomilaju u memoriji', () => {
+  it('otpremanje nove slike pušta prethodni blob, da se ne gomilaju u memoriji', () => {
     const revoked: string[] = [];
     const originalRevoke = URL.revokeObjectURL;
     URL.revokeObjectURL = (url: string) => {
@@ -206,16 +206,80 @@ describe('AuthService — čišćenje keševa pri promeni identiteta', () => {
       );
       const first = auth.avatarUrl()!;
 
+      // Otpremanje je jedini put kojim slika na serveru postaje druga, pa je i jedini koji
+      // sme da natera nov zahtev.
+      auth.uploadAvatar(new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], 'nova.png')).subscribe();
+      http
+        .expectOne((candidate) => candidate.url.endsWith('/auth/avatar') && candidate.method === 'PUT')
+        .flush({ id: 'u1', email: 'ja@primer.com', hasAvatar: true });
+
       auth.loadAvatar().subscribe();
-      http.expectOne((request) => request.url.endsWith('/auth/avatar')).flush(
-        new Blob([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], { type: 'image/png' }),
-      );
+      http
+        .expectOne((candidate) => candidate.url.endsWith('/auth/avatar') && candidate.method === 'GET')
+        .flush(new Blob([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], { type: 'image/png' }));
 
       expect(revoked).toContain(first);
       expect(auth.avatarUrl()).not.toBe(first);
     } finally {
       URL.revokeObjectURL = originalRevoke;
     }
+  });
+
+  /**
+   * API na sve odgovore šalje `Cache-Control: no-store`, pa keš pregledača ne pomaže:
+   * profil → izmena → profil bila su tri preuzimanja slike do dva megabajta.
+   */
+  it('drugo čitanje slike ne šalje nov zahtev', () => {
+    auth.loadAvatar().subscribe();
+    http.expectOne((request) => request.url.endsWith('/auth/avatar')).flush(
+      new Blob([new Uint8Array([0xff, 0xd8, 0xff, 0xe0])], { type: 'image/jpeg' }),
+    );
+    const first = auth.avatarUrl();
+
+    let second: string | null = 'nije pozvano';
+    auth.loadAvatar().subscribe((url) => (second = url));
+
+    // Nema drugog zahteva - `afterEach` sa `http.verify()` pada ako se pošalje.
+    expect(second).toBe(first);
+  });
+
+  it('nalog bez slike se ne pita dva puta', () => {
+    // "Nema sliku" je isto tako odgovor: bez pamćenja te činjenice svaki ekran bi ponovo
+    // dobijao 404.
+    auth.loadAvatar().subscribe();
+    http
+      .expectOne((request) => request.url.endsWith('/auth/avatar'))
+      .flush(null, { status: 404, statusText: 'Not Found' });
+
+    expect(auth.avatarUrl()).toBeNull();
+
+    let second: string | null | undefined;
+    auth.loadAvatar().subscribe((url) => (second = url));
+
+    expect(second).toBeNull();
+  });
+
+  it('404 posle prethodno dohvaćene slike gasi prikaz', () => {
+    // Slika obrisana u drugom tabu: bez čišćenja na 404 ostajala je stara na ekranu, jer
+    // je greška prolazila do pozivaoca i mapiranje se nije izvršilo.
+    auth.loadAvatar().subscribe();
+    http.expectOne((request) => request.url.endsWith('/auth/avatar')).flush(
+      new Blob([new Uint8Array([0xff, 0xd8, 0xff, 0xe0])], { type: 'image/jpeg' }),
+    );
+    expect(auth.avatarUrl()).not.toBeNull();
+
+    // Otpremanje poništava keš, pa naredno čitanje ponovo pita server.
+    auth.uploadAvatar(new File([new Uint8Array([0xff, 0xd8, 0xff])], 'x.jpg')).subscribe();
+    http
+      .expectOne((candidate) => candidate.url.endsWith('/auth/avatar') && candidate.method === 'PUT')
+      .flush({ id: 'u1', email: 'ja@primer.com', hasAvatar: true });
+
+    auth.loadAvatar().subscribe();
+    http
+      .expectOne((candidate) => candidate.url.endsWith('/auth/avatar') && candidate.method === 'GET')
+      .flush(null, { status: 404, statusText: 'Not Found' });
+
+    expect(auth.avatarUrl()).toBeNull();
   });
 
   it('otpremanje slike ide kao multipart, ne kao base64 u JSON-u', () => {

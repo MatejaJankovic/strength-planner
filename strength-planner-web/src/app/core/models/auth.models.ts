@@ -87,6 +87,22 @@ export interface CurrentUserDto {
   hasAvatar?: boolean;
 }
 
+/**
+ * Naslov profila: ime ako ga nalog ima, inače email.
+ *
+ * Stoji ovde, a ne u komponenti, jer ga čitaju i pregled profila i ekran za izmenu. Kada
+ * je bio prepisan u oba, pravilo „prazno ili samo razmak pada na email" postojalo je
+ * dvaput, a test ga je pokrivao na jednom mestu.
+ */
+export function profileTitle(user: CurrentUserDto | null): string {
+  return user?.displayName?.trim() || user?.email || '';
+}
+
+/** Slovo u krugu kada slike nema — prvo slovo naslova, veliko. */
+export function profileInitial(user: CurrentUserDto | null): string {
+  return profileTitle(user).charAt(0).toLocaleUpperCase('sr');
+}
+
 export enum ExperienceLevel {
   Beginner = 0,
   Intermediate = 1,

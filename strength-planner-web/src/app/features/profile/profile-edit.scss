@@ -91,11 +91,19 @@
 
 // Pravi <input type="file"> je sakriven, pa oznaka nosi izgled dugmeta.
 .avatar__change {
+  border-radius: 0.4rem;
   color: var(--color-primary);
   cursor: pointer;
   font-weight: 800;
   min-height: 44px;
   padding: 0.6rem 0.5rem 0;
+}
+
+// Fokus stiže na sakriveni unos, a vidi se na oznaci. Bez ovoga tabulator nestaje iz
+// vida na ovom ekranu: korisnik tastature stoji na elementu od jednog piksela.
+.sr-only:focus-visible + .avatar__change {
+  outline: 3px solid color-mix(in srgb, var(--focus-ring) 72%, white);
+  outline-offset: 3px;
 }
 
 .avatar__remove {

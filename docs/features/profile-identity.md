@@ -66,6 +66,61 @@ prijava, registracija). Provereno da to radi: uklanjanje `clearAvatar()` iz
 **`revokeObjectURL` se poziva i na svakoj zameni**, ne samo pri odjavi: bez toga pregledač
 drži svaku ranije dohvaćenu sliku u memoriji do osvežavanja stranice.
 
+## Šta je rivju našao i kako je popravljeno
+
+**Otpremanje slike moglo je da upiše profil sa nulama.** Pomoćnu metodu koja kreira profil
+ako ga nema izvukao sam iz `UpdateProfileAsync`, gde je bezopasna jer se sva polja odmah
+prepišu iz zahteva. Putevi za sliku su je nasledili, a oni ne diraju uzrast ni masu — pa je
+`PUT /api/auth/avatar` na nalogu bez profila upisivao `Age = 0` i `BodyweightKg = 0` (ta
+polja su u entitetu ne-nullable, dakle nula je jedina vrednost koju prazan red može imati),
+i profil bi zatim prikazao „Uzrast 0" i „Telesna masa 0 kg" kao da je to korisnik rekao.
+Metoda je razdvojena na dve, sa imenima koja kažu šta rade: `CreateProfileIfMissingAsync`
+(samo izmena profila) i `RequireExistingProfileAsync` (slika, greška ako profila nema).
+Provereno tako što je red iz `Profiles` obrisan direktno u bazi: i `PUT` i `DELETE` na
+slici vraćaju 400 sa „Profil ne postoji", a `/me` i dalje vraća `null` umesto nula.
+
+**404 na slici ostavljao je staru sliku na ekranu.** `setAvatarBlob` — koji je jedini
+zvao čišćenje — stoji unutar `map`, a 404 obori tok pre njega. Oba ekrana su grešku gutala
+sa `catchError`, pa je signal zadržavao prethodnu vrednost: slika obrisana u drugom tabu
+ostajala je vidljiva. Sada servis hvata 404 kao odgovor, čisti signal i vraća `null`.
+
+**Slika se preuzimala pri svakom otvaranju ekrana.** Oba ekrana zovu `loadAvatar()`, a API
+na sve odgovore šalje `Cache-Control: no-store`, pa keš pregledača ne pomaže: profil →
+izmena → profil bilo je tri preuzimanja do dva megabajta. Servis sada pamti da je slika
+tražena — kao i to da je nema — i otpremanje tu zastavicu poništava. Izmereno: četiri
+otvaranja ekrana, **jedan** zahtev (ranije četiri). Posle brisanja se takođe ne pita
+ponovo, jer se zna da slike nema.
+
+Cena je svesna: promena slike u drugom tabu ne vidi se u ovom do odjave ili osvežavanja.
+To je bio i izbor — bajtovi na telefonu vrede više od trenutne svežine slike koju je
+korisnik sam postavio.
+
+**Fokus na biraču fajla nije bio vidljiv.** „Promeni sliku" je `<label>`, a oznake nisu u
+redu tabulatora; jedini element koji se fokusira je sakriveni `<input type="file">`, a
+`.sr-only` ga svodi na jedan piksel bez ikakvog prstena. Korisnik tastature je na tom
+ekranu gubio fokus iz vida. Unos je premešten **pre** oznake, pa
+`input:focus-visible + label` može da oboji oznaku — CSS nema selektor za prethodni element,
+zato red u dokumentu nije slučajan.
+
+**Naslov i slovo u krugu bili su napisani dvaput.** Pravilo „prazno ili samo razmak pada na
+email" postojalo je u oba ekrana, a test ga je pokrivao na jednom. Sada su `profileTitle` i
+`profileInitial` u `auth.models.ts`.
+
+**Ruta `profile/edit` premeštena je pre `profile`.** Sa obrnutim redom radi, i to je
+izmereno — ali samo zato što je `profile` terminalna ruta. Onog dana kada dobije `children`,
+`/profile/edit` bi počeo da završava na catch-all ruti bez ijednog traga u diff-u.
+
+Uz to: `saved` signal koji se postavljao a nigde nije čitan je uklonjen; `AvatarDto.Content`
+sada piše da se niz **ne** kopira i zašto, umesto da geterima bez setera nagoveštava
+nepromenljivost koju ne pruža; i dodati su testovi za granu sa slikom i za uklanjanje slike,
+koje nijedan test na tom ekranu nije pokrivao.
+
+Dva nalaza su namerno **ostavljena**. Spisak prihvaćenih formata stoji i na serveru i u
+`accept` atributu — to je isti obrazac kao ostale konstante koje dve strane dele
+(`PASSWORD_MIN_LENGTH`, granice visine), i zatvaranje bi tražilo nov endpoint samo za tri
+imena tipova. I `BuildCurrentUserAsync` čini jedan dodatan upit ka Identity-ju po upisu
+slike, radi email adrese; skraćivanje odgovora bi nateralo klijenta da ionako pozove `/me`.
+
 ## Zajednički stilovi i duplirano čitanje tokena
 
 Kartice, polja, kontrole, dugmad i poruke su izvučeni u `_profile-shell.scss`, koji oba
@@ -100,4 +155,10 @@ radi sa **prvobitnim** redom ruta, što je i provereno. Red ruta i komentar su v
   Endpoint nema ni parametar koji bi se menjao — id dolazi samo iz tokena.
 - profil prikazuje ime „Mateja", email, i pregled: 27, 82.5 kg, 183 cm, Srednji nivo, Muški
 - nijedan od dva ekrana se ne preliva na 375px
-- `dotnet test` 313, Angular 69 (bilo 58)
+- posle popravki: brisanje slike uživo — prikaz pada na slovo „M", dugme „Ukloni sliku"
+  nestaje, a profil ostaje netaknut (`Mateja`, 27, 82.5 kg, 183 cm)
+- četiri otvaranja ekrana koji prikazuju sliku → jedan zahtev za slikom
+- nalog kome je red iz `Profiles` obrisan direktno u bazi: `PUT` i `DELETE` na slici
+  vraćaju 400 sa „Profil ne postoji", `/me` vraća `null` a ne nule; `PUT /auth/profile`
+  isti profil ispravno kreira i popunjava
+- `dotnet test` 313, Angular 75 (bilo 58)

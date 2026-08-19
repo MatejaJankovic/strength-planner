@@ -17,6 +17,8 @@ import {
   ExperienceLevel,
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
+  profileInitial,
+  profileTitle,
   Sex,
 } from '../../core/models/auth.models';
 import { CreateExerciseRequest, ExerciseDto } from '../../core/models/training.models';
@@ -42,21 +44,8 @@ export class ProfileHome {
 
   protected readonly avatarUrl = this.auth.avatarUrl;
 
-  /**
-   * Naslov profila: ime ako ga ima, inače email.
-   *
-   * Nalozi napravljeni pre uvođenja imena ga nemaju i nema odakle da im se izvede, pa
-   * email ostaje kao rezerva umesto praznog naslova.
-   */
-  protected readonly title = computed(() => {
-    const current = this.user();
-    return current?.displayName?.trim() || current?.email || '';
-  });
-
-  /** Slovo u krugu kada slike nema. */
-  protected readonly initial = computed(() =>
-    this.title().charAt(0).toLocaleUpperCase('sr'),
-  );
+  protected readonly title = computed(() => profileTitle(this.user()));
+  protected readonly initial = computed(() => profileInitial(this.user()));
 
   /** Podaci o vežbaču, onako kako se čitaju - prazna polja se ne prikazuju. */
   protected readonly summary = computed(() => {

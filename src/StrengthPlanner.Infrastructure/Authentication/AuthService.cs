@@ -139,7 +139,7 @@ public class AuthService : IAuthService
 
     public async Task<CurrentUserDto> UpdateProfileAsync(Guid userId, UpdateProfileDto dto)
     {
-        var profile = await RequireProfileAsync(userId);
+        var profile = await CreateProfileIfMissingAsync(userId);
 
         // Prazan unos je "nemam ime", a ne ime od nula znakova: bez ovoga bi razmak iz
         // polja postao naslov profila.
@@ -173,7 +173,7 @@ public class AuthService : IAuthService
         var contentType = ImageFormat.Detect(content)
             ?? throw new AuthException($"Podržane su samo slike: {ImageFormat.SupportedFormats}.");
 
-        var profile = await RequireProfileAsync(userId);
+        var profile = await RequireExistingProfileAsync(userId);
 
         profile.AvatarBytes = content;
         profile.AvatarContentType = contentType;
@@ -199,7 +199,7 @@ public class AuthService : IAuthService
 
     public async Task<CurrentUserDto> RemoveAvatarAsync(Guid userId)
     {
-        var profile = await RequireProfileAsync(userId);
+        var profile = await RequireExistingProfileAsync(userId);
 
         profile.AvatarBytes = null;
         profile.AvatarContentType = null;
@@ -210,10 +210,15 @@ public class AuthService : IAuthService
     }
 
     /// <summary>
-    /// Profil ulogovanog korisnika, kreiran ako iz nekog razloga ne postoji — isto kao u
-    /// <see cref="UpdateProfileAsync"/>, da postavljanje slike ne padne na nalogu bez profila.
+    /// Profil ulogovanog korisnika, kreiran prazan ako ne postoji.
+    ///
+    /// Smeju da ga zovu samo pozivaoci koji odmah upisuju **sva** polja profila —
+    /// praktično samo <see cref="UpdateProfileAsync"/>. Prazan profil ima
+    /// <c>Age = 0</c> i <c>BodyweightKg = 0</c>, jer su ta polja u entitetu ne-nullable;
+    /// ko ih ne prepiše, upisao je profil koji tvrdi da vežbač ima nula godina i nula
+    /// kilograma, i ekran profila bi to i prikazao.
     /// </summary>
-    private async Task<Profile> RequireProfileAsync(Guid userId)
+    private async Task<Profile> CreateProfileIfMissingAsync(Guid userId)
     {
         var profile = await _db.Profiles.FirstOrDefaultAsync(p => p.UserId == userId);
 
@@ -224,6 +229,20 @@ public class AuthService : IAuthService
         }
 
         return profile;
+    }
+
+    /// <summary>
+    /// Profil ulogovanog korisnika; greška ako ga nema.
+    ///
+    /// Slika se ne može postaviti pre profila. Registracija profil uvek kreira, pa je
+    /// njegov nedostatak neispravno stanje naloga, a ne slučaj koji treba popuniti
+    /// podrazumevanim vrednostima — kreiranje ovde bi upisalo uzrast 0 i masu 0 samo zato
+    /// što je korisnik izabrao sliku.
+    /// </summary>
+    private async Task<Profile> RequireExistingProfileAsync(Guid userId)
+    {
+        return await _db.Profiles.FirstOrDefaultAsync(p => p.UserId == userId)
+            ?? throw new AuthException("Profil ne postoji. Sačuvaj osnovne podatke pre slike.");
     }
 
     private async Task<CurrentUserDto> BuildCurrentUserAsync(Guid userId, Profile profile)

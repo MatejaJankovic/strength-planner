@@ -161,6 +161,14 @@ public class AuthController : AuthorizedControllerBase
     {
         var userId = GetUserId();
 
-        return Ok(await _authService.RemoveAvatarAsync(userId));
+        try
+        {
+            return Ok(await _authService.RemoveAvatarAsync(userId));
+        }
+        catch (AuthException ex)
+        {
+            // Nalog bez profila: slika ne može ni da postoji, pa ni da se ukloni.
+            return BadRequest(new { errors = ex.Errors });
+        }
     }
 }

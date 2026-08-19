@@ -13,6 +13,7 @@ import {
   ExperienceLevel,
   HEIGHT_MAX_CM,
   HEIGHT_MIN_CM,
+  profileInitial,
   Sex,
   SEX_OPTIONS,
   UpdateProfileDto,
@@ -46,7 +47,6 @@ export class ProfileEdit {
 
   protected readonly saving = signal(false);
   protected readonly saveError = signal<string | null>(null);
-  protected readonly saved = signal(false);
 
   protected readonly avatarBusy = signal(false);
   protected readonly avatarError = signal<string | null>(null);
@@ -67,13 +67,8 @@ export class ProfileEdit {
     { value: ExperienceLevel.Advanced, label: 'Napredni' },
   ];
 
-  /** Slovo u krugu kada slike nema — iz imena, a ako ni njega nema, iz emaila. */
-  protected readonly initial = computed(() => {
-    const current = this.user();
-    const source = current?.displayName?.trim() || current?.email || '';
-
-    return source.charAt(0).toLocaleUpperCase('sr');
-  });
+  /** Slovo u krugu kada slike nema. Isti izvor kao naslov na ekranu profila. */
+  protected readonly initial = computed(() => profileInitial(this.user()));
 
   protected readonly form = this.fb.nonNullable.group({
     displayName: ['', [Validators.maxLength(DISPLAY_NAME_MAX_LENGTH)]],
@@ -198,12 +193,10 @@ export class ProfileEdit {
 
     this.saving.set(true);
     this.saveError.set(null);
-    this.saved.set(false);
 
     this.auth.updateProfile(dto).subscribe({
       next: () => {
         this.saving.set(false);
-        this.saved.set(true);
         void this.router.navigateByUrl('/profile');
       },
       error: (err: unknown) => {
