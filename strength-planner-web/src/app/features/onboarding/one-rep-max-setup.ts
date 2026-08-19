@@ -1,5 +1,5 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
@@ -28,6 +28,13 @@ interface LiftRow {
   styleUrl: './one-rep-max-setup.scss',
 })
 export class OneRepMaxSetup {
+  /**
+   * Kada je ekran poslednji korak čarobnjaka za registraciju, zaglavlje i dugme za
+   * nastavak dolaze od čarobnjaka. Bez ovoga bi se na istom ekranu videla dva naslova
+   * i dva dugmeta koja rade istu stvar.
+   */
+  readonly embedded = input(false);
+
   private readonly exerciseService = inject(ExerciseService);
   private readonly oneRepMaxService = inject(OneRepMaxService);
   private readonly router = inject(Router);

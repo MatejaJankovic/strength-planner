@@ -1,0 +1,107 @@
+:host {
+  display: block;
+}
+
+.measure {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.measure__readout {
+  align-items: baseline;
+  display: flex;
+  gap: 0.4rem;
+  justify-content: center;
+  margin: 0.6rem 0 0;
+}
+
+.measure__number {
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 18vw, 4.5rem);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.measure__unit {
+  color: var(--color-muted);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+// Klizač se stilizuje ručno jer je podrazumevana visina palca ispod cilja za prst.
+.measure__slider {
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  width: 100%;
+}
+
+.measure__slider::-webkit-slider-runnable-track {
+  background: var(--color-border);
+  border-radius: 999px;
+  height: 6px;
+}
+
+.measure__slider::-moz-range-track {
+  background: var(--color-border);
+  border-radius: 999px;
+  height: 6px;
+}
+
+.measure__slider::-webkit-slider-thumb {
+  appearance: none;
+  background: var(--color-primary);
+  border: 3px solid var(--color-elevated);
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgb(20 21 26 / 25%);
+  height: 28px;
+  // Palac se centrira na traci od 6px sam: pola visine palca minus pola visine trake.
+  margin-top: -11px;
+  width: 28px;
+}
+
+.measure__slider::-moz-range-thumb {
+  background: var(--color-primary);
+  border: 3px solid var(--color-elevated);
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgb(20 21 26 / 25%);
+  height: 28px;
+  width: 28px;
+}
+
+.measure__precise {
+  display: grid;
+  gap: 0.35rem;
+  justify-items: center;
+}
+
+.measure__precise-label {
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.measure__precise-row {
+  align-items: center;
+  display: flex;
+  gap: 0.45rem;
+}
+
+.measure__field {
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 0.55rem;
+  color: var(--color-ink);
+  font-weight: 700;
+  min-height: 46px;
+  padding: 0 0.7rem;
+  text-align: center;
+  width: 7rem;
+}
+
+.measure__field-unit {
+  color: var(--color-muted);
+  font-weight: 700;
+}

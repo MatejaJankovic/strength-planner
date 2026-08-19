@@ -1,0 +1,120 @@
+:host {
+  display: block;
+}
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 1.1rem;
+}
+
+.field__label {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.control {
+  appearance: none;
+  background: var(--color-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 0.6rem;
+  color: var(--color-ink);
+  min-height: 52px;
+  padding: 0 0.85rem;
+  width: 100%;
+}
+
+// Ime je jedino polje na svom ekranu, pa nosi veličinu kojom se i čita.
+.control--lead {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.control:hover {
+  border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
+}
+
+.control--invalid {
+  border-color: var(--volume-above);
+}
+
+.field__hint {
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  margin: 0;
+}
+
+.field__error {
+  color: #8a2f18;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.password {
+  align-items: center;
+  display: flex;
+  gap: 0.4rem;
+}
+
+.password .control {
+  flex: 1;
+}
+
+.password__toggle {
+  align-items: center;
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 0.6rem;
+  color: var(--color-muted);
+  cursor: pointer;
+  display: inline-flex;
+  height: 52px;
+  justify-content: center;
+  width: 52px;
+}
+
+.wizard-error {
+  align-items: start;
+  background: color-mix(in srgb, var(--volume-above) 12%, white);
+  border: 1px solid color-mix(in srgb, var(--volume-above) 45%, white);
+  border-radius: 0.55rem;
+  color: #8a2f18;
+  display: flex;
+  font-size: 0.88rem;
+  font-weight: 600;
+  gap: 0.5rem;
+  margin: 0 0 1.1rem;
+  padding: 0.7rem 0.8rem;
+}
+
+.wizard-error mat-icon {
+  flex: none;
+  font-size: 1.2rem;
+  height: 1.2rem;
+  width: 1.2rem;
+}
+
+.wizard-note {
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  margin: 1rem 0 0;
+}
+
+.wizard-alt {
+  color: var(--color-muted);
+  font-size: 0.9rem;
+  margin: 0 0 1.5rem;
+  text-align: center;
+}
+
+.wizard-alt a {
+  color: var(--color-primary);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.wizard-alt a:hover {
+  text-decoration: underline;
+}

@@ -1,0 +1,37 @@
+<div class="measure">
+  <p class="measure__readout" aria-hidden="true">
+    <span class="measure__number numeric">{{ display() }}</span>
+    <span class="measure__unit">{{ unit() }}</span>
+  </p>
+
+  <input
+    class="measure__slider"
+    type="range"
+    [attr.aria-label]="label()"
+    [min]="min()"
+    [max]="max()"
+    [step]="step()"
+    [value]="value()"
+    (input)="onSlide($any($event.target).value)"
+  />
+
+  <div class="measure__precise">
+    <label class="measure__precise-label" [attr.for]="'measure-' + label()">
+      Precizan unos
+    </label>
+    <div class="measure__precise-row">
+      <input
+        class="measure__field numeric"
+        type="number"
+        inputmode="decimal"
+        [attr.id]="'measure-' + label()"
+        [min]="min()"
+        [max]="max()"
+        [step]="step()"
+        [value]="value()"
+        (change)="onType($any($event.target).value)"
+      />
+      <span class="measure__field-unit">{{ unit() }}</span>
+    </div>
+  </div>
+</div>

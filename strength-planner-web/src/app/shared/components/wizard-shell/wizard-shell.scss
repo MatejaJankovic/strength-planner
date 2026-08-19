@@ -1,0 +1,120 @@
+:host {
+  display: block;
+}
+
+.wiz {
+  display: grid;
+  // Telo uzima sav preostao prostor, pa dugme sedi na dnu ekrana i kad je pitanje kratko.
+  grid-template-rows: auto 1fr auto;
+  margin: 0 auto;
+  min-height: calc(100dvh - 2rem);
+  padding: 1rem 0 1.25rem;
+  width: min(100%, 30rem);
+}
+
+.wiz__top {
+  align-items: center;
+  display: flex;
+  gap: 0.9rem;
+}
+
+.wiz__back {
+  align-items: center;
+  background: none;
+  border: 0;
+  border-radius: 0.5rem;
+  color: var(--color-ink);
+  cursor: pointer;
+  display: inline-flex;
+  flex: none;
+  height: 44px;
+  justify-content: center;
+  margin-left: -0.35rem;
+  width: 44px;
+}
+
+.wiz__progress {
+  display: flex;
+  flex: 1;
+  gap: 0.3rem;
+}
+
+.wiz__segment {
+  background: var(--color-border);
+  border-radius: 999px;
+  flex: 1;
+  height: 4px;
+  transition: background 0.2s ease;
+}
+
+.wiz__segment.is-done {
+  background: var(--color-primary);
+}
+
+.wiz__body {
+  padding-top: 1.6rem;
+}
+
+.wiz__title {
+  font-family: var(--font-display);
+  font-size: clamp(1.7rem, 8vw, 2.35rem);
+  line-height: 1.06;
+  margin: 0;
+}
+
+.wiz__subtitle {
+  color: var(--color-muted);
+  margin: 0.55rem 0 0;
+}
+
+.wiz__content {
+  padding-top: 1.6rem;
+}
+
+.wiz__foot {
+  display: grid;
+  gap: 0.7rem;
+  padding-top: 1.5rem;
+}
+
+.wiz__footnote {
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  margin: 0;
+  text-align: center;
+}
+
+.wiz__next {
+  align-items: center;
+  background: var(--color-primary);
+  border: 0;
+  border-radius: 0.7rem;
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  font-weight: 800;
+  gap: 0.55rem;
+  justify-content: center;
+  min-height: 54px;
+  width: 100%;
+}
+
+.wiz__next:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.wiz__spinner {
+  animation: wiz-spin 0.7s linear infinite;
+  border: 2px solid rgb(255 255 255 / 45%);
+  border-radius: 50%;
+  border-top-color: #fff;
+  height: 1.1rem;
+  width: 1.1rem;
+}
+
+@keyframes wiz-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

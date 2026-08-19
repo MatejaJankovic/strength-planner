@@ -1,0 +1,27 @@
+<div class="choices" role="radiogroup" [attr.aria-label]="groupLabel()">
+  @for (option of options(); track option.value; let i = $index) {
+    <button
+      class="choice"
+      type="button"
+      role="radio"
+      [class.is-selected]="option.value === value()"
+      [attr.aria-checked]="option.value === value()"
+      [attr.tabindex]="option.value === value() || (value() === null && i === 0) ? 0 : -1"
+      (click)="select(option)"
+      (keydown)="onKeydown($event, i)"
+    >
+      @if (option.icon) {
+        <mat-icon class="choice__icon" aria-hidden="true">{{ option.icon }}</mat-icon>
+      }
+
+      <span class="choice__text">
+        <span class="choice__label">{{ option.label }}</span>
+        @if (option.hint) {
+          <span class="choice__hint">{{ option.hint }}</span>
+        }
+      </span>
+
+      <span class="choice__mark" aria-hidden="true"></span>
+    </button>
+  }
+</div>

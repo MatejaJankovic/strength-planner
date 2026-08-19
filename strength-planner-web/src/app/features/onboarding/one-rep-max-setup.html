@@ -1,11 +1,13 @@
-<header class="feature-header">
-  <p class="eyebrow">Onboarding</p>
-  <h1>Poznati maksimumi</h1>
-  <p>
-    Unesi procenu maksimuma za jedno ponavljanje (1RM) - koristimo je za početna radna opterećenja
-    u prvom mezociklusu.
-  </p>
-</header>
+@if (!embedded()) {
+  <header class="feature-header">
+    <p class="eyebrow">Onboarding</p>
+    <h1>Poznati maksimumi</h1>
+    <p>
+      Unesi procenu maksimuma za jedno ponavljanje (1RM) - koristimo je za početna radna opterećenja
+      u prvom mezociklusu.
+    </p>
+  </header>
+}
 
 @if (loading()) {
   <app-loading label="Učitavam vežbe…" />
@@ -133,14 +135,16 @@
       </div>
     }
 
-    <div class="footer">
-      <button class="footer__continue" type="button" (click)="continueToPlan()">
-        Nastavi na plan
-        <mat-icon aria-hidden="true">arrow_forward</mat-icon>
-      </button>
-      <p class="footer__hint">
-        Ne moraš uneti sve - vežbe bez 1RM prvi put loguješ po osećaju.
-      </p>
-    </div>
+    @if (!embedded()) {
+      <div class="footer">
+        <button class="footer__continue" type="button" (click)="continueToPlan()">
+          Nastavi na plan
+          <mat-icon aria-hidden="true">arrow_forward</mat-icon>
+        </button>
+        <p class="footer__hint">
+          Ne moraš uneti sve - vežbe bez 1RM prvi put loguješ po osećaju.
+        </p>
+      </div>
+    }
   </section>
 }

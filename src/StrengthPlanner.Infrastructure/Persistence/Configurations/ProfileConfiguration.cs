@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using StrengthPlanner.Application.Security;
 using StrengthPlanner.Domain.Entities;
 
 namespace StrengthPlanner.Infrastructure.Persistence.Configurations;
@@ -14,5 +15,10 @@ public class ProfileConfiguration : IEntityTypeConfiguration<Profile>
         builder.HasKey(p => p.UserId);
 
         builder.Property(p => p.BodyweightKg).HasPrecision(6, 2);
+        builder.Property(p => p.HeightCm).HasPrecision(5, 1);
+
+        // Ista granica kao u validaciji zahteva. Bez nje kolona je neograničen text, pa
+        // dugačko ime prolazi bazu i puca tek na prikazu.
+        builder.Property(p => p.DisplayName).HasMaxLength(ProfilePolicy.DisplayNameMaximumLength);
     }
 }

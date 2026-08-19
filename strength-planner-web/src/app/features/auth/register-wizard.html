@@ -1,0 +1,204 @@
+<form [formGroup]="form" (ngSubmit)="next()" novalidate>
+  <app-wizard-shell
+    [title]="title()"
+    [subtitle]="subtitle()"
+    [stepIndex]="step()"
+    [stepCount]="stepCount"
+    [canContinue]="canContinue()"
+    [busy]="submitting()"
+    [continueLabel]="continueLabel()"
+    [footnote]="footnote()"
+    [showBack]="step() !== Step.OneRepMax"
+    (back)="back()"
+    (next)="next()"
+  >
+    @if (error(); as message) {
+      <p class="wizard-error" role="alert">
+        <mat-icon aria-hidden="true">error_outline</mat-icon>
+        <span>{{ message }}</span>
+      </p>
+    }
+
+    @switch (step()) {
+      @case (Step.Name) {
+        <div class="field">
+          <label class="field__label" for="wz-name">Ime</label>
+          <input
+            id="wz-name"
+            class="control control--lead"
+            type="text"
+            formControlName="displayName"
+            autocomplete="nickname"
+            [attr.maxlength]="displayNameMaxLength"
+            placeholder="npr. Mateja"
+            [class.control--invalid]="
+              form.controls.displayName.invalid && form.controls.displayName.touched
+            "
+          />
+          @if (form.controls.displayName.touched && form.controls.displayName.invalid) {
+            <p class="field__error">Unesi ime.</p>
+          }
+        </div>
+      }
+
+      @case (Step.Credentials) {
+        <!--
+          Zamka za automate. Skriveno je i od prikaza i od čitača ekrana, izvučeno iz reda
+          tabulatora i sa isključenim automatskim popunjavanjem — čovek do njega ne može da
+          dođe nijednim putem, pa je kod njega uvek prazno. Automat koji redom puni polja ga
+          popuni, i server takvu registraciju odbija.
+
+          Skriva se stilom, a ne atributom hidden ni tipom hidden, jer jednostavniji automati
+          upravo ta dva preskaču.
+        -->
+        <div
+          aria-hidden="true"
+          style="position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden"
+        >
+          <label for="wz-website">Ne popunjavaj ovo polje</label>
+          <input
+            id="wz-website"
+            type="text"
+            formControlName="website"
+            tabindex="-1"
+            autocomplete="off"
+          />
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="wz-email">Email</label>
+          <input
+            id="wz-email"
+            class="control"
+            type="email"
+            formControlName="email"
+            autocomplete="email"
+            inputmode="email"
+            placeholder="ti@primer.com"
+            [class.control--invalid]="form.controls.email.invalid && form.controls.email.touched"
+          />
+          @if (form.controls.email.touched && form.controls.email.invalid) {
+            <p class="field__error">
+              @if (form.controls.email.hasError('required')) {
+                Unesi email.
+              } @else {
+                Email nije u ispravnom formatu.
+              }
+            </p>
+          }
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="wz-password">Lozinka</label>
+          <div class="password">
+            <input
+              id="wz-password"
+              class="control"
+              [type]="showPassword() ? 'text' : 'password'"
+              formControlName="password"
+              autocomplete="new-password"
+              [attr.placeholder]="'Bar ' + passwordMinLength + ' karaktera'"
+              [class.control--invalid]="
+                form.controls.password.invalid && form.controls.password.touched
+              "
+            />
+            <button
+              class="password__toggle"
+              type="button"
+              (click)="togglePassword()"
+              [attr.aria-pressed]="showPassword()"
+              [attr.aria-label]="showPassword() ? 'Sakrij lozinku' : 'Prikaži lozinku'"
+            >
+              <mat-icon aria-hidden="true">{{
+                showPassword() ? 'visibility_off' : 'visibility'
+              }}</mat-icon>
+            </button>
+          </div>
+          @if (form.controls.password.touched && form.controls.password.invalid) {
+            <p class="field__error">
+              @if (form.controls.password.hasError('required')) {
+                Unesi lozinku.
+              } @else {
+                Lozinka mora imati bar {{ passwordMinLength }} karaktera.
+              }
+            </p>
+          } @else {
+            <p class="field__hint">
+              Bar {{ passwordMinLength }} karaktera. Duža lozinka je jača od komplikovane.
+            </p>
+          }
+        </div>
+
+        <p class="wizard-note">
+          Nema oporavka lozinke preko emaila — ako je zaboraviš, nalog se ne može vratiti.
+        </p>
+      }
+
+      @case (Step.Sex) {
+        <app-choice-list
+          groupLabel="Pol"
+          [options]="sexOptions"
+          [value]="form.controls.sex.value || null"
+          (valueChange)="setSex($event)"
+        />
+        <p class="wizard-note">Ovo pitanje smeš i da preskočiš.</p>
+      }
+
+      @case (Step.Bodyweight) {
+        <app-measure-input
+          label="Telesna masa u kilogramima"
+          unit="kg"
+          [min]="30"
+          [max]="300"
+          [step]="0.5"
+          [value]="form.controls.bodyweightKg.value"
+          (valueChange)="setBodyweight($event)"
+        />
+      }
+
+      @case (Step.Height) {
+        <app-measure-input
+          label="Visina u centimetrima"
+          unit="cm"
+          [min]="heightMin"
+          [max]="heightMax"
+          [step]="1"
+          [value]="form.controls.heightCm.value"
+          (valueChange)="setHeight($event)"
+        />
+      }
+
+      @case (Step.Age) {
+        <app-measure-input
+          label="Uzrast u godinama"
+          unit="god."
+          [min]="14"
+          [max]="90"
+          [step]="1"
+          [value]="form.controls.age.value"
+          (valueChange)="setAge($event)"
+        />
+      }
+
+      @case (Step.Experience) {
+        <app-choice-list
+          groupLabel="Nivo iskustva"
+          [options]="experienceOptions"
+          [value]="form.controls.experienceLevel.value || null"
+          (valueChange)="setExperience($event)"
+        />
+      }
+
+      @case (Step.OneRepMax) {
+        <app-one-rep-max-setup [embedded]="true" />
+      }
+    }
+  </app-wizard-shell>
+</form>
+
+@if (step() !== Step.OneRepMax) {
+  <p class="wizard-alt">
+    Već imaš nalog?
+    <a routerLink="/login">Prijavi se</a>
+  </p>
+}

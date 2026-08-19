@@ -9,6 +9,14 @@ namespace StrengthPlanner.Application.DTOs.Auth;
 /// </summary>
 public class UpdateProfileDto
 {
+    /// <summary>
+    /// Ime kojim korisnik naziva sam sebe. Za razliku od registracije ovde je opciono:
+    /// nalozi stariji od ovog polja nemaju ime, pa bi obavezno polje značilo da im je
+    /// svaka druga izmena profila blokirana dok ga ne postave.
+    /// </summary>
+    [MaxLength(ProfilePolicy.DisplayNameMaximumLength)]
+    public string? DisplayName { get; set; }
+
     // Opciono polje, pa nema [Required]; [DefinedEnum] propušta null i odbija sve što
     // enum ne definiše.
     [DefinedEnum]
@@ -19,6 +27,10 @@ public class UpdateProfileDto
 
     [Range(20, 400)]
     public decimal BodyweightKg { get; set; }
+
+    // Opciono kao i pol: ne ulazi ni u jedan algoritam, pa prazna vrednost ne kvari plan.
+    [Range(ProfilePolicy.MinimumHeightCm, ProfilePolicy.MaximumHeightCm)]
+    public decimal? HeightCm { get; set; }
 
     // Bez provere je "experienceLevel": 999 prolazilo, upisivalo se u profil i vraćalo
     // klijentu kao nivo koji nijedan ekran ne prikazuje.

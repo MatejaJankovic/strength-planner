@@ -1,0 +1,84 @@
+:host {
+  display: block;
+}
+
+.choices {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.choice {
+  align-items: center;
+  background: var(--color-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  gap: 0.85rem;
+  // Cilj za prst: red je namerno visok, jer je na ovom ekranu jedina stvar koja se dira.
+  min-height: 66px;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  transition: border-color 0.15s ease, background 0.15s ease;
+  width: 100%;
+}
+
+.choice:hover {
+  border-color: color-mix(in srgb, var(--color-primary) 40%, var(--color-border));
+}
+
+.choice.is-selected {
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-elevated));
+  border-color: var(--color-primary);
+}
+
+.choice__icon {
+  color: var(--color-muted);
+  flex: none;
+}
+
+.choice.is-selected .choice__icon {
+  color: var(--color-primary);
+}
+
+.choice__text {
+  display: grid;
+  flex: 1;
+  gap: 0.15rem;
+  // Bez ovoga dugačka ponuda gura krug za izbor izvan kartice umesto da se prelomi.
+  min-width: 0;
+}
+
+.choice__label {
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.choice__hint {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+// Krug desno: prazan dok ponuda nije izabrana, pun kad jeste. Nije `<input type=radio>`
+// jer se ceo red ponaša kao dugme, a dva cilja za prst u istom redu zbunjuju.
+.choice__mark {
+  border: 2px solid var(--color-border);
+  border-radius: 50%;
+  flex: none;
+  height: 22px;
+  position: relative;
+  width: 22px;
+}
+
+.choice.is-selected .choice__mark {
+  border-color: var(--color-primary);
+}
+
+.choice.is-selected .choice__mark::after {
+  background: var(--color-primary);
+  border-radius: 50%;
+  content: '';
+  inset: 3px;
+  position: absolute;
+}
