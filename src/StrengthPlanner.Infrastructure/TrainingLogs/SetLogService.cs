@@ -55,7 +55,10 @@ public class SetLogService : ISetLogService
             SetNumber = lastSetNumber + 1,
             WeightKg = request.WeightKg,
             Reps = request.Reps,
-            Rir = NormalizeRir(request.Rir, isFailure),
+            // Rir stays exactly as sent: ValidateSetInput already rejects an explicit
+            // otkaz with Rir > 0, and the implied case in ImpliesFailure only fires when
+            // Rir is already 0, so there is never a request.Rir to normalize away here.
+            Rir = request.Rir,
             IsFailure = isFailure,
             PerformedAt = DateTime.UtcNow
         };
@@ -94,7 +97,7 @@ public class SetLogService : ISetLogService
 
         setLog.WeightKg = request.WeightKg;
         setLog.Reps = request.Reps;
-        setLog.Rir = NormalizeRir(request.Rir, isFailure);
+        setLog.Rir = request.Rir;
         setLog.IsFailure = isFailure;
 
         await _db.SaveChangesAsync(cancellationToken);
@@ -137,15 +140,6 @@ public class SetLogService : ISetLogService
                 TrainingLogErrorType.Conflict,
                 "Completed workout sessions cannot be modified.");
         }
-    }
-
-    /// <summary>
-    /// Otkaz i RIR > 0 se međusobno isključuju: ako je serija izvučena do otkaza,
-    /// u rezervi po definiciji nije ostalo nijedno ponavljanje.
-    /// </summary>
-    private static int NormalizeRir(int rir, bool isFailure)
-    {
-        return isFailure ? 0 : rir;
     }
 
     private static void ValidateSetInput(decimal weightKg, int reps, int rir, bool isFailure)

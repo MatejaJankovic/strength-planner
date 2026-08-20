@@ -75,3 +75,37 @@ Testovi: `dotnet test` 350 prolazi (bilo 338, +12 novih — direktno na
 koji dokazuje da opterećenje pada isto bez obzira na checkbox). Provereno da testovi hvataju
 regresiju: privremeno vraćanje stare formule (`ImpliesFailure` da gleda samo zastavicu) obara
 četiri testa, uključujući tačan prijavljeni slučaj.
+
+## Rupa koju je rivju našao: stare serije
+
+Popravka menja samo ono što se tek upisuje. Serije koje su već u bazi pre ove izmene su
+zadržale šta god je checkbox tada rekao — pa serija sa 6 od 8 ponavljanja i RIR 0, bez
+kvačice, ostaje `IsFailure = false` u istoriji, iako bi danas bila upisana kao otkaz.
+
+To se samo delimično popravlja samo od sebe. Kod koji čita `IsFailure` iz baze deli se na
+dve grupe:
+
+- **Ponovo računa iz brojeva** — `EffectiveRir()` poziva `ImpliesFailure` nad sirovim
+  `Reps`/`Rir` iz stare serije, pa čak i stara serija dobija tačnu korekciju čim se pročita
+  (progresija, RIR odstupanje u `VolumeLandmarkService`).
+- **Čita zastavicu direktno** — `DeloadService.BuildWeeklyFatigueAsync` (koja serija ulazi
+  u prosek RIR odstupanja, i `failureShare` signal za auto-deload) i
+  `VolumeLandmarkService`-ov udeo otkaza za učenje MEV/MRV/MAV granica ne prolaze kroz
+  `ImpliesFailure` — čitaju šta god baza kaže. Za te dve putanje stara serija ostaje
+  "završena", ne "otkaz", dok god joj neko ne ispravi zastavicu.
+
+Popravljeno migracijom
+[`20260820175427_BackfillImpliedFailureFlag`](../../src/StrengthPlanner.Infrastructure/Persistence/Migrations/20260820175427_BackfillImpliedFailureFlag.cs):
+jedan `UPDATE` koji nad postojećim redovima primenjuje isto pravilo koje `ImpliesFailure`
+primenjuje na nove. Na lokalnoj razvojnoj bazi je stvarno našla i ispravila 5 takvih redova
+(sve 5, ponavljanja iz istog probnog niza otkaza iz `ComputeNext_DoesNotDriveWeightDown_...`
+testa, upisane pre ove grane). `Down()` je namerno prazan — ništa ne razlikuje red koji je
+ova migracija prevrnula od reda koji je `IsFailure = true` bio iz nekog drugog razloga, pa
+nema šta da se vrati unazad.
+
+Uzgred, drugi nalaz rivjua: `ImpliesFailure`-ov XML komentar je bio na srpskom, što krši
+pravilo iz CLAUDE.md da XML doc komentari budu na engleskom (kratki inline komentari smeju
+biti na srpskom, doc komentar ne) — prevedeno. I treći: `SetLogService.NormalizeRir` je
+posle ove izmene uvek vraćao `request.Rir` nepromenjeno (`isFailure` je tačno kad je
+`Rir` već 0, bilo eksplicitnom kvačicom uz validaciju, bilo brojevima), pa je metoda
+uklonjena u korist direktne dodele.

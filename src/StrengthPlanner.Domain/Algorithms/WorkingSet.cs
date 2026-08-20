@@ -47,15 +47,16 @@ public sealed record WorkingSet(int Reps, int Rir, bool IsFailure = false)
     }
 
     /// <summary>
-    /// Da li dati brojevi, sami po sebi, opisuju otkaz — bez obzira na eksplicitnu
-    /// kvačicu.
+    /// Whether the numbers themselves describe a failure, regardless of the explicit
+    /// checkbox.
     ///
-    /// Postoji kao javna, imenovana metoda umesto da bude ugurana u <see cref="EffectiveRir"/>
-    /// zato što je definicija "šta je otkaz" i infrastrukturnom sloju potrebna: kad se
-    /// serija upisuje, <c>IsFailure</c> u bazi mora da se slaže sa korekcijom koja se
-    /// stvarno primenjuje, inače istorija treninga tvrdi "RIR 0" za nešto što je
-    /// izračunato kao otkaz. Da to pravilo postoji na dva mesta — ovde i u servisu koji
-    /// piše u bazu — razišla bi se prvi put kad neko izmeni jedno a zaboravi drugo.
+    /// Exists as a public, named method instead of being folded into <see cref="EffectiveRir"/>
+    /// because the infrastructure layer needs the same definition of "what counts as
+    /// failure": when a set is written, the stored <c>IsFailure</c> has to agree with the
+    /// correction that is actually applied, or training history claims "RIR 0" for
+    /// something that was computed as a failure. If that rule existed in two places — here
+    /// and in the service that writes to the database — they would diverge the first time
+    /// someone changed one and forgot the other.
     /// </summary>
     public static bool ImpliesFailure(int reps, int rir, int repRangeMin, bool explicitlyMarked)
     {
