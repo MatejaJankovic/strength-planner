@@ -68,9 +68,9 @@
   box-shadow: 0 -14px 32px rgb(20 21 26 / 8%);
   display: grid;
   gap: 0.25rem;
-  // Svaki tab dobija svoju kolonu: manje kolona nego stavki gura poslednju u drugi red i
-  // guranjem podiže traku preko sadržaja. Broj mora da prati dužinu navItems u app.ts.
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  // Broj kolona stiže inline iz app.ts (bottomNavColumns), vezan za navItems.length —
+  // manje kolona nego stavki gura poslednju u drugi red i guranjem podiže traku preko
+  // sadržaja, a taj broj ovde više nema svoju kopiju koja bi mogla da se razmimoiđe.
   left: 0;
   min-height: calc(68px + env(safe-area-inset-bottom));
   padding: 0.45rem max(0.75rem, env(safe-area-inset-left)) calc(0.45rem + env(safe-area-inset-bottom));

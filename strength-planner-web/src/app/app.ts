@@ -52,4 +52,11 @@ export class App {
     { label: 'Plan', icon: 'calendar_month', route: '/plan' },
     { label: 'Profil', icon: 'person', route: '/profile' },
   ];
+
+  /**
+   * Vezano za dužinu navItems umesto da app.scss drži svoj broj kolona — ta dva su se već
+   * jednom razišla (Analitika kao peta stavka u četvorokolonoj traci gurala je Profil u
+   * drugi red).
+   */
+  protected readonly bottomNavColumns = `repeat(${this.navItems.length}, minmax(0, 1fr))`;
 }
