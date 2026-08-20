@@ -70,12 +70,16 @@ public class ExerciseCatalogTests
     {
         // EquipmentWeightStep.ForEquipment se tiho vraća na generički korak za
         // neprepoznatu opremu umesto da baci grešku — pravopisna greška bi prošla nemo i
-        // vežba bi dobila pogrešan korak opterećenja.
-        string[] recognized = ["Barbell", "Dumbbell", "Machine", "Cable", "Bodyweight"];
-
+        // vežba bi dobila pogrešan korak opterećenja. Provera ide na
+        // EquipmentWeightStep.RecognizedEquipment, ne na sopstveni spisak: dva spiska iste
+        // opreme bi se razišla prvi put kad neko doda spravu na jednom mestu a zaboravi
+        // drugo.
         foreach (var exercise in ExerciseCatalog.Exercises)
         {
-            Assert.Contains(exercise.Equipment, recognized);
+            Assert.Contains(
+                exercise.Equipment,
+                EquipmentWeightStep.RecognizedEquipment,
+                StringComparer.OrdinalIgnoreCase);
         }
     }
 

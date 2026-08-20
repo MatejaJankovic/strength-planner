@@ -31,6 +31,12 @@ obim rada, uz jasnu napomenu ovde da nisu.
 
 ✓ = ručno provereno kroz web pretragu, brojevi i nalazi se poklapaju sa izvorom.
 
+Četiri od šest ulaze u šablone ispod (Bulgarian Split Squat, Single-Leg Romanian Deadlift,
+Step-Up kao nove, Goblet Squat kroz izmenu postojećeg). **Walking Lunge i Split Squat
+namerno nisu ni u jednom ugrađenom šablonu** — u katalogu su radi ličnih šablona i
+direktnog logovanja, prvenstveno zato što je Split Squat jedina vežba u celom katalogu bez
+ikakve opreme i taj slučaj zaslužuje mesto u katalogu i bez svog šablona.
+
 Doprinosi drže postojeću konvenciju kataloga (tačno jedan primarni mišić po vežbi, ostali
 sekundarni na 0.5) — ovo nije nešto što `ExerciseService`-ova validacija nameće (samo
 proverava da je svaka pojedinačna vrednost 1.0 ili 0.5, ne koliko ih ima), pa je novi test
