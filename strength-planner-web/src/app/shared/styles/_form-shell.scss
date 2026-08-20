@@ -1,10 +1,11 @@
-// Kartice, polja, kontrole, dugmad i poruke koje dele ekran profila i ekran za izmenu
-// profila. Uvozi se sa `@use` u oba, pa pravila ostaju uz oblast profila i ograničena na
-// komponentu - isto kao `_auth-shell.scss` kod prijave i registracije.
+// Kartice, polja, kontrole, dugmad i poruke koje dele ekrani sa formama: profil, izmena
+// profila, podešavanja i vežbe. Uvozi se sa `@use`, pa ostaje ograničeno na komponentu -
+// isto kao `_auth-shell.scss` kod prijave i registracije.
 //
-// Postoji zato što je izmena profila izdvojena na svoju rutu: bez ovoga bi oba ekrana
-// nosila svoju kopiju istih pravila, i izmena izgleda polja hvatala bi jedan a promašivala
-// drugi.
+// Nastalo je uz profil, kada je izmena izdvojena na svoju rutu, i stajalo je u
+// `features/profile/`. Preseljeno je ovamo kada je i ekran vežbi počeo da ga koristi:
+// pravila više nisu profilna, i uvoz `../profile/profile-shell` iz druge oblasti bi to
+// krio.
 
 .card {
   background: var(--color-elevated);

@@ -19,6 +19,7 @@ import {
   UpdateProfileDto,
 } from '../../core/models/auth.models';
 import { Loading } from '../../shared/components/loading/loading';
+import { SubscreenHeader } from '../../shared/components/subscreen-header/subscreen-header';
 
 /**
  * Izmena profila — svi podaci o korisniku na jednom mestu.
@@ -33,7 +34,7 @@ import { Loading } from '../../shared/components/loading/loading';
  */
 @Component({
   selector: 'app-profile-edit',
-  imports: [ReactiveFormsModule, MatIconModule, Loading],
+  imports: [ReactiveFormsModule, MatIconModule, Loading, SubscreenHeader],
   templateUrl: './profile-edit.html',
   styleUrl: './profile-edit.scss',
 })

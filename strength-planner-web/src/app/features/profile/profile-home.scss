@@ -1,169 +1,8 @@
-@use './profile-shell';
+@use '../../shared/styles/form-shell';
 
 :host {
   display: grid;
   gap: 1rem;
-}
-
-.card--logout {
-  justify-items: start;
-}
-
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-}
-
-.chip {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  color: var(--color-ink);
-  cursor: pointer;
-  min-height: 44px;
-  padding: 0 0.9rem;
-
-  &.is-active {
-    background: var(--color-primary);
-    border-color: var(--color-primary);
-    color: #fff;
-  }
-}
-
-.exlist {
-  display: grid;
-  gap: 0.5rem;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.exlist__item {
-  border: 1px solid var(--color-border);
-  border-radius: 0.5rem;
-  display: grid;
-  gap: 0.15rem;
-  padding: 0.6rem 0.75rem;
-}
-
-.exlist__name {
-  font-weight: 700;
-}
-
-.exlist__meta {
-  color: var(--color-muted);
-  font-size: 0.82rem;
-}
-
-// Red sa korakom opterećenja: naziv i sprava levo, kontrole desno.
-.exlist__item--step {
-  align-items: center;
-  column-gap: 0.75rem;
-  grid-template-columns: minmax(0, 1fr) auto;
-
-  .exlist__name {
-    align-items: center;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-    grid-column: 1;
-  }
-
-  .exlist__meta {
-    grid-column: 1;
-  }
-}
-
-.step-controls {
-  align-items: center;
-  display: flex;
-  gap: 0.4rem;
-  grid-column: 2;
-  grid-row: 1 / span 2;
-}
-
-.control--compact {
-  min-height: 40px;
-  padding: 0 0.5rem;
-  width: auto;
-}
-
-.btn--compact {
-  font-size: 0.78rem;
-  font-weight: 600;
-  min-height: 40px;
-  padding: 0 0.6rem;
-  white-space: nowrap;
-}
-
-.badge {
-  background: color-mix(in srgb, var(--color-primary) 14%, transparent);
-  border-radius: 999px;
-  color: var(--color-primary);
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  padding: 0.1rem 0.45rem;
-  text-transform: uppercase;
-}
-
-.panel {
-  background: var(--color-elevated);
-  border: 1px solid var(--color-border);
-  border-radius: 0.75rem;
-  display: grid;
-  gap: 0.75rem;
-  padding: 1rem;
-}
-
-.panel__error {
-  align-items: center;
-  color: var(--color-muted);
-  display: flex;
-  gap: 0.5rem;
-  margin: 0;
-}
-
-.retry {
-  align-items: center;
-  background: var(--color-primary);
-  border: none;
-  border-radius: 0.55rem;
-  color: #fff;
-  cursor: pointer;
-  display: inline-flex;
-  font-weight: 700;
-  gap: 0.4rem;
-  justify-content: center;
-  min-height: 44px;
-  padding: 0 1rem;
-  width: fit-content;
-}
-
-// Ulaz u lične šablone. Uređivač je predugačak da bi stajao unutar profila, pa
-// profil nosi samo ulaz u njega.
-.cardlink {
-  align-items: center;
-  border: 1px solid var(--color-border);
-  border-radius: 0.55rem;
-  color: var(--color-ink);
-  display: flex;
-  font-weight: 700;
-  gap: 0.5rem;
-  min-height: 48px;
-  padding: 0 0.75rem;
-  text-decoration: none;
-}
-
-.cardlink span {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.cardlink__go {
-  color: var(--color-muted);
-  flex: none;
 }
 
 // Zaglavlje profila: slika, ime i dugme olovke koje vodi na izmenu. Zamenilo je naslov
@@ -230,7 +69,13 @@
   overflow-wrap: anywhere;
 }
 
-.phead__edit {
+.phead__actions {
+  display: flex;
+  flex: none;
+  gap: 0.35rem;
+}
+
+.phead__action {
   align-items: center;
   border: 1px solid var(--color-border);
   border-radius: 0.55rem;
@@ -267,4 +112,46 @@
 .psummary dd {
   font-weight: 700;
   margin: 0;
+}
+
+// Mreža dugmadi ka ostalim ekranima. Dva u redu na telefonu, a treće se prelama pod njih -
+// bez fiksnog broja kolona, pa dodavanje četvrtog ne traži izmenu stila.
+.dash {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.dash__title {
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.dash__grid {
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.dash__tile {
+  align-items: center;
+  background: var(--color-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  color: var(--color-ink);
+  display: flex;
+  font-weight: 700;
+  gap: 0.6rem;
+  // Cilj za prst, isti kao red u listi ponuda na registraciji.
+  min-height: 64px;
+  padding: 0 1rem;
+  text-decoration: none;
+}
+
+.dash__tile mat-icon {
+  color: var(--color-primary);
+  flex: none;
 }

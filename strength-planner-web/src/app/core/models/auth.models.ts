@@ -39,6 +39,14 @@ export const AVATAR_MAX_BYTES = 2 * 1024 * 1024;
  */
 export const AVATAR_ACCEPTED_TYPES = 'image/jpeg,image/png,image/webp';
 
+/**
+ * Reč koju korisnik mora da otkuca da bi nalog bio obrisan.
+ *
+ * Mora da prati AccountDeletionPolicy.ConfirmationWord na serveru. Kada se raziđu, ekran
+ * traži jedno a server drugo i brisanje prestaje da radi bez poruke o tome zašto.
+ */
+export const ACCOUNT_DELETION_WORD = 'OBRIŠI';
+
 export interface RegisterDto {
   email: string;
   password: string;
@@ -128,6 +136,11 @@ export const SEX_OPTIONS: ReadonlyArray<{ value: Sex; label: string }> = [
   { value: Sex.Male, label: 'Muški' },
   { value: Sex.Female, label: 'Ženski' },
 ];
+
+export interface DeleteAccountDto {
+  currentPassword: string;
+  confirmation: string;
+}
 
 export interface UpdateProfileDto {
   displayName?: string | null;

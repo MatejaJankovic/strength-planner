@@ -1,0 +1,53 @@
+:host {
+  display: block;
+}
+
+// Bočne kolone su iste širine, pa naslov u sredini ostaje centriran i kada radnje desno
+// nema. Zbog toga prazan element za balansiranje nije potreban.
+.sub {
+  align-items: center;
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+}
+
+.sub__back {
+  align-items: center;
+  background: none;
+  border: 0;
+  border-radius: 0.5rem;
+  color: var(--color-ink);
+  cursor: pointer;
+  display: inline-flex;
+  height: 44px;
+  justify-content: center;
+  margin-left: -0.35rem;
+  width: 44px;
+}
+
+.sub__title {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  margin: 0;
+  text-align: center;
+}
+
+.sub__action {
+  display: flex;
+  justify-content: flex-end;
+}
+
+// Dugme koje ekran projektuje kao radnju. Stil stoji ovde da svaki ekran ne bi ponovo
+// opisivao isti cilj za prst.
+.sub__action ::ng-deep button {
+  align-items: center;
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  color: var(--color-ink);
+  cursor: pointer;
+  display: inline-flex;
+  height: 44px;
+  justify-content: center;
+  width: 44px;
+}

@@ -1,17 +1,8 @@
-<header class="edit-top">
-  <button class="edit-top__back" type="button" (click)="cancel()" aria-label="Nazad na profil">
-    <mat-icon aria-hidden="true">arrow_back</mat-icon>
-  </button>
-  <h1 class="edit-top__title">Izmeni profil</h1>
-  <button
-    class="edit-top__done"
-    type="button"
-    [disabled]="saving()"
-    (click)="save()"
-  >
+<app-subscreen-header title="Izmeni profil" backLabel="Nazad na profil" (back)="cancel()">
+  <button slot="action" class="done" type="button" [disabled]="saving()" (click)="save()">
     {{ saving() ? 'Čuvam…' : 'Gotovo' }}
   </button>
-</header>
+</app-subscreen-header>
 
 @if (loading()) {
   <app-loading label="Učitavam profil…" />

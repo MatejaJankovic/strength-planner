@@ -292,6 +292,94 @@ public class AuthService : IAuthService
         return BuildResponse(user);
     }
 
+    /// <summary>
+    /// Briše nalog i sve što mu pripada, u jednoj transakciji.
+    ///
+    /// Red poslova nije stvar ukusa, nego posledica stranih ključeva:
+    ///
+    /// 1. <b>Lični šabloni</b> idu prvi. Njihove stavke drže vežbe preko
+    ///    <c>UserWorkoutTemplateExercise → Exercise</c> sa <c>Restrict</c>, pa dok šablon
+    ///    postoji, korisnikova sopstvena vežba se ne može obrisati.
+    /// 2. <b>Nalog</b> ide drugi. Kaskade iz <c>ApplicationUserConfiguration</c> odnose
+    ///    profil, mezocikluse (a s njima nedelje, treninge, planove vežbi i serije),
+    ///    maksimume, podešavanja vežbi, orijentire volumena i dugoročne planove. Time se
+    ///    puštaju i <c>Restrict</c> veze koje <c>ExercisePlan</c> i <c>OneRepMaxRecord</c>
+    ///    drže na vežbama.
+    /// 3. <b>Sopstvene vežbe</b> idu poslednje, kada ih ništa više ne referiše.
+    ///
+    /// Transakcija je tu zato što ovo nije jedan upis: da treći korak padne bez nje, nalog
+    /// bi bio obrisan a njegove vežbe bi ostale u katalogu bez vlasnika.
+    ///
+    /// <c>UserWorkoutTemplate</c> i <c>Exercise.CreatedByUserId</c> nose samo Guid, bez
+    /// stranog ključa ka nalogu — zato ih kaskada ne dohvata i zato se brišu ručno.
+    /// <c>AccountDeletionTests</c> to drži: novi korisnički entitet koji nije ni u kaskadi
+    /// ni u ovom spisku obara build.
+    /// </summary>
+    public async Task DeleteAccountAsync(Guid userId, DeleteAccountDto dto)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString())
+            ?? throw new AuthException("Korisnik ne postoji.");
+
+        // Potvrdna reč se proverava PRE lozinke, i to je bezbednosna odluka, ne stilska.
+        //
+        // Dve provere daju dve različite poruke. Da lozinka ide prva, ko se domogne tuđeg
+        // tokena mogao bi da pogađa lozinku sa namerno pogrešnom rečju: „pogrešan email
+        // ili lozinka" znači da pogodak nije, a poruka o potvrdnoj reči znači da jeste — a
+        // nalog se pri tome ne briše. Ovako pogrešna reč ne odaje ništa o lozinci, i
+        // skupo heširanje se ne troši na zahtev koji ne može da uspe.
+        //
+        // Poredi se ordinalno, bez obzira na velika i mala slova. Kultura ovde ne sme da
+        // učestvuje: na hostu sa turskim jezikom „i" i „I" nisu isto slovo, pa bi
+        // `CurrentCultureIgnoreCase` odbijao „obriši" prema „OBRIŠI" — reč se završava
+        // upravo tim slovom — i nalog se ne bi mogao obrisati, uz poruku da otkuca ono što
+        // je već otkucao. Kultura nigde nije zakucana (ni u Program.cs, ni u csproj-u, ni
+        // u Dockerfile-u), pa je to bila stvar hosta. Ordinalno poređenje ispravno sabija
+        // š i Š i ne zavisi od jezika.
+        if (!string.Equals(
+                dto.Confirmation.Trim(),
+                AccountDeletionPolicy.ConfirmationWord,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            throw new AuthException(
+                $"Za brisanje naloga otkucaj \"{AccountDeletionPolicy.ConfirmationWord}\".");
+        }
+
+        // Ista zaštita kao pri promeni lozinke: bez nje je brisanje naloga bilo orakl za
+        // pogađanje lozinke koji ne troši zaključavanje.
+        if (await _userManager.IsLockedOutAsync(user))
+            throw new AuthException(InvalidCredentials);
+
+        if (!await _userManager.CheckPasswordAsync(user, dto.CurrentPassword))
+        {
+            await _userManager.AccessFailedAsync(user);
+            throw new AuthException(InvalidCredentials);
+        }
+
+        // Kao i u LoginAsync i ChangePasswordAsync: ispravna lozinka briše ranije neuspele
+        // pokušaje. Bez ovoga dve greške u kucanju na ovom ekranu ostaju na nalogu i
+        // kasnija obična greška pri prijavi ga zaključava.
+        await _userManager.ResetAccessFailedCountAsync(user);
+
+        await using var transaction = await _db.Database.BeginTransactionAsync();
+
+        // `ExecuteDeleteAsync` šalje jedan DELETE po skupu i ne uvlači redove u praćenje
+        // promena samo da bi ih označio za brisanje. Kaskade i filtere vlasništva poštuje
+        // kao i svaki drugi upit, a transakcija ostaje što kraća.
+        await _db.UserWorkoutTemplates
+            .Where(template => template.UserId == userId)
+            .ExecuteDeleteAsync();
+
+        var result = await _userManager.DeleteAsync(user);
+        if (!result.Succeeded)
+            throw new AuthException(result.Errors.Select(e => e.Description));
+
+        await _db.Exercises
+            .Where(exercise => exercise.CreatedByUserId == userId)
+            .ExecuteDeleteAsync();
+
+        await transaction.CommitAsync();
+    }
+
     private static string RequireSecurityStamp(ApplicationUser user)
     {
         return string.IsNullOrEmpty(user.SecurityStamp)

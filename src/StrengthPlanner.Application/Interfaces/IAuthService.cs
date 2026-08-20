@@ -37,4 +37,12 @@ public interface IAuthService
 
     /// <summary>Uklanja sliku profila.</summary>
     Task<CurrentUserDto> RemoveAvatarAsync(Guid userId);
+
+    /// <summary>
+    /// Nepovratno briše nalog i sve podatke u njemu.
+    /// </summary>
+    /// <exception cref="Exceptions.AuthException">
+    /// Lozinka nije ispravna, ili potvrdna reč ne odgovara.
+    /// </exception>
+    Task DeleteAccountAsync(Guid userId, DeleteAccountDto dto);
 }
