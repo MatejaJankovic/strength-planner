@@ -292,6 +292,77 @@ public class AuthService : IAuthService
         return BuildResponse(user);
     }
 
+    /// <summary>
+    /// Briše nalog i sve što mu pripada, u jednoj transakciji.
+    ///
+    /// Red poslova nije stvar ukusa, nego posledica stranih ključeva:
+    ///
+    /// 1. <b>Lični šabloni</b> idu prvi. Njihove stavke drže vežbe preko
+    ///    <c>UserWorkoutTemplateExercise → Exercise</c> sa <c>Restrict</c>, pa dok šablon
+    ///    postoji, korisnikova sopstvena vežba se ne može obrisati.
+    /// 2. <b>Nalog</b> ide drugi. Kaskade iz <c>ApplicationUserConfiguration</c> odnose
+    ///    profil, mezocikluse (a s njima nedelje, treninge, planove vežbi i serije),
+    ///    maksimume, podešavanja vežbi, orijentire volumena i dugoročne planove. Time se
+    ///    puštaju i <c>Restrict</c> veze koje <c>ExercisePlan</c> i <c>OneRepMaxRecord</c>
+    ///    drže na vežbama.
+    /// 3. <b>Sopstvene vežbe</b> idu poslednje, kada ih ništa više ne referiše.
+    ///
+    /// Transakcija je tu zato što ovo nije jedan upis: da treći korak padne bez nje, nalog
+    /// bi bio obrisan a njegove vežbe bi ostale u katalogu bez vlasnika.
+    ///
+    /// <c>UserWorkoutTemplate</c> i <c>Exercise.CreatedByUserId</c> nose samo Guid, bez
+    /// stranog ključa ka nalogu — zato ih kaskada ne dohvata i zato se brišu ručno.
+    /// <c>AccountDeletionTests</c> to drži: novi korisnički entitet koji nije ni u kaskadi
+    /// ni u ovom spisku obara build.
+    /// </summary>
+    public async Task DeleteAccountAsync(Guid userId, DeleteAccountDto dto)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString())
+            ?? throw new AuthException("Korisnik ne postoji.");
+
+        // Ista zaštita kao pri promeni lozinke: bez nje je brisanje naloga bilo orakl za
+        // pogađanje lozinke koji ne troši zaključavanje.
+        if (await _userManager.IsLockedOutAsync(user))
+            throw new AuthException(InvalidCredentials);
+
+        if (!await _userManager.CheckPasswordAsync(user, dto.CurrentPassword))
+        {
+            await _userManager.AccessFailedAsync(user);
+            throw new AuthException(InvalidCredentials);
+        }
+
+        // Potvrdna reč se poredi bez obzira na velika i mala slova: traži se namera, a ne
+        // tačno pogađanje tastature.
+        if (!string.Equals(
+                dto.Confirmation.Trim(),
+                AccountDeletionPolicy.ConfirmationWord,
+                StringComparison.CurrentCultureIgnoreCase))
+        {
+            throw new AuthException(
+                $"Za brisanje naloga otkucaj \"{AccountDeletionPolicy.ConfirmationWord}\".");
+        }
+
+        await using var transaction = await _db.Database.BeginTransactionAsync();
+
+        var templates = await _db.UserWorkoutTemplates
+            .Where(template => template.UserId == userId)
+            .ToListAsync();
+        _db.UserWorkoutTemplates.RemoveRange(templates);
+        await _db.SaveChangesAsync();
+
+        var result = await _userManager.DeleteAsync(user);
+        if (!result.Succeeded)
+            throw new AuthException(result.Errors.Select(e => e.Description));
+
+        var ownExercises = await _db.Exercises
+            .Where(exercise => exercise.CreatedByUserId == userId)
+            .ToListAsync();
+        _db.Exercises.RemoveRange(ownExercises);
+        await _db.SaveChangesAsync();
+
+        await transaction.CommitAsync();
+    }
+
     private static string RequireSecurityStamp(ApplicationUser user)
     {
         return string.IsNullOrEmpty(user.SecurityStamp)

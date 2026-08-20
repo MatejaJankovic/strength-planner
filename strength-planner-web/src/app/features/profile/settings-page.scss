@@ -1,0 +1,74 @@
+// Kartice, polja i dugmad dolaze zajedno sa ostalim ekranima profila.
+@use '../../shared/styles/form-shell';
+
+:host {
+  display: grid;
+  gap: 1rem;
+}
+
+// Isto zaglavlje kao na ekranu za izmenu profila: strelica nazad, naslov u sredini.
+.edit-top {
+  align-items: center;
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+}
+
+.edit-top__back {
+  align-items: center;
+  background: none;
+  border: 0;
+  border-radius: 0.5rem;
+  color: var(--color-ink);
+  cursor: pointer;
+  display: inline-flex;
+  height: 44px;
+  justify-content: center;
+  margin-left: -0.35rem;
+  width: 44px;
+}
+
+.edit-top__title {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  margin: 0;
+  text-align: center;
+}
+
+// Drži naslov u sredini bez obzira na to što desno ništa ne stoji.
+.edit-top__spacer {
+  display: block;
+}
+
+.account {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  margin: -0.5rem 0 0;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+// Brisanje naloga je jedina nepovratna radnja u aplikaciji, pa je i jedina kartica koja
+// se izdvaja bojom. Bez toga stoji kao još jedno podešavanje.
+.card--danger {
+  border-color: color-mix(in srgb, var(--volume-above) 45%, var(--color-border));
+}
+
+.card--danger .card__title {
+  color: var(--volume-above);
+}
+
+.btn--danger {
+  background: var(--volume-above);
+  color: #fff;
+}
+
+.btn--danger:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.danger-actions {
+  display: grid;
+  gap: 0.5rem;
+}

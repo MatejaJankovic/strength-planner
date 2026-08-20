@@ -1,0 +1,161 @@
+<header class="edit-top">
+  <button class="edit-top__back" type="button" (click)="back()" aria-label="Nazad na profil">
+    <mat-icon aria-hidden="true">arrow_back</mat-icon>
+  </button>
+  <h1 class="edit-top__title">Podešavanja</h1>
+  <span class="edit-top__spacer"></span>
+</header>
+
+@if (user(); as currentUser) {
+  <p class="account numeric">{{ currentUser.email }}</p>
+}
+
+<section class="card">
+  <h2 class="card__title">Lozinka</h2>
+  <p class="card__hint">
+    Promena lozinke odjavljuje sve ostale uređaje - ranije izdati tokeni prestaju da važe.
+  </p>
+
+  <form [formGroup]="passwordForm" (ngSubmit)="changePassword()" novalidate>
+    <div class="grid">
+      <div class="field">
+        <label class="field__label" for="pw-current">Trenutna lozinka</label>
+        <input
+          id="pw-current"
+          class="control"
+          type="password"
+          formControlName="currentPassword"
+          autocomplete="current-password"
+        />
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="pw-new">Nova lozinka</label>
+        <input
+          id="pw-new"
+          class="control"
+          type="password"
+          formControlName="newPassword"
+          autocomplete="new-password"
+          [attr.placeholder]="'Bar ' + passwordMinLength + ' karaktera'"
+        />
+        @if (
+          passwordForm.controls.newPassword.touched &&
+          passwordForm.controls.newPassword.hasError('minlength')
+        ) {
+          <p class="field__error">Lozinka mora imati bar {{ passwordMinLength }} karaktera.</p>
+        }
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="pw-confirm">Potvrdi novu lozinku</label>
+        <input
+          id="pw-confirm"
+          class="control"
+          type="password"
+          formControlName="confirmPassword"
+          autocomplete="new-password"
+        />
+        @if (
+          passwordForm.controls.confirmPassword.touched &&
+          passwordForm.hasError('passwordMismatch')
+        ) {
+          <p class="field__error">Lozinke se ne poklapaju.</p>
+        }
+      </div>
+    </div>
+
+    <p class="field__hint">
+      Nema oporavka lozinke - ako je zaboraviš, nalog i podaci u njemu se ne mogu vratiti.
+    </p>
+
+    @if (passwordError(); as message) {
+      <p class="alert alert--error" role="alert">
+        <mat-icon aria-hidden="true">error_outline</mat-icon>
+        <span>{{ message }}</span>
+      </p>
+    }
+    @if (passwordSaved()) {
+      <p class="alert alert--ok" role="status">
+        <mat-icon aria-hidden="true">check_circle</mat-icon>
+        <span>Lozinka je promenjena.</span>
+      </p>
+    }
+
+    <button class="btn btn--primary" type="submit" [disabled]="savingPassword()">
+      {{ savingPassword() ? 'Menjam…' : 'Promeni lozinku' }}
+    </button>
+  </form>
+</section>
+
+<section class="card">
+  <h2 class="card__title">Odjava</h2>
+  <p class="card__hint">
+    Podaci ostaju na nalogu. Prijavi se ponovo istim emailom i lozinkom.
+  </p>
+  <button class="btn btn--ghost" type="button" (click)="logout()">
+    <mat-icon aria-hidden="true">logout</mat-icon>
+    Odjavi se
+  </button>
+</section>
+
+<section class="card card--danger">
+  <h2 class="card__title">Brisanje naloga</h2>
+  <p class="card__hint">
+    Briše nalog i <strong>sve</strong> u njemu: planove, odrađene treninge, maksimume,
+    sopstvene vežbe i šablone. Ovo se ne može vratiti - nema rezervne kopije i nema drugog
+    naloga sa istim podacima.
+  </p>
+
+  @if (!deleteOpen()) {
+    <button class="btn btn--danger" type="button" (click)="openDelete()">
+      <mat-icon aria-hidden="true">delete_forever</mat-icon>
+      Obriši nalog
+    </button>
+  } @else {
+    <form [formGroup]="deleteForm" (ngSubmit)="deleteAccount()" novalidate>
+      <div class="field">
+        <label class="field__label" for="del-password">Trenutna lozinka</label>
+        <input
+          id="del-password"
+          class="control"
+          type="password"
+          formControlName="currentPassword"
+          autocomplete="current-password"
+        />
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="del-word">
+          Otkucaj {{ deletionWord }} da potvrdiš
+        </label>
+        <input
+          id="del-word"
+          class="control"
+          type="text"
+          formControlName="confirmation"
+          autocomplete="off"
+          [attr.placeholder]="deletionWord"
+        />
+      </div>
+
+      @if (deleteError(); as message) {
+        <p class="alert alert--error" role="alert">
+          <mat-icon aria-hidden="true">error_outline</mat-icon>
+          <span>{{ message }}</span>
+        </p>
+      }
+
+      <div class="danger-actions">
+        <button
+          class="btn btn--danger"
+          type="submit"
+          [disabled]="!canDelete() || deleting()"
+        >
+          {{ deleting() ? 'Brišem…' : 'Obriši nalog zauvek' }}
+        </button>
+        <button class="btn btn--ghost" type="button" (click)="cancelDelete()">Odustani</button>
+      </div>
+    </form>
+  }
+</section>

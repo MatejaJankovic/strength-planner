@@ -20,7 +20,18 @@ describe('ProfileHome — pregled profila', () => {
     localStorage.clear();
 
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        // Pločice dashboarda su routerLink-ovi; bez ruta router baca neuhvaćeno odbijanje.
+        provideRouter([
+          { path: 'analytics', children: [] },
+          { path: 'exercises', children: [] },
+          { path: 'templates', children: [] },
+          { path: 'profile/edit', children: [] },
+          { path: 'settings', children: [] },
+        ]),
+      ],
     });
 
     http = TestBed.inject(HttpTestingController);
@@ -31,9 +42,9 @@ describe('ProfileHome — pregled profila', () => {
   function load(me: Record<string, unknown>, avatar?: Blob): void {
     fixture = TestBed.createComponent(ProfileHome);
 
+    // Katalog vežbi se više ne čita ovde: lista i korak opterećenja su otišli na
+    // /exercises, pa ovaj ekran traži samo profil i sliku.
     http.expectOne((request) => request.url.endsWith('/auth/me')).flush(me);
-    http.expectOne((request) => request.url.endsWith('/exercises/muscle-groups')).flush([]);
-    http.expectOne((request) => request.url.endsWith('/exercises')).flush([]);
 
     const request = http.expectOne((candidate) => candidate.url.endsWith('/auth/avatar'));
     if (avatar) {
@@ -122,5 +133,39 @@ describe('ProfileHome — pregled profila', () => {
     );
 
     expect(component().avatarUrl()).toMatch(/^blob:/);
+  });
+
+  it('dashboard vodi na statistiku, vežbe i šablone', () => {
+    load({ id: 'u1', email: 'ja@primer.com', displayName: 'Mateja', age: 27, bodyweightKg: 82.5 });
+    fixture.detectChanges();
+
+    const tiles: HTMLAnchorElement[] = Array.from(
+      fixture.nativeElement.querySelectorAll('.dash__tile'),
+    );
+
+    // Ikonica je takođe tekst unutar plocice, pa se poredi samo naziv iz <span>.
+    const labels = tiles.map((tile) => tile.querySelector('span')?.textContent?.trim());
+
+    expect(labels).toEqual(['Statistika', 'Vežbe', 'Šabloni']);
+    expect(tiles.map((tile) => tile.getAttribute('href'))).toEqual([
+      '/analytics',
+      '/exercises',
+      '/templates',
+    ]);
+  });
+
+  it('zaglavlje nosi i olovku i zupčanik', () => {
+    // Traženo je oboje iznad profila: izmena podataka i podešavanja naloga.
+    load({ id: 'u1', email: 'ja@primer.com', displayName: 'Mateja', age: 27, bodyweightKg: 82.5 });
+    fixture.detectChanges();
+
+    const actions: HTMLAnchorElement[] = Array.from(
+      fixture.nativeElement.querySelectorAll('.phead__action'),
+    );
+
+    expect(actions.map((action) => action.getAttribute('href'))).toEqual([
+      '/profile/edit',
+      '/settings',
+    ]);
   });
 });

@@ -18,11 +18,31 @@
       }
     </div>
 
-    <a class="phead__edit" routerLink="/profile/edit" aria-label="Izmeni profil">
-      <mat-icon aria-hidden="true">edit</mat-icon>
-    </a>
+    <div class="phead__actions">
+      <a class="phead__action" routerLink="/profile/edit" aria-label="Izmeni profil">
+        <mat-icon aria-hidden="true">edit</mat-icon>
+      </a>
+      <a class="phead__action" routerLink="/settings" aria-label="Podešavanja">
+        <mat-icon aria-hidden="true">settings</mat-icon>
+      </a>
+    </div>
   </div>
+</header>
 
+@if (loading()) {
+  <app-loading label="Učitavam profil…" />
+} @else if (error(); as message) {
+  <section class="card">
+    <p class="alert alert--error" role="alert">
+      <mat-icon aria-hidden="true">cloud_off</mat-icon>
+      <span>{{ message }}</span>
+    </p>
+    <button class="btn btn--ghost" type="button" (click)="load()">
+      <mat-icon aria-hidden="true">refresh</mat-icon>
+      Pokušaj ponovo
+    </button>
+  </section>
+} @else {
   @if (summary().length > 0) {
     <dl class="psummary">
       @for (row of summary(); track row.label) {
@@ -33,324 +53,16 @@
       }
     </dl>
   }
-</header>
 
-@if (loading()) {
-  <app-loading label="Učitavam profil…" />
-} @else if (error(); as message) {
-  <section class="panel">
-    <p class="panel__error" role="alert">
-      <mat-icon aria-hidden="true">cloud_off</mat-icon>
-      <span>{{ message }}</span>
-    </p>
-    <button class="retry" type="button" (click)="load()">
-      <mat-icon aria-hidden="true">refresh</mat-icon>
-      Pokušaj ponovo
-    </button>
-  </section>
-} @else {
-  <section class="card">
-    <h2 class="card__title">Lozinka</h2>
-    <p class="card__hint">
-      Promena lozinke odjavljuje sve ostale uređaje - ranije izdati tokeni prestaju da važe.
-    </p>
-
-    <form [formGroup]="passwordForm" (ngSubmit)="changePassword()" novalidate>
-      <div class="grid">
-        <div class="field">
-          <label class="field__label" for="pw-current">Trenutna lozinka</label>
-          <input
-            id="pw-current"
-            class="control"
-            type="password"
-            formControlName="currentPassword"
-            autocomplete="current-password"
-          />
-        </div>
-
-        <div class="field">
-          <label class="field__label" for="pw-new">Nova lozinka</label>
-          <input
-            id="pw-new"
-            class="control"
-            type="password"
-            formControlName="newPassword"
-            autocomplete="new-password"
-            [attr.placeholder]="'Bar ' + passwordMinLength + ' karaktera'"
-          />
-          @if (passwordForm.controls.newPassword.touched
-                && passwordForm.controls.newPassword.hasError('minlength')) {
-            <p class="field__error">Lozinka mora imati bar {{ passwordMinLength }} karaktera.</p>
-          }
-        </div>
-
-        <div class="field">
-          <label class="field__label" for="pw-confirm">Potvrdi novu lozinku</label>
-          <input
-            id="pw-confirm"
-            class="control"
-            type="password"
-            formControlName="confirmPassword"
-            autocomplete="new-password"
-          />
-          @if (passwordForm.controls.confirmPassword.touched
-                && passwordForm.hasError('passwordMismatch')) {
-            <p class="field__error">Lozinke se ne poklapaju.</p>
-          }
-        </div>
-      </div>
-
-      <p class="field__hint">
-        Nema oporavka lozinke - ako je zaboraviš, nalog i podaci u njemu se ne mogu vratiti.
-      </p>
-
-      @if (passwordError(); as message) {
-        <p class="alert alert--error" role="alert">
-          <mat-icon aria-hidden="true">error_outline</mat-icon>
-          <span>{{ message }}</span>
-        </p>
+  <section class="dash">
+    <h2 class="dash__title">Dashboard</h2>
+    <div class="dash__grid">
+      @for (item of dashboard; track item.route) {
+        <a class="dash__tile" [routerLink]="item.route">
+          <mat-icon aria-hidden="true">{{ item.icon }}</mat-icon>
+          <span>{{ item.label }}</span>
+        </a>
       }
-      @if (passwordSaved()) {
-        <p class="alert alert--ok" role="status">
-          <mat-icon aria-hidden="true">check_circle</mat-icon>
-          <span>Lozinka je promenjena.</span>
-        </p>
-      }
-
-      <button class="btn btn--primary" type="submit" [disabled]="savingPassword()">
-        {{ savingPassword() ? 'Menjam…' : 'Promeni lozinku' }}
-      </button>
-    </form>
-  </section>
-
-  <section class="card">
-    <h2 class="card__title">Korak opterećenja</h2>
-    <p class="card__hint">
-      Najmanji skok težine koji ti je dostupan za svaku vežbu. Podrazumevano se izvodi iz sprave
-      (šipka 2.5 kg, bučice 2 kg, mašina 5 kg), a ovde ga možeš prilagoditi svojoj teretani.
-    </p>
-
-    @if (weightStepError(); as message) {
-      <p class="alert alert--error" role="alert">
-        <mat-icon aria-hidden="true">error_outline</mat-icon>
-        <span>{{ message }}</span>
-      </p>
-    }
-    @if (weightStepSaved(); as message) {
-      <p class="alert alert--ok" role="status">
-        <mat-icon aria-hidden="true">check_circle</mat-icon>
-        <span>{{ message }}</span>
-      </p>
-    }
-
-    <div class="field">
-      <label class="field__label" for="step-filter">Pretraga vežbe</label>
-      <input
-        id="step-filter"
-        class="control"
-        type="search"
-        placeholder="npr. Bench"
-        [value]="exerciseFilter()"
-        (input)="setExerciseFilter($any($event.target).value)"
-      />
     </div>
-
-    @if (filteredExercises().length === 0) {
-      <p class="card__hint">Nema vežbe koja odgovara pretrazi.</p>
-    } @else {
-      <ul class="exlist">
-        @for (exercise of filteredExercises(); track exercise.id) {
-          <li class="exlist__item exlist__item--step">
-            <span class="exlist__name">
-              {{ exercise.name }}
-              @if (exercise.isWeightStepOverridden) {
-                <span class="badge">izmenjeno</span>
-              }
-            </span>
-            <span class="exlist__meta">{{ exercise.equipment }}</span>
-
-            <div class="step-controls">
-              <label class="sr-only" [attr.for]="'step-' + exercise.id">
-                Korak za vežbu {{ exercise.name }}
-              </label>
-              <select
-                class="control control--compact"
-                [attr.id]="'step-' + exercise.id"
-                [disabled]="savingStepId() !== null"
-                (change)="setWeightStep(exercise, $any($event.target))"
-              >
-                @for (step of stepOptionsFor(exercise); track step) {
-                  <option [value]="step" [selected]="step === exercise.weightStepKg">
-                    {{ step }} kg
-                  </option>
-                }
-              </select>
-
-              @if (exercise.isWeightStepOverridden) {
-                <button
-                  class="btn btn--ghost btn--compact"
-                  type="button"
-                  [disabled]="savingStepId() !== null"
-                  (click)="resetWeightStep(exercise)"
-                >
-                  Vrati {{ exercise.defaultWeightStepKg }} kg
-                </button>
-              }
-            </div>
-          </li>
-        }
-      </ul>
-    }
-  </section>
-
-  <section class="card">
-    <h2 class="card__title">Poznati maksimumi</h2>
-    <p class="card__hint">
-      Procene maksimuma za jedno ponavljanje daju početna opterećenja. Kada napreduješ,
-      ažuriraj ih ovde - sledeći blok kreće od novih brojeva.
-    </p>
-    <a class="cardlink" routerLink="/onboarding">
-      <mat-icon aria-hidden="true">exercise</mat-icon>
-      <span>Izmeni maksimume (1RM)</span>
-      <mat-icon class="cardlink__go" aria-hidden="true">chevron_right</mat-icon>
-    </a>
-  </section>
-
-  <section class="card">
-    <h2 class="card__title">Moji šabloni</h2>
-    <p class="card__hint">
-      Napravi svoj šablon treninga: sam biraš dane, vežbe, serije i opseg ponavljanja.
-      Gotov šablon zatim biraš kao blok u dugoročnom planu.
-    </p>
-    <a class="cardlink" routerLink="/templates">
-      <mat-icon aria-hidden="true">fitness_center</mat-icon>
-      <span>Otvori moje šablone</span>
-      <mat-icon class="cardlink__go" aria-hidden="true">chevron_right</mat-icon>
-    </a>
-  </section>
-
-  <section class="card">
-    <h2 class="card__title">Moje vežbe</h2>
-    <p class="card__hint">
-      Dodaj vežbu koje nema u katalogu - ulazi u analitiku volumena preko izabranih mišićnih grupa.
-    </p>
-
-    @if (customExercises().length > 0) {
-      <ul class="exlist">
-        @for (exercise of customExercises(); track exercise.id) {
-          <li class="exlist__item">
-            <span class="exlist__name">{{ exercise.name }}</span>
-            <span class="exlist__meta">
-              {{ exercise.equipment }} ·
-              @for (muscle of exercise.muscles; track muscle.muscleGroup; let last = $last) {
-                {{ muscle.muscleGroup }}{{ last ? '' : ', ' }}
-              }
-            </span>
-          </li>
-        }
-      </ul>
-    }
-
-    @if (exerciseError(); as message) {
-      <p class="alert alert--error" role="alert">
-        <mat-icon aria-hidden="true">error_outline</mat-icon>
-        <span>{{ message }}</span>
-      </p>
-    }
-    @if (exerciseSaved(); as message) {
-      <p class="alert alert--ok" role="status">
-        <mat-icon aria-hidden="true">check_circle</mat-icon>
-        <span>{{ message }}</span>
-      </p>
-    }
-
-    <form [formGroup]="exerciseForm" (ngSubmit)="saveExercise()" novalidate>
-      <div class="grid">
-        <div class="field field--wide">
-          <label class="field__label" for="ex-name">Naziv vežbe</label>
-          <input
-            id="ex-name"
-            class="control"
-            type="text"
-            formControlName="name"
-            placeholder="npr. Hack Squat"
-            [class.control--invalid]="
-              exerciseForm.controls.name.invalid && exerciseForm.controls.name.touched
-            "
-          />
-          @if (exerciseForm.controls.name.touched && exerciseForm.controls.name.invalid) {
-            <p class="field__error">Unesi naziv vežbe.</p>
-          }
-        </div>
-
-        <div class="field">
-          <label class="field__label" for="ex-type">Tip</label>
-          <select id="ex-type" class="control" formControlName="type">
-            @for (option of typeOptions; track option.value) {
-              <option [value]="option.value">{{ option.label }}</option>
-            }
-          </select>
-        </div>
-
-        <div class="field">
-          <label class="field__label" for="ex-equipment">Oprema</label>
-          <select id="ex-equipment" class="control" formControlName="equipment">
-            @for (equipment of equipmentOptions; track equipment) {
-              <option [value]="equipment">{{ equipment }}</option>
-            }
-          </select>
-        </div>
-
-        <div class="field">
-          <label class="field__label" for="ex-primary">Primarna mišićna grupa</label>
-          <select
-            id="ex-primary"
-            class="control"
-            formControlName="primaryMuscle"
-            [class.control--invalid]="
-              exerciseForm.controls.primaryMuscle.invalid && exerciseForm.controls.primaryMuscle.touched
-            "
-          >
-            <option value="" disabled>Izaberi grupu</option>
-            @for (muscle of muscleGroups(); track muscle) {
-              <option [value]="muscle">{{ muscle }}</option>
-            }
-          </select>
-          @if (exerciseForm.controls.primaryMuscle.touched && exerciseForm.controls.primaryMuscle.invalid) {
-            <p class="field__error">Izaberi primarnu mišićnu grupu.</p>
-          }
-        </div>
-      </div>
-
-      <div class="field">
-        <span class="field__label">Sekundarne grupe (0.5 serije u volumenu)</span>
-        <div class="chips" role="group" aria-label="Sekundarne mišićne grupe">
-          @for (muscle of muscleGroups(); track muscle) {
-            @if (muscle !== exerciseForm.controls.primaryMuscle.value) {
-              <button
-                class="chip"
-                type="button"
-                [class.is-active]="isSecondary(muscle)"
-                [attr.aria-pressed]="isSecondary(muscle)"
-                (click)="toggleSecondary(muscle)"
-              >
-                {{ muscle }}
-              </button>
-            }
-          }
-        </div>
-      </div>
-
-      <button class="btn btn--primary" type="submit" [disabled]="savingExercise()">
-        {{ savingExercise() ? 'Čuvam…' : 'Dodaj vežbu' }}
-      </button>
-    </form>
-  </section>
-
-  <section class="card card--logout">
-    <button class="btn btn--ghost" type="button" (click)="logout()">
-      <mat-icon aria-hidden="true">logout</mat-icon>
-      Odjavi se
-    </button>
   </section>
 }

@@ -1,5 +1,5 @@
 // Kartice, polja i dugmad dolaze zajedno sa ekranom profila.
-@use './profile-shell';
+@use '../../shared/styles/form-shell';
 
 :host {
   display: grid;

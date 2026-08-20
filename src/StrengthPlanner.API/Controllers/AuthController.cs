@@ -155,6 +155,29 @@ public class AuthController : AuthorizedControllerBase
         return File(avatar.Content, avatar.ContentType);
     }
 
+    /// <summary>
+    /// Nepovratno briše nalog i sve podatke u njemu.
+    ///
+    /// Ograničenje broja poziva je isto kao za prijavu i promenu lozinke: zahtev proverava
+    /// lozinku, pa je i ovo put kojim se lozinka može pogađati.
+    /// </summary>
+    [EnableRateLimiting("auth")]
+    [HttpPost("delete-account")]
+    public async Task<IActionResult> DeleteAccount(DeleteAccountDto dto)
+    {
+        var userId = GetUserId();
+
+        try
+        {
+            await _authService.DeleteAccountAsync(userId, dto);
+            return NoContent();
+        }
+        catch (AuthException ex)
+        {
+            return BadRequest(new { errors = ex.Errors });
+        }
+    }
+
     /// <summary>Uklanja sliku profila ulogovanog korisnika.</summary>
     [HttpDelete("avatar")]
     public async Task<IActionResult> RemoveAvatar()

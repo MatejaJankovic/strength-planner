@@ -1,0 +1,169 @@
+// Kartice, polja i dugmad dolaze iz zajedničkog fajla; ovde su samo spisak vežbi i
+// kontrole u njegovim redovima. Ta pravila su stajala uz ekran profila dok su lista vežbi
+// i korak opterećenja bili kartice na njemu, pa su preseljena zajedno sa njima.
+@use '../../shared/styles/form-shell';
+
+:host {
+  display: grid;
+  gap: 1rem;
+}
+
+// Isto zaglavlje kao na ostalim podekranima profila: strelica nazad, naslov, radnja desno.
+.edit-top {
+  align-items: center;
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+}
+
+.edit-top__back,
+.edit-top__add {
+  align-items: center;
+  background: none;
+  border: 0;
+  border-radius: 0.5rem;
+  color: var(--color-ink);
+  cursor: pointer;
+  display: inline-flex;
+  height: 44px;
+  justify-content: center;
+  width: 44px;
+}
+
+.edit-top__back {
+  margin-left: -0.35rem;
+}
+
+.edit-top__add {
+  border: 1px solid var(--color-border);
+  justify-self: end;
+}
+
+.edit-top__title {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  margin: 0;
+  text-align: center;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.chip {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  color: var(--color-ink);
+  cursor: pointer;
+  min-height: 44px;
+  padding: 0 0.9rem;
+
+  &.is-active {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #fff;
+  }
+}
+
+.exlist {
+  display: grid;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.exlist__item {
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.6rem 0.75rem;
+}
+
+.exlist__name {
+  font-weight: 700;
+}
+
+.exlist__meta {
+  color: var(--color-muted);
+  font-size: 0.82rem;
+}
+
+// Red sa korakom opterećenja: naziv i sprava levo, kontrole desno.
+.exlist__item--step {
+  align-items: center;
+  column-gap: 0.75rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+
+  .exlist__name {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    grid-column: 1;
+  }
+
+  .exlist__meta {
+    grid-column: 1;
+  }
+}
+
+.step-controls {
+  align-items: center;
+  display: flex;
+  gap: 0.4rem;
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+
+.control--compact {
+  min-height: 40px;
+  padding: 0 0.5rem;
+  width: auto;
+}
+
+.btn--compact {
+  font-size: 0.78rem;
+  font-weight: 600;
+  min-height: 40px;
+  padding: 0 0.6rem;
+  white-space: nowrap;
+}
+
+.badge {
+  background: color-mix(in srgb, var(--color-primary) 14%, transparent);
+  border-radius: 999px;
+  color: var(--color-primary);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 0.1rem 0.45rem;
+  text-transform: uppercase;
+}
+
+// Na telefonu red sa dugmetom „Vrati X kg" stisne naziv u dve linije: kontrole traže
+// oko 200px, a od 343px dostupne širine naziv dobije ostatak. Izmereno na 375px —
+// „Back Squat" se lomio na dva reda samo na vežbama sa izmenjenim korakom.
+//
+// Ispod ove širine kontrole idu u svoj red pod nazivom, pa naziv dobija celu širinu.
+@media (max-width: 480px) {
+  .exlist__item--step {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .step-controls {
+    grid-column: 1;
+    grid-row: auto;
+    // Select se rasteže, a dugme za vraćanje ostaje na svojoj širini.
+    justify-content: start;
+    padding-top: 0.15rem;
+  }
+
+  .step-controls .control--compact {
+    flex: 0 1 auto;
+  }
+}

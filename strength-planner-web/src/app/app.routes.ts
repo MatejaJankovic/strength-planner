@@ -50,6 +50,17 @@ export const routes: Routes = [
     loadComponent: () => import('./features/profile/profile-home').then((m) => m.ProfileHome),
   },
   {
+    path: 'settings',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/profile/settings-page').then((m) => m.SettingsPage),
+  },
+  {
+    path: 'exercises',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/exercises/exercise-catalog').then((m) => m.ExerciseCatalog),
+  },
+  {
     path: 'onboarding',
     canActivate: [authGuard],
     loadComponent: () =>

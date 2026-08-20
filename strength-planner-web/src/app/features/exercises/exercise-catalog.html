@@ -1,0 +1,231 @@
+<header class="edit-top">
+  <button class="edit-top__back" type="button" (click)="back()" aria-label="Nazad na profil">
+    <mat-icon aria-hidden="true">arrow_back</mat-icon>
+  </button>
+  <h1 class="edit-top__title">Vežbe</h1>
+  <button
+    class="edit-top__add"
+    type="button"
+    [attr.aria-expanded]="addOpen()"
+    [attr.aria-label]="addOpen() ? 'Zatvori dodavanje vežbe' : 'Dodaj vežbu'"
+    (click)="toggleAdd()"
+  >
+    <mat-icon aria-hidden="true">{{ addOpen() ? 'close' : 'add' }}</mat-icon>
+  </button>
+</header>
+
+@if (loading()) {
+  <app-loading label="Učitavam vežbe…" />
+} @else if (error(); as message) {
+  <section class="card">
+    <p class="alert alert--error" role="alert">
+      <mat-icon aria-hidden="true">cloud_off</mat-icon>
+      <span>{{ message }}</span>
+    </p>
+    <button class="btn btn--ghost" type="button" (click)="load()">
+      <mat-icon aria-hidden="true">refresh</mat-icon>
+      Pokušaj ponovo
+    </button>
+  </section>
+} @else {
+  @if (addOpen()) {
+    <section class="card">
+      <h2 class="card__title">Nova vežba</h2>
+      <p class="card__hint">
+        Dodaj vežbu koje nema u katalogu - ulazi u analitiku volumena preko izabranih
+        mišićnih grupa. Pretraži spisak ispod pre dodavanja, da ne napraviš duplikat.
+      </p>
+
+      @if (exerciseError(); as message) {
+        <p class="alert alert--error" role="alert">
+          <mat-icon aria-hidden="true">error_outline</mat-icon>
+          <span>{{ message }}</span>
+        </p>
+      }
+
+      <form [formGroup]="exerciseForm" (ngSubmit)="saveExercise()" novalidate>
+        <div class="grid">
+          <div class="field field--wide">
+            <label class="field__label" for="ex-name">Naziv vežbe</label>
+            <input
+              id="ex-name"
+              class="control"
+              type="text"
+              formControlName="name"
+              placeholder="npr. Hack Squat"
+              [class.control--invalid]="
+                exerciseForm.controls.name.invalid && exerciseForm.controls.name.touched
+              "
+            />
+            @if (exerciseForm.controls.name.touched && exerciseForm.controls.name.invalid) {
+              <p class="field__error">Unesi naziv vežbe.</p>
+            }
+          </div>
+
+          <div class="field">
+            <label class="field__label" for="ex-type">Tip</label>
+            <select id="ex-type" class="control" formControlName="type">
+              @for (option of typeOptions; track option.value) {
+                <option [value]="option.value">{{ option.label }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="field">
+            <label class="field__label" for="ex-equipment">Oprema</label>
+            <select id="ex-equipment" class="control" formControlName="equipment">
+              @for (equipment of equipmentOptions; track equipment) {
+                <option [value]="equipment">{{ equipment }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="field field--wide">
+            <label class="field__label" for="ex-primary">Primarna mišićna grupa</label>
+            <select
+              id="ex-primary"
+              class="control"
+              formControlName="primaryMuscle"
+              [class.control--invalid]="
+                exerciseForm.controls.primaryMuscle.invalid &&
+                exerciseForm.controls.primaryMuscle.touched
+              "
+            >
+              <option value="" disabled>Izaberi grupu</option>
+              @for (muscle of muscleGroups(); track muscle) {
+                <option [value]="muscle">{{ muscle }}</option>
+              }
+            </select>
+            @if (
+              exerciseForm.controls.primaryMuscle.touched &&
+              exerciseForm.controls.primaryMuscle.invalid
+            ) {
+              <p class="field__error">Izaberi primarnu mišićnu grupu.</p>
+            }
+          </div>
+        </div>
+
+        <div class="field">
+          <span class="field__label">Sekundarne grupe (0.5 serije u volumenu)</span>
+          <div class="chips" role="group" aria-label="Sekundarne mišićne grupe">
+            @for (muscle of muscleGroups(); track muscle) {
+              @if (muscle !== exerciseForm.controls.primaryMuscle.value) {
+                <button
+                  class="chip"
+                  type="button"
+                  [class.is-active]="isSecondary(muscle)"
+                  [attr.aria-pressed]="isSecondary(muscle)"
+                  (click)="toggleSecondary(muscle)"
+                >
+                  {{ muscle }}
+                </button>
+              }
+            }
+          </div>
+        </div>
+
+        <button class="btn btn--primary" type="submit" [disabled]="savingExercise()">
+          {{ savingExercise() ? 'Čuvam…' : 'Dodaj vežbu' }}
+        </button>
+      </form>
+    </section>
+  }
+
+  @if (exerciseSaved(); as message) {
+    <p class="alert alert--ok" role="status">
+      <mat-icon aria-hidden="true">check_circle</mat-icon>
+      <span>{{ message }}</span>
+    </p>
+  }
+
+  <section class="card">
+    <p class="card__hint">
+      {{ totalCount() }} vežbi u katalogu, od toga {{ customCount() }} tvojih. Korak
+      opterećenja je najmanji skok težine koji ti je dostupan za tu vežbu - podrazumevano se
+      izvodi iz sprave (šipka 2.5 kg, bučice 2 kg, mašina 5 kg).
+    </p>
+
+    <div class="field">
+      <label class="field__label" for="ex-filter">Pretraga</label>
+      <input
+        id="ex-filter"
+        class="control"
+        type="search"
+        placeholder="npr. Bench"
+        [value]="filter()"
+        (input)="setFilter($any($event.target).value)"
+      />
+    </div>
+
+    @if (weightStepError(); as message) {
+      <p class="alert alert--error" role="alert">
+        <mat-icon aria-hidden="true">error_outline</mat-icon>
+        <span>{{ message }}</span>
+      </p>
+    }
+    @if (weightStepSaved(); as message) {
+      <p class="alert alert--ok" role="status">
+        <mat-icon aria-hidden="true">check_circle</mat-icon>
+        <span>{{ message }}</span>
+      </p>
+    }
+
+    @if (filteredExercises().length === 0) {
+      <p class="card__hint">Nema vežbe koja odgovara pretrazi.</p>
+    } @else {
+      <ul class="exlist">
+        @for (exercise of filteredExercises(); track exercise.id) {
+          <li class="exlist__item exlist__item--step">
+            <span class="exlist__name">
+              {{ exercise.name }}
+              @if (exercise.isCustom) {
+                <span class="badge">tvoja</span>
+              }
+              @if (exercise.isWeightStepOverridden) {
+                <span class="badge">izmenjeno</span>
+              }
+            </span>
+            <span class="exlist__meta">
+              {{ exercise.equipment }}
+              @if (exercise.muscles.length > 0) {
+                ·
+                @for (muscle of exercise.muscles; track muscle.muscleGroup; let last = $last) {
+                  {{ muscle.muscleGroup }}{{ last ? '' : ', ' }}
+                }
+              }
+            </span>
+
+            <div class="step-controls">
+              <label class="sr-only" [attr.for]="'step-' + exercise.id">
+                Korak za vežbu {{ exercise.name }}
+              </label>
+              <select
+                class="control control--compact"
+                [attr.id]="'step-' + exercise.id"
+                [disabled]="savingStepId() !== null"
+                (change)="setWeightStep(exercise, $any($event.target))"
+              >
+                @for (step of stepOptionsFor(exercise); track step) {
+                  <option [value]="step" [selected]="step === exercise.weightStepKg">
+                    {{ step }} kg
+                  </option>
+                }
+              </select>
+
+              @if (exercise.isWeightStepOverridden) {
+                <button
+                  class="btn btn--ghost btn--compact"
+                  type="button"
+                  [disabled]="savingStepId() !== null"
+                  (click)="resetWeightStep(exercise)"
+                >
+                  Vrati {{ exercise.defaultWeightStepKg }} kg
+                </button>
+              }
+            </div>
+          </li>
+        }
+      </ul>
+    }
+  </section>
+}

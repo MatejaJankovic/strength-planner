@@ -11,6 +11,7 @@ import {
   AuthResponseDto,
   ChangePasswordDto,
   CurrentUserDto,
+  DeleteAccountDto,
   LoginDto,
   RegisterDto,
   UpdateProfileDto,
@@ -154,6 +155,19 @@ export class AuthService {
         this.avatarFetched = true;
       }),
     );
+  }
+
+  /**
+   * Nepovratno briše nalog, pa odjavljuje.
+   *
+   * Odjava ide kroz isti `logout()` kao i obična: token, keširani podaci i slika
+   * prethodnog naloga moraju da odu istim putem, jer je taj put jedini koji je pokriven
+   * testovima.
+   */
+  deleteAccount(dto: DeleteAccountDto): Observable<void> {
+    return this.http
+      .post<void>(`${this.apiUrl}/auth/delete-account`, dto)
+      .pipe(tap(() => this.logout()));
   }
 
   logout(): void {
