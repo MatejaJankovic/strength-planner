@@ -252,10 +252,82 @@ One regression had to be repaired in the same PR: the mesocycle screen was the o
 that showed a template's days, exercises and warnings, so the block wizard had to learn to
 show them.
 
+**Round 8 — a third phone-use list, this one about registration and the profile.** The
+reference screenshots came from HEVY; the structure was taken, the dark palette was not,
+because a theme is a decision about every screen.
+
+| Branch | What it changed | PR |
+|---|---|---|
+| `feature/registration-wizard` | Registration became eight screens, one question each; `HeightCm` and `DisplayName` added | #49 |
+| `feature/profile-identity` | Name and picture on the profile, all editing moved to `/profile/edit` | #50 |
+| `feature/profile-dashboard` | Profile became a view with a dashboard; `/settings`, `/exercises`, account deletion | #51 |
+
+Sequential, not stacked — each merged before the next branched, so the round-6 retargeting
+trap could not recur.
+
+Decisions worth keeping:
+
+- **The account is created after the last question**, in one request. Abandoning the flow
+  leaves nothing behind. The cost is that a taken email only surfaces at the end, which is
+  why that step is second.
+- **The 1RM step lives on `/onboarding`, not inside `/register`.** It needs a token, and
+  while it was a `@switch` case a page refresh dropped an authenticated user back to
+  question one. `REGISTRATION_STEP_COUNT` is shared because two routes draw one progress bar.
+- **A picture's type is decided from its bytes**, never from `Content-Type` or the file
+  name — that type is handed to every browser that opens the profile. SVG is deliberately
+  refused: it is an image that carries script.
+- **`PUT /api/auth/profile` replaces the profile wholesale**, so a client that omits a field
+  erases it. That bit once, in the same PR that introduced the fields.
+  `ProfileReplacementTests` now asserts by reflection that every writable `Profile` property
+  is carried by `UpdateProfileDto`, with a named exclusion list.
+- **Account deletion order follows the foreign keys**: templates, then the account, then the
+  user's own exercises — in one transaction. `UserWorkoutTemplate` and
+  `Exercise.CreatedByUserId` carry a bare `Guid` with no FK to the account, so no cascade
+  reaches them. `AccountDeletionTests` walks the model and demands every owner-carrying
+  entity be cascaded or named in the by-hand list.
+
+Four measurements from this round are recorded next to the code rather than dropped:
+
+`canContinue` was a `computed()` over `form.controls.*.valid`. `computed` tracks signals and
+`AbstractControl.valid` is not one, so it evaluated once against the empty form and stayed
+false — the wizard's first pass stopped on question one with a dead button. No form test
+would catch it. The same construct later guarded account deletion, and this time it was
+tested.
+
+A clamped `MeasureInput` displayed the value the model had rejected, because Angular does
+not rewrite `[value]` when the signal has not changed. The identical defect was already
+documented in `profile-home.ts` for the weight-step select — and reintroduced anyway. Both
+now write the value back by hand, and both have a test that goes red without it.
+
+The `/onboarding` screen overflowed a phone by 21px, and **had done so since it existed** —
+the exercise `<select>` wants the width of its longest option, and `min-width: 0` permits
+shrinking without changing the min-content contribution a grid parent asks for.
+`grid-template-columns: minmax(0, 1fr)` is the fix.
+
+The deletion confirmation word was compared with `CurrentCultureIgnoreCase`, and it ends in
+`I`. On a Turkish-culture host the account would have been undeletable, with a message
+telling the user to type what they had just typed. Nothing pins the culture anywhere in the
+project. A test now asserts the old comparison genuinely fails under `tr-TR`, so the reason
+for `OrdinalIgnoreCase` is measured rather than asserted.
+
+One misdiagnosis is recorded too, because it nearly landed: `/profile/edit` opened the
+workout screen and I blamed route prefix-matching, reordered the routes and commented that
+as measured. It was not. A stuck dev server was failing to compile a stylesheet that did
+not exist yet, so the lazy import rejected and the router fell to the catch-all. The order
+was restored, then changed again on its own merits with an honest comment.
+
 **Do not commit a document that lists unfixed weaknesses of the live app: this repository is
 public.** Security notes describe what is closed and how it is verified; anything still open
 is stated at a level useful to the owner, not to an attacker.
 
+Round 8 also added `shared/styles/_form-shell.scss` and
+`shared/components/subscreen-header`. Both exist because the same duplication appeared
+twice: card and field rules copied across profile screens, then the sub-screen header
+copied across the three screens that use those rules. When a third screen wants a block,
+move it — an `@use` reaching into another feature's folder hides that the rules are no
+longer that feature's.
+
 Deliberately **out of scope**: i18n, full-history analytics, undulating periodization,
 PWA/offline, changing an already-generated block's periodization model, email delivery (so no
-password reset and no email confirmation).
+password reset and no email confirmation), and a dark theme (the reference screenshots for
+round 8 were dark; only their structure was taken).
