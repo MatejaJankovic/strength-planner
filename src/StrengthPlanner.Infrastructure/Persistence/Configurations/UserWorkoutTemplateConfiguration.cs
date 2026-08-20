@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using StrengthPlanner.Domain.Algorithms;
 using StrengthPlanner.Domain.Entities;
 
 namespace StrengthPlanner.Infrastructure.Persistence.Configurations;
@@ -33,7 +34,7 @@ public class UserWorkoutTemplateDayConfiguration : IEntityTypeConfiguration<User
 
         builder.Property(day => day.Name)
             .IsRequired()
-            .HasMaxLength(64);
+            .HasMaxLength(TrainingConstants.MaxDayNameLength);
 
         builder.HasMany(day => day.Exercises)
             .WithOne(exercise => exercise.UserWorkoutTemplateDay)

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using StrengthPlanner.Domain.Algorithms;
 using StrengthPlanner.Domain.Entities;
 
 namespace StrengthPlanner.Infrastructure.Persistence.Configurations;
@@ -10,9 +11,12 @@ public class WorkoutSessionConfiguration : IEntityTypeConfiguration<WorkoutSessi
     {
         builder.HasKey(s => s.Id);
 
+        // Ista granica kao naziv dana u šablonu: generator naziv dana prepisuje ovamo
+        // (MesocycleGenerator: DayLabel = templateDay.Name). Uža kolona ovde znači da se
+        // šablon sačuva, a plan napravljen od njega padne na upisu.
         builder.Property(s => s.DayLabel)
             .IsRequired()
-            .HasMaxLength(32);
+            .HasMaxLength(TrainingConstants.MaxDayNameLength);
 
         builder.Property(s => s.Status)
             .HasConversion<string>()

@@ -38,4 +38,18 @@ public static class TrainingConstants
 
     /// <summary>Koliko ličnih šablona jedan nalog sme da drži.</summary>
     public const int MaxTemplatesPerUser = 20;
+
+    /// <summary>
+    /// Najveća dužina naziva dana u šablonu.
+    ///
+    /// Vrednost mora da važi na tri mesta odjednom: u proveri zahteva, u koloni dana
+    /// šablona, i u koloni <c>WorkoutSession.DayLabel</c> — jer generator naziv dana
+    /// prepisuje u oznaku treninga.
+    ///
+    /// Bile su dva različita broja: zahtev i šablon su dopuštali 64 znaka, a oznaka
+    /// treninga je bila 32. Naziv od 33 do 64 znaka se uredno sačuva kao šablon, a plan
+    /// napravljen od njega padne sa 500 na upisu — dakle greška se prijavi na ekranu koji
+    /// nema veze sa mestom gde je nastala. Prijavljeno iz stvarne upotrebe.
+    /// </summary>
+    public const int MaxDayNameLength = 64;
 }
