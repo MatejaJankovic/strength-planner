@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -214,5 +215,62 @@ public class AccountDeletionTests
         // Interfejs je na srpskom, pa je i reč koju korisnik prepisuje na srpskom. Mora da
         // prati istu vrednost u auth.models.ts.
         Assert.Equal("OBRIŠI", AccountDeletionPolicy.ConfirmationWord);
+    }
+
+    /// <summary>
+    /// Potvrdna reč se mora porediti ordinalno, ne po kulturi hosta.
+    ///
+    /// Na hostu sa turskim jezikom „i" i „I" nisu isto slovo, a reč se završava upravo tim
+    /// slovom — pa bi `CurrentCultureIgnoreCase` odbijao „obriši" prema „OBRIŠI" i nalog se
+    /// ne bi mogao obrisati. Kultura nigde nije zakucana, pa je to bila stvar hosta.
+    ///
+    /// Test ne poziva servis (traži bazu i Identity), nego proverava samo poređenje — jer
+    /// je poređenje ono što je bilo pogrešno.
+    /// </summary>
+    [Theory]
+    [InlineData("tr-TR")]
+    [InlineData("sr-Latn-RS")]
+    [InlineData("en-US")]
+    [InlineData("az-Latn-AZ")]
+    public void ConfirmationWordMatchesRegardlessOfHostCulture(string culture)
+    {
+        var previous = CultureInfo.CurrentCulture;
+        try
+        {
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture);
+
+            Assert.True(
+                string.Equals("obriši", AccountDeletionPolicy.ConfirmationWord,
+                    StringComparison.OrdinalIgnoreCase),
+                $"Potvrdna reč se ne prepoznaje pod kulturom {culture}.");
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = previous;
+        }
+    }
+
+    /// <summary>
+    /// Ista reč, poređena po kulturi, pada na turskom — zato je i zamenjena. Ovo drži
+    /// razlog: ako neko vrati `CurrentCultureIgnoreCase`, test iznad postaje jedini koji
+    /// govori zašto to ne sme, a ovaj pokazuje da opasnost nije teorijska.
+    /// </summary>
+    [Fact]
+    public void CultureSensitiveComparisonWouldHaveFailedOnTurkish()
+    {
+        var previous = CultureInfo.CurrentCulture;
+        try
+        {
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("tr-TR");
+
+            Assert.False(
+                string.Equals("obriši", AccountDeletionPolicy.ConfirmationWord,
+                    StringComparison.CurrentCultureIgnoreCase),
+                "Poređenje po kulturi na turskom više ne pada; komentar u AuthService treba proveriti.");
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = previous;
+        }
     }
 }

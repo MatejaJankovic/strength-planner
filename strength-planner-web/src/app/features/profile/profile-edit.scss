@@ -6,38 +6,9 @@
   gap: 1rem;
 }
 
-// Zaglavlje sa strelicom nazad, naslovom i potvrdom — kao na uzoru sa slike.
-.edit-top {
-  align-items: center;
-  display: grid;
-  // Naslov u sredini ostaje centriran bez obzira na širinu dugmeta desno, jer su bočne
-  // kolone iste širine.
-  gap: 0.5rem;
-  grid-template-columns: 44px minmax(0, 1fr) auto;
-}
-
-.edit-top__back {
-  align-items: center;
-  background: none;
-  border: 0;
-  border-radius: 0.5rem;
-  color: var(--color-ink);
-  cursor: pointer;
-  display: inline-flex;
-  height: 44px;
-  justify-content: center;
-  margin-left: -0.35rem;
-  width: 44px;
-}
-
-.edit-top__title {
-  font-family: var(--font-display);
-  font-size: 1.15rem;
-  margin: 0;
-  text-align: center;
-}
-
-.edit-top__done {
+// Dugme „Gotovo", projektovano u zaglavlje. Zaglavlje samo daje kvadratna dugmad sa
+// ikonicom; ovo je jedino tekstualno, pa nosi svoj izgled.
+.done {
   background: var(--color-primary);
   border: 0;
   border-radius: 0.5rem;
@@ -47,9 +18,10 @@
   min-height: 40px;
   padding: 0 0.9rem;
   white-space: nowrap;
+  width: auto;
 }
 
-.edit-top__done:disabled {
+.done:disabled {
   cursor: default;
   opacity: 0.6;
 }

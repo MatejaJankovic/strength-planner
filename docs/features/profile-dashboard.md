@@ -82,6 +82,56 @@ pada.
 Provereno da testovi rade: uklanjanje kaskade za `Macrocycle` iz
 `ApplicationUserConfiguration` obara prvi test sa imenom `Macrocycle.UserId` u poruci.
 
+## Šta je rivju našao
+
+**Potvrdna reč se poredila po kulturi hosta.** `CurrentCultureIgnoreCase`, a reč se
+završava slovom „I" — na hostu sa turskim jezikom „i" i „I" nisu isto slovo, pa bi server
+odbijao „obriši" prema „OBRIŠI" i nalog se ne bi mogao obrisati, uz poruku da korisnik
+otkuca ono što je već otkucao. Kultura nigde nije zakucana: ni `Program.cs`, ni `csproj`,
+ni Dockerfile je ne postavljaju, dakle bila je stvar hosta. Sada se poredi ordinalno.
+
+Dva testa to drže: prvi da reč prolazi pod `tr-TR`, `sr-Latn-RS`, `en-US` i `az-Latn-AZ`;
+drugi da poređenje po kulturi **stvarno pada** na turskom, pa je opasnost zapisana kao
+izmerena, a ne pretpostavljena. Ekran je istovremeno prebačen sa
+`toLocaleUpperCase('sr')` na obično `toUpperCase()`, pa obe strane sada odlučuju isto za
+isti unos.
+
+**Lozinka se proveravala pre potvrdne reči.** Dve provere daju dve različite poruke, pa je
+onaj ko se domogne tuđeg tokena mogao da pogađa lozinku sa namerno pogrešnom rečju:
+„pogrešan email ili lozinka" znači da pogodak nije, poruka o reči znači da jeste — a nalog
+se pri tome ne briše. Reč sada ide prva, pa pogrešna reč ne odaje ništa o lozinci, a skupo
+heširanje se ne troši na zahtev koji ne može da uspe.
+
+**Ispravna lozinka nije brisala ranije neuspele pokušaje.** `LoginAsync` i
+`ChangePasswordAsync` oba zovu `ResetAccessFailedCountAsync`, ovaj metod nije — pa bi dve
+greške u kucanju na ovom ekranu ostale na nalogu i kasnija obična greška pri prijavi ga
+zaključala. Dodato.
+
+**Zaglavlje podekrana bilo je prepisano tri puta.** `.edit-top` sa dugmetom od 44px i
+centriranim naslovom stajalo je u `profile-edit.scss`, `settings-page.scss` i
+`exercise-catalog.scss`, i kopije su se već razišle — jedna je grupisala dugme nazad sa
+dugmetom za dodavanje, druga nosila prazan `<span>` samo da naslov ostane u sredini. To je
+isti razlog zbog kog su kartice i polja izvučeni u `_form-shell.scss`, samo jedan nivo
+iznad. Sada je `shared/components/subscreen-header`, sa jednom radnjom desno kroz
+projekciju; sve tri kopije su obrisane, a prazan `<span>` više ne treba jer bočne kolone
+imaju istu širinu.
+
+**Brisanje je uvlačilo redove u praćenje promena samo da bi ih označilo.** Zamenjeno sa
+`ExecuteDeleteAsync` — jedan `DELETE` po skupu, i kraća transakcija koja obuhvata sva tri
+koraka.
+
+**Dva ekrana nisu imala ni jedan test**, a jedan od njih nosi jedinu nepovratnu operaciju u
+aplikaciji. `settings-page.spec.ts` dodaje 13 testova (kapija za brisanje u svim
+kombinacijama, telo zahteva, odjava na 204, odbijeno brisanje koje ostavlja otkucanu reč,
+promena lozinke), a `exercise-catalog.spec.ts` 14. Provereno da drugi radi: brisanje ručnog
+vraćanja vrednosti u `<select>` obara test sa `expected '10' to be '2.5'` — dakle select bi
+prikazivao vrednost koju je server odbio.
+
+Jedan nalaz je namerno ostavljen: potvrdna reč stoji i na serveru i na frontu. Semantika je
+izjednačena, pa se dve strane ne mogu raziđati na istom unosu; sam literal je duplikat kao i
+sve druge konstante koje dve strane dele, a serviranje jedne reči kroz endpoint ne vredi
+dodatne površine.
+
 ## Provereno u živoj aplikaciji
 
 Napravljen je nalog za jednokratnu upotrebu sa podacima u osam tabela — profil, 1RM zapis,
@@ -112,6 +162,9 @@ Ostalo, na 375px:
   na 5 kg upisuje se i red dobija bedž „izmenjeno" i dugme „Vrati 2.5 kg"; dodata vežba
   „Hack Squat" zatvara formu, brojač ide 33 → 34 i red dobija bedž „tvoja"
 - nijedan od osam ekrana se ne preliva, i svi zadržavaju traku i navigaciju
+- posle popravki: sva tri podekrana koriste isto zaglavlje — `/settings` sa praznim mestom
+  za radnju i naslovom izmerenim u sredini, `/profile/edit` sa dugmetom „Gotovo",
+  `/exercises` sa ikonicom za dodavanje; nijedan se ne preliva
 - bez grešaka u konzoli
 
 Jedna sitnica nađena na snimku i popravljena: u redu sa dugmetom „Vrati X kg" naziv vežbe se

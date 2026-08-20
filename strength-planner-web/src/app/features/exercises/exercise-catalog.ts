@@ -7,6 +7,7 @@ import { extractErrorMessage } from '../../core/api/http-error';
 import { ExerciseService } from '../../core/api/exercise.service';
 import { CreateExerciseRequest, ExerciseDto } from '../../core/models/training.models';
 import { Loading } from '../../shared/components/loading/loading';
+import { SubscreenHeader } from '../../shared/components/subscreen-header/subscreen-header';
 
 /**
  * Vežbe: ceo katalog, korak opterećenja po vežbi, i pravljenje sopstvenih vežbi.
@@ -21,7 +22,7 @@ import { Loading } from '../../shared/components/loading/loading';
  */
 @Component({
   selector: 'app-exercise-catalog',
-  imports: [ReactiveFormsModule, MatIconModule, Loading],
+  imports: [ReactiveFormsModule, MatIconModule, Loading, SubscreenHeader],
   templateUrl: './exercise-catalog.html',
   styleUrl: './exercise-catalog.scss',
 })

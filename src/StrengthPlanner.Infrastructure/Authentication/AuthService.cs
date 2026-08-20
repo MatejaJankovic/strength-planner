@@ -320,6 +320,30 @@ public class AuthService : IAuthService
         var user = await _userManager.FindByIdAsync(userId.ToString())
             ?? throw new AuthException("Korisnik ne postoji.");
 
+        // Potvrdna reč se proverava PRE lozinke, i to je bezbednosna odluka, ne stilska.
+        //
+        // Dve provere daju dve različite poruke. Da lozinka ide prva, ko se domogne tuđeg
+        // tokena mogao bi da pogađa lozinku sa namerno pogrešnom rečju: „pogrešan email
+        // ili lozinka" znači da pogodak nije, a poruka o potvrdnoj reči znači da jeste — a
+        // nalog se pri tome ne briše. Ovako pogrešna reč ne odaje ništa o lozinci, i
+        // skupo heširanje se ne troši na zahtev koji ne može da uspe.
+        //
+        // Poredi se ordinalno, bez obzira na velika i mala slova. Kultura ovde ne sme da
+        // učestvuje: na hostu sa turskim jezikom „i" i „I" nisu isto slovo, pa bi
+        // `CurrentCultureIgnoreCase` odbijao „obriši" prema „OBRIŠI" — reč se završava
+        // upravo tim slovom — i nalog se ne bi mogao obrisati, uz poruku da otkuca ono što
+        // je već otkucao. Kultura nigde nije zakucana (ni u Program.cs, ni u csproj-u, ni
+        // u Dockerfile-u), pa je to bila stvar hosta. Ordinalno poređenje ispravno sabija
+        // š i Š i ne zavisi od jezika.
+        if (!string.Equals(
+                dto.Confirmation.Trim(),
+                AccountDeletionPolicy.ConfirmationWord,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            throw new AuthException(
+                $"Za brisanje naloga otkucaj \"{AccountDeletionPolicy.ConfirmationWord}\".");
+        }
+
         // Ista zaštita kao pri promeni lozinke: bez nje je brisanje naloga bilo orakl za
         // pogađanje lozinke koji ne troši zaključavanje.
         if (await _userManager.IsLockedOutAsync(user))
@@ -331,34 +355,27 @@ public class AuthService : IAuthService
             throw new AuthException(InvalidCredentials);
         }
 
-        // Potvrdna reč se poredi bez obzira na velika i mala slova: traži se namera, a ne
-        // tačno pogađanje tastature.
-        if (!string.Equals(
-                dto.Confirmation.Trim(),
-                AccountDeletionPolicy.ConfirmationWord,
-                StringComparison.CurrentCultureIgnoreCase))
-        {
-            throw new AuthException(
-                $"Za brisanje naloga otkucaj \"{AccountDeletionPolicy.ConfirmationWord}\".");
-        }
+        // Kao i u LoginAsync i ChangePasswordAsync: ispravna lozinka briše ranije neuspele
+        // pokušaje. Bez ovoga dve greške u kucanju na ovom ekranu ostaju na nalogu i
+        // kasnija obična greška pri prijavi ga zaključava.
+        await _userManager.ResetAccessFailedCountAsync(user);
 
         await using var transaction = await _db.Database.BeginTransactionAsync();
 
-        var templates = await _db.UserWorkoutTemplates
+        // `ExecuteDeleteAsync` šalje jedan DELETE po skupu i ne uvlači redove u praćenje
+        // promena samo da bi ih označio za brisanje. Kaskade i filtere vlasništva poštuje
+        // kao i svaki drugi upit, a transakcija ostaje što kraća.
+        await _db.UserWorkoutTemplates
             .Where(template => template.UserId == userId)
-            .ToListAsync();
-        _db.UserWorkoutTemplates.RemoveRange(templates);
-        await _db.SaveChangesAsync();
+            .ExecuteDeleteAsync();
 
         var result = await _userManager.DeleteAsync(user);
         if (!result.Succeeded)
             throw new AuthException(result.Errors.Select(e => e.Description));
 
-        var ownExercises = await _db.Exercises
+        await _db.Exercises
             .Where(exercise => exercise.CreatedByUserId == userId)
-            .ToListAsync();
-        _db.Exercises.RemoveRange(ownExercises);
-        await _db.SaveChangesAsync();
+            .ExecuteDeleteAsync();
 
         await transaction.CommitAsync();
     }

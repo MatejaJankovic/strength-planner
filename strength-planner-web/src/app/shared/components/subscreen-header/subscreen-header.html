@@ -1,0 +1,11 @@
+<header class="sub">
+  <button class="sub__back" type="button" [attr.aria-label]="backLabel()" (click)="back.emit()">
+    <mat-icon aria-hidden="true">arrow_back</mat-icon>
+  </button>
+
+  <h1 class="sub__title">{{ title() }}</h1>
+
+  <div class="sub__action">
+    <ng-content select="[slot=action]" />
+  </div>
+</header>

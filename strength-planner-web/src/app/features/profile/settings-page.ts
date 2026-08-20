@@ -16,6 +16,7 @@ import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
 } from '../../core/models/auth.models';
+import { SubscreenHeader } from '../../shared/components/subscreen-header/subscreen-header';
 
 /**
  * Podešavanja naloga: lozinka, odjava i brisanje naloga.
@@ -25,7 +26,7 @@ import {
  */
 @Component({
   selector: 'app-settings-page',
-  imports: [ReactiveFormsModule, MatIconModule],
+  imports: [ReactiveFormsModule, MatIconModule, SubscreenHeader],
   templateUrl: './settings-page.html',
   styleUrl: './settings-page.scss',
 })
@@ -92,13 +93,18 @@ export class SettingsPage {
    *
    * Reč se proverava i ovde, ne samo na serveru: dugme koje se može pritisnuti sa
    * pogrešnom rečju traži od korisnika da otkrije pravilo iz poruke o grešci.
+   *
+   * `toUpperCase` bez jezika je namerno. `toLocaleUpperCase('sr')` je vezivao pravilo za
+   * jezik, a server poredi ordinalno — dve strane bi mogle da se raziđu na istom unosu
+   * iako im je reč ista, i to je tačno onaj kvar zbog kog je poređenje na serveru i
+   * promenjeno (na turskom „i" i „I" nisu isto slovo, a reč se završava tim slovom).
    */
   protected readonly canDelete = computed(() => {
     const value = this.deleteValue();
 
     return (
       (value.currentPassword ?? '').length > 0 &&
-      (value.confirmation ?? '').trim().toLocaleUpperCase('sr') === ACCOUNT_DELETION_WORD
+      (value.confirmation ?? '').trim().toUpperCase() === ACCOUNT_DELETION_WORD
     );
   });
 
@@ -154,10 +160,11 @@ export class SettingsPage {
     this.deleting.set(true);
     this.deleteError.set(null);
 
+    // Uspeh ne vraća ništa u ovaj ekran: `deleteAccount` u servisu odjavljuje i
+    // preusmerava na prijavu, jer ista putanja mora da isprazni token, keševe i sliku kao
+    // i obična odjava. Zato ovde nema `next` — pisati u signal komponente koje više nema
+    // izgleda kao da nešto radi.
     this.auth.deleteAccount(this.deleteForm.getRawValue()).subscribe({
-      // Odjava i preusmerenje na prijavu su u servisu, jer ista putanja mora da isprazni
-      // token, keševe i sliku kao i obična odjava.
-      next: () => this.deleting.set(false),
       error: (err: unknown) => {
         this.deleting.set(false);
         this.deleteError.set(

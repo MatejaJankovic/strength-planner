@@ -8,44 +8,6 @@
   gap: 1rem;
 }
 
-// Isto zaglavlje kao na ostalim podekranima profila: strelica nazad, naslov, radnja desno.
-.edit-top {
-  align-items: center;
-  display: grid;
-  gap: 0.5rem;
-  grid-template-columns: 44px minmax(0, 1fr) 44px;
-}
-
-.edit-top__back,
-.edit-top__add {
-  align-items: center;
-  background: none;
-  border: 0;
-  border-radius: 0.5rem;
-  color: var(--color-ink);
-  cursor: pointer;
-  display: inline-flex;
-  height: 44px;
-  justify-content: center;
-  width: 44px;
-}
-
-.edit-top__back {
-  margin-left: -0.35rem;
-}
-
-.edit-top__add {
-  border: 1px solid var(--color-border);
-  justify-self: end;
-}
-
-.edit-top__title {
-  font-family: var(--font-display);
-  font-size: 1.15rem;
-  margin: 0;
-  text-align: center;
-}
-
 .chips {
   display: flex;
   flex-wrap: wrap;

@@ -1,10 +1,6 @@
-<header class="edit-top">
-  <button class="edit-top__back" type="button" (click)="back()" aria-label="Nazad na profil">
-    <mat-icon aria-hidden="true">arrow_back</mat-icon>
-  </button>
-  <h1 class="edit-top__title">Vežbe</h1>
+<app-subscreen-header title="Vežbe" backLabel="Nazad na profil" (back)="back()">
   <button
-    class="edit-top__add"
+    slot="action"
     type="button"
     [attr.aria-expanded]="addOpen()"
     [attr.aria-label]="addOpen() ? 'Zatvori dodavanje vežbe' : 'Dodaj vežbu'"
@@ -12,7 +8,7 @@
   >
     <mat-icon aria-hidden="true">{{ addOpen() ? 'close' : 'add' }}</mat-icon>
   </button>
-</header>
+</app-subscreen-header>
 
 @if (loading()) {
   <app-loading label="Učitavam vežbe…" />

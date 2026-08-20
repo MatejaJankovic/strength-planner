@@ -1,10 +1,4 @@
-<header class="edit-top">
-  <button class="edit-top__back" type="button" (click)="back()" aria-label="Nazad na profil">
-    <mat-icon aria-hidden="true">arrow_back</mat-icon>
-  </button>
-  <h1 class="edit-top__title">Podešavanja</h1>
-  <span class="edit-top__spacer"></span>
-</header>
+<app-subscreen-header title="Podešavanja" backLabel="Nazad na profil" (back)="back()" />
 
 @if (user(); as currentUser) {
   <p class="account numeric">{{ currentUser.email }}</p>
