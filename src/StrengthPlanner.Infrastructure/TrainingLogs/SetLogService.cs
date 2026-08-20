@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using StrengthPlanner.Application.DTOs.SetLogs;
 using StrengthPlanner.Application.Exceptions;
 using StrengthPlanner.Application.Interfaces;
+using StrengthPlanner.Domain.Algorithms;
 using StrengthPlanner.Domain.Entities;
 using StrengthPlanner.Domain.Enums;
 using StrengthPlanner.Infrastructure.Persistence;
@@ -29,7 +30,7 @@ public class SetLogService : ISetLogService
         var planInfo = await _db.ExercisePlans
             .Where(plan => plan.Id == exercisePlanId
                            && plan.WorkoutSession.TrainingWeek.Mesocycle.UserId == userId)
-            .Select(plan => new { plan.WorkoutSession.Status })
+            .Select(plan => new { plan.WorkoutSession.Status, plan.RepRangeMin })
             .FirstOrDefaultAsync(cancellationToken);
 
         if (planInfo is null)
@@ -44,6 +45,9 @@ public class SetLogService : ISetLogService
             .Select(set => (int?)set.SetNumber)
             .MaxAsync(cancellationToken) ?? 0;
 
+        var isFailure = WorkingSet.ImpliesFailure(
+            request.Reps, request.Rir, planInfo.RepRangeMin, request.IsFailure);
+
         var setLog = new SetLog
         {
             Id = Guid.NewGuid(),
@@ -51,8 +55,8 @@ public class SetLogService : ISetLogService
             SetNumber = lastSetNumber + 1,
             WeightKg = request.WeightKg,
             Reps = request.Reps,
-            Rir = NormalizeRir(request.Rir, request.IsFailure),
-            IsFailure = request.IsFailure,
+            Rir = NormalizeRir(request.Rir, isFailure),
+            IsFailure = isFailure,
             PerformedAt = DateTime.UtcNow
         };
 
@@ -85,10 +89,13 @@ public class SetLogService : ISetLogService
 
         EnsureSessionIsEditable(setLog.ExercisePlan.WorkoutSession.Status);
 
+        var isFailure = WorkingSet.ImpliesFailure(
+            request.Reps, request.Rir, setLog.ExercisePlan.RepRangeMin, request.IsFailure);
+
         setLog.WeightKg = request.WeightKg;
         setLog.Reps = request.Reps;
-        setLog.Rir = NormalizeRir(request.Rir, request.IsFailure);
-        setLog.IsFailure = request.IsFailure;
+        setLog.Rir = NormalizeRir(request.Rir, isFailure);
+        setLog.IsFailure = isFailure;
 
         await _db.SaveChangesAsync(cancellationToken);
 
