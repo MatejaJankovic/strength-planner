@@ -123,4 +123,51 @@ describe('RegisterWizard — zamka za automate', () => {
 
     request.flush({ userId: 'u1', email: 'ja@primer.com', token: 't', expiresAt: '' });
   });
+
+  /**
+   * Neuspela registracija vraca na korak sa emailom.
+   *
+   * Server iz principa ne kaze zasto je odbio - zauzet email i uhvacen automat moraju da
+   * izgledaju isto, inace odgovor postaje spisak postojecih naloga. Posledica je bila da
+   * korisnik posle sedam popunjenih ekrana dobije poruku koju ne moze ni da razume ni da
+   * ispravi, i ostane na sedmom koraku. Prijavljeno iz stvarne upotrebe.
+   */
+  it('neuspela registracija vraca na korak sa emailom i zadrzava poruku', () => {
+    component().form.patchValue({
+      displayName: 'Mateja',
+      email: 'zauzet@primer.com',
+      password: 'DovoljnoDugaLozinka1',
+      experienceLevel: '1',
+    });
+    (component() as any).step.set(6);
+    component().next();
+
+    http
+      .expectOne((candidate) => candidate.url.endsWith('/auth/register'))
+      .flush(
+        { errors: ['Registracija nije uspela. Ako vec imas nalog sa tim emailom, prijavi se.'] },
+        { status: 400, statusText: 'Bad Request' },
+      );
+
+    expect((component() as any).step()).toBe(1);
+    expect(component().error()).not.toBeNull();
+    expect(component().submitting()).toBe(false);
+  });
+
+  it('uspesna registracija ne vraca na raniji korak', () => {
+    component().form.patchValue({
+      displayName: 'Mateja',
+      email: 'nov@primer.com',
+      password: 'DovoljnoDugaLozinka1',
+      experienceLevel: '1',
+    });
+    (component() as any).step.set(6);
+    component().next();
+
+    http
+      .expectOne((candidate) => candidate.url.endsWith('/auth/register'))
+      .flush({ userId: 'u1', email: 'nov@primer.com', token: 't', expiresAt: '' });
+
+    expect(component().error()).toBeNull();
+  });
 });

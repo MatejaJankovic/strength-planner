@@ -308,8 +308,20 @@ export class RegisterWizard {
       error: (err: unknown) => {
         this.submitting.set(false);
         this.error.set(
-          extractErrorMessage(err, 'Registracija nije uspela. Proveri podatke i pokušaj ponovo.'),
+          extractErrorMessage(
+            err,
+            'Registracija nije uspela. Proveri podatke i pokušaj ponovo.',
+          ),
         );
+
+        // Nazad na email i lozinku.
+        //
+        // Server iz principa ne kaže zašto je odbio — zauzet email i uhvaćen automat
+        // moraju da izgledaju isto, inače odgovor postaje spisak postojećih naloga. Ali
+        // oba uzroka žive na ovom koraku, i to je jedini korak čiji sadržaj korisnik može
+        // da promeni da bi prošao. Ostavljanje na sedmom koraku znači poruku koju ne može
+        // ni da razume ni da ispravi — tako je i prijavljeno iz stvarne upotrebe.
+        this.step.set(Step.Credentials);
       },
     });
   }
