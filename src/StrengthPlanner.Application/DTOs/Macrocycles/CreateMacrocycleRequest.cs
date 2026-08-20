@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using StrengthPlanner.Application.Security;
 using StrengthPlanner.Domain.Enums;
 
 namespace StrengthPlanner.Application.DTOs.Macrocycles;
@@ -32,5 +33,13 @@ public class CreateMacrocycleBlockDto
     /// Model periodizacije za ovaj blok. Bira se po bloku — dugoročan plan i dobija smisao
     /// time što se raspored menja između blokova.
     /// </summary>
+    [DefinedEnum]
     public PeriodizationModel PeriodizationModel { get; set; } = PeriodizationModel.Flat;
+
+    /// <summary>
+    /// Ko odlučuje o broju serija: ciljni volumen po mišiću, ili propis iz šablona
+    /// doslovno. Izostavljeno znači ciljni volumen — zatečeno ponašanje.
+    /// </summary>
+    [DefinedEnum]
+    public SetAllocation SetAllocation { get; set; } = SetAllocation.TargetVolume;
 }

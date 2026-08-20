@@ -132,17 +132,25 @@ public class MesocycleGenerator : IMesocycleGenerator
             oneRepMaxByExerciseId,
             weightStepByExerciseId,
             experienceLevel,
-            request.PeriodizationModel);
+            request.PeriodizationModel,
+            request.SetAllocation);
 
         _db.Mesocycles.Add(mesocycle);
         await _db.SaveChangesAsync(cancellationToken);
 
         // Propis daje svakoj vežbi isti broj serija, pa nedeljni volumen po mišiću ispadne
-        // onako kako se šablon slučajno sabere. Ovde se serije preraspoređuju tako da
+        // onako kako se šablon slučajno sabere. Balansiranje preraspoređuje serije tako da
         // nedelja padne u ciljnu zonu svakog mišića koji trenira. Radi nad upravo upisanim
         // (praćenim) planovima, pa je i DTO ispod već izbalansiran.
-        await _setPlanner.RebalanceAsync(userId, mesocycle.Id, cancellationToken);
-        await _db.SaveChangesAsync(cancellationToken);
+        //
+        // Preskače se kada je blok izabrao da prati šablon doslovno. Broj serija koji je
+        // korisnik otkucao je tada namera, a ne predlog: pre ovog izbora se uneto 3 tiho
+        // pretvaralo u 5, bez ijedne poruke o tome zašto.
+        if (mesocycle.SetAllocation == SetAllocation.TargetVolume)
+        {
+            await _setPlanner.RebalanceAsync(userId, mesocycle.Id, cancellationToken);
+            await _db.SaveChangesAsync(cancellationToken);
+        }
 
         if (transaction is not null)
         {
@@ -163,7 +171,8 @@ public class MesocycleGenerator : IMesocycleGenerator
         IReadOnlyDictionary<Guid, decimal> oneRepMaxByExerciseId,
         IReadOnlyDictionary<Guid, decimal> weightStepByExerciseId,
         ExperienceLevel experienceLevel,
-        PeriodizationModel periodizationModel)
+        PeriodizationModel periodizationModel,
+        SetAllocation setAllocation)
     {
         var startingSets = ExperienceProgramming.StartingSetsPerExercise(experienceLevel);
 
@@ -182,6 +191,7 @@ public class MesocycleGenerator : IMesocycleGenerator
             Name = name,
             Goal = goal,
             PeriodizationModel = periodizationModel,
+            SetAllocation = setAllocation,
             StartDate = startDate,
             DurationWeeks = prescriptions.Count,
             IsActive = true

@@ -21,6 +21,9 @@ public class MacrocycleBlockDto
     /// <summary>Model periodizacije za ovaj blok.</summary>
     public PeriodizationModel PeriodizationModel { get; set; }
 
+    /// <summary>Ko odlucuje o broju serija u ovom bloku.</summary>
+    public SetAllocation SetAllocation { get; set; }
+
     /// <summary>Koliko nedelja blok traje — zavisi od modela.</summary>
     public int DurationWeeks { get; set; }
 

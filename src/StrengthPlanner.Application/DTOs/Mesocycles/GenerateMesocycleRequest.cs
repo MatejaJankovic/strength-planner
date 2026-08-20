@@ -16,6 +16,12 @@ public class GenerateMesocycleRequest
     /// </summary>
     public PeriodizationModel PeriodizationModel { get; set; } = PeriodizationModel.Flat;
 
+    /// <summary>
+    /// Ko odlučuje o broju serija. Izostavljeno znači ciljni volumen po mišiću —
+    /// ponašanje koje je sistem imao pre uvođenja izbora.
+    /// </summary>
+    public SetAllocation SetAllocation { get; set; } = SetAllocation.TargetVolume;
+
     [Required]
     [MaxLength(128)]
     public string Name { get; set; } = string.Empty;
