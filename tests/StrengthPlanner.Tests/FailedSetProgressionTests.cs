@@ -20,6 +20,18 @@ public class FailedSetProgressionTests
     // Otkaz ispod dna opsega: svako promašeno ponavljanje je jedan RIR poen naniže.
     [InlineData(6, 0, true, 8, -2)]
     [InlineData(3, 0, true, 8, -5)]
+    // Prijavljeno iz stvarne upotrebe: 6 od 8-12, RIR 0, BEZ kvačice. Nula rezerve ispod
+    // dna opsega je otkaz po definiciji bez obzira na IsFailure - identičan rezultat kao
+    // gornji red sa istim brojevima i kvačicom uključenom.
+    [InlineData(6, 0, false, 8, -2)]
+    [InlineData(3, 0, false, 8, -5)]
+    // RIR iznad nule se ne dira ni ispod dna opsega - vežbač je stao namerno sa rezervom
+    // (bol, vreme, forma), ne zato što nije mogao dalje. To ostaje kao pre.
+    [InlineData(6, 2, false, 8, 2)]
+    // RIR 0 na dnu ili iznad njega bez kvačice i dalje znači "jedva sam stigao, ali jesam" -
+    // ne otkaz. Ponašanje pre ove izmene, i dalje nepromenjeno.
+    [InlineData(8, 0, false, 8, 0)]
+    [InlineData(12, 0, false, 8, 0)]
     public void EffectiveRir_CountsMissedRepsAsNegativeRir(
         int reps,
         int rir,
@@ -30,6 +42,28 @@ public class FailedSetProgressionTests
         var set = new WorkingSet(reps, rir, isFailure);
 
         Assert.Equal(expected, set.EffectiveRir(repRangeMin));
+    }
+
+    /// <summary>
+    /// <see cref="WorkingSet.ImpliesFailure"/> je javna i deljena namerno: infrastrukturni
+    /// sloj koji upisuje <c>SetLog.IsFailure</c> u bazu poziva istu metodu, da definicija
+    /// "šta je otkaz" ne postoji na dva mesta koja mogu da se razmimoiđu.
+    /// </summary>
+    [Theory]
+    [InlineData(6, 0, 8, false, true)] // prijavljeni slučaj: nula rezerve ispod dna
+    [InlineData(8, 0, 8, false, false)] // nula rezerve TAČNO na dnu - "jedva sam stigao"
+    [InlineData(12, 0, 8, false, false)] // nula rezerve iznad dna - isto tako
+    [InlineData(6, 1, 8, false, false)] // rezerva iznad nule ispod dna - namerno stao
+    [InlineData(6, 0, 8, true, true)] // eksplicitna kvačica i dalje radi
+    [InlineData(12, 5, 8, true, true)] // eksplicitna kvačica nadjačava brojeve
+    public void ImpliesFailure_MatchesTheRuleEffectiveRirApplies(
+        int reps,
+        int rir,
+        int repRangeMin,
+        bool explicitlyMarked,
+        bool expected)
+    {
+        Assert.Equal(expected, WorkingSet.ImpliesFailure(reps, rir, repRangeMin, explicitlyMarked));
     }
 
     [Fact]
@@ -85,6 +119,25 @@ public class FailedSetProgressionTests
         var result = _engine.ComputeNext(100m, hardButCompleted, targetRir: 1, repRangeMin: 8, repRangeMax: 12);
 
         Assert.Equal(97.5m, result.NextWeightKg);
+    }
+
+    /// <summary>
+    /// Prijavljeno iz stvarne upotrebe: korisnik je pitao zašto kvačica "Serija do
+    /// otkaza" uopšte postoji kad je RIR 0 već jasan signal. Ovaj test dokazuje da RIR 0
+    /// ispod dna opsega SADA daje istu korekciju bez obzira da li je kvačica dotaknuta -
+    /// zaboravljena kvačica više ne menja koliko opterećenje pada.
+    /// </summary>
+    [Fact]
+    public void ComputeNext_AppliesTheSameCorrection_WhetherOrNotFailureWasChecked()
+    {
+        var withoutCheckbox = new List<WorkingSet> { new(5, 0, IsFailure: false) };
+        var withCheckbox = new List<WorkingSet> { new(5, 0, IsFailure: true) };
+
+        var a = _engine.ComputeNext(100m, withoutCheckbox, targetRir: 1, repRangeMin: 8, repRangeMax: 12);
+        var b = _engine.ComputeNext(100m, withCheckbox, targetRir: 1, repRangeMin: 8, repRangeMax: 12);
+
+        Assert.Equal(b.NextWeightKg, a.NextWeightKg);
+        Assert.True(a.NextWeightKg < 100m);
     }
 
     [Fact]

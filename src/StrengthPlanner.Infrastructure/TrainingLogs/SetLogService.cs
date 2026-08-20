@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using StrengthPlanner.Application.DTOs.SetLogs;
 using StrengthPlanner.Application.Exceptions;
 using StrengthPlanner.Application.Interfaces;
+using StrengthPlanner.Domain.Algorithms;
 using StrengthPlanner.Domain.Entities;
 using StrengthPlanner.Domain.Enums;
 using StrengthPlanner.Infrastructure.Persistence;
@@ -29,7 +30,7 @@ public class SetLogService : ISetLogService
         var planInfo = await _db.ExercisePlans
             .Where(plan => plan.Id == exercisePlanId
                            && plan.WorkoutSession.TrainingWeek.Mesocycle.UserId == userId)
-            .Select(plan => new { plan.WorkoutSession.Status })
+            .Select(plan => new { plan.WorkoutSession.Status, plan.RepRangeMin })
             .FirstOrDefaultAsync(cancellationToken);
 
         if (planInfo is null)
@@ -44,6 +45,9 @@ public class SetLogService : ISetLogService
             .Select(set => (int?)set.SetNumber)
             .MaxAsync(cancellationToken) ?? 0;
 
+        var isFailure = WorkingSet.ImpliesFailure(
+            request.Reps, request.Rir, planInfo.RepRangeMin, request.IsFailure);
+
         var setLog = new SetLog
         {
             Id = Guid.NewGuid(),
@@ -51,8 +55,11 @@ public class SetLogService : ISetLogService
             SetNumber = lastSetNumber + 1,
             WeightKg = request.WeightKg,
             Reps = request.Reps,
-            Rir = NormalizeRir(request.Rir, request.IsFailure),
-            IsFailure = request.IsFailure,
+            // Rir stays exactly as sent: ValidateSetInput already rejects an explicit
+            // otkaz with Rir > 0, and the implied case in ImpliesFailure only fires when
+            // Rir is already 0, so there is never a request.Rir to normalize away here.
+            Rir = request.Rir,
+            IsFailure = isFailure,
             PerformedAt = DateTime.UtcNow
         };
 
@@ -85,10 +92,13 @@ public class SetLogService : ISetLogService
 
         EnsureSessionIsEditable(setLog.ExercisePlan.WorkoutSession.Status);
 
+        var isFailure = WorkingSet.ImpliesFailure(
+            request.Reps, request.Rir, setLog.ExercisePlan.RepRangeMin, request.IsFailure);
+
         setLog.WeightKg = request.WeightKg;
         setLog.Reps = request.Reps;
-        setLog.Rir = NormalizeRir(request.Rir, request.IsFailure);
-        setLog.IsFailure = request.IsFailure;
+        setLog.Rir = request.Rir;
+        setLog.IsFailure = isFailure;
 
         await _db.SaveChangesAsync(cancellationToken);
 
@@ -130,15 +140,6 @@ public class SetLogService : ISetLogService
                 TrainingLogErrorType.Conflict,
                 "Completed workout sessions cannot be modified.");
         }
-    }
-
-    /// <summary>
-    /// Otkaz i RIR > 0 se međusobno isključuju: ako je serija izvučena do otkaza,
-    /// u rezervi po definiciji nije ostalo nijedno ponavljanje.
-    /// </summary>
-    private static int NormalizeRir(int rir, bool isFailure)
-    {
-        return isFailure ? 0 : rir;
     }
 
     private static void ValidateSetInput(decimal weightKg, int reps, int rir, bool isFailure)
