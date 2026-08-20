@@ -33,6 +33,8 @@ public static class WorkoutTemplateCatalog
     public const string FullBodyFourDayKey = "full-body-4";
     public const string UpperLowerPushPullLegsKey = "upper-lower-ppl";
     public const string PushPullLegsSixDayKey = "push-pull-legs-6";
+    public const string UpperLowerThreeXKey = "upper-lower-x3";
+    public const string LegsSpecializationKey = "legs-specialization";
 
     private static readonly IReadOnlyList<WorkoutTemplate> Templates =
     [
@@ -92,7 +94,7 @@ public static class WorkoutTemplateCatalog
                 ]),
                 new("Legs",
                 [
-                    "Back Squat", "Romanian Deadlift", "Leg Press",
+                    "Back Squat", "Romanian Deadlift", "Goblet Squat",
                     "Leg Extension", "Leg Curl", "Calf Raise", "Plank", "Cable Crunch"
                 ])
             ]),
@@ -107,7 +109,7 @@ public static class WorkoutTemplateCatalog
                 ]),
                 new("Lower A",
                 [
-                    "Back Squat", "Romanian Deadlift", "Leg Press",
+                    "Back Squat", "Romanian Deadlift", "Bulgarian Split Squat",
                     "Leg Curl", "Calf Raise", "Leg Extension", "Plank", "Cable Crunch"
                 ]),
                 new("Upper B",
@@ -210,7 +212,92 @@ public static class WorkoutTemplateCatalog
                     "Leg Press", "Hip Thrust",
                     "Leg Extension", "Leg Curl", "Calf Raise", "Plank"
                 ])
-            ])
+            ]),
+        new(
+            UpperLowerThreeXKey,
+            "Upper/Lower x3 (6 dana)",
+            [
+                new("Upper A",
+                [
+                    "Bench Press", "Barbell Row",
+                    "Cable Fly", "Lateral Raise", "Triceps Pushdown", "Barbell Curl"
+                ]),
+                new("Lower A",
+                [
+                    "Back Squat", "Romanian Deadlift",
+                    "Leg Extension", "Calf Raise", "Plank", "Cable Crunch"
+                ]),
+                new("Upper B",
+                [
+                    "Pull-up", "Incline Bench Press",
+                    "Dumbbell Fly", "Overhead Triceps Extension", "Hammer Curl", "Rear Delt Fly"
+                ]),
+                new("Lower B",
+                [
+                    "Deadlift", "Front Squat",
+                    "Leg Curl", "Calf Raise", "Plank", "Cable Crunch"
+                ]),
+                new("Upper C",
+                [
+                    "Dumbbell Bench Press", "Seated Cable Row",
+                    "Lateral Raise", "Skull Crusher", "Dumbbell Curl", "Face Pull"
+                ]),
+                new("Lower C",
+                [
+                    "Bulgarian Split Squat", "Hip Thrust",
+                    // Ovaj dan nema izolaciju za noge: Leg Curl i Leg Extension su svaki
+                    // jednom potrošeni na Lower A/B, a treći put bi gurnuo kvadriceps ili
+                    // zadnju ložu preko MRV na tri treninga za noge nedeljno (izmereno).
+                    "Face Pull", "Calf Raise", "Plank", "Cable Crunch"
+                ])
+            ],
+            // Šest treninga nedeljno je jedini raspored u katalogu koji dostiže tri puta
+            // nedeljno po mišiću umesto uobičajena dva — vidi docs/features za literaturu.
+            // Prednost postoji samo ako se svih šest treninga zaista odradi.
+            "Šest treninga nedeljno je velika vremenska obaveza, a prednost u frekvenciji zavisi "
+            + "od toga da li zaista odradiš sva tri treninga po grupi mišića — propušten dan vraća "
+            + "tu grupu na dva puta nedeljno, kao kod četvorodnevnog Upper/Lower plana. Ako ne možeš "
+            + "redovno da odradiš šest dana, četvorodnevni Upper/Lower ili Push/Pull/Legs x2 daju "
+            + "sličan nedeljni volumen uz manje treninga."),
+        new(
+            LegsSpecializationKey,
+            "Legs Specialization (5 dana)",
+            [
+                new("Legs A",
+                [
+                    "Bulgarian Split Squat", "Leg Press",
+                    "Leg Extension", "Calf Raise", "Plank", "Cable Crunch"
+                ]),
+                new("Legs B",
+                [
+                    "Single-Leg Romanian Deadlift", "Front Squat",
+                    "Leg Curl", "Calf Raise", "Plank", "Cable Crunch"
+                ]),
+                new("Legs C",
+                [
+                    "Step-Up", "Hip Thrust",
+                    // Leg Curl i Leg Extension su svaki jednom potrošeni na Legs A/B; treći
+                    // put bi na tri treninga za noge nedeljno gurnuo kvadriceps ili zadnju
+                    // ložu preko MRV (izmereno).
+                    "Straight-Arm Pulldown", "Calf Raise", "Plank", "Cable Crunch"
+                ]),
+                new("Upper A",
+                [
+                    "Bench Press", "Barbell Row",
+                    "Cable Fly", "Lateral Raise", "Triceps Pushdown", "Barbell Curl"
+                ]),
+                new("Upper B",
+                [
+                    "Pull-up", "Incline Bench Press",
+                    "Dumbbell Fly", "Overhead Triceps Extension", "Hammer Curl", "Rear Delt Fly"
+                ])
+            ],
+            // Blok specijalizacije, ne stalan plan — vidi docs/features za obrazloženje i
+            // ograničenja (nema istraživanja o optimalnoj dužini ovakvog bloka).
+            "Ovo je blok specijalizacije za noge: kvadriceps, zadnja loža i gluteusi rade tri puta "
+            + "nedeljno, gornje telo dva. Nema istraživanja o tome koliko ovakav blok treba da traje "
+            + "— koristi ga privremeno (npr. jedan mezociklus), ne kao stalni plan, i vrati se na "
+            + "uravnotežen šablon kad napredak u nogama uspori ili gornje telo počne da zaostaje.")
     ];
 
     public static IReadOnlyList<WorkoutTemplate> GetAll()

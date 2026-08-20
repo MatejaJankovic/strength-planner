@@ -52,6 +52,22 @@ public static class ExerciseCatalog
         new("Calf Raise", ExerciseType.Isolation, "Machine",
             [new("Calves", 1.0m)]),
 
+        // Do ovde svaka vežba za noge tražila je šipku ili mašinu. Šest novih pokriva i
+        // bučice i telesnu težinu, i dodaju jedini unilateralni obrazac u katalogu — dosad
+        // nijedna vežba nije izolovala jednu nogu.
+        new("Bulgarian Split Squat", ExerciseType.Compound, "Dumbbell",
+            [new("Quads", 1.0m), new("Glutes", 0.5m), new("Hamstrings", 0.5m)]),
+        new("Split Squat", ExerciseType.Compound, "Bodyweight",
+            [new("Quads", 1.0m), new("Glutes", 0.5m)]),
+        new("Walking Lunge", ExerciseType.Compound, "Dumbbell",
+            [new("Quads", 1.0m), new("Glutes", 0.5m), new("Hamstrings", 0.5m)]),
+        new("Goblet Squat", ExerciseType.Compound, "Dumbbell",
+            [new("Quads", 1.0m), new("Glutes", 0.5m)]),
+        new("Step-Up", ExerciseType.Compound, "Dumbbell",
+            [new("Glutes", 1.0m), new("Quads", 0.5m), new("Hamstrings", 0.5m)]),
+        new("Single-Leg Romanian Deadlift", ExerciseType.Compound, "Dumbbell",
+            [new("Hamstrings", 1.0m), new("Glutes", 0.5m)]),
+
         new("Bench Press", ExerciseType.Compound, "Barbell",
             [new("Chest", 1.0m), new("Triceps", 0.5m), new("Shoulders", 0.5m)]),
         new("Incline Bench Press", ExerciseType.Compound, "Barbell",

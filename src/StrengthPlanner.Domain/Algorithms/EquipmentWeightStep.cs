@@ -39,6 +39,14 @@ public static class EquipmentWeightStep
         return TrainingConstants.WeightStepKg;
     }
 
+    /// <summary>
+    /// Equipment names this class knows a step for. Exposed so callers that need to
+    /// validate an equipment string (for example a seed-data test) check against the same
+    /// set <see cref="ForEquipment"/> actually uses, instead of keeping a second copy that
+    /// can drift out of sync with it.
+    /// </summary>
+    public static IReadOnlyCollection<string> RecognizedEquipment { get; } = StepsByEquipment.Keys.ToList();
+
     /// <summary>Returns true when the value is a usable manual override.</summary>
     public static bool IsValidStep(decimal stepKg)
     {

@@ -373,17 +373,31 @@ public class WorkoutTemplateCatalogTests
         Assert.NotEmpty(belowMev);
     }
 
+    /// <summary>
+    /// Šabloni sa poznatim ograničenjem nose upozorenje; ostali ne. Spisak je eksplicitan
+    /// umesto izuzetka za jedan ključ, da dodavanje novog šablona s upozorenjem ne mora da
+    /// menja ovaj test — samo da doda svoj ključ ovde.
+    /// </summary>
     [Fact]
-    public void EveryTemplateOtherThanTheTwoDayOne_CarriesNoWarning()
+    public void OnlyTemplatesWithADisclosedLimitation_CarryAWarning()
     {
+        string[] templatesWithKnownLimitations =
+        [
+            WorkoutTemplateCatalog.FullBodyTwoDayKey,
+            WorkoutTemplateCatalog.UpperLowerThreeXKey,
+            WorkoutTemplateCatalog.LegsSpecializationKey
+        ];
+
         foreach (var template in WorkoutTemplateCatalog.GetAll())
         {
-            if (template.Key == WorkoutTemplateCatalog.FullBodyTwoDayKey)
+            if (templatesWithKnownLimitations.Contains(template.Key))
             {
-                continue;
+                Assert.False(string.IsNullOrWhiteSpace(template.Note));
             }
-
-            Assert.Null(template.Note);
+            else
+            {
+                Assert.Null(template.Note);
+            }
         }
     }
 
