@@ -68,9 +68,9 @@
   box-shadow: 0 -14px 32px rgb(20 21 26 / 8%);
   display: grid;
   gap: 0.25rem;
-  // Svaki tab dobija svoju kolonu: sa četiri stavke u tri kolone "Profil" je
-  // padao u drugi red i gurao sadržaj ispod trake.
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  // Broj kolona stiže inline iz app.ts (bottomNavColumns), vezan za navItems.length —
+  // manje kolona nego stavki gura poslednju u drugi red i guranjem podiže traku preko
+  // sadržaja, a taj broj ovde više nema svoju kopiju koja bi mogla da se razmimoiđe.
   left: 0;
   min-height: calc(68px + env(safe-area-inset-bottom));
   padding: 0.45rem max(0.75rem, env(safe-area-inset-left)) calc(0.45rem + env(safe-area-inset-bottom));
@@ -94,9 +94,9 @@
   text-decoration: none;
 }
 
-// Naziv taba se ne prelama u dva reda. "Analitika" je najduži i na 320px zauzima
-// 53.6px od 61.4px koliko četvrtina trake daje, pa do skraćivanja ne dolazi; ovo je
-// osigurač da se prelom nikada ne vrati kao viša traka preko sadržaja.
+// Naziv taba se ne prelama u dva reda. Tri kolone na 320px daju više prostora po tabu
+// nego što je ranijih četvrtina ikad imalo, pa do skraćivanja ne dolazi; ovo je osigurač
+// da se prelom nikada ne vrati kao viša traka preko sadržaja.
 .bottom-nav__item span {
   max-width: 100%;
   overflow: hidden;

@@ -11,7 +11,12 @@
 
 .control {
   display: grid;
+  flex: 1 1 220px;
   gap: 0.35rem;
+  // Bez ovoga flex stavka ne sme da se skupi ispod širine dugačkog naziva
+  // mezociklusa, pa red probija širinu ekrana umesto da selekt popusti.
+  // Izmereno: 633px dokument na viewportu od 375px, select širine 583px.
+  min-width: 0;
 }
 
 // Izbor nedelje uzima ceo red: bez određene širine 1fr kolone ispod bi se skupile
@@ -37,6 +42,7 @@
   color: var(--color-ink);
   min-height: 44px;
   padding: 0 0.7rem;
+  width: 100%;
 }
 
 // Sve nedelje bloka stoje u jednom redu. Fiksne četiri kolone su šestonedeljni

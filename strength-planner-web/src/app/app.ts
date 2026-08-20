@@ -28,9 +28,9 @@ export class App {
    * Login and registration are standalone: a bottom nav to protected routes would be
    * pointing at screens the visitor cannot open yet. The 1RM screen belongs here too, but
    * only while it is the last step of registration (`?wizard=1`) — it then supplies its
-   * own progress bar and continue button, and the app topbar plus a bottom nav to Trening
-   * and Analitika would frame a step of a flow the user has not finished. Opened from the
-   * profile the same screen is an ordinary destination and keeps the frame.
+   * own progress bar and continue button, and the app topbar plus a bottom nav would frame
+   * a step of a flow the user has not finished. Opened from the profile the same screen is
+   * an ordinary destination and keeps the frame.
    */
   protected readonly isBareRoute = computed(() => {
     const url = this.currentUrl();
@@ -42,10 +42,21 @@ export class App {
     );
   });
 
+  /**
+   * Analitika je namerno izostavljena. Statistika je sada dugme na dashboardu profila
+   * (`/analytics` ostaje kao ruta i radi, samo mu je ovo jedini ulaz) — traka na dnu nosi
+   * samo ono što se otvara svaki dan.
+   */
   protected readonly navItems = [
     { label: 'Trening', icon: 'fitness_center', route: '/workout' },
     { label: 'Plan', icon: 'calendar_month', route: '/plan' },
-    { label: 'Analitika', icon: 'monitoring', route: '/analytics' },
     { label: 'Profil', icon: 'person', route: '/profile' },
   ];
+
+  /**
+   * Vezano za dužinu navItems umesto da app.scss drži svoj broj kolona — ta dva su se već
+   * jednom razišla (Analitika kao peta stavka u četvorokolonoj traci gurala je Profil u
+   * drugi red).
+   */
+  protected readonly bottomNavColumns = `repeat(${this.navItems.length}, minmax(0, 1fr))`;
 }

@@ -16,7 +16,7 @@
   </main>
 
   @if (!isBareRoute()) {
-    <nav class="bottom-nav" aria-label="Glavna navigacija">
+    <nav class="bottom-nav" [style.grid-template-columns]="bottomNavColumns" aria-label="Glavna navigacija">
       @for (item of navItems; track item.route) {
         <a
           class="bottom-nav__item"
