@@ -44,8 +44,20 @@ public class AuthService : IAuthService
     /// <summary>
     /// Jedina poruka koju registracija vraća pri neuspehu, iz istog razloga:
     /// zauzet email i uhvaćen automat ne smeju da izgledaju različito.
+    ///
+    /// Ranija verzija je glasila samo „Proveri podatke i pokušaj ponovo." Bila je tačna i
+    /// bezbedna, ali beskorisna: korisnik koji se već registrovao tim emailom dobijao ju je
+    /// posle sedam popunjenih ekrana, bez ijednog nagoveštaja šta da uradi. Prijavljeno je
+    /// iz stvarne upotrebe.
+    ///
+    /// Nova poruka i dalje ne potvrđuje ništa — uslovna je („ako"), i identična je za sve
+    /// uzroke, uključujući uhvaćenog automata. Zato i dalje nije orakl za nabrajanje naloga:
+    /// isti tekst stiže i za email koji postoji i za onaj koji ne postoji. Razlika je samo
+    /// u tome što čoveku daje put dalje.
     /// </summary>
-    private const string RegistrationFailed = "Registracija nije uspela. Proveri podatke i pokušaj ponovo.";
+    private const string RegistrationFailed =
+        "Registracija nije uspela. Ako već imaš nalog sa tim emailom, prijavi se; "
+        + "u suprotnom proveri podatke i pokušaj ponovo.";
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
     {
