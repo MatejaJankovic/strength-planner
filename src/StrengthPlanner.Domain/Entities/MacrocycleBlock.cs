@@ -26,6 +26,13 @@ public class MacrocycleBlock
     /// </summary>
     public PeriodizationModel PeriodizationModel { get; set; } = PeriodizationModel.Flat;
 
+    /// <summary>
+    /// Ko odlučuje o broju serija u ovom bloku. Bira se po bloku, kao i model
+    /// periodizacije: isti plan sme da ima blok koji prati lični šablon doslovno i blok
+    /// koji cilja volumen.
+    /// </summary>
+    public SetAllocation SetAllocation { get; set; } = SetAllocation.TargetVolume;
+
     /// <summary>Mezociklus generisan za ovaj blok; null dok blok nije došao na red.</summary>
     public Guid? MesocycleId { get; set; }
     public Mesocycle? Mesocycle { get; set; }

@@ -11,6 +11,7 @@ import {
   CreateMacrocycleBlockDto,
   MacrocycleBlockDto,
   PeriodizationModel,
+  SetAllocation,
   TrainingWeekDto,
   WorkoutTemplateDto,
 } from '../../core/models/training.models';
@@ -65,10 +66,57 @@ export class PlanHome {
     { value: Goal.Strength, label: 'Snaga' },
   ];
 
+  /**
+   * Raspored nedelja, sa objasnjenjem sta radi unetim brojevima.
+   *
+   * Objasnjenje nije ukras. Tvoj opseg ponavljanja nije propis za prvu nedelju nego
+   * sidro, a nedelje su pomaci od njega: kod linearnog sidro pada na trecu nedelju, prva
+   * je faza volumena (+3 ponavljanja), poslednje su faza intenziteta. To je definicija
+   * periodizacije, ali nigde nije pisalo — pa je prijavljeno kao greska: "uneo sam 8-12,
+   * a prva nedelja kaze 11-12".
+   */
   protected readonly modelOptions = [
-    { value: PeriodizationModel.Flat, label: 'Ravan', weeks: 4 },
-    { value: PeriodizationModel.Linear, label: 'Linearan', weeks: 6 },
-    { value: PeriodizationModel.Inverse, label: 'Obrnut', weeks: 6 },
+    {
+      value: PeriodizationModel.Flat,
+      label: 'Ravan',
+      weeks: 4,
+      effect: 'Tvoj opseg ponavljanja svake nedelje. Cetvrta je deload.',
+    },
+    {
+      value: PeriodizationModel.Linear,
+      label: 'Linearan',
+      weeks: 6,
+      effect:
+        'Krece sa vise ponavljanja nego sto si uneo, pa se spusta ka tezim serijama. Tvoj opseg dolazi u 3. nedelji.',
+    },
+    {
+      value: PeriodizationModel.Inverse,
+      label: 'Obrnut',
+      weeks: 6,
+      effect:
+        'Krece sa manje ponavljanja nego sto si uneo, pa raste ka volumenu. Tvoj opseg dolazi u 3. nedelji.',
+    },
+  ];
+
+  /**
+   * Ko odlucuje o broju serija.
+   *
+   * Balansiranje po ciljnom volumenu je zateceno ponasanje i ostaje podrazumevano, jer
+   * ugradjeni sabloni nose raspored vezbi a ne nameru o volumenu. Kod licnog sablona je
+   * obrnuto: otkucano "3 serije" je namera, i menjati je tiho je bilo pogresno.
+   */
+  protected readonly allocationOptions = [
+    {
+      value: SetAllocation.TargetVolume,
+      label: 'Prilagodi ciljnom volumenu',
+      effect: 'Broj serija se podesava tako da nedelja pogodi ciljni volumen po misicu.',
+    },
+    {
+      value: SetAllocation.FollowTemplate,
+      label: 'Prati moj sablon',
+      effect:
+        'Ostaje tacno onoliko serija koliko si uneo. Nedeljni volumen moze ostati ispod cilja i sistem ga nece ispravljati.',
+    },
   ];
 
   // --- wizard ------------------------------------------------------------------
@@ -175,11 +223,13 @@ export class PlanHome {
             goal: Goal.Hypertrophy,
             templateKey: key,
             periodizationModel: PeriodizationModel.Inverse,
+            setAllocation: SetAllocation.TargetVolume,
           },
           {
             goal: Goal.Strength,
             templateKey: key,
             periodizationModel: PeriodizationModel.Linear,
+            setAllocation: SetAllocation.TargetVolume,
           },
         ]),
     });
@@ -209,7 +259,12 @@ export class PlanHome {
 
       return [
         ...blocks,
-        { goal, templateKey: last.templateKey, periodizationModel: modelForGoal(goal) },
+        {
+          goal,
+          templateKey: last.templateKey,
+          periodizationModel: modelForGoal(goal),
+          setAllocation: last.setAllocation,
+        },
       ];
     });
   }
@@ -247,6 +302,21 @@ export class PlanHome {
   }
 
   /** Koliko nedelja nosi blok sa datim modelom. */
+  protected setBlockAllocation(index: number, raw: string): void {
+    const setAllocation = Number(raw) as SetAllocation;
+    this.blocks.update((blocks) =>
+      blocks.map((block, i) => (i === index ? { ...block, setAllocation } : block)),
+    );
+  }
+
+  protected modelEffect(model: PeriodizationModel): string {
+    return this.modelOptions.find((option) => option.value === model)?.effect ?? '';
+  }
+
+  protected allocationEffect(allocation: SetAllocation): string {
+    return this.allocationOptions.find((option) => option.value === allocation)?.effect ?? '';
+  }
+
   protected modelWeeks(model: PeriodizationModel): number {
     return this.modelOptions.find((option) => option.value === model)?.weeks ?? 4;
   }

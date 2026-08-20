@@ -273,6 +273,24 @@
                   </option>
                 }
               </select>
+              <p class="field__hint">{{ modelEffect(block.periodizationModel) }}</p>
+            </div>
+
+            <div class="field">
+              <label class="field__label" [attr.for]="'block-sets-' + $index">Broj serija</label>
+              <select
+                class="control control--compact"
+                [attr.id]="'block-sets-' + $index"
+                [attr.aria-label]="'Broj serija bloka ' + ($index + 1)"
+                (change)="setBlockAllocation($index, $any($event.target).value)"
+              >
+                @for (option of allocationOptions; track option.value) {
+                  <option [value]="option.value" [selected]="option.value === block.setAllocation">
+                    {{ option.label }}
+                  </option>
+                }
+              </select>
+              <p class="field__hint">{{ allocationEffect(block.setAllocation) }}</p>
             </div>
 
             <div class="field">

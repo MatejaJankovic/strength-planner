@@ -310,10 +310,16 @@ public class SessionService : ISessionService
         //
         // Ovim treningom je deo nedeljnog volumena upisan (ili propušten), pa treninzi koji
         // u toj nedelji tek predstoje dobijaju predlog koji nedelju vraća u ciljnu zonu.
-        var volumeAdjustments = await _setPlanner.RebalanceAsync(
-            userId,
-            session.TrainingWeek.MesocycleId,
-            cancellationToken);
+        // Blok koji prati šablon doslovno se ne balansira ni ovde. Da se preskakalo samo
+        // pri generisanju, prvi završen trening bi vratio serije na ciljni volumen — pa bi
+        // izbor važio tačno do prvog treninga.
+        var volumeAdjustments =
+            session.TrainingWeek.Mesocycle.SetAllocation == SetAllocation.TargetVolume
+                ? await _setPlanner.RebalanceAsync(
+                    userId,
+                    session.TrainingWeek.MesocycleId,
+                    cancellationToken)
+                : [];
 
         await _db.SaveChangesAsync(cancellationToken);
 

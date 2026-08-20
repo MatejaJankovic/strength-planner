@@ -19,6 +19,13 @@ public class Mesocycle
     // Kako se propis menja kroz nedelje. Zatečeni blokovi su ravni (0).
     public PeriodizationModel PeriodizationModel { get; set; } = PeriodizationModel.Flat;
 
+    /// <summary>
+    /// Ko odlučuje o broju serija. Mora da stoji i ovde, ne samo na bloku: serije se
+    /// ponovo balansiraju posle svakog završenog treninga, a tada se blok ne čita.
+    /// Zatečeni mezociklusi ciljaju volumen (0).
+    /// </summary>
+    public SetAllocation SetAllocation { get; set; } = SetAllocation.TargetVolume;
+
     public DateTime StartDate { get; set; }
     public int DurationWeeks { get; set; } = 4;
     public bool IsActive { get; set; }

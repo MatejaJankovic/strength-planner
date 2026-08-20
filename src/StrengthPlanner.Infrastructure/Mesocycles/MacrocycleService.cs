@@ -103,7 +103,8 @@ public class MacrocycleService : IMacrocycleService
                 Order = index + 1,
                 Goal = block.Goal,
                 TemplateKey = block.TemplateKey,
-                PeriodizationModel = block.PeriodizationModel
+                PeriodizationModel = block.PeriodizationModel,
+                SetAllocation = block.SetAllocation
             });
         }
 
@@ -480,6 +481,9 @@ public class MacrocycleService : IMacrocycleService
             TemplateKey = block.TemplateKey,
             Goal = block.Goal,
             PeriodizationModel = block.PeriodizationModel,
+            // Blok se generiše tek kada dođe na red, pa izbor mora da preživi u bazi i da
+            // se tada pročita odavde — ne iz zahteva koji ga je davno napravio.
+            SetAllocation = block.SetAllocation,
             Name = BuildBlockName(macrocycle.Name, block.Order, blockCount, templateName),
             StartDate = startDate
         };
@@ -602,6 +606,7 @@ public class MacrocycleService : IMacrocycleService
                         Order = block.Order,
                         Goal = block.Goal,
                         PeriodizationModel = block.PeriodizationModel,
+                        SetAllocation = block.SetAllocation,
                         // Trajanje se izvodi iz modela, pa plan zna svoju dužinu i pre
                         // nego što je blok uopšte generisan.
                         DurationWeeks = Periodization.DurationWeeks(block.PeriodizationModel),

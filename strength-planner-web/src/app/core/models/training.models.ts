@@ -4,6 +4,17 @@ export enum Goal {
 }
 
 /** Kako se propis menja kroz nedelje bloka. */
+/**
+ * Ko odlucuje o broju serija u bloku. Mora da prati Domain.Enums.SetAllocation.
+ *
+ * Nula je zateceno ponasanje, pa planovi napravljeni pre uvodjenja izbora nastavljaju da
+ * ciljaju volumen.
+ */
+export enum SetAllocation {
+  TargetVolume = 0,
+  FollowTemplate = 1,
+}
+
 export enum PeriodizationModel {
   Flat = 0,
   Linear = 1,
@@ -240,6 +251,7 @@ export interface MacrocycleBlockDto {
   order: number;
   goal: Goal;
   periodizationModel: PeriodizationModel;
+  setAllocation: SetAllocation;
   /** Koliko nedelja blok traje — zavisi od modela. */
   durationWeeks: number;
   templateKey: string;
@@ -264,6 +276,7 @@ export interface CreateMacrocycleBlockDto {
   goal: Goal;
   templateKey: string;
   periodizationModel: PeriodizationModel;
+  setAllocation: SetAllocation;
 }
 
 export interface CreateMacrocycleRequest {
