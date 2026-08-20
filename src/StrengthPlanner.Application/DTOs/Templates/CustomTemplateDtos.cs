@@ -27,7 +27,7 @@ public class SaveCustomTemplateRequest
 public class SaveCustomTemplateDayDto
 {
     [Required]
-    [MaxLength(64)]
+    [MaxLength(TrainingConstants.MaxDayNameLength)]
     public string Name { get; set; } = string.Empty;
 
     [Required]
