@@ -85,16 +85,6 @@ export class RegisterWizard {
   protected readonly error = signal<string | null>(null);
   protected readonly showPassword = signal(false);
 
-  /**
-   * Napomena na ekranima sa merama.
-   *
-   * Klizač mora od nečega da krene, pa su masa, visina i uzrast unaprijed popunjeni i
-   * dugme „Nastavi" radi bez dodira. Bez ove napomene profil tvrdi tri mere koje korisnik
-   * nikada nije izgovorio, i nigde ne piše da su procena. Formular koji je čarobnjak
-   * zamenio je obe tražio izričito (`Validators.required`).
-   */
-  protected readonly prefilledNote = 'Vrednost je unapred popunjena - pomeri klizač ako nije tačna.';
-
   protected readonly passwordMinLength = PASSWORD_MIN_LENGTH;
   protected readonly displayNameMaxLength = DISPLAY_NAME_MAX_LENGTH;
   protected readonly heightMin = HEIGHT_MIN_CM;
@@ -187,15 +177,15 @@ export class RegisterWizard {
   protected readonly subtitle = computed(() => {
     switch (this.step()) {
       case Step.Name:
-        return 'Ime stoji na tvom profilu. Niko drugi ga ne vidi — aplikacija nema deljenje.';
+        return 'Korisnicko ime koje stoji na tvom profilu.';
       case Step.Credentials:
-        return 'Email i lozinka su jedini način da se vratiš na svoje podatke.';
+        return null;
       case Step.Sex:
-        return 'Ne ulazi u računicu plana. Stoji uz ostale podatke o tebi.';
+        return null;
       case Step.Bodyweight:
         return 'Koristi se u analitici. Kasnije je menjaš na profilu.';
       case Step.Height:
-        return 'Ne ulazi u računicu plana, kao ni pol.';
+        return null;
       case Step.Age:
         return null;
       case Step.Experience:

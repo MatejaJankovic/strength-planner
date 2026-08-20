@@ -7,7 +7,6 @@
     [canContinue]="canContinue()"
     [busy]="submitting()"
     [continueLabel]="continueLabel()"
-    footnote="Tvoji podaci ostaju na tvom nalogu."
     (back)="back()"
     (next)="next()"
   >
@@ -49,18 +48,29 @@
 
           Skriva se stilom, a ne atributom hidden ni tipom hidden, jer jednostavniji automati
           upravo ta dva preskaču.
+
+          Polje se NE sme zvati „website". Menadžeri lozinki čuvaju adresu sajta uz svaku
+          stavku i sami popunjavaju polje sa tim imenom — bez obzira na `autocomplete="off"`,
+          koji oni namerno ignorišu. Tada zamka uhvati čoveka: registracija se odbija sa
+          porukom koja ne kaže zašto, i korisnik ne može da napravi nalog nijednim pokušajem.
+          To se i desilo u stvarnoj upotrebi. Otuda neutralno ime i `data-*` atributi kojima
+          se veliki menadžeri izričito isključuju.
         -->
         <div
           aria-hidden="true"
           style="position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden"
         >
-          <label for="wz-website">Ne popunjavaj ovo polje</label>
+          <label for="wz-nickname-2">Ne popunjavaj ovo polje</label>
           <input
-            id="wz-website"
+            id="wz-nickname-2"
             type="text"
             formControlName="website"
             tabindex="-1"
             autocomplete="off"
+            data-1p-ignore
+            data-lpignore="true"
+            data-bwignore
+            data-form-type="other"
           />
         </div>
 
@@ -121,10 +131,6 @@
                 Lozinka mora imati bar {{ passwordMinLength }} karaktera.
               }
             </p>
-          } @else {
-            <p class="field__hint">
-              Bar {{ passwordMinLength }} karaktera. Duža lozinka je jača od komplikovane.
-            </p>
           }
         </div>
 
@@ -154,7 +160,6 @@
           [value]="form.controls.bodyweightKg.value"
           (valueChange)="setBodyweight($event)"
         />
-        <p class="wizard-note">{{ prefilledNote }}</p>
       }
 
       @case (Step.Height) {
@@ -168,7 +173,6 @@
           [value]="form.controls.heightCm.value"
           (valueChange)="setHeight($event)"
         />
-        <p class="wizard-note">{{ prefilledNote }}</p>
       }
 
       @case (Step.Age) {
@@ -182,7 +186,6 @@
           [value]="form.controls.age.value"
           (valueChange)="setAge($event)"
         />
-        <p class="wizard-note">{{ prefilledNote }}</p>
       }
 
       @case (Step.Experience) {
