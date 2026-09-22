@@ -76,6 +76,13 @@ koji dokazuje da opterećenje pada isto bez obzira na checkbox). Provereno da te
 regresiju: privremeno vraćanje stare formule (`ImpliesFailure` da gleda samo zastavicu) obara
 četiri testa, uključujući tačan prijavljeni slučaj.
 
+> **Kasnija izmena ([`load-progression-top-of-range.md`](load-progression-top-of-range.md)).**
+> Kontrolni slučaj iznad, `6` ponavljanja sa `RIR 2`, više nije „netaknut". Ispod dna opsega
+> se sada meri kapacitet (ponavljanja + RIR) prema donjoj granici, bez obzira na to zašto je
+> vežbač stao: 5 sa RIR 2 u 8-12 je kapacitet 7, isto kao otkaz na 7, i spušta sledeći
+> trening umesto da ga diže. `ImpliesFailure` i upisani `IsFailure` su ostali isti - serija
+> sa rezervom se i dalje ne upisuje kao otkaz.
+
 ## Rupa koju je rivju našao: stare serije
 
 Popravka menja samo ono što se tek upisuje. Serije koje su već u bazi pre ove izmene su

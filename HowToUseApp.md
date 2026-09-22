@@ -357,7 +357,9 @@ Grešku ispravljaš ikonicama pored serije: **olovka** za izmenu, **kanta** za b
 
 > **Zašto je RIR važan.** Iz razlike između ciljnog i stvarnog RIR-a sistem računa
 > korekciju opterećenja za sledeći put. Pogrešan RIR = pogrešan sledeći trening. Ako
-> nisi siguran, proceni konzervativno (radije reci da je ostalo više nego manje).
+> nisi siguran, radije reci da je ostalo **manje** nego više: veći RIR znači da je bilo
+> lakše, pa sledeći trening dobija veće opterećenje, a serije sa RIR 4–5 se ne računaju
+> ni u stimulativni volumen.
 
 ### 3. Završi trening
 
@@ -377,7 +379,7 @@ aplikaciji. Za svaku vežbu piše:
 - **e1RM** — procenjeni maksimum iz najbolje serije tog dana.
 - **PR** — oznaka ako je to novi lični rekord.
 - **Sledeće** — opterećenje predloženo za istu vežbu u narednoj nedelji, sa strelicom `↑`
-  ako je povećano.
+  ako je veće od težine koju si podigao.
 
 Povremeno se pojave i dve posebne poruke:
 
@@ -511,12 +513,16 @@ izgledaju kako izgledaju.
 
 **Dupla progresija.** Prvo rasteš u ponavljanjima ka vrhu opsega, pa tek onda u težini.
 Kad **sve** serije jedne vežbe stignu do vrha opsega, sledeći put dobijaš **jedan korak**
-više težine.
+više težine. Korak dolazi i kada su serije na vrhu išle do otkaza: sledeći trening kreće
+od dna opsega, a to je dovoljno rezerve. Izuzetak su nedelje sa uskim opsegom i većim
+ciljnim RIR-om (npr. 11–12 sa RIR 2), gde otkaz na vrhu zadržava težinu. Vrh opsega nikad
+ne spušta opterećenje.
 
 **Korekcija po RIR-u.** Sledeće opterećenje se koriguje za `(prosečan RIR − ciljni RIR) × 3%`,
-ograničeno na **±10%**. Lakše nego traženo → težina raste; teže → pada. Serija do otkaza
-ispod donje granice opsega ulazi kao negativan RIR, srazmerno promašenim ponavljanjima —
-zato korekcija naniže može da dosegne isti plafon kao naviše.
+ograničeno na **±10%**. Lakše nego traženo → težina raste; teže → pada. Serija ispod
+donje granice opsega meri se kapacitetom: ponavljanja plus RIR, u odnosu na donju granicu.
+5 ponavljanja sa RIR 2 u opsegu 8–12 je isto što i otkaz na 7, pa sledeći put težina pada.
+Zato korekcija naniže može da dosegne isti plafon kao naviše.
 
 **Procena maksimuma (e1RM).** Epley formula preko efektivnih ponavljanja
 (`ponavljanja + RIR`), samo za serije do 12 ponavljanja. Serije iz deload nedelje se

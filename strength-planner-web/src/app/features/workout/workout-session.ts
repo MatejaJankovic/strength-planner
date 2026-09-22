@@ -16,6 +16,7 @@ import { WeightStepper } from '../../shared/components/weight-stepper/weight-ste
 import { StatChip, StatChipTone } from '../../shared/components/stat-chip/stat-chip';
 import { EmptyState } from '../../shared/components/empty-state/empty-state';
 import { Loading } from '../../shared/components/loading/loading';
+import { SetFeedback, setFeedback } from './set-feedback';
 
 interface SetDraft {
   weightKg: number;
@@ -157,6 +158,11 @@ export class WorkoutSession {
     if (this.draftOf(planId).isFailure) {
       this.patchDraft(planId, { isFailure: false });
     }
+  }
+
+  /** Napomena ispod unosa: šta ova serija znači za sledeći trening (vidi set-feedback.ts). */
+  protected feedbackFor(plan: ExercisePlanDto, draft: SetDraft): SetFeedback | null {
+    return setFeedback(plan, draft);
   }
 
   /** Otkaz i RIR se isključuju — serija do otkaza po definiciji nema rezervu. */
