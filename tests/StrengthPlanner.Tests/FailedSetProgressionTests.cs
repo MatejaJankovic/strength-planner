@@ -25,9 +25,17 @@ public class FailedSetProgressionTests
     // gornji red sa istim brojevima i kvačicom uključenom.
     [InlineData(6, 0, false, 8, -2)]
     [InlineData(3, 0, false, 8, -5)]
-    // RIR iznad nule se ne dira ni ispod dna opsega - vežbač je stao namerno sa rezervom
-    // (bol, vreme, forma), ne zato što nije mogao dalje. To ostaje kao pre.
-    [InlineData(6, 2, false, 8, 2)]
+    // Ispod dna opsega meri se kapacitet: ponavljanja + RIR prema donjoj granici. Razlog
+    // zbog kog je vežbač stao ne menja šta brojevi govore o opterećenju.
+    // 6 sa RIR 2 = kapacitet 8, tačno na dnu.
+    [InlineData(6, 2, false, 8, 0)]
+    // 5 sa RIR 2 = kapacitet 7, jedno ispod dna - isto kao otkaz na 7.
+    [InlineData(5, 2, false, 8, -1)]
+    [InlineData(7, 1, false, 8, 0)]
+    // Velika rezerva ispod dna i dalje može da bude "lakše od plana".
+    [InlineData(6, 3, false, 8, 1)]
+    [InlineData(5, 5, false, 8, 2)]
+    [InlineData(3, 1, false, 8, -4)]
     // RIR 0 na dnu ili iznad njega bez kvačice i dalje znači "jedva sam stigao, ali jesam" -
     // ne otkaz. Ponašanje pre ove izmene, i dalje nepromenjeno.
     [InlineData(8, 0, false, 8, 0)]
@@ -144,8 +152,9 @@ public class FailedSetProgressionTests
     public void ComputeNext_StillAddsWeight_WhenTopOfRangeWasReachedByFailing()
     {
         // Otkaz NA vrhu opsega ne poništava double progression: vrh opsega je upravo
-        // signal na kome progresija počiva. Razliku prema "12 sa RIR 1" nosi korekcija
-        // (efektivni RIR 0 => -3%), koja se sabira sa korakom.
+        // signal na kome progresija počiva. Sledeći trening kreće od dna opsega (8), a to
+        // su četiri ponavljanja rezerve - manjak od jednog RIR poena je time već plaćen, pa
+        // se negativna korekcija na vrhu ne primenjuje dok je manjak manji od širine opsega.
         var failedAtTop = new List<WorkingSet>
         {
             new(12, 0, IsFailure: true),
@@ -158,35 +167,96 @@ public class FailedSetProgressionTests
         var comfortable = _engine.ComputeNext(100m, comfortableAtTop, targetRir: 1, repRangeMin: 8, repRangeMax: 12);
 
         Assert.True(failed.WeightIncreased);
-        // 100 * 0.97 + 2.5 = 99.5 -> 100 kg: opterećenje se zadržava, ne pada.
-        Assert.Equal(100m, failed.NextWeightKg);
-        // Ista ponavljanja sa rezervom i dalje nose punu progresiju.
+        // Ceo korak: 100 + 2.5. Ranije je ovde stajalo 100 * 0.97 + 2.5 = 99.5 -> 100,
+        // "zadržava se" - ali samo zato što je 100 kg slučajno u pojasu 42-125 kg.
+        Assert.Equal(102.5m, failed.NextWeightKg);
         Assert.Equal(102.5m, comfortable.NextWeightKg);
     }
 
-    [Fact]
-    public void ComputeNext_DoesNotDriveWeightDown_WhenEveryTopOfRangeSessionEndsInFailure()
+    /// <summary>
+    /// Regresija iz runde 1: raniji pokušaj da se otkaz kazni i preko double progression-a
+    /// gurao je opterećenje naniže iz treninga u trening (100 -> 80 kg za osam treninga)
+    /// iako je vežbač svaki put stizao do vrha opsega.
+    ///
+    /// Test koji je to trebalo da čuva počinjao je od 100 kg i tako prolazio slučajno:
+    /// formula 0.97u + korak drži opterećenje samo između ~42 i 125 kg (za šipku), a iznad
+    /// toga ga obara - 160 kg je za osam treninga pao na 140. Zato se sada proverava mreža
+    /// težina i koraka, i svaki trening posebno, ne samo krajnja vrednost.
+    /// </summary>
+    [Theory]
+    [InlineData(100.0, 2.5, 8, 12, 1, 12, 0, true, 120.0)]
+    [InlineData(160.0, 2.5, 8, 12, 1, 12, 0, true, 180.0)]
+    [InlineData(300.0, 2.5, 8, 12, 1, 12, 0, true, 320.0)]
+    [InlineData(180.0, 2.5, 3, 6, 2, 6, 1, false, 200.0)]
+    [InlineData(110.0, 2.0, 8, 12, 1, 12, 0, true, 126.0)]
+    [InlineData(260.0, 5.0, 8, 12, 1, 12, 0, true, 300.0)]
+    [InlineData(20.0, 0.5, 8, 12, 1, 12, 0, true, 24.0)]
+    // Uska nedelja (11-12 sa RIR 2) izvučena do otkaza: po Epley-u sledeći propis ne ide
+    // teže, pa se težina drži - ali nikad ne pada.
+    [InlineData(100.0, 2.5, 11, 12, 2, 12, 0, true, 100.0)]
+    public void ComputeNext_NeverLowersLoad_WhenEveryTopOfRangeSessionEndsTheSameWay(
+        double startKg,
+        double stepKg,
+        int repRangeMin,
+        int repRangeMax,
+        int targetRir,
+        int reps,
+        int rir,
+        bool isFailure,
+        double expectedFinalKg)
     {
-        // Regresija: raniji pokušaj da se otkaz kazni i preko double progression-a
-        // gurao je opterećenje naniže iz treninga u trening (100 -> 80 kg za osam
-        // treninga) iako je vežbač svaki put stizao do vrha opsega.
-        var weightKg = 100m;
+        var weightKg = (decimal)startKg;
 
         for (var session = 0; session < 8; session++)
         {
             var sets = new List<WorkingSet>
             {
-                new(12, 0, IsFailure: true),
-                new(12, 0, IsFailure: true),
-                new(12, 0, IsFailure: true)
+                new(reps, rir, isFailure),
+                new(reps, rir, isFailure),
+                new(reps, rir, isFailure)
             };
 
-            weightKg = _engine
-                .ComputeNext(weightKg, sets, targetRir: 1, repRangeMin: 8, repRangeMax: 12)
+            var next = _engine
+                .ComputeNext(weightKg, sets, targetRir, repRangeMin, repRangeMax, (decimal)stepKg)
                 .NextWeightKg;
+
+            Assert.True(next >= weightKg, $"Session {session + 1}: {weightKg} kg -> {next} kg.");
+            weightKg = next;
         }
 
-        Assert.Equal(100m, weightKg);
+        Assert.Equal((decimal)expectedFinalKg, weightKg);
+    }
+
+    [Fact]
+    public void ComputeNext_LowersLoad_WhenRepsFellBelowRangeWithReserve()
+    {
+        // Prijavljeno u pregledu logike: 3x5 sa RIR 2 u opsegu 8-12 davalo je 102.5 kg -
+        // teže - jer se RIR 2 čitao kao "lakše od plana". Kapacitet je 5 + 2 = 7, jedno
+        // ispod dna: odstupanje -2 poena, -6% => 94 -> 95 kg. Epley daje isto:
+        // 100 * (1 + 7/30) / (1 + 9/30) = 94.9 kg.
+        var sets = new List<WorkingSet> { new(5, 2), new(5, 2), new(5, 2) };
+
+        var result = _engine.ComputeNext(100m, sets, targetRir: 1, repRangeMin: 8, repRangeMax: 12);
+
+        Assert.Equal(95m, result.NextWeightKg);
+        Assert.False(result.WeightIncreased);
+    }
+
+    [Theory]
+    // Kapacitet 5 + 4 = 9 = dno + cilj: tačno propisano, težina se ne menja.
+    [InlineData(5, 4, 100.0)]
+    // Kapacitet 10: i ispod opsega, opterećenje koje je stvarno lako i dalje raste.
+    [InlineData(5, 5, 102.5)]
+    // Isti kapacitet (9) ispod i unutar opsega daje isti predlog.
+    [InlineData(6, 3, 100.0)]
+    [InlineData(8, 1, 100.0)]
+    public void ComputeNext_JudgesBelowFloorSetsByCapacity(int reps, int rir, double expectedKg)
+    {
+        var sets = new List<WorkingSet> { new(reps, rir), new(reps, rir), new(reps, rir) };
+
+        var result = _engine.ComputeNext(100m, sets, targetRir: 1, repRangeMin: 8, repRangeMax: 12);
+
+        Assert.Equal((decimal)expectedKg, result.NextWeightKg);
     }
 
     [Fact]
