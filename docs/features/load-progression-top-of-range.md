@@ -75,8 +75,8 @@ ako sve serije na vrhu:
   propis ide na istoj ili većoj težini.
 - Za ugrađene ciljeve u ravnom bloku (8–12 @RIR1, 3–6 @RIR2) uslov je uvek ispunjen. Ne
   važi samo kad je opseg uži od ciljnog RIR-a — uske nedelje periodizacije (11–12 @RIR2,
-  3–4 @RIR3) ili lični šablon sa uskim opsegom — i serije se izvuku preko cilja. Tu se težina **drži** — vrh opsega nikad ne
-  spušta opterećenje.
+  3–4 @RIR3) ili lični šablon sa uskim opsegom — i serije se izvuku preko cilja. Tu se
+  težina **drži**: vrh opsega nikad ne spušta opterećenje.
 
 ### Ispod dna opsega
 
