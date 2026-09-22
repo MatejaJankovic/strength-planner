@@ -213,6 +213,21 @@ public class FatigueEvaluatorTests
     }
 
     [Fact]
+    public void AverageRirDeviation_CountsAnUnflaggedImpliedFailureAmongTheCompletedSets()
+    {
+        // Serija sa RIR 0 ispod dna opsega je otkaz po brojevima, ali ako kvačica nije
+        // dotaknuta, u bazi stoji IsFailure = false. Takva serija ne ulazi u udeo otkaza
+        // (koji čita zastavicu), pa mora da ostane u proseku RIR-a - inače nedelja u kojoj
+        // je vežbač promašio opseg ne bi imala nijedan signal umora.
+        var deviation = FatigueEvaluator.AverageRirDeviation([
+            new RirSample(new WorkingSet(6, 0), RepRangeMin: 8, TargetRir: 1)
+        ]);
+
+        // Kapacitet 6 naspram dna 8 => -2, minus cilj 1.
+        Assert.Equal(-3m, deviation);
+    }
+
+    [Fact]
     public void AverageRirDeviation_IsZero_WhenEverySetFailed()
     {
         var deviation = FatigueEvaluator.AverageRirDeviation([

@@ -101,6 +101,13 @@ dalje ne upisuje kao otkaz, pa nema ni migracije.
 Značilo je „sve serije su stigle do vrha", a rezime je to prikazivao kao strelicu uz težinu
 koja je bila ista ili manja. Sada znači ono što piše: predlog je veći od upotrebljene težine.
 
+`SessionService` je morao u istu granu, iako je rezime tema naredne: on posle progresije ume
+da **prepiše** predlog — 90% pred planirani deload, ili preračun iz e1RM-a kad naredna nedelja
+traži drugi propis — pa je zastavicu računao iz broja koji korisnik na kraju ni ne vidi.
+Izmereno pred planiranim deload-om: pre ispravke `144 → 145 kg` uz strelicu naviše, sada bez
+nje. Ostatak rezimea (razlika u kilogramima, preskočena vežba, izlaz iz deload-a) ide u
+granu `fix/progression-reference-and-summary`.
+
 ### Ocena umora čita isti efektivni RIR
 
 Posle pravila kapaciteta ista serija (5 sa RIR 2) je progresiji i učenju granica volumena
@@ -118,10 +125,14 @@ Pravila napomene ispod unosa serije su u čistoj funkciji `set-feedback.ts`, sa 
 testom, jer je napomena obećanje o sledećem treningu i mora da prati server:
 
 - otkaz na vrhu: „ako sve serije stignu do vrha, sledeći put ide korak više"
-- otkaz na vrhu uskog opsega: „to je teže od plana, pa se opterećenje zadržava"
+- otkaz na vrhu uskog opsega: „ako su sve serije takve, opterećenje se zadržava"
 - ispod dna bez rezerve (i bez kvačice): „računa se kao otkaz"
 - ispod dna sa rezervom, kad kapacitet ne dostiže propis: „i sa rezervom je to manje nego što
-  propis traži, pa sledeći put predlažemo manje opterećenje"
+  propis traži"
+
+Napomene govore o **jednoj** seriji, a pravilo gleda prosek celog treninga, pa nijedna ne
+obećava tačan broj: umesto „predlažemo manje opterećenje" piše „ne predlažemo veće", a uz
+uski opseg stoji uslov „ako su sve serije takve". Prijavila revizija koda.
 
 ### Uputstvo (A8)
 
@@ -175,7 +186,9 @@ Upper A, nedelja 1, širina telefona (375 px):
 | Barbell Row | 3 × 5 na 100 kg, RIR 2 | `Sledeće 95 kg` (bez strelice) | 102.5 kg |
 | Triceps Pushdown | 3 × 10 na 40 kg, RIR 3 | `Sledeće 42.5 kg ↑` | 42.5 kg, bez strelice |
 
-Nedelja 2, isti dan, nosi iste tri težine (162.5 / 95 / 42.5). Na kartici Bench Press-a, uz
+Nedelja 2, isti dan, nosi iste tri težine (162.5 / 95 / 42.5). Posle završene treće nedelje
+(3 × 12 na 160 kg sa RIR 1) deload nedelja dobija **145 kg** (90% od 160, zaokruženo na korak)
+i rezime to prikazuje **bez strelice**; pre ispravke zastavice tu je stajala strelica naviše. Na kartici Bench Press-a, uz
 čekiran otkaz na 12 ponavljanja, stoji nova napomena „ako sve serije stignu do vrha, sledeći put
 ide korak više"; na kartici Barbell Row-a, sa 5 ponavljanja i RIR 2, napomena da je to manje
 nego što propis traži. Konzola bez grešaka.

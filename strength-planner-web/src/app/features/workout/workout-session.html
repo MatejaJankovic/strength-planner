@@ -267,19 +267,19 @@
                       korak više.
                     }
                     @case ('failure-at-top-narrow') {
-                      Otkaz na vrhu uskog opsega - to je teže od plana, pa se opterećenje
-                      zadržava.
+                      Otkaz na vrhu uskog opsega - to je teže od plana; ako su sve serije
+                      takve, opterećenje se zadržava.
                     }
                     @case ('failure-in-range') {
                       Otkaz unutar opsega - RIR je 0.
                     }
                     @case ('below-range-no-reserve') {
                       Ispod donje granice bez rezerve - računa se kao otkaz, pa sledeći put
-                      predlažemo manje opterećenje.
+                      ne predlažemo veće opterećenje.
                     }
                     @case ('below-range-with-reserve') {
                       Ispod donje granice opsega - i sa rezervom je to manje nego što propis
-                      traži, pa sledeći put predlažemo manje opterećenje.
+                      traži, pa sledeći put ne predlažemo veće opterećenje.
                     }
                   }
                 </p>
