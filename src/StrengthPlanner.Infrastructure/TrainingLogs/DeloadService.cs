@@ -397,12 +397,13 @@ public sealed class DeloadService
             return null;
         }
 
-        // RIR se meri samo nad dovršenim serijama; otkazi su zaseban signal i ne smeju
-        // da se broje dvaput (vidi FatigueEvaluator).
-        var completed = sets.Where(set => !set.IsFailure).ToList();
-        var rirDeviation = completed.Count == 0
-            ? 0m
-            : completed.Average(set => (decimal)(set.Rir - set.TargetRir));
+        // RIR se meri samo nad dovršenim serijama i efektivnim RIR-om, istim koji koristi
+        // progresija (vidi FatigueEvaluator.AverageRirDeviation).
+        var rirDeviation = FatigueEvaluator.AverageRirDeviation(sets.Select(set => new RirSample(
+            new WorkingSet(set.Reps, set.Rir, set.IsFailure),
+            set.RepRangeMin,
+            set.TargetRir)));
+        var completedCount = sets.Count(set => !set.IsFailure);
 
         // Koliko ispod cilja dovršena serija uopšte može da padne: RIR ne ide ispod nule.
         var achievableDeficit = sets.Max(set => (decimal)set.TargetRir);
@@ -414,7 +415,7 @@ public sealed class DeloadService
         return new WeeklyFatigue(
             rirDeviation,
             achievableDeficit,
-            AllSetsFailed: completed.Count == 0,
+            AllSetsFailed: completedCount == 0,
             failureShare,
             e1RmChange,
             volumeShare);

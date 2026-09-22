@@ -4,17 +4,20 @@ namespace StrengthPlanner.Domain.Algorithms;
 /// The fatigue signals a completed training week produces.
 /// </summary>
 /// <param name="AverageRirDeviation">
-/// Mean of (RIR - target RIR) over the sets the lifter actually <b>completed</b>, i.e.
-/// excluding sets taken to failure. Negative means the completed work was harder than
+/// Mean of (effective RIR - target RIR) over the sets the lifter actually <b>completed</b>,
+/// i.e. excluding sets taken to failure. Effective RIR is <see cref="WorkingSet.EffectiveRir"/>,
+/// the same measure progression uses, so a set that stopped below the range floor with
+/// reserve reads as harder here too. Negative means the completed work was harder than
 /// the plan asked for. Failed sets are deliberately left out so that this signal and
 /// <paramref name="FailureShare"/> measure two different things: one failed set would
 /// otherwise drive both, and two signals that always move together are not two signals.
 /// </param>
 /// <param name="AchievableRirDeficit">
-/// How far below target a completed set can possibly land — the plan's target RIR,
-/// never below 1. A hypertrophy block targeting RIR 1 can only ever report -1, while a
-/// strength block targeting RIR 2 can report -2; without this the same grinding week
-/// would score differently purely because of the goal.
+/// How far below target a completed set inside the range can land — the plan's target
+/// RIR, never below 1. A hypertrophy block targeting RIR 1 can only ever report -1 there,
+/// while a strength block targeting RIR 2 can report -2; without this the same grinding
+/// week would score differently purely because of the goal. A set stopped below the range
+/// floor can read further below target; the score clamps it to the full weight.
 /// </param>
 /// <param name="AllSetsFailed">
 /// True when the week produced no completed sets at all. There is then no RIR evidence

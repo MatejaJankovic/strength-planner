@@ -176,4 +176,49 @@ public class FatigueEvaluatorTests
             Assert.InRange(score, 0m, 1m);
         }
     }
+
+    [Fact]
+    public void AverageRirDeviation_ReadsABelowFloorSetWithReserveAsHarder()
+    {
+        // 5 ponavljanja sa RIR 2 u 8-12 @RIR1: kapacitet 7, jedno ispod dna. Progresiji je
+        // to -2 poena; sirov RIR bi ovde rekao +1, "lakše od plana".
+        var deviation = FatigueEvaluator.AverageRirDeviation([
+            new RirSample(new WorkingSet(5, 2), RepRangeMin: 8, TargetRir: 1)
+        ]);
+
+        Assert.Equal(-2m, deviation);
+    }
+
+    [Fact]
+    public void AverageRirDeviation_KeepsLoggedRirInsideTheRange()
+    {
+        var deviation = FatigueEvaluator.AverageRirDeviation([
+            new RirSample(new WorkingSet(10, 0), RepRangeMin: 8, TargetRir: 1),
+            new RirSample(new WorkingSet(9, 3), RepRangeMin: 8, TargetRir: 1)
+        ]);
+
+        // (-1 + 2) / 2
+        Assert.Equal(0.5m, deviation);
+    }
+
+    [Fact]
+    public void AverageRirDeviation_LeavesFailuresToTheFailureShare()
+    {
+        var deviation = FatigueEvaluator.AverageRirDeviation([
+            new RirSample(new WorkingSet(5, 0, IsFailure: true), RepRangeMin: 8, TargetRir: 1),
+            new RirSample(new WorkingSet(10, 2), RepRangeMin: 8, TargetRir: 1)
+        ]);
+
+        Assert.Equal(1m, deviation);
+    }
+
+    [Fact]
+    public void AverageRirDeviation_IsZero_WhenEverySetFailed()
+    {
+        var deviation = FatigueEvaluator.AverageRirDeviation([
+            new RirSample(new WorkingSet(5, 0, IsFailure: true), RepRangeMin: 8, TargetRir: 1)
+        ]);
+
+        Assert.Equal(0m, deviation);
+    }
 }
