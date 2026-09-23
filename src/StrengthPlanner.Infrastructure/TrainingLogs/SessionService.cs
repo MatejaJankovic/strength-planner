@@ -185,6 +185,14 @@ public class SessionService : ISessionService
 
         var summaries = new List<CompletedExerciseSummaryDto>();
 
+        // Deload je pauza, ne korak nazad: progresija za nedelju posle njega polazi od
+        // poslednje trenažne nedelje, a ne od olakšanih serija samog deload-a. Nedelja
+        // posle deload-a postoji kad je umor povukao rasterećenje ranije i time oslobodio
+        // planirano (vidi DeloadService.RestorePlannedDeloadAsync).
+        var resumePoints = session.TrainingWeek.IsDeload
+            ? await LoadResumePointsAsync(userId, session, weightStepByExerciseId, cancellationToken)
+            : new Dictionary<Guid, ResumePoint>();
+
         foreach (var plan in session.ExercisePlans.OrderBy(plan => plan.Order))
         {
             var nextPlan = nextPlans.FirstOrDefault(candidate => candidate.ExerciseId == plan.ExerciseId);
@@ -199,21 +207,18 @@ public class SessionService : ISessionService
                 ExerciseName = plan.Exercise.Name
             };
 
-            if (logs.Count == 0)
-            {
-                if (nextPlan is not null)
-                {
-                    nextPlan.TargetWeightKg = plan.TargetWeightKg;
-                    summary.NextWeightKg = nextPlan.TargetWeightKg;
-                }
+            var weightStepKg = WeightStepResolver.StepFor(weightStepByExerciseId, plan.ExerciseId);
 
-                summaries.Add(summary);
-                continue;
-            }
+            // Referentna težina je najteža koju je vežbač podigao, a ne prosek svih serija:
+            // prosek je jednu back-off seriju pretvarao u niži predlog od težine koja je u
+            // istom treningu podignuta više puta.
+            var load = WorkingLoad.Select(logs.Select(ToLoggedSet).ToList());
 
             // Deload serije su namerno submaksimalne — njihov e1RM bi veštački
             // oborio trend snage i start sledećeg mezociklusa, pa se ne upisuje.
-            var bestEstimate = session.TrainingWeek.IsDeload ? null : EstimateBestOneRepMax(logs);
+            var bestEstimate = load is null || session.TrainingWeek.IsDeload
+                ? null
+                : EstimateBestOneRepMax(logs);
             if (bestEstimate.HasValue)
             {
                 summary.E1Rm = bestEstimate.Value;
@@ -231,45 +236,61 @@ public class SessionService : ISessionService
                 });
             }
 
-            // Progresija polazi od težine koju je korisnik STVARNO koristio;
-            // planska težina je samo fallback (logova ovde uvek ima).
-            var usedWeight = logs.Count > 0
-                ? logs.Average(set => set.WeightKg)
-                : plan.TargetWeightKg ?? 0m;
-            var workingSets = logs
-                .Select(set => new WorkingSet(set.Reps, set.Rir, set.IsFailure))
-                .ToList();
-            var weightStepKg = WeightStepResolver.StepFor(weightStepByExerciseId, plan.ExerciseId);
-            var progression = _progressionEngine.ComputeNext(
-                usedWeight,
-                workingSets,
-                plan.TargetRir,
-                plan.RepRangeMin,
-                plan.RepRangeMax,
-                weightStepKg);
+            var progression = load is null
+                ? null
+                : _progressionEngine.ComputeNext(
+                    load.ReferenceWeightKg,
+                    load.WorkingSets,
+                    plan.TargetRir,
+                    plan.RepRangeMin,
+                    plan.RepRangeMax,
+                    weightStepKg);
 
-            summary.NextWeightKg = progression.NextWeightKg;
-            summary.WeightIncreased = progression.WeightIncreased;
+            // Ono što je vežbač podigao u OVOM treningu; za preskočenu vežbu planirana
+            // težina. Iz toga se na kraju računa razlika koju rezime prikazuje.
+            summary.UsedWeightKg = load?.ReferenceWeightKg ?? plan.TargetWeightKg;
+
+            var referenceWeightKg = summary.UsedWeightKg;
+            var progressionWeightKg = progression?.NextWeightKg;
+            var currentPrescription = PrescriptionOf(plan);
+
+            if (session.TrainingWeek.IsDeload
+                && nextPlan is not null
+                && !nextPlan.WorkoutSession.TrainingWeek.IsDeload)
+            {
+                if (resumePoints.TryGetValue(plan.ExerciseId, out var resume))
+                {
+                    currentPrescription = resume.Prescription;
+                    referenceWeightKg = resume.ReferenceWeightKg;
+                    progressionWeightKg = resume.ProgressionWeightKg;
+                }
+                else
+                {
+                    // Nema odrađene trenažne nedelje za ovaj dan (npr. cela je preskočena),
+                    // pa se referenca vraća iz same deload težine: ona nosi 90% prethodne.
+                    referenceWeightKg = NextWeekLoad.UndoDeload(plan.TargetWeightKg, weightStepKg);
+                    progressionWeightKg = null;
+                }
+            }
 
             if (nextPlan is not null)
             {
                 recentMaxByExerciseId.TryGetValue(plan.ExerciseId, out var recentMax);
-                var nextWeight = NextTargetWeight(
-                    plan,
-                    nextPlan,
-                    progression.NextWeightKg,
-                    usedWeight,
+                var nextWeight = NextWeekLoad.For(
+                    referenceWeightKg,
+                    progressionWeightKg,
+                    currentPrescription,
+                    PrescriptionOf(nextPlan),
+                    nextPlan.WorkoutSession.TrainingWeek.IsDeload,
                     bestEstimate ?? (recentMax > 0 ? recentMax : null),
                     weightStepKg);
 
-                nextPlan.TargetWeightKg = nextWeight;
-                summary.NextWeightKg = nextWeight;
-
-                // Strelica se odnosi na ono što se stvarno prikazuje. NextTargetWeight ume
-                // da prepiše predlog progresije (90% pred deload, preračun iz e1RM-a kad
-                // naredna nedelja traži drugi propis), pa se zastavica računa iz konačnog
-                // broja - inače rezime pokazuje "90 kg ↑" pred planirani deload.
-                summary.WeightIncreased = nextWeight > usedWeight;
+                // Null znači da o vežbi nema nijednog podatka; zatečeni cilj se tada ne
+                // prepisuje praznom vrednošću.
+                if (nextWeight is not null)
+                {
+                    nextPlan.TargetWeightKg = nextWeight;
+                }
             }
 
             summaries.Add(summary);
@@ -294,10 +315,9 @@ public class SessionService : ISessionService
             session.TrainingWeek.MesocycleId,
             cancellationToken);
 
-        if (autoDeload is not null)
-        {
-            RefreshSummariesAfterDeload(summaries, nextPlans);
-        }
+        // Rezime se zaključuje TEK ovde: sve do ovog trenutka je moglo da prepiše težinu
+        // naredne nedelje — progresija, pravilo za narednu nedelju, pa i auto-deload.
+        FinalizeSummaries(summaries, nextPlans);
 
         // Sve što se tiče samog treninga mora da bude upisano pre prelaska na sledeći
         // blok — generator ispod poziva svoj SaveChanges, pa se na njega ne oslanjamo.
@@ -409,27 +429,110 @@ public class SessionService : ISessionService
     }
 
     /// <summary>
-    /// Rezime treninga je popunjen tokom progresije, a deload posle toga prepisuje ista
-    /// (praćena) planska zaduženja. Bez ovog usklađivanja korisnik bi u istom ekranu
-    /// video poruku "nedelja je pretvorena u deload" i, ispod nje, uvećanu težinu koju
-    /// je progresija predložila pre te odluke.
+    /// Fills in what the summary reports about the next session, once nothing can change it
+    /// any more.
+    ///
+    /// The proposal is read from the stored plan of the next week, not from the progression
+    /// result: the week may have become a deload in the meantime, and that rewrites the
+    /// target on the very same tracked entities. The old version only patched the summary
+    /// when an auto-deload happened, and left the arrow from the progression result behind
+    /// in every other case — including a planned deload, where the proposal is 90% of the
+    /// load lifted and the summary still showed it rising.
+    ///
+    /// With no next week in this block there is no proposal to show: the next block derives
+    /// its own weights from the estimated maximum when it is generated.
     /// </summary>
-    private static void RefreshSummariesAfterDeload(
+    private static void FinalizeSummaries(
         List<CompletedExerciseSummaryDto> summaries,
         IReadOnlyList<ExercisePlan> nextPlans)
     {
         foreach (var summary in summaries)
         {
             var nextPlan = nextPlans.FirstOrDefault(plan => plan.ExerciseId == summary.ExerciseId);
-            if (nextPlan is null)
+
+            summary.NextWeightKg = nextPlan?.TargetWeightKg;
+            summary.WeightChangeKg = NextWeekLoad.ChangeKg(summary.UsedWeightKg, summary.NextWeightKg);
+            summary.WeightIncreased = summary.WeightChangeKg > 0;
+        }
+    }
+
+    /// <summary>
+    /// Where progression resumes from after a deload week, per exercise: the most recent
+    /// completed training session of the same day, with its own prescription, reference load
+    /// and progression result.
+    /// </summary>
+    private async Task<Dictionary<Guid, ResumePoint>> LoadResumePointsAsync(
+        Guid userId,
+        WorkoutSession deloadSession,
+        IReadOnlyDictionary<Guid, decimal> weightStepByExerciseId,
+        CancellationToken cancellationToken)
+    {
+        var plans = await _db.ExercisePlans
+            .AsNoTracking()
+            .Include(plan => plan.SetLogs)
+            .Include(plan => plan.WorkoutSession)
+            .Where(plan => plan.WorkoutSession.TrainingWeek.MesocycleId == deloadSession.TrainingWeek.MesocycleId
+                           && plan.WorkoutSession.TrainingWeek.Mesocycle.UserId == userId
+                           && plan.WorkoutSession.DayLabel == deloadSession.DayLabel
+                           && plan.WorkoutSession.Status == SessionStatus.Completed
+                           && !plan.WorkoutSession.TrainingWeek.IsDeload
+                           && plan.WorkoutSession.TrainingWeek.WeekNumber < deloadSession.TrainingWeek.WeekNumber)
+            .OrderByDescending(plan => plan.WorkoutSession.TrainingWeek.WeekNumber)
+            .ToListAsync(cancellationToken);
+
+        var resumePoints = new Dictionary<Guid, ResumePoint>();
+
+        foreach (var plan in plans)
+        {
+            // Upit je poređan od najsvežije nedelje, pa prvi nalaz po vežbi i jeste onaj
+            // od koga se nastavlja.
+            if (resumePoints.ContainsKey(plan.ExerciseId))
             {
                 continue;
             }
 
-            summary.NextWeightKg = nextPlan.TargetWeightKg;
-            summary.WeightIncreased = false;
+            var load = WorkingLoad.Select(plan.SetLogs
+                .OrderBy(set => set.SetNumber)
+                .Select(ToLoggedSet)
+                .ToList());
+
+            if (load is null)
+            {
+                continue;
+            }
+
+            var progression = _progressionEngine.ComputeNext(
+                load.ReferenceWeightKg,
+                load.WorkingSets,
+                plan.TargetRir,
+                plan.RepRangeMin,
+                plan.RepRangeMax,
+                WeightStepResolver.StepFor(weightStepByExerciseId, plan.ExerciseId));
+
+            resumePoints[plan.ExerciseId] = new ResumePoint(
+                PrescriptionOf(plan),
+                load.ReferenceWeightKg,
+                progression.NextWeightKg);
         }
+
+        return resumePoints;
     }
+
+    private static LoadPrescription PrescriptionOf(ExercisePlan plan)
+    {
+        return new LoadPrescription(plan.RepRangeMin, plan.RepRangeMax, plan.TargetRir);
+    }
+
+    private static LoggedSet ToLoggedSet(SetLog set)
+    {
+        return new LoggedSet(set.WeightKg, set.Reps, set.Rir, set.IsFailure);
+    }
+
+    /// <summary>Where progression stood before a deload week interrupted it.</summary>
+    private sealed record ResumePoint(
+        LoadPrescription Prescription,
+        decimal ReferenceWeightKg,
+        decimal ProgressionWeightKg);
 
     private IQueryable<WorkoutSession> BuildSessionDetailsQuery(Guid userId)
     {
@@ -443,53 +546,6 @@ public class SessionService : ISessionService
             .Include(workoutSession => workoutSession.ExercisePlans)
                 .ThenInclude(plan => plan.SetLogs)
             .Where(workoutSession => workoutSession.TrainingWeek.Mesocycle.UserId == userId);
-    }
-
-    /// <summary>
-    /// Opterećenje za istu vežbu u narednoj nedelji.
-    ///
-    /// Tri slučaja, i razlikuju se suštinski:
-    ///
-    /// <list type="bullet">
-    /// <item><b>Deload</b> — 90% <i>stvarno</i> korišćene težine, bez progresije.</item>
-    /// <item><b>Naredna nedelja traži drugačiji propis</b> (periodizacija) — nošenje iste
-    /// težine nema smisla: nedelja koja pada sa 10 na 5 ponavljanja mora da bude teža, a ne
-    /// ista uvećana za jedan korak. Opterećenje se izvodi iz najsvežije procene 1RM-a i
-    /// propisa te nedelje, isto kao pri generisanju prve nedelje.</item>
-    /// <item><b>Isti propis</b> — obična dupla progresija, ponašanje nepromenjeno.</item>
-    /// </list>
-    ///
-    /// Ako skorašnje procene 1RM-a nema — nijedna serija nije upisana, ili su sve bile
-    /// iznad Epley granice pa se e1RM ne beleži — ostaje progresija: pogrešnija, ali bolja
-    /// od opterećenja izvedenog iz rekorda starog nekoliko meseci.
-    /// </summary>
-    private decimal NextTargetWeight(
-        ExercisePlan plan,
-        ExercisePlan nextPlan,
-        decimal progressionWeightKg,
-        decimal usedWeightKg,
-        decimal? oneRepMaxKg,
-        decimal weightStepKg)
-    {
-        if (nextPlan.WorkoutSession.TrainingWeek.IsDeload)
-        {
-            return WeightMath.RoundToStep(usedWeightKg * TrainingConstants.DeloadWeightFactor, weightStepKg);
-        }
-
-        var samePrescription = nextPlan.RepRangeMin == plan.RepRangeMin
-                               && nextPlan.RepRangeMax == plan.RepRangeMax
-                               && nextPlan.TargetRir == plan.TargetRir;
-
-        if (samePrescription || oneRepMaxKg is null)
-        {
-            return progressionWeightKg;
-        }
-
-        return _e1RmCalculator.WorkingWeightFor(
-            oneRepMaxKg.Value,
-            nextPlan.RepRangeMin,
-            nextPlan.TargetRir,
-            weightStepKg);
     }
 
     private decimal? EstimateBestOneRepMax(IReadOnlyList<SetLog> logs)
