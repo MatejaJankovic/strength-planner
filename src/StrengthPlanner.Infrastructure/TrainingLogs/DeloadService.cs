@@ -382,7 +382,10 @@ public sealed class DeloadService
                 ? used
                 : plannedByExerciseAndDay.TryGetValue(key, out var planned)
                     ? planned
-                    : null;
+                    // Poslednja rezerva je cilj same nedelje koja postaje deload: kada je
+                    // progresija upisan taj cilj, nedelja još nije bila rasterećenje, pa je
+                    // to puna težina. Bez ove grane bi ostala nedirnuta, dakle 100%.
+                    : plan.TargetWeightKg;
 
             if (baseWeight is null)
             {

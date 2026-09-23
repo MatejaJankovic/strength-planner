@@ -51,10 +51,16 @@ Tri nova domenska pravila; sve što je testirano moralo je da izađe iz servisa,
 Referenca je **najteža** podignuta težina. Lakše serije nisu prosto odbačene:
 
 - lakša serija koja je završila bez rezerve (RIR 0 ili otkaz) **ulazi** — otkaz na 90 kg
-  važi i za 100 kg, pa takva serija korekciju može samo da povuče naniže;
+  važi i za 100 kg, pa je to dokaz i o referentnoj težini;
 - lakša serija sa rezervom **ne ulazi** — njen RIR je izmeren na drugoj težini.
 
 `ExcludedLighterSets` pamti koliko ih je izostavljeno, da se to kasnije može prikazati.
+
+Prvo obrazloženje u ovom zapisu je tvrdilo da uključena lakša serija „korekciju može samo da
+povuče naniže". Revizija je pokazala da to nije tačno: ako su serije na referentnoj težini
+otkazale **ispod** opsega (efektivni RIR −3), lakša serija sa RIR 0 unutar opsega (efektivni
+RIR 0) diže prosek, pa i predlog — 90 kg umesto 90 × 0.9. Pravilo ostaje (lakši otkaz jeste
+dokaz o težoj seriji), ali tvrdnja o smeru je uklonjena.
 
 ### `NextWeekLoad` — pravilo za narednu nedelju, na jednom mestu
 
@@ -70,15 +76,16 @@ oba propisa, da li je naredna nedelja deload, procenu maksimuma i korak vežbe:
    80 kg u drugi opseg je jedino što je sigurno pogrešno;
 5. **ništa poznato** → `null`, i zatečeni cilj se **ne** prepisuje praznom vrednošću.
 
-`UndoDeload` vraća težinu od koje je deload izveden (deli sa 0.90), a `ChangeKg` razliku za
-rezime.
+`UndoDeload` vraća težinu od koje je deload izveden (deli sa 0.90 i zaokružuje **naniže**),
+a `ChangeKg` razliku za rezime.
 
 ### Izlaz iz deload-a
 
-Kad se završava deload nedelja a naredna nije deload, `SessionService` pronađe **poslednju
-odrađenu trenažnu sesiju istog dana**, na njenim serijama pusti `WorkingLoad` i
-`ProgressionEngine`, i taj rezultat prosledi pravilu. Ako takve sesije nema, referenca se
-vraća iz same deload težine (`UndoDeload`).
+Kad se završava deload nedelja, `SessionService` pronađe **poslednju odrađenu trenažnu
+sesiju istog dana**, na njenim serijama pusti `WorkingLoad` i `ProgressionEngine`, i taj
+rezultat prosledi pravilu. Ako takve sesije nema, referenca se vraća iz same deload težine
+(`UndoDeload`). Važi i kad je naredna nedelja opet deload — inače bi se 90% primenilo na već
+rasterećenu težinu.
 
 ### Rezime se zaključuje na kraju
 
@@ -93,12 +100,14 @@ bi pokrio.
 
 ## Testovi
 
-`WorkingLoadTests` (7) i `NextWeekLoadTests` (16): izbor reference, uključivanje lakšeg
-otkaza, sva pet pravila, `UndoDeload`, `ChangeKg`. Svi brojevi u testovima su izračunati
-ručno i upisani kao očekivanja, uključujući konverziju kroz implicitni maksimum (80 → 85 i
-82.5 → 92.5). Frontend: `next-weight-label.spec.ts` (6).
+`WorkingLoadTests` (7 testova) i `NextWeekLoadTests` (21 slučaj): izbor reference,
+uključivanje lakšeg otkaza i lakše serije koja je promašila opseg, sva pet pravila,
+`UndoDeload` na sitnom i grubom koraku, `ChangeKg`. Svi brojevi su izračunati ručno i upisani
+kao očekivanja, uključujući konverziju kroz implicitni maksimum (80 → 85 i 82.5 → 92.5) i
+deload izveden iz tekućeg propisa (65 kg, a ne 70). `WeightMathTests` pokriva novi
+`FloorToStep`. Frontend: `next-weight-label.spec.ts` (6).
 
-`dotnet test`: 424 (bilo 401). Frontend: 128 (bilo 122).
+`dotnet test`: 434 (bilo 401). Frontend: 128 (bilo 122).
 
 ## Provereno u živoj aplikaciji
 
@@ -126,6 +135,25 @@ planirani u nedelji 4. Deload nedelja odrađena sa 2 × 12 @RIR3 na 90 kg → **
 
 Bez vodoravnog preliva na 375 px; konzola bez grešaka.
 
+## Šta je revizija koda našla
+
+- **Dve deload nedelje jedna za drugom su množile 0.9 dva puta.** Kad planirani deload već
+  počne, auto-deload ga ne oslobađa, pa blok može da ima dva rasterećenja u nizu. Pravilo za
+  nastavak je tada bilo preskočeno (tražilo je da naredna nedelja NIJE deload), pa je druga
+  padala na 81%. Sada se nastavak primenjuje kad god je tekuća nedelja deload, pa je i druga
+  na 90% zarađene težine.
+- **`UndoDeload` nije tačan inverz na grubom koraku.** Deload od 50 kg na koraku od 10 kg
+  deljenjem daje 55.6, što se zaokruživalo na **60 kg** — težinu koja nikada nije podignuta.
+  Zaokružuje se naniže (`WeightMath.FloorToStep`), pa vraćena referenca može da bude tačna
+  ili jedan korak manja, nikad veća.
+- **`ApplyDeloadAsync` je izgubio poslednju rezervu.** Kad nema ni serija ni propisa završene
+  nedelje, sada se uzima cilj same nedelje koja postaje deload: progresija ga je upisala dok
+  ta nedelja još nije bila rasterećenje, pa je to puna težina. Bez te grane bi u tom uglu
+  ostala nedirnuta, dakle 100%.
+- **Dva imena testa su tvrdila pojam koji domen ne poznaje** („preskočena vežba"); pravilo
+  vidi samo referencu bez progresije, pa se tako i zovu.
+- Pogrešna reč u komentaru: deload **spušta na 90%**, a polove se serije.
+
 ## Poznata ograničenja
 
 - **Referenca je najteža težina, pa ascendentna piramida (80 / 90 / 100) napreduje samo iz
@@ -135,6 +163,12 @@ Bez vodoravnog preliva na 375 px; konzola bez grešaka.
   kao skok. Alternativa bi bila porediti sa zarađenom težinom, što bi značilo dva različita
   „pre" u istom ekranu.
 - **Broj izostavljenih lakših serija se nigde ne prikazuje**, iako ga `WorkingLoad` vraća.
+- **Nastavak posle deload-a ne gleda serije same deload nedelje.** Ako se deload odradi teže
+  od zarađene težine (a to vežbač sme da upiše), taj podatak se ignoriše — nastavlja se od
+  poslednje trenažne nedelje.
+- **Redosled u `SessionService` nije zaključan testom.** Da `FinalizeSummaries` mora da se
+  pozove posle ocene umora piše u komentaru i vidi se u prolazu kroz aplikaciju, ali za
+  servise u projektu nema test harness-a, pa bi vraćanje poziva iznad ostalo zeleno.
 - Zaokruživanje i dalje može da referencu van mreže koraka pomeri za manje od pola koraka
   (npr. 101 → 102.5 uz pozitivnu korekciju); pravilo iz prve grane garantuje samo da smer
   korekcije ostane isti.

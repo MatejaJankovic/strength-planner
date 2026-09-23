@@ -32,10 +32,11 @@ public class NextWeekLoadTests
     }
 
     [Fact]
-    public void Deload_HalvesThePlannedLoad_WhenTheExerciseWasSkipped()
+    public void Deload_TakesNinetyPercentOfTheReference_WhenThereIsNoProgression()
     {
-        // Prijavljeno u pregledu logike: ovde je stajala puna planirana težina, jer je
-        // grana bez serija preskakala celo pravilo.
+        // Referenca bez progresije je preskočena vežba: nosi planiranu težinu. Prijavljeno u
+        // pregledu logike - ovde je stajala puna planirana težina, jer je grana bez serija
+        // preskakala celo pravilo.
         var next = NextWeekLoad.For(
             referenceWeightKg: 100m,
             progressionWeightKg: null,
@@ -65,6 +66,24 @@ public class NextWeekLoadTests
     }
 
     [Fact]
+    public void Deload_DerivesTheBaseFromTheCurrentPrescription_NotTheDeloadWeeks()
+    {
+        // Preskočena vežba u nedelji volumene (11-12 @RIR1) pred deload koji vraća osnovni
+        // opseg (8-12 @RIR1): baza je težina za TEKUĆI propis, 100 / (1 + 12/30) = 71.43 ->
+        // 72.5, pa 90% = 65.25 -> 65 kg. Da se uzimao propis deload nedelje, izašlo bi 70.
+        var next = NextWeekLoad.For(
+            referenceWeightKg: null,
+            progressionWeightKg: null,
+            current: VolumeWeek,
+            next: Hypertrophy,
+            nextIsDeload: true,
+            oneRepMaxKg: 100m,
+            weightStepKg: 2.5m);
+
+        Assert.Equal(65m, next);
+    }
+
+    [Fact]
     public void SamePrescription_UsesTheProgression()
     {
         var next = NextWeekLoad.For(100m, 102.5m, Hypertrophy, Hypertrophy, false, 140m, 2.5m);
@@ -73,7 +92,7 @@ public class NextWeekLoadTests
     }
 
     [Fact]
-    public void SamePrescription_CarriesThePlannedLoad_WhenTheExerciseWasSkipped()
+    public void SamePrescription_CarriesTheReference_WhenThereIsNoProgression()
     {
         var next = NextWeekLoad.For(100m, null, Hypertrophy, Hypertrophy, false, null, 2.5m);
 
@@ -129,6 +148,11 @@ public class NextWeekLoadTests
     // Deload nosi 90% prethodne težine, pa deljenje tim faktorom vraća polaznu.
     [InlineData(90.0, 2.5, 100.0)]
     [InlineData(145.0, 2.5, 160.0)]
+    // Na grubom koraku deljenje nije tačan inverz: 50 / 0.9 = 55.6, a zaokruživanje na
+    // najbliži korak od 10 kg dalo bi 60 - težinu koja nikada nije podignuta.
+    [InlineData(50.0, 10.0, 50.0)]
+    [InlineData(90.0, 10.0, 100.0)]
+    [InlineData(20.0, 0.5, 22.0)]
     public void UndoDeload_RestoresTheLoadTheDeloadWasDerivedFrom(
         double deloadKg,
         double stepKg,

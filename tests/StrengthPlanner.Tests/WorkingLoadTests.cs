@@ -93,6 +93,30 @@ public class WorkingLoadTests
     }
 
     [Fact]
+    public void ProgressionCountsALighterSetThatMissedTheRangeAgainstTheReferenceLoad()
+    {
+        // Lakša serija ispod donjeg dela opsega, bez rezerve: efektivni RIR je -3, pa
+        // korekcija zaista pomera težinu, ne samo zaokruženje.
+        var load = WorkingLoad.Select([
+            new LoggedSet(100m, 12, 1),
+            new LoggedSet(100m, 12, 1),
+            new LoggedSet(80m, 5, 0)
+        ])!;
+
+        var result = _engine.ComputeNext(
+            load.ReferenceWeightKg,
+            load.WorkingSets,
+            targetRir: 1,
+            repRangeMin: 8,
+            repRangeMax: 12,
+            weightStepKg: 2.5m);
+
+        // Prosek efektivnog RIR-a (1 + 1 - 3) / 3 = -0.333, odstupanje -1.333 => -4%.
+        Assert.Equal(95m, result.NextWeightKg);
+        Assert.Equal(3, load.WorkingSets.Count);
+    }
+
+    [Fact]
     public void ProgressionCountsALighterFailureAgainstTheReferenceLoad()
     {
         var load = WorkingLoad.Select([

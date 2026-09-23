@@ -60,8 +60,9 @@ public static class NextWeekLoad
         var calculator = new E1RmCalculator();
 
         // Rasterećenje: 90% onoga što je STVARNO podignuto, bez progresije. Kad nije
-        // podignuto ništa, ostaje propis prethodne nedelje izveden iz maksimuma - i on se
-        // polovi, jer deload ne sme da nasledi punu težinu samo zato što je vežba preskočena.
+        // podignuto ništa, ide 90% težine izvedene iz maksimuma za tekući propis - deload ne
+        // sme da nasledi punu težinu samo zato što je vežba preskočena. (Serije se polove
+        // odvojeno, u periodizaciji; ovde je reč samo o opterećenju.)
         if (nextIsDeload)
         {
             var baseWeightKg = referenceWeightKg
@@ -109,12 +110,18 @@ public static class NextWeekLoad
     /// A deload is a pause, not a step back. Progressing from its lightened sets would write
     /// a load below the one already earned into the week that follows — which exists whenever
     /// fatigue pulled the deload forward and released the planned one.
+    ///
+    /// Rounded <b>down</b> to the step on purpose. The deload weight was itself rounded, so
+    /// the division is not an exact inverse: on a 10 kg step a deload of 50 kg (derived from
+    /// 50) divides to 55.6, and rounding to the nearest step would restore 60 kg — a load
+    /// the lifter never touched. Rounding down can only ever restore the same load or one
+    /// step less.
     /// </summary>
     public static decimal? UndoDeload(decimal? deloadWeightKg, decimal weightStepKg)
     {
         return deloadWeightKg is null
             ? null
-            : WeightMath.RoundToStep(deloadWeightKg.Value / TrainingConstants.DeloadWeightFactor, weightStepKg);
+            : WeightMath.FloorToStep(deloadWeightKg.Value / TrainingConstants.DeloadWeightFactor, weightStepKg);
     }
 
     /// <summary>

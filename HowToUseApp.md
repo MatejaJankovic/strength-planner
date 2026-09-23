@@ -381,8 +381,8 @@ aplikaciji. Za svaku vežbu piše:
 - **e1RM** — procenjeni maksimum iz najbolje serije tog dana.
 - **PR** — oznaka ako je to novi lični rekord.
 - **Sledeće** — opterećenje predloženo za istu vežbu u narednoj nedelji, sa razlikom prema
-  težini koju si podigao: `102.5 kg ↑ +2.5` kad raste, `90 kg ↓ −10` pred deload, bez
-  strelice kad se zadržava. Ako u bloku nema naredne nedelje, oznake nema — sledeći blok
+  težini koju si podigao (a za vežbu bez ijedne serije — prema onoj koja je bila planirana):
+  `102.5 kg ↑ +2.5` kad raste, `90 kg ↓ −10` pred deload, bez strelice kad se zadržava. Ako u bloku nema naredne nedelje, oznake nema — sledeći blok
   svoje težine izvodi iz procene maksimuma.
 
 Povremeno se pojave i dve posebne poruke:

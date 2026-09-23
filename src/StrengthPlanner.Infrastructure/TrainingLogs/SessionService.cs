@@ -254,9 +254,10 @@ public class SessionService : ISessionService
             var progressionWeightKg = progression?.NextWeightKg;
             var currentPrescription = PrescriptionOf(plan);
 
-            if (session.TrainingWeek.IsDeload
-                && nextPlan is not null
-                && !nextPlan.WorkoutSession.TrainingWeek.IsDeload)
+            // Važi i kad je naredna nedelja opet deload (planirani koji je već počeo, pa
+            // ga auto-deload nije oslobodio): bez ovoga bi se 90% primenilo na već
+            // rasterećenu težinu i druga deload nedelja bi pala na 81%.
+            if (session.TrainingWeek.IsDeload && nextPlan is not null)
             {
                 if (resumePoints.TryGetValue(plan.ExerciseId, out var resume))
                 {

@@ -17,4 +17,18 @@ public static class WeightMath
 
         return Math.Round(value / step, MidpointRounding.AwayFromZero) * step;
     }
+
+    /// <summary>
+    /// Rounds a value down to a multiple of the step, for example 55.6 kg to 50 kg on a
+    /// 10 kg step. Used where overshooting would invent a load that was never lifted.
+    /// </summary>
+    public static decimal FloorToStep(decimal value, decimal step)
+    {
+        if (step <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(step), "Step must be greater than zero.");
+        }
+
+        return Math.Floor(value / step) * step;
+    }
 }
