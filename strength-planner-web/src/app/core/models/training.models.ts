@@ -242,7 +242,9 @@ export interface CompletedExerciseSummaryDto {
   exerciseName: string;
   e1Rm?: number | null;
   isPr: boolean;
+  usedWeightKg?: number | null;
   nextWeightKg?: number | null;
+  weightChangeKg?: number | null;
   weightIncreased: boolean;
 }
 
