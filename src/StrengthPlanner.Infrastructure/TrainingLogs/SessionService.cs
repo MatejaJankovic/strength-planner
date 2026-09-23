@@ -52,7 +52,7 @@ public class SessionService : ISessionService
         }
 
         var weightStepOverrides = await WeightStepResolver.LoadOverridesAsync(_db, userId, cancellationToken);
-        return ToDto(session, weightStepOverrides);
+        return ToDto(session, weightStepOverrides, await ResolvePortionsAsync(userId, session, cancellationToken));
     }
 
     public async Task<WorkoutSessionDto> StartAsync(
@@ -88,7 +88,10 @@ public class SessionService : ISessionService
             .FirstAsync(workoutSession => workoutSession.Id == sessionId, cancellationToken);
 
         var weightStepOverrides = await WeightStepResolver.LoadOverridesAsync(_db, userId, cancellationToken);
-        return ToDto(detailedSession, weightStepOverrides);
+        return ToDto(
+            detailedSession,
+            weightStepOverrides,
+            await ResolvePortionsAsync(userId, detailedSession, cancellationToken));
     }
 
     public async Task<CompleteSessionResultDto> CompleteAsync(
@@ -140,6 +143,13 @@ public class SessionService : ISessionService
             .Distinct()
             .ToList();
         var weightStepByExerciseId = await WeightStepResolver.ResolveAsync(
+            _db,
+            userId,
+            exerciseIds,
+            cancellationToken);
+        // Deo telesne mase kakav vazi SADA. Ono sto je odradjeno nosi svoj snimak (SetLog),
+        // ali propis za narednu nedelju gleda unapred, pa polazi od mase iz profila.
+        var bodyweightByExerciseId = await BodyweightPortionResolver.ResolveAsync(
             _db,
             userId,
             exerciseIds,
@@ -246,6 +256,9 @@ public class SessionService : ISessionService
                 });
             }
 
+            // Progresija sudi o onome sto je podignuto, pa uzima snimak referentne serije,
+            // a ne trenutnu masu iz profila: promena mase u profilu ne sme naknadno da
+            // promeni kako je prosao trening od prosle nedelje.
             var progression = load is null
                 ? null
                 : _progressionEngine.ComputeNext(
@@ -254,15 +267,23 @@ public class SessionService : ISessionService
                     plan.TargetRir,
                     plan.RepRangeMin,
                     plan.RepRangeMax,
-                    weightStepKg);
+                    weightStepKg,
+                    load.ReferenceBodyweightLoadKg);
 
             // Ono što je vežbač podigao u OVOM treningu; za preskočenu vežbu planirana
             // težina. Iz toga se na kraju računa razlika koju rezime prikazuje.
             summary.UsedWeightKg = load?.ReferenceWeightKg ?? plan.TargetWeightKg;
+            summary.BodyweightLoadKg = load?.ReferenceBodyweightLoadKg
+                                       ?? BodyweightPortionResolver.PortionFor(bodyweightByExerciseId, plan.ExerciseId);
+            summary.IsBodyweight = summary.BodyweightLoadKg > 0;
+            summary.LoadFloorReached = progression?.LoadFloorReached ?? false;
 
             var referenceWeightKg = summary.UsedWeightKg;
             var progressionWeightKg = progression?.NextWeightKg;
             var currentPrescription = PrescriptionOf(plan);
+            var nextBodyweightLoadKg = BodyweightPortionResolver.PortionFor(
+                bodyweightByExerciseId,
+                plan.ExerciseId);
 
             // Važi i kad je naredna nedelja opet deload (planirani koji je već počeo, pa
             // ga auto-deload nije oslobodio): bez ovoga bi se 90% primenilo na već
@@ -279,7 +300,10 @@ public class SessionService : ISessionService
                 {
                     // Nema odrađene trenažne nedelje za ovaj dan (npr. cela je preskočena),
                     // pa se referenca vraća iz same deload težine: ona nosi 90% prethodne.
-                    referenceWeightKg = NextWeekLoad.UndoDeload(plan.TargetWeightKg, weightStepKg);
+                    referenceWeightKg = NextWeekLoad.UndoDeload(
+                        plan.TargetWeightKg,
+                        weightStepKg,
+                        nextBodyweightLoadKg);
                     progressionWeightKg = null;
                 }
             }
@@ -307,7 +331,8 @@ public class SessionService : ISessionService
                     PrescriptionOf(nextPlan),
                     nextPlan.WorkoutSession.TrainingWeek.IsDeload,
                     baselineOneRepMax,
-                    weightStepKg);
+                    weightStepKg,
+                    nextBodyweightLoadKg);
 
                 // Null znači da o vežbi nema nijednog podatka; zatečeni cilj se tada ne
                 // prepisuje praznom vrednošću.
@@ -531,7 +556,8 @@ public class SessionService : ISessionService
                 plan.TargetRir,
                 plan.RepRangeMin,
                 plan.RepRangeMax,
-                WeightStepResolver.StepFor(weightStepByExerciseId, plan.ExerciseId));
+                WeightStepResolver.StepFor(weightStepByExerciseId, plan.ExerciseId),
+                load.ReferenceBodyweightLoadKg);
 
             resumePoints[plan.ExerciseId] = new ResumePoint(
                 PrescriptionOf(plan),
@@ -549,7 +575,7 @@ public class SessionService : ISessionService
 
     private static LoggedSet ToLoggedSet(SetLog set)
     {
-        return new LoggedSet(set.WeightKg, set.Reps, set.Rir, set.IsFailure);
+        return new LoggedSet(set.WeightKg, set.Reps, set.Rir, set.IsFailure, set.BodyweightLoadKg);
     }
 
     /// <summary>Where progression stood before a deload week interrupted it.</summary>
@@ -557,6 +583,19 @@ public class SessionService : ISessionService
         LoadPrescription Prescription,
         decimal ReferenceWeightKg,
         decimal ProgressionWeightKg);
+
+    /// <summary>Body mass the exercises of this session carry for the lifter right now.</summary>
+    private Task<IReadOnlyDictionary<Guid, decimal>> ResolvePortionsAsync(
+        Guid userId,
+        WorkoutSession session,
+        CancellationToken cancellationToken)
+    {
+        return BodyweightPortionResolver.ResolveAsync(
+            _db,
+            userId,
+            session.ExercisePlans.Select(plan => plan.ExerciseId).Distinct().ToList(),
+            cancellationToken);
+    }
 
     private IQueryable<WorkoutSession> BuildSessionDetailsQuery(Guid userId)
     {
@@ -587,7 +626,8 @@ public class SessionService : ISessionService
 
     private static WorkoutSessionDto ToDto(
         WorkoutSession session,
-        IReadOnlyDictionary<Guid, decimal> weightStepOverrides)
+        IReadOnlyDictionary<Guid, decimal> weightStepOverrides,
+        IReadOnlyDictionary<Guid, decimal> bodyweightPortions)
     {
         return new WorkoutSessionDto
         {
@@ -616,19 +656,11 @@ public class SessionService : ISessionService
                         weightStepOverrides,
                         plan.ExerciseId,
                         plan.Exercise.WeightStepKg),
+                    IsBodyweight = BodyweightPortionResolver.PortionFor(bodyweightPortions, plan.ExerciseId) > 0,
+                    BodyweightLoadKg = BodyweightPortionResolver.PortionFor(bodyweightPortions, plan.ExerciseId),
                     SetLogs = plan.SetLogs
                         .OrderBy(set => set.SetNumber)
-                        .Select(set => new SetLogDto
-                        {
-                            Id = set.Id,
-                            ExercisePlanId = set.ExercisePlanId,
-                            SetNumber = set.SetNumber,
-                            WeightKg = set.WeightKg,
-                            Reps = set.Reps,
-                            Rir = set.Rir,
-                            IsFailure = set.IsFailure,
-                            PerformedAt = set.PerformedAt
-                        })
+                        .Select(SetLogMapper.ToDto)
                         .ToList()
                 })
                 .ToList()

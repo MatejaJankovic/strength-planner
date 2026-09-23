@@ -39,7 +39,8 @@ public sealed class ProgressionEngine
         int targetRir,
         int repRangeMin,
         int repRangeMax,
-        decimal? weightStepKg = null)
+        decimal? weightStepKg = null,
+        decimal bodyweightLoadKg = 0m)
     {
         ArgumentNullException.ThrowIfNull(workingSets);
 
@@ -50,6 +51,19 @@ public sealed class ProgressionEngine
 
         var stepKg = weightStepKg ?? TrainingConstants.WeightStepKg;
 
+        // Sve računice idu nad UKUPNIM opterećenjem — telo koje se diže je opterećenje kao i
+        // tegovi — a rezultat se vraća u ono što vežbač stavlja na pojas. Bez tela, kod
+        // vežbi sa telesnom masom, korekcija od 3% se primenjivala na dodatne kilograme, pa
+        // je zgib sa +10 kg "rastao" za 0.3 kg umesto za 2.7.
+        var usedTotalKg = usedWeightKg + bodyweightLoadKg;
+
+        // Nema šta da se skalira: ni tela, ni tegova (npr. plank upisan sa 0 kg). Napredak
+        // ide kroz ponavljanja, a ne kroz "+1 kg" na vežbi koja se ne opterećuje.
+        if (usedTotalKg <= 0)
+        {
+            return new ProgressionResult(0m, repRangeMin, WeightIncreased: false, LoadFloorReached: true);
+        }
+
         var averageRir = workingSets.Average(set => (decimal)set.EffectiveRir(repRangeMin));
         var deviation = averageRir - targetRir;
         var correction = Math.Clamp(
@@ -59,10 +73,12 @@ public sealed class ProgressionEngine
         var allHitTop = workingSets.All(set => set.Reps >= repRangeMax);
 
         decimal nextWeight;
+        var atBodyweightFloor = false;
 
         if (!allHitTop)
         {
-            nextWeight = ApplyCorrection(usedWeightKg, correction, stepKg);
+            nextWeight = ApplyCorrection(usedTotalKg, correction, stepKg, bodyweightLoadKg, usedWeightKg);
+            atBodyweightFloor = BodyweightLoad.IsAtBodyweightFloor(usedTotalKg * (1 + correction), bodyweightLoadKg);
         }
         else if (RangeResetCoversShortfall(deviation, repRangeMin, repRangeMax))
         {
@@ -71,8 +87,9 @@ public sealed class ProgressionEngine
             // korekcija bi ga platila drugi put. Tako je i bilo: 0.97u + 2.5 je poništavalo
             // korak između ~42 i 125 kg, a iznad 125 kg obaralo opterećenje (160 -> 140 kg
             // za osam treninga, uz strelicu naviše).
-            nextWeight = WeightMath.RoundToStep(
-                (usedWeightKg * (1 + Math.Max(0m, correction))) + stepKg,
+            nextWeight = BodyweightLoad.AddedTarget(
+                (usedTotalKg * (1 + Math.Max(0m, correction))) + stepKg,
+                bodyweightLoadKg,
                 stepKg);
         }
         else
@@ -86,7 +103,8 @@ public sealed class ProgressionEngine
         return new ProgressionResult(
             nextWeight,
             repRangeMin,
-            WeightIncreased: nextWeight > usedWeightKg);
+            WeightIncreased: nextWeight > usedWeightKg,
+            LoadFloorReached: atBodyweightFloor);
     }
 
     /// <summary>
@@ -110,14 +128,19 @@ public sealed class ProgressionEngine
     /// The sign of the correction is the decision; the step is only how fine the result can
     /// be expressed. With no correction at all the used weight is kept as it is.
     /// </summary>
-    private static decimal ApplyCorrection(decimal usedWeightKg, decimal correction, decimal stepKg)
+    private static decimal ApplyCorrection(
+        decimal usedTotalKg,
+        decimal correction,
+        decimal stepKg,
+        decimal bodyweightLoadKg,
+        decimal usedWeightKg)
     {
         if (correction == 0)
         {
             return usedWeightKg;
         }
 
-        var rounded = WeightMath.RoundToStep(usedWeightKg * (1 + correction), stepKg);
+        var rounded = BodyweightLoad.AddedTarget(usedTotalKg * (1 + correction), bodyweightLoadKg, stepKg);
 
         return correction < 0
             ? Math.Min(rounded, usedWeightKg)

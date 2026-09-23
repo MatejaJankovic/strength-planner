@@ -48,6 +48,18 @@
               }
             </div>
 
+            @if (row.isBodyweight) {
+              <div class="lift__control lift__control--estimated">
+                <span class="lift__estimated numeric">
+                  @if (row.savedValueKg !== null) {
+                    {{ row.savedValueKg | number: '1.0-1' }} kg
+                  } @else {
+                    Još nema procene
+                  }
+                </span>
+                <span class="lift__note">Procenjuje se iz odrađenih serija</span>
+              </div>
+            } @else {
             <div class="lift__control">
               <div class="stepper">
                 <button
@@ -99,6 +111,7 @@
                 }
               </button>
             </div>
+            }
           </li>
         }
       </ul>

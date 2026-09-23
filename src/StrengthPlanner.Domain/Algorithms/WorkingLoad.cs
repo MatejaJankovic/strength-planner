@@ -3,12 +3,25 @@ namespace StrengthPlanner.Domain.Algorithms;
 /// <summary>
 /// One set as it was logged, with the load it was performed at.
 /// </summary>
-/// <param name="WeightKg">Load on the bar, in kilograms.</param>
+/// <param name="WeightKg">Load added on the bar, belt or stack, in kilograms.</param>
 /// <param name="Reps">Reps completed.</param>
 /// <param name="Rir">Reps left in reserve as judged by the lifter.</param>
 /// <param name="IsFailure">Whether the set was taken to failure.</param>
-public sealed record LoggedSet(decimal WeightKg, int Reps, int Rir, bool IsFailure = false)
+/// <param name="BodyweightLoadKg">
+/// Body mass the movement carried, snapshotted when the set was logged; zero for everything
+/// loaded externally. Kept beside the added load rather than folded into it, because the
+/// lifter logs and reads the added number while the training rules need the total.
+/// </param>
+public sealed record LoggedSet(
+    decimal WeightKg,
+    int Reps,
+    int Rir,
+    bool IsFailure = false,
+    decimal BodyweightLoadKg = 0m)
 {
+    /// <summary>Everything the set moved: what was added plus the body it lifted.</summary>
+    public decimal TotalLoadKg => WeightKg + BodyweightLoadKg;
+
     /// <summary>The same set as the progression engine sees it, without its load.</summary>
     public WorkingSet ToWorkingSet()
     {
@@ -30,14 +43,21 @@ public sealed record LoggedSet(decimal WeightKg, int Reps, int Rir, bool IsFailu
 /// set that kept reserve says nothing about the reference load — its RIR was measured against
 /// a different weight — so it is left out.
 /// </summary>
-/// <param name="ReferenceWeightKg">Heaviest load logged in the session.</param>
+/// <param name="ReferenceWeightKg">Heaviest load added in the session.</param>
+/// <param name="ReferenceBodyweightLoadKg">
+/// Body mass the reference set carried, as it was snapshotted then.
+/// </param>
 /// <param name="WorkingSets">Sets that speak for that load, in the order they were logged.</param>
 /// <param name="ExcludedLighterSets">How many lighter sets kept reserve and were left out.</param>
 public sealed record WorkingLoad(
     decimal ReferenceWeightKg,
+    decimal ReferenceBodyweightLoadKg,
     IReadOnlyList<WorkingSet> WorkingSets,
     int ExcludedLighterSets)
 {
+    /// <summary>Everything the reference set moved.</summary>
+    public decimal ReferenceTotalLoadKg => ReferenceWeightKg + ReferenceBodyweightLoadKg;
+
     /// <summary>
     /// Picks the reference load and its sets, or null when nothing was logged.
     /// </summary>
@@ -50,13 +70,16 @@ public sealed record WorkingLoad(
             return null;
         }
 
-        var reference = sets.Max(set => set.WeightKg);
+        // Poređenje ide po UKUPNOM opterećenju: kod vežbi sa telesnom masom je razlika
+        // između dve serije sa 0 i 5 dodatnih kilograma sitna naspram tela koje obe nose.
+        var referenceSet = sets.MaxBy(set => set.TotalLoadKg)!;
+        var reference = referenceSet.TotalLoadKg;
         var working = new List<WorkingSet>(sets.Count);
         var excluded = 0;
 
         foreach (var set in sets)
         {
-            if (set.WeightKg == reference || set.Rir == 0 || set.IsFailure)
+            if (set.TotalLoadKg == reference || set.Rir == 0 || set.IsFailure)
             {
                 working.Add(set.ToWorkingSet());
             }
@@ -66,6 +89,10 @@ public sealed record WorkingLoad(
             }
         }
 
-        return new WorkingLoad(reference, working, excluded);
+        return new WorkingLoad(
+            referenceSet.WeightKg,
+            referenceSet.BodyweightLoadKg,
+            working,
+            excluded);
     }
 }

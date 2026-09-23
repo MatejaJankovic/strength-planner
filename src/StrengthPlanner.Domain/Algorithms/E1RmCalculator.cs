@@ -54,6 +54,9 @@ public sealed class E1RmCalculator
     /// Best estimate over the sets that may produce one, or null when none qualifies.
     /// A null result means no record, no personal best and no e1RM chip — the same path a
     /// session logged above the rep cap already took.
+    ///
+    /// Judged on <see cref="LoggedSet.TotalLoadKg"/>, so a pull-up logged with nothing added
+    /// estimates from the body it lifted instead of failing the "there must be a load" test.
     /// </summary>
     public decimal? BestEstimate(IEnumerable<LoggedSet> sets)
     {
@@ -63,12 +66,12 @@ public sealed class E1RmCalculator
 
         foreach (var set in sets)
         {
-            if (!CanEstimateFrom(set.WeightKg, set.Reps, set.Rir))
+            if (!CanEstimateFrom(set.TotalLoadKg, set.Reps, set.Rir))
             {
                 continue;
             }
 
-            var estimate = EstimateOneRepMax(set.WeightKg, set.Reps, set.Rir);
+            var estimate = EstimateOneRepMax(set.TotalLoadKg, set.Reps, set.Rir);
             if (best is null || estimate > best.Value)
             {
                 best = estimate;
@@ -84,9 +87,19 @@ public sealed class E1RmCalculator
     /// </summary>
     public decimal WorkingWeightFor(decimal oneRepMax, int targetReps, int targetRir, decimal? weightStepKg = null)
     {
-        var effectiveReps = targetReps + targetRir;
-        var rawWeight = oneRepMax / (1 + effectiveReps / 30m);
+        return WeightMath.RoundToStep(
+            WorkingLoadFor(oneRepMax, targetReps, targetRir),
+            weightStepKg ?? TrainingConstants.WeightStepKg);
+    }
 
-        return WeightMath.RoundToStep(rawWeight, weightStepKg ?? TrainingConstants.WeightStepKg);
+    /// <summary>
+    /// The same working load, unrounded. Bodyweight exercises round in added space (the step
+    /// exists on the belt, not on the body), so they need the raw total first.
+    /// </summary>
+    public decimal WorkingLoadFor(decimal oneRepMax, int targetReps, int targetRir)
+    {
+        var effectiveReps = targetReps + targetRir;
+
+        return oneRepMax / (1 + effectiveReps / 30m);
     }
 }

@@ -37,6 +37,8 @@ export interface ExerciseDto {
   /** Korak izveden iz sprave — vrednost na koju "Vrati podrazumevano" resetuje. */
   defaultWeightStepKg: number;
   isWeightStepOverridden: boolean;
+  /** Vezba nosi deo telesne mase: maksimum se ne unosi rucno, procenjuje se iz serija. */
+  isBodyweight: boolean;
   muscles: MuscleContributionDto[];
 }
 
@@ -166,6 +168,13 @@ export interface ExercisePlanDto {
   targetRir: number;
   targetWeightKg?: number | null;
   weightStepKg: number;
+  /**
+   * Vezba nosi deo telesne mase, pa je `targetWeightKg` ono sto se DODAJE, a 0 znaci
+   * „sopstvenom masom". Netacno i za vezbu sa telesnom masom kad profil nema unetu masu.
+   */
+  isBodyweight: boolean;
+  /** Koliko kilograma telesne mase vezba nosi; 0 za spoljno opterecenje. */
+  bodyweightLoadKg: number;
   setLogs: SetLogDto[];
 }
 
@@ -178,6 +187,8 @@ export interface SetLogDto {
   rir: number;
   /** Serija izvucena do otkaza; RIR je tada uvek 0. */
   isFailure: boolean;
+  /** Deo telesne mase koji je serija nosila, snimljen pri upisu; 0 za spoljno opterecenje. */
+  bodyweightLoadKg: number;
   performedAt: string;
 }
 
@@ -246,6 +257,12 @@ export interface CompletedExerciseSummaryDto {
   nextWeightKg?: number | null;
   weightChangeKg?: number | null;
   weightIncreased: boolean;
+  /** Vezba nosi deo telesne mase, pa su tezine iznad ono sto je DODATO. */
+  isBodyweight: boolean;
+  /** Koliko kilograma telesne mase vezba nosi; 0 za spoljno opterecenje. */
+  bodyweightLoadKg: number;
+  /** Pravilo je htelo manje od tela samog: predlog je 0 dodatnih, napredak ide kroz ponavljanja. */
+  loadFloorReached: boolean;
 }
 
 export interface MacrocycleBlockDto {

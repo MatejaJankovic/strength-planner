@@ -17,5 +17,11 @@ public class ExerciseDto
     /// <summary>True kada korisnik ima sopstveni korak za ovu vežbu.</summary>
     public bool IsWeightStepOverridden { get; set; }
 
+    /// <summary>
+    /// Vežba nosi deo telesne mase, pa se opterećenje vodi kao DODATO, a maksimum se ne
+    /// unosi ručno - procenjuje se iz odrađenih serija.
+    /// </summary>
+    public bool IsBodyweight { get; set; }
+
     public List<MuscleContributionDto> Muscles { get; set; } = new();
 }

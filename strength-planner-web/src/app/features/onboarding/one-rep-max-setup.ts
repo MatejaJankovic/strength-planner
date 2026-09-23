@@ -22,6 +22,12 @@ interface LiftRow {
   exerciseId: string;
   name: string;
   savedValueKg: number | null;
+  /**
+   * Vezba koju opterecuje telo. Njen maksimum je UKUPNO opterecenje (telo + dodato), pa
+   * rucno uneto „100" ne znaci nista odredjeno — ni 100 kg na pojasu, ni 100 ukupno.
+   * Server takav unos odbija; ovde se zato ni ne nudi, nego se prikazuje procena.
+   */
+  isBodyweight: boolean;
 }
 
 @Component({
@@ -108,6 +114,7 @@ export class OneRepMaxSetup {
       exerciseId: entry.id,
       name: entry.name,
       savedValueKg: ormByExercise.get(entry.id)?.valueKg ?? null,
+      isBodyweight: byId.get(entry.id)?.isBodyweight ?? false,
     }));
   });
 
@@ -118,7 +125,7 @@ export class OneRepMaxSetup {
   protected readonly addableExercises = computed<ExerciseDto[]>(() => {
     const shown = new Set(this.rows().map((row) => row.exerciseId));
     return this.exercises()
-      .filter((exercise) => !shown.has(exercise.id))
+      .filter((exercise) => !shown.has(exercise.id) && !exercise.isBodyweight)
       .sort((a, b) => a.name.localeCompare(b.name));
   });
 
@@ -153,7 +160,12 @@ export class OneRepMaxSetup {
   }
 
   protected canSave(row: LiftRow): boolean {
-    return this.valueOf(row) > 0 && this.isDirty(row) && this.savingId() !== row.exerciseId;
+    return (
+      !row.isBodyweight &&
+      this.valueOf(row) > 0 &&
+      this.isDirty(row) &&
+      this.savingId() !== row.exerciseId
+    );
   }
 
   protected step(row: LiftRow, direction: 1 | -1): void {

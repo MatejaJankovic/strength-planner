@@ -67,3 +67,11 @@
   font-size: 0.8rem;
   margin: 0;
 }
+
+// U kojoj jedinici stoje oba broja iznad. Bez ovoga zgib prijavljuje „najveća težina
+// 90 kg" i deluje kao da je neko stavio 90 kg na pojas.
+.pr__scale {
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  margin: 0;
+}

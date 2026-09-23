@@ -79,6 +79,11 @@ public class MesocycleGenerator : IMesocycleGenerator
             userId,
             exerciseIds,
             cancellationToken);
+        var bodyweightByExerciseId = await BodyweightPortionResolver.ResolveAsync(
+            _db,
+            userId,
+            exerciseIds,
+            cancellationToken);
         var oneRepMaxRecords = await _db.OneRepMaxRecords
             .AsNoTracking()
             .Where(record => record.UserId == userId && exerciseIds.Contains(record.ExerciseId))
@@ -142,6 +147,7 @@ public class MesocycleGenerator : IMesocycleGenerator
             goalSettings,
             oneRepMaxByExerciseId,
             weightStepByExerciseId,
+            bodyweightByExerciseId,
             experienceLevel,
             request.PeriodizationModel,
             request.SetAllocation);
@@ -169,7 +175,7 @@ public class MesocycleGenerator : IMesocycleGenerator
         }
 
         var exerciseNameById = exercises.ToDictionary(exercise => exercise.Id, exercise => exercise.Name);
-        return ToDto(mesocycle, exerciseNameById, weightStepByExerciseId);
+        return ToDto(mesocycle, exerciseNameById, weightStepByExerciseId, bodyweightByExerciseId);
     }
 
     private Mesocycle BuildMesocycle(
@@ -181,6 +187,7 @@ public class MesocycleGenerator : IMesocycleGenerator
         GoalPrescription goalSettings,
         IReadOnlyDictionary<Guid, decimal> oneRepMaxByExerciseId,
         IReadOnlyDictionary<Guid, decimal> weightStepByExerciseId,
+        IReadOnlyDictionary<Guid, decimal> bodyweightByExerciseId,
         ExperienceLevel experienceLevel,
         PeriodizationModel periodizationModel,
         SetAllocation setAllocation)
@@ -257,7 +264,8 @@ public class MesocycleGenerator : IMesocycleGenerator
                         exercise.Id,
                         exercisePrescription,
                         oneRepMaxByExerciseId,
-                        WeightStepResolver.StepFor(weightStepByExerciseId, exercise.Id));
+                        WeightStepResolver.StepFor(weightStepByExerciseId, exercise.Id),
+                        BodyweightPortionResolver.PortionFor(bodyweightByExerciseId, exercise.Id));
 
                     session.ExercisePlans.Add(new ExercisePlan
                     {
@@ -290,23 +298,35 @@ public class MesocycleGenerator : IMesocycleGenerator
     /// Opterećenje za prvu nedelju, izvedeno iz poznatog 1RM-a i propisa te nedelje.
     /// Kasnije nedelje puni progresija kada se prethodna završi — tek tada se zna šta je
     /// korisnik zaista uradio.
+    ///
+    /// Kod vežbe sa telesnom masom se bez ijednog poznatog maksimuma ne vraća „nepoznato"
+    /// nego 0 dodatnih kilograma: opterećenje je već tu, na vežbaču, pa je „sopstvenom
+    /// masom" tačan prvi propis, a prazno polje bi bilo netačno.
     /// </summary>
     private decimal? GetInitialTargetWeight(
         int weekNumber,
         Guid exerciseId,
         WeekPrescription prescription,
         IReadOnlyDictionary<Guid, decimal> oneRepMaxByExerciseId,
-        decimal weightStepKg)
+        decimal weightStepKg,
+        decimal bodyweightLoadKg)
     {
-        if (weekNumber != 1 || !oneRepMaxByExerciseId.TryGetValue(exerciseId, out var oneRepMax))
+        if (weekNumber != 1)
         {
             return null;
         }
 
-        return _e1RmCalculator.WorkingWeightFor(
-            oneRepMax,
-            prescription.RepRangeMin,
-            prescription.TargetRir,
+        if (!oneRepMaxByExerciseId.TryGetValue(exerciseId, out var oneRepMax))
+        {
+            return bodyweightLoadKg > 0 ? 0m : null;
+        }
+
+        return BodyweightLoad.AddedTarget(
+            _e1RmCalculator.WorkingLoadFor(
+                oneRepMax,
+                prescription.RepRangeMin,
+                prescription.TargetRir),
+            bodyweightLoadKg,
             weightStepKg);
     }
 
@@ -320,7 +340,8 @@ public class MesocycleGenerator : IMesocycleGenerator
     private static MesocycleDto ToDto(
         Mesocycle mesocycle,
         IReadOnlyDictionary<Guid, string> exerciseNameById,
-        IReadOnlyDictionary<Guid, decimal> weightStepByExerciseId)
+        IReadOnlyDictionary<Guid, decimal> weightStepByExerciseId,
+        IReadOnlyDictionary<Guid, decimal> bodyweightByExerciseId)
     {
         return new MesocycleDto
         {
@@ -367,6 +388,12 @@ public class MesocycleGenerator : IMesocycleGenerator
                                     TargetWeightKg = plan.TargetWeightKg,
                                     WeightStepKg = WeightStepResolver.StepFor(
                                         weightStepByExerciseId,
+                                        plan.ExerciseId),
+                                    IsBodyweight = BodyweightPortionResolver.PortionFor(
+                                        bodyweightByExerciseId,
+                                        plan.ExerciseId) > 0,
+                                    BodyweightLoadKg = BodyweightPortionResolver.PortionFor(
+                                        bodyweightByExerciseId,
                                         plan.ExerciseId)
                                 })
                                 .ToList()

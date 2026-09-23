@@ -127,6 +127,24 @@
   gap: 0.5rem;
 }
 
+// Vežba sa telesnom masom nema šta da se unese: njen maksimum je ukupno opterećenje i
+// procenjuje se iz serija. Red zato nosi vrednost i objašnjenje umesto steppera.
+.lift__control--estimated {
+  align-items: flex-end;
+  flex-direction: column;
+  gap: 0.15rem;
+  text-align: right;
+}
+
+.lift__estimated {
+  font-weight: 700;
+}
+
+.lift__note {
+  color: var(--color-muted);
+  font-size: 0.78rem;
+}
+
 .stepper {
   align-items: center;
   display: grid;
@@ -312,6 +330,12 @@
   .lift__control {
     flex-wrap: wrap;
     justify-content: space-between;
+  }
+
+  // Na telefonu red ide u kolonu, pa objašnjenje ide uz levu ivicu kao i naziv vežbe.
+  .lift__control--estimated {
+    align-items: flex-start;
+    text-align: left;
   }
 
   .stepper {

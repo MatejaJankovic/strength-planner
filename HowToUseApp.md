@@ -130,6 +130,11 @@ Barbell Row.
    dodaj joj 1RM na isti način.
 4. **Nastavi na plan**.
 
+**Vežbe koje diže sopstvena masa** (zgib, sklek, iskorak) se ovde ne unose i ne mogu se
+dodati iz kataloga. Njihov maksimum je *ukupno* opterećenje — telo plus ono što je dodato —
+pa uneto „100" ne bi značilo ništa određeno. Sistem ga procenjuje sam, iz prvih serija koje
+odradiš; do tada u redu piše „Još nema procene".
+
 **Ako ne znaš svoj 1RM**, imaš tri opcije, sve tri legitimne:
 
 - Proceni iz najbolje serije koju pamtiš. Približna Epley formula:
@@ -341,6 +346,12 @@ Svaka vežba je jedna kartica i na njoj piše šta se traži:
 - **Težina serije** — predlog sistema; dugmad `−` i `+` menjaju je za **korak te vežbe**
   (šipka 2.5 kg, bučice 2 kg, mašina 5 kg — podesivo na ekranu „Vežbe").
 
+Kod vežbi koje diže sopstvena masa polje se zove **„Dodatno opterećenje"** i u njega ide
+samo ono što si stavio na sebe (pojas, traka) — **0 znači sopstvenom masom**. Ispod polja
+piše koliko je to kilograma za tebe: zgib nosi celu telesnu masu, sklek oko dve trećine,
+iskorak oko 85%. Taj deo ulazi u sve računice: procenu maksimuma, korekciju opterećenja,
+tonažu i rekorde. U spisku odrađenih serija se piše `TM × 10` ili `TM + 5 kg × 8`.
+
 Za svaku odrađenu seriju:
 
 1. Podesi **težinu** (ako se razlikuje od predloga).
@@ -355,6 +366,10 @@ težinu, ponavljanja i RIR prethodne — otkaz se **ne** nasleđuje, jer je izuz
 pravilo.
 
 Grešku ispravljaš ikonicama pored serije: **olovka** za izmenu, **kanta** za brisanje.
+
+> **Kad predlog stane na sopstvenoj masi.** Ako je vežba bila preteška, pravilo bi htelo
+> opterećenje manje od tvog tela — a tu nema šta da se skine. Predlog tada ostaje na
+> „TM", a u rezimeu piše da sledeći put napreduješ kroz ponavljanja, ne kroz kilograme.
 
 > **Zašto je RIR važan.** Iz razlike između ciljnog i stvarnog RIR-a sistem računa
 > korekciju opterećenja za sledeći put. Pogrešan RIR = pogrešan sledeći trening. Ako
@@ -425,9 +440,12 @@ nedelje pomeraju se najviše za jednu seriju, i najviše 50% od podrazumevane vr
 Dugme **„Vrati podrazumevane granice"** poništava naučeno.
 
 **Nedeljna tonaža.** Zbir `težina × ponavljanja` po nedeljama, sa označenim deload
-nedeljama. Korisno da se vidi da li blok stvarno raste.
+nedeljama. Korisno da se vidi da li blok stvarno raste. Vežbe koje diže sopstvena masa
+ulaze sa **ukupnim** opterećenjem (telo + dodato), ne samo sa onim što je dodato — inače bi
+trening od četrdeset zgibova sabirao nulu.
 
-**Lični rekordi.** Po vežbi: najbolji e1RM i najveća podignuta težina, sa datumom.
+**Lični rekordi.** Po vežbi: najbolji e1RM i najveća podignuta težina, sa datumom. Za vežbe
+sa sopstvenom masom su oba broja ukupno opterećenje, i tako i piše ispod njih.
 
 ---
 
@@ -447,7 +465,10 @@ prvim slovom imena.
 
 **Ime.** Stoji kao naslov profila. Ako ga ostaviš prazno, piše email.
 
-**Podaci o tebi.** Pol, uzrast, telesna masa, visina, nivo iskustva. Masa i nivo se menjaju
+**Podaci o tebi.** Pol, uzrast, telesna masa, visina, nivo iskustva. Telesna masa se od ove
+verzije koristi i kao opterećenje: od nje se računa koliko zgib ili sklek zaista diže.
+Promena mase važi za treninge koji tek dolaze — serije koje su već upisane čuvaju masu
+kakva je bila tog dana, da promena u profilu ne bi naknadno menjala istoriju. Masa i nivo se menjaju
 kroz vreme — drži ih ažurnim. Izmena **ne dira blok koji je već generisan**; primenjuje se
 na sledeći koji se napravi.
 
@@ -531,6 +552,14 @@ više težine. Korak dolazi i kada su serije na vrhu išle do otkaza: sledeći t
 od dna opsega, a to je dovoljno rezerve. Izuzetak su nedelje sa uskim opsegom i većim
 ciljnim RIR-om (npr. 11–12 sa RIR 2), gde otkaz na vrhu zadržava težinu. Vrh opsega nikad
 ne spušta opterećenje.
+
+**Sopstvena masa je opterećenje.** Zgib, sklek i iskorak nose deo tvoje telesne mase: 100%,
+64% i 85% redom. Sve računice — korekcija, procena maksimuma, deload, tonaža — rade sa
+**ukupnim** opterećenjem, a prikazuje se i unosi ono što je *dodato*. Zato zgib sa +10 kg
+uz korekciju od 6% ne dobija 0.6 kg nego 5.4 kg: procenat se meri na celom poslu, ne na
+pojasu. Kada pravilo traži manje od tvog tela, predlog stane na sopstvenoj masi — dalje se
+napreduje ponavljanjima. Plank nema udeo (izdržaj nema ponavljanje čije bi se opterećenje
+merilo) i ne koristi ga nijedan ugrađen šablon.
 
 **Korekcija po RIR-u.** Sledeće opterećenje se koriguje za `(prosečan RIR − ciljni RIR) × 3%`,
 ograničeno na **±10%**. Lakše nego traženo → težina raste; teže → pada. Serija ispod

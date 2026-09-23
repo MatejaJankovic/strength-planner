@@ -43,8 +43,12 @@ public static class NextWeekLoad
     /// <param name="current">Prescription this session was performed against.</param>
     /// <param name="next">Prescription of the week being filled in.</param>
     /// <param name="nextIsDeload">Whether that week is a deload.</param>
-    /// <param name="oneRepMaxKg">Recent estimated one-rep max, or null.</param>
+    /// <param name="oneRepMaxKg">Recent estimated one-rep max, or null. Always a total load.</param>
     /// <param name="weightStepKg">Smallest load increment of the exercise.</param>
+    /// <param name="bodyweightLoadKg">
+    /// Body mass this exercise will carry next week, or zero for external load. Every input
+    /// and the result are <b>added</b> kilograms; the rules themselves work on the total.
+    /// </param>
     public static decimal? For(
         decimal? referenceWeightKg,
         decimal? progressionWeightKg,
@@ -52,7 +56,8 @@ public static class NextWeekLoad
         LoadPrescription next,
         bool nextIsDeload,
         decimal? oneRepMaxKg,
-        decimal weightStepKg)
+        decimal weightStepKg,
+        decimal bodyweightLoadKg = 0m)
     {
         ArgumentNullException.ThrowIfNull(current);
         ArgumentNullException.ThrowIfNull(next);
@@ -65,19 +70,25 @@ public static class NextWeekLoad
         // odvojeno, u periodizaciji; ovde je reč samo o opterećenju.)
         if (nextIsDeload)
         {
-            var baseWeightKg = referenceWeightKg
-                               ?? WorkingWeightOrNull(calculator, oneRepMaxKg, current, weightStepKg);
+            var baseTotalKg = referenceWeightKg is not null
+                ? referenceWeightKg.Value + bodyweightLoadKg
+                : oneRepMaxKg is null
+                    ? (decimal?)null
+                    : calculator.WorkingLoadFor(oneRepMaxKg.Value, current.RepRangeMin, current.TargetRir);
 
-            return baseWeightKg is null
+            return baseTotalKg is null
                 ? null
-                : WeightMath.RoundToStep(baseWeightKg.Value * TrainingConstants.DeloadWeightFactor, weightStepKg);
+                : BodyweightLoad.AddedTarget(
+                    baseTotalKg.Value * TrainingConstants.DeloadWeightFactor,
+                    bodyweightLoadKg,
+                    weightStepKg);
         }
 
         if (next.Matches(current))
         {
             return progressionWeightKg
                    ?? referenceWeightKg
-                   ?? WorkingWeightOrNull(calculator, oneRepMaxKg, next, weightStepKg);
+                   ?? WorkingLoadOrNull(calculator, oneRepMaxKg, next, weightStepKg, bodyweightLoadKg);
         }
 
         // Naredna nedelja traži drugačiji propis, pa nošenje iste težine nema smisla:
@@ -85,7 +96,7 @@ public static class NextWeekLoad
         // procene maksimuma i propisa te nedelje, isto kao pri generisanju prve nedelje.
         if (oneRepMaxKg is not null)
         {
-            return calculator.WorkingWeightFor(oneRepMaxKg.Value, next.RepRangeMin, next.TargetRir, weightStepKg);
+            return WorkingLoadOrNull(calculator, oneRepMaxKg, next, weightStepKg, bodyweightLoadKg);
         }
 
         // Bez procene maksimuma se ona izvodi iz same težine: ono što je planirano (ili
@@ -98,9 +109,15 @@ public static class NextWeekLoad
             return null;
         }
 
-        var impliedOneRepMax = calculator.EstimateOneRepMax(known.Value, current.RepRangeMin, current.TargetRir);
+        var impliedOneRepMax = calculator.EstimateOneRepMax(
+            known.Value + bodyweightLoadKg,
+            current.RepRangeMin,
+            current.TargetRir);
 
-        return calculator.WorkingWeightFor(impliedOneRepMax, next.RepRangeMin, next.TargetRir, weightStepKg);
+        return BodyweightLoad.AddedTarget(
+            calculator.WorkingLoadFor(impliedOneRepMax, next.RepRangeMin, next.TargetRir),
+            bodyweightLoadKg,
+            weightStepKg);
     }
 
     /// <summary>
@@ -116,12 +133,25 @@ public static class NextWeekLoad
     /// 50) divides to 55.6, and rounding to the nearest step would restore 60 kg — a load
     /// the lifter never touched. Rounding down can only ever restore the same load or one
     /// step less.
+    ///
+    /// The factor applies to the total, so the body portion is added before dividing and
+    /// taken off again after: a pull-up deloaded to body mass alone must not restore
+    /// "0 / 0.9 = 0 added" when the body it carries was itself lightened by a belt.
     /// </summary>
-    public static decimal? UndoDeload(decimal? deloadWeightKg, decimal weightStepKg)
+    public static decimal? UndoDeload(
+        decimal? deloadWeightKg,
+        decimal weightStepKg,
+        decimal bodyweightLoadKg = 0m)
     {
-        return deloadWeightKg is null
-            ? null
-            : WeightMath.FloorToStep(deloadWeightKg.Value / TrainingConstants.DeloadWeightFactor, weightStepKg);
+        if (deloadWeightKg is null)
+        {
+            return null;
+        }
+
+        var restoredTotalKg =
+            (deloadWeightKg.Value + bodyweightLoadKg) / TrainingConstants.DeloadWeightFactor;
+
+        return Math.Max(0m, WeightMath.FloorToStep(restoredTotalKg - bodyweightLoadKg, weightStepKg));
     }
 
     /// <summary>
@@ -138,18 +168,21 @@ public static class NextWeekLoad
         return nextWeightKg.Value - referenceWeightKg.Value;
     }
 
-    private static decimal? WorkingWeightOrNull(
+    private static decimal? WorkingLoadOrNull(
         E1RmCalculator calculator,
         decimal? oneRepMaxKg,
         LoadPrescription prescription,
-        decimal weightStepKg)
+        decimal weightStepKg,
+        decimal bodyweightLoadKg)
     {
         return oneRepMaxKg is null
             ? null
-            : calculator.WorkingWeightFor(
-                oneRepMaxKg.Value,
-                prescription.RepRangeMin,
-                prescription.TargetRir,
+            : BodyweightLoad.AddedTarget(
+                calculator.WorkingLoadFor(
+                    oneRepMaxKg.Value,
+                    prescription.RepRangeMin,
+                    prescription.TargetRir),
+                bodyweightLoadKg,
                 weightStepKg);
     }
 }

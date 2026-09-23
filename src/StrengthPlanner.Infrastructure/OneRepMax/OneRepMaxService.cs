@@ -42,6 +42,16 @@ public class OneRepMaxService : IOneRepMaxService
             throw new TrainingLogException(TrainingLogErrorType.NotFound, "Exercise was not found.");
         }
 
+        // Vežba sa telesnom masom ne prima ručni maksimum. Njen 1RM je ukupno opterećenje
+        // (telo + dodato), pa uneto „100" ne znači ništa određeno: ni 100 kg na pojasu, ni
+        // 100 kg ukupno. Procena iz odrađenih serija je jedini unos koji zna svoju jedinicu.
+        if (exercise.BodyweightShare > 0)
+        {
+            throw new TrainingLogException(
+                TrainingLogErrorType.Validation,
+                "One-rep max of a bodyweight exercise is estimated from logged sets, not entered by hand.");
+        }
+
         var record = new OneRepMaxRecord
         {
             Id = Guid.NewGuid(),

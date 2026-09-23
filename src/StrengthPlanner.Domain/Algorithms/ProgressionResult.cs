@@ -10,4 +10,12 @@ namespace StrengthPlanner.Domain.Algorithms;
 /// It used to mirror "every set reached the top of the range", which the summary showed as
 /// an arrow even when the proposal was equal to or lower than the lifted weight.
 /// </param>
-public sealed record ProgressionResult(decimal NextWeightKg, int NextTargetReps, bool WeightIncreased);
+/// <param name="LoadFloorReached">
+/// True when the rule wanted a load lighter than the lifter's own body and the proposal is
+/// therefore body mass alone. Progression then continues through reps, not kilograms.
+/// </param>
+public sealed record ProgressionResult(
+    decimal NextWeightKg,
+    int NextTargetReps,
+    bool WeightIncreased,
+    bool LoadFloorReached = false);

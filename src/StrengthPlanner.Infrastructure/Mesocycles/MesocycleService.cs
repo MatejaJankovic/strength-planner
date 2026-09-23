@@ -3,8 +3,10 @@ using StrengthPlanner.Application.DTOs.Mesocycles;
 using StrengthPlanner.Application.DTOs.SetLogs;
 using StrengthPlanner.Application.Exceptions;
 using StrengthPlanner.Application.Interfaces;
+using StrengthPlanner.Domain.Algorithms;
 using StrengthPlanner.Domain.Entities;
 using StrengthPlanner.Infrastructure.Exercises;
+using StrengthPlanner.Infrastructure.TrainingLogs;
 using StrengthPlanner.Infrastructure.Persistence;
 
 namespace StrengthPlanner.Infrastructure.Mesocycles;
@@ -52,7 +54,8 @@ public class MesocycleService : IMesocycleService
         }
 
         var weightStepOverrides = await WeightStepResolver.LoadOverridesAsync(_db, userId, cancellationToken);
-        return ToDto(mesocycle, weightStepOverrides);
+        var bodyweightKg = await BodyweightPortionResolver.LoadBodyweightAsync(_db, userId, cancellationToken);
+        return ToDto(mesocycle, weightStepOverrides, bodyweightKg);
     }
 
     public async Task<MesocycleDto> GetByIdAsync(
@@ -69,7 +72,8 @@ public class MesocycleService : IMesocycleService
         }
 
         var weightStepOverrides = await WeightStepResolver.LoadOverridesAsync(_db, userId, cancellationToken);
-        return ToDto(mesocycle, weightStepOverrides);
+        var bodyweightKg = await BodyweightPortionResolver.LoadBodyweightAsync(_db, userId, cancellationToken);
+        return ToDto(mesocycle, weightStepOverrides, bodyweightKg);
     }
 
     private IQueryable<Mesocycle> BuildDetailsQuery(Guid userId)
@@ -90,7 +94,8 @@ public class MesocycleService : IMesocycleService
 
     private static MesocycleDto ToDto(
         Mesocycle mesocycle,
-        IReadOnlyDictionary<Guid, decimal> weightStepOverrides)
+        IReadOnlyDictionary<Guid, decimal> weightStepOverrides,
+        decimal bodyweightKg)
     {
         return new MesocycleDto
         {
@@ -140,19 +145,13 @@ public class MesocycleService : IMesocycleService
                                         weightStepOverrides,
                                         plan.ExerciseId,
                                         plan.Exercise.WeightStepKg),
+                                    IsBodyweight =
+                                        BodyweightLoad.PortionKg(bodyweightKg, plan.Exercise.BodyweightShare) > 0,
+                                    BodyweightLoadKg =
+                                        BodyweightLoad.PortionKg(bodyweightKg, plan.Exercise.BodyweightShare),
                                     SetLogs = plan.SetLogs
                                         .OrderBy(set => set.SetNumber)
-                                        .Select(set => new SetLogDto
-                                        {
-                                            Id = set.Id,
-                                            ExercisePlanId = set.ExercisePlanId,
-                                            SetNumber = set.SetNumber,
-                                            WeightKg = set.WeightKg,
-                                            Reps = set.Reps,
-                                            Rir = set.Rir,
-                                            IsFailure = set.IsFailure,
-                                            PerformedAt = set.PerformedAt
-                                        })
+                                        .Select(SetLogMapper.ToDto)
                                         .ToList()
                                 })
                                 .ToList()

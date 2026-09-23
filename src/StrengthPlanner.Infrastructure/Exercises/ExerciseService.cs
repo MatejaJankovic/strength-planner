@@ -37,6 +37,7 @@ public class ExerciseService : IExerciseService
                 e.Equipment,
                 e.IsCustom,
                 e.WeightStepKg,
+                e.BodyweightShare,
                 Muscles = e.Muscles
                     .OrderByDescending(m => m.Contribution)
                     .Select(m => new MuscleContributionDto
@@ -63,6 +64,7 @@ public class ExerciseService : IExerciseService
                     : exercise.WeightStepKg,
                 DefaultWeightStepKg = exercise.WeightStepKg,
                 IsWeightStepOverridden = overrideByExerciseId.ContainsKey(exercise.Id),
+                IsBodyweight = exercise.BodyweightShare > 0,
                 Muscles = exercise.Muscles
             })
             .ToList();
@@ -151,6 +153,7 @@ public class ExerciseService : IExerciseService
             WeightStepKg = isReset ? exercise.WeightStepKg : normalizedStepKg!.Value,
             DefaultWeightStepKg = exercise.WeightStepKg,
             IsWeightStepOverridden = !isReset,
+            IsBodyweight = exercise.BodyweightShare > 0,
             Muscles = exercise.Muscles
                 .OrderByDescending(m => m.Contribution)
                 .Select(m => new MuscleContributionDto
@@ -260,6 +263,9 @@ public class ExerciseService : IExerciseService
             WeightStepKg = exercise.WeightStepKg,
             DefaultWeightStepKg = exercise.WeightStepKg,
             IsWeightStepOverridden = false,
+            // Lična vežba ne nosi udeo telesne mase: udele nose samo vežbe iz kataloga,
+            // gde su procenjeni jednom za sve korisnike.
+            IsBodyweight = false,
             Muscles = request.Muscles
                 .OrderByDescending(m => m.Contribution)
                 .Select(m => new MuscleContributionDto

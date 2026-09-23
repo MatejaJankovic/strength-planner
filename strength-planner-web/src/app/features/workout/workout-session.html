@@ -101,7 +101,10 @@
             <span class="summary__name">{{ ex.exerciseName }}</span>
             <div class="summary__chips">
               @if (ex.e1Rm != null) {
-                <app-stat-chip label="e1RM" [value]="(ex.e1Rm | number: '1.0-1') + ' kg'" />
+                <app-stat-chip
+                  [label]="ex.isBodyweight ? 'e1RM (ukupno)' : 'e1RM'"
+                  [value]="(ex.e1Rm | number: '1.0-1') + ' kg'"
+                />
               }
               @if (ex.isPr) {
                 <app-stat-chip label="PR" tone="accent" />
@@ -114,6 +117,12 @@
                 />
               }
             </div>
+            @if (ex.loadFloorReached) {
+              <p class="summary__note">
+                Ispod sopstvene mase nema šta da se skine, pa sledeći put napreduj kroz
+                ponavljanja.
+              </p>
+            }
           </li>
         }
       </ul>
@@ -172,14 +181,23 @@
         </div>
 
         <app-weight-stepper
-          label="Težina serije"
+          [label]="plan.isBodyweight ? 'Dodatno opterećenje' : 'Težina serije'"
           [value]="draft.weightKg"
           [step]="plan.weightStepKg"
           [disabled]="!isInProgress()"
           (valueChange)="setWeight(plan.id, $event)"
         />
 
-        @if (plan.targetWeightKg == null) {
+        @if (plan.isBodyweight) {
+          <p class="card__hint card__hint--bodyweight">
+            <mat-icon aria-hidden="true">accessibility_new</mat-icon>
+            <span>
+              Ovu vežbu diže tvoja telesna masa (TM):
+              {{ plan.bodyweightLoadKg | number: '1.0-1' }} kg. U polje ide samo ono što
+              dodaješ - 0 znači sopstvenom masom.
+            </span>
+          </p>
+        } @else if (plan.targetWeightKg == null) {
           <p class="card__hint">Nema 1RM za ovu vežbu - unesi težinu po osećaju.</p>
         }
 
@@ -315,9 +333,7 @@
             @for (set of plan.setLogs; track set.id) {
               <li class="set" [class.is-editing]="editingId(plan.id) === set.id">
                 <span class="set__index numeric">{{ set.setNumber }}</span>
-                <span class="set__value numeric">
-                  {{ set.weightKg | number: '1.0-1' }} kg × {{ set.reps }}
-                </span>
+                <span class="set__value numeric">{{ setLoad(set) }} × {{ set.reps }}</span>
                 @if (set.isFailure) {
                   <span class="set__rir set__rir--failure">otkaz</span>
                 } @else {

@@ -5,12 +5,22 @@ namespace StrengthPlanner.Application.Templates;
 /// <summary>Doprinos jedne vežbe jednoj mišićnoj grupi: 1.0 primarna, 0.5 sekundarna.</summary>
 public sealed record MuscleContributionSeed(string Muscle, decimal Contribution);
 
-/// <summary>Sistemska vežba: naziv, tip, sprava i mišići koje pogađa.</summary>
+/// <summary>Sistemska vežba: naziv, tip, sprava, mišići i deo telesne mase koji podiže.</summary>
+/// <param name="Name">Naziv vežbe.</param>
+/// <param name="Type">Složena ili izolaciona.</param>
+/// <param name="Equipment">Sprava; odatle izlazi i korak opterećenja.</param>
+/// <param name="Muscles">Mišićne grupe i njihovi doprinosi.</param>
+/// <param name="BodyweightShare">
+/// Koliki deo telesne mase vežba podiže. Nula za sve sa spoljnim opterećenjem. Procene za
+/// vežbe sa telesnom masom su namerno grube: greška od 10% u udelu pomera opterećenje za
+/// manje od jednog koraka tega.
+/// </param>
 public sealed record ExerciseSeed(
     string Name,
     ExerciseType Type,
     string Equipment,
-    IReadOnlyList<MuscleContributionSeed> Muscles);
+    IReadOnlyList<MuscleContributionSeed> Muscles,
+    decimal BodyweightShare = 0m);
 
 /// <summary>Orijentacione nedeljne radne serije po mišićnoj grupi.</summary>
 public sealed record VolumeLandmarkSeed(string Muscle, int Mev, int Mav, int Mrv);
@@ -57,8 +67,9 @@ public static class ExerciseCatalog
         // nijedna vežba nije izolovala jednu nogu.
         new("Bulgarian Split Squat", ExerciseType.Compound, "Dumbbell",
             [new("Quads", 1.0m), new("Glutes", 0.5m), new("Hamstrings", 0.5m)]),
+        // Iskorak na jednoj nozi nosi telo bez oslonjene potkolenice i stopala.
         new("Split Squat", ExerciseType.Compound, "Bodyweight",
-            [new("Quads", 1.0m), new("Glutes", 0.5m)]),
+            [new("Quads", 1.0m), new("Glutes", 0.5m)], BodyweightShare: 0.85m),
         new("Walking Lunge", ExerciseType.Compound, "Dumbbell",
             [new("Quads", 1.0m), new("Glutes", 0.5m), new("Hamstrings", 0.5m)]),
         new("Goblet Squat", ExerciseType.Compound, "Dumbbell",
@@ -74,8 +85,9 @@ public static class ExerciseCatalog
             [new("Chest", 1.0m), new("Shoulders", 0.5m), new("Triceps", 0.5m)]),
         new("Dumbbell Bench Press", ExerciseType.Compound, "Dumbbell",
             [new("Chest", 1.0m), new("Triceps", 0.5m), new("Shoulders", 0.5m)]),
+        // Sklek u gornjem položaju nosi oko dve trećine telesne mase.
         new("Push-up", ExerciseType.Compound, "Bodyweight",
-            [new("Chest", 1.0m), new("Triceps", 0.5m)]),
+            [new("Chest", 1.0m), new("Triceps", 0.5m)], BodyweightShare: 0.64m),
 
         // Grudi i leđa dugo nisu imali nijednu izolacionu vežbu. Naprednom vežbaču
         // pripada jedna složena vežba po treningu, pa se te grupe nije imalo čime dopuniti.
@@ -95,8 +107,9 @@ public static class ExerciseCatalog
         new("Face Pull", ExerciseType.Isolation, "Cable",
             [new("Shoulders", 1.0m), new("Back", 0.5m)]),
 
+        // Zgib podiže celo telo.
         new("Pull-up", ExerciseType.Compound, "Bodyweight",
-            [new("Back", 1.0m), new("Biceps", 0.5m)]),
+            [new("Back", 1.0m), new("Biceps", 0.5m)], BodyweightShare: 1.00m),
         new("Lat Pulldown", ExerciseType.Compound, "Machine",
             [new("Back", 1.0m), new("Biceps", 0.5m)]),
         new("Barbell Row", ExerciseType.Compound, "Barbell",
@@ -119,9 +132,16 @@ public static class ExerciseCatalog
         new("Skull Crusher", ExerciseType.Isolation, "Barbell",
             [new("Triceps", 1.0m)]),
 
+        // Plank je izdržaj, a ne ponavljanja: ostaje u katalogu zbog starih planova i ličnih
+        // šablona, ali ga ugrađeni šabloni više ne koriste (vidi WorkoutTemplateCatalog).
+        // Udeo telesne mase mu je 0, pa ne dobija ni procenu maksimuma ni predlog težine.
         new("Plank", ExerciseType.Isolation, "Bodyweight",
             [new("Abs", 1.0m)]),
         new("Cable Crunch", ExerciseType.Isolation, "Cable",
+            [new("Abs", 1.0m)]),
+        // Zamena za plank u ugrađenim šablonima: isti tip i isti mišić, ali se opterećuje,
+        // pa i napreduje kao svaka druga vežba.
+        new("Machine Crunch", ExerciseType.Isolation, "Machine",
             [new("Abs", 1.0m)])
     ];
 

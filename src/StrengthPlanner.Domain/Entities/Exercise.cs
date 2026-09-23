@@ -20,6 +20,10 @@ public class Exercise
     // Korisnik ga može pregaziti kroz UserExerciseSetting.
     public decimal WeightStepKg { get; set; } = TrainingConstants.WeightStepKg;
 
+    // Koliki deo telesne mase vežba podiže: 1.0 zgib, 0.64 sklek, 0 sve sa spoljnim
+    // opterećenjem. Iz njega i mase iz profila izlazi opterećenje koje vežba zaista nosi.
+    public decimal BodyweightShare { get; set; }
+
     // Frakcioni doprinos mišićnim grupama (primarna 1.0, sekundarna 0.5).
     public ICollection<ExerciseMuscle> Muscles { get; set; } = new List<ExerciseMuscle>();
 

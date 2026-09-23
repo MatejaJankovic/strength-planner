@@ -1,5 +1,6 @@
 import { CompletedExerciseSummaryDto } from '../../core/models/training.models';
 import { StatChipTone } from '../../shared/components/stat-chip/stat-chip';
+import { formatKg, loadLabel } from './load-label';
 
 /**
  * Tekst i ton oznake „Sledeće" u rezimeu treninga.
@@ -10,8 +11,17 @@ import { StatChipTone } from '../../shared/components/stat-chip/stat-chip';
  *
  * Pravila su u čistoj funkciji sa sopstvenim testom: izraz u šablonu ne bi pokrio nulu i
  * nedostajuću vrednost, a to su dva slučaja koja se lako pomešaju.
+ *
+ * Kod vežbe sa telesnom masom je predlog ono što se DODAJE, pa se i piše tako („TM + 5 kg").
+ * Razlika je ista u obe jedinice — telo se između dve nedelje ne menja — pa strelica ostaje
+ * kakva je.
  */
-export function nextWeightLabel(summary: Pick<CompletedExerciseSummaryDto, 'nextWeightKg' | 'weightChangeKg'>): string {
+export function nextWeightLabel(
+  summary: Pick<
+    CompletedExerciseSummaryDto,
+    'nextWeightKg' | 'weightChangeKg' | 'isBodyweight'
+  >,
+): string {
   const next = summary.nextWeightKg;
 
   if (next == null) {
@@ -19,7 +29,7 @@ export function nextWeightLabel(summary: Pick<CompletedExerciseSummaryDto, 'next
   }
 
   const change = summary.weightChangeKg;
-  const base = `${formatKg(next)} kg`;
+  const base = loadLabel(next, summary.isBodyweight);
 
   if (change == null || change === 0) {
     return base;
@@ -35,9 +45,4 @@ export function nextWeightTone(
   summary: Pick<CompletedExerciseSummaryDto, 'weightChangeKg'>,
 ): StatChipTone {
   return summary.weightChangeKg != null && summary.weightChangeKg > 0 ? 'accent' : 'neutral';
-}
-
-/** Kilogrami se pišu kao i svuda u aplikaciji: bez decimale kada je cela vrednost. */
-function formatKg(value: number): string {
-  return Number.isInteger(value) ? `${value}` : value.toFixed(1);
 }

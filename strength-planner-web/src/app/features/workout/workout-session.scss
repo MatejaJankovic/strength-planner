@@ -127,6 +127,15 @@
   gap: 0.35rem;
 }
 
+// Zašto predlog stoji na sopstvenoj masi: bez ovoga „TM" izgleda kao da je plan zaboravio
+// da upiše težinu.
+.summary__note {
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  line-height: 1.35;
+  margin: 0;
+}
+
 .done-note {
   align-items: center;
   background: color-mix(in srgb, var(--color-primary) 8%, white);
@@ -216,7 +225,8 @@
 }
 
 // Zašto predlog serija odstupa od propisa — bez ikone se razlika čita kao greška u planu.
-.card__hint--volume {
+.card__hint--volume,
+.card__hint--bodyweight {
   align-items: flex-start;
   display: flex;
   gap: 0.35rem;
@@ -563,6 +573,7 @@
 }
 
 .card__hint--volume mat-icon,
+.card__hint--bodyweight mat-icon,
 .adjustment__sets mat-icon {
   flex: none;
   font-size: 1rem;
