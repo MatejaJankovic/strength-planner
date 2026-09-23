@@ -142,8 +142,9 @@ Barbell Row.
 
 > **Kasnija izmena:** ovaj ekran nema stavku u navigaciji. Ako hoćeš da ga ponovo otvoriš
 > (npr. posle pauze, da resetuješ startna opterećenja), idi ručno na adresu `/onboarding`.
-> Novi unos ne briše stari — dodaje se novija vrednost, a sistem koristi **najbolju iz
-> poslednjih 56 dana**.
+> Novi unos ne briše stari, ali **ono što ručno upišeš poništava starije procene** — tako se
+> naduvana procena može ispraviti naniže. Ekran prikazuje upravo vrednost od koje plan
+> polazi.
 
 ---
 
@@ -405,8 +406,9 @@ završiš prvi trening.
 
 **e1RM trend.** Biraš vežbu iz padajućeg spiska, dobijaš grafik procenjenog maksimuma kroz
 vreme, poslednju vrednost i promenu u odnosu na prethodnu. Ovo je glavna mera napretka.
-Procena postoji samo za serije **do 12 ponavljanja** — iznad toga formula nije pouzdana, pa
-se ne beleži.
+Procena postoji samo za serije **do 12 ponavljanja i sa RIR-om do 3** — dalje od otkaza
+formula nije pouzdana, pa se ne beleži. Grafik prikazuje svu istoriju, uključujući i starije
+naduvane vrednosti ako ih ima; plan ih ne koristi (vidi „Start novog bloka").
 
 **Nedeljni volumen.** Za izabrani mezociklus i nedelju, po mišićnim grupama: koliko si
 stimulativnih serija odradio i gde to pada u odnosu na tvoje granice.
@@ -536,12 +538,16 @@ donje granice opsega meri se kapacitetom: ponavljanja plus RIR, u odnosu na donj
 Zato korekcija naniže može da dosegne isti plafon kao naviše.
 
 **Procena maksimuma (e1RM).** Epley formula preko efektivnih ponavljanja
-(`ponavljanja + RIR`), samo za serije do 12 ponavljanja. Serije iz deload nedelje se
-namerno **ne** upisuju — submaksimalne su, pa bi veštački oborile trend.
+(`ponavljanja + RIR`), samo za serije do 12 ponavljanja **i sa RIR-om do 3**. Serija sa
+većom rezervom ne daje procenu: 100 kg × 12 sa RIR 5 „čita" 157 kg tamo gde ista serija do
+otkaza čita 140. Serije iz deload nedelje se namerno **ne** upisuju — submaksimalne su, pa
+bi veštački oborile trend.
 
 **Start novog bloka.** Uzima se **najbolja** procena iz poslednjih **56 dana**, ne poslednja
-— poslednji zapis može biti sa lošeg dana. Ako u tom prozoru nema ničega, uzima se najnoviji
-zapis ikada.
+— poslednji zapis može biti sa lošeg dana. Dva izuzetka: ako najbolja stoji više od **5%**
+iznad druge po redu, uzima se druga (to je jedna omašena procena, a ne napredak), i ako si u
+tom prozoru **ručno** uneo maksimum, starije procene se ne računaju. Ako u prozoru nema
+ničega, uzima se najnoviji zapis ikada.
 
 **Automatski deload.** Iz svake završene nedelje se računa ocena umora (0–1) iz četiri
 signala: odstupanje RIR-a, udeo serija do otkaza, pad procenjenog 1RM i volumen u odnosu na
