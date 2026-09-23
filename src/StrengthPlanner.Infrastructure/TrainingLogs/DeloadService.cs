@@ -528,7 +528,9 @@ public sealed class DeloadService
     {
         var best = new Dictionary<Guid, decimal>();
 
-        foreach (var set in sets.Where(set => set.Reps <= TrainingConstants.EpleyRepCap))
+        // Isti predikat koji odlučuje da li serija uopšte daje procenu (E1RmCalculator):
+        // signal umora ne sme da se gradi na proceni koju sistem nigde drugde ne priznaje.
+        foreach (var set in sets.Where(set => E1RmCalculator.CanEstimateFrom(set.WeightKg, set.Reps, set.Rir)))
         {
             var estimate = _e1RmCalculator.EstimateOneRepMax(set.WeightKg, set.Reps, set.Rir);
 

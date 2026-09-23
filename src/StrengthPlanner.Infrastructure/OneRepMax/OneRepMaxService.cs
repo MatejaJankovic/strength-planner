@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using StrengthPlanner.Application.DTOs.OneRepMax;
 using StrengthPlanner.Application.Exceptions;
 using StrengthPlanner.Application.Interfaces;
+using StrengthPlanner.Domain.Algorithms;
 using StrengthPlanner.Domain.Entities;
 using StrengthPlanner.Domain.Enums;
 using StrengthPlanner.Infrastructure.Persistence;
@@ -69,16 +70,35 @@ public class OneRepMaxService : IOneRepMaxService
                 record.ExerciseId,
                 record.Exercise.Name,
                 record.ValueKg,
-                record.Source.ToString(),
+                record.Source,
                 record.RecordedAt))
             .ToListAsync(cancellationToken);
 
+        // Prikazuje se vrednost od koje plan zaista polazi, ne prosto najnoviji zapis.
+        // Ekran „Poznati maksimumi" je do sada umeo da pokaže ručno uneto 120 kg, a
+        // generator da krene od naduvane procene od 150 — dva broja za istu stvar.
+        var now = DateTime.UtcNow;
+
         return records
             .GroupBy(record => record.ExerciseId)
-            .Select(group => group
-                .OrderByDescending(record => record.RecordedAt)
-                .ThenByDescending(record => record.Id)
-                .First())
+            .Select(group =>
+            {
+                var samples = group
+                    .Select(record => new OneRepMaxSample(record.ValueKg, record.Source, record.RecordedAt))
+                    .ToList();
+                var chosen = OneRepMaxBaseline.SelectSample(
+                    samples,
+                    now,
+                    TrainingConstants.OneRepMaxLookbackDays,
+                    allowStaleFallback: true);
+
+                return group
+                    .OrderByDescending(record => record.RecordedAt)
+                    .ThenByDescending(record => record.Id)
+                    .First(record => chosen is null
+                                     || (record.ValueKg == chosen.ValueKg
+                                         && record.RecordedAt == chosen.RecordedAt));
+            })
             .OrderBy(record => record.Exercise)
             .Select(ToDto)
             .ToList();
@@ -127,7 +147,7 @@ public class OneRepMaxService : IOneRepMaxService
             ExerciseId = record.ExerciseId,
             Exercise = record.Exercise,
             ValueKg = record.ValueKg,
-            Source = record.Source,
+            Source = record.Source.ToString(),
             RecordedAt = record.RecordedAt
         };
     }
@@ -137,6 +157,6 @@ public class OneRepMaxService : IOneRepMaxService
         Guid ExerciseId,
         string Exercise,
         decimal ValueKg,
-        string Source,
+        OneRepMaxSource Source,
         DateTime RecordedAt);
 }
