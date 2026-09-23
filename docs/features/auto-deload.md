@@ -42,6 +42,11 @@ a ne fiksnom skalom: RIR ne ide ispod nule, pa serija bez otkaza pri cilju RIR 1
 (hipertrofija) najviše može da prijavi −1, dok pri cilju RIR 2 (snaga) može −2. Fiksna
 skala bi istu sliku ocenila različito samo zbog cilja.
 
+> **Kasnija izmena ([`e1rm-reliability.md`](e1rm-reliability.md)).** Signal pada procenjenog
+> 1RM-a sada se gradi samo od serija koje uopšte smeju da daju procenu (do 12 ponavljanja i
+> RIR najviše 3). Nedelja u kojoj takvih serija nema doprinosi tim signalom nula, umesto da
+> ga gradi na proceni koju sistem nigde drugde ne priznaje.
+
 > **Kasnija izmena ([`progression-reference-and-summary.md`](progression-reference-and-summary.md)).**
 > Osnova deload-a je najteža podignuta težina, ne prosek svih serija u nedelji; kad vežba
 > nema ni jednu upisanu seriju, uzima se propis završene nedelje, a ne već progresovani cilj

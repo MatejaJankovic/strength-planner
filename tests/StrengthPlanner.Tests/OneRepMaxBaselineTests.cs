@@ -89,6 +89,40 @@ public class OneRepMaxBaselineTests
     }
 
     [Fact]
+    public void Select_IgnoresZeroValuedRecords()
+    {
+        // Vežbe sa telesnom masom su se upisivale sa 0 kg, pa je svaki završen trening
+        // pisao procenu od 0. Takav zapis bi ovde postao ciljno opterećenje od 0 kg.
+        Assert.Equal(120m, Select(Estimated(0m, 10), Estimated(120m, 1)));
+        Assert.Null(Select(Estimated(0m, 10)));
+        Assert.Null(OneRepMaxBaseline.Select(
+            [Estimated(0m, 200)],
+            Now,
+            TrainingConstants.OneRepMaxLookbackDays,
+            allowStaleFallback: true));
+    }
+
+    [Fact]
+    public void Select_KeepsTheNewerHigherValue_WhenTheWindowHoldsOnlyTwoSamples()
+    {
+        // Prve dve sesije jedne vežbe: 100 × 8 do otkaza (126.67) pa 100 × 12 @RIR1
+        // (143.33). Sa samo dve vrednosti "najbolja odskače od druge" znači prosto "uzmi
+        // manju", a to je upravo problem zbog kog se i biralo najbolje.
+        Assert.Equal(143.33m, Select(Estimated(126.67m, 7), Estimated(143.33m, 1)));
+    }
+
+    [Fact]
+    public void Select_NeverDemotesAValueTheLifterTyped()
+    {
+        // Ručni unos od 120 kg i procena od 114.08 iz serije koja je promašila opseg:
+        // 120 > 114.08 × 1.05, pa bi pravilo o ekstremu odbacilo baš ono što je vežbač
+        // rekao o sebi.
+        Assert.Equal(120m, Select(Manual(120m, 2), Estimated(114.08m, 1)));
+        // I kad ih ima dovoljno za proveru ekstrema.
+        Assert.Equal(130m, Select(Manual(130m, 3), Estimated(105m, 2), Estimated(104m, 1)));
+    }
+
+    [Fact]
     public void SelectSample_ReturnsTheRecordBehindTheChosenValue()
     {
         var manual = Manual(120m, 5);

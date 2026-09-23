@@ -379,7 +379,8 @@ ponavljanja svoju težinu za taj propis.
 Odmah po završetku dobijaš karticu **„Trening završen"** i to je najkorisniji ekran u
 aplikaciji. Za svaku vežbu piše:
 
-- **e1RM** — procenjeni maksimum iz najbolje serije tog dana.
+- **e1RM** — procenjeni maksimum iz najbolje serije tog dana. Vežba čije su sve serije bile
+  daleko od otkaza (RIR 4 ili 5) ili duže od 12 ponavljanja nema ovu oznaku.
 - **PR** — oznaka ako je to novi lični rekord.
 - **Sledeće** — opterećenje predloženo za istu vežbu u narednoj nedelji, sa razlikom prema
   težini koju si podigao (a za vežbu bez ijedne serije — prema onoj koja je bila planirana):

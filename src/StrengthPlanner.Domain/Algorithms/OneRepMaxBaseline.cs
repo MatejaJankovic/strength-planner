@@ -20,13 +20,19 @@ public sealed record OneRepMaxSample(decimal ValueKg, OneRepMaxSource Source, Da
 /// Two corrections, both of them about a single record being able to speak for the window:
 ///
 /// <list type="bullet">
-/// <item>A best value standing more than <see cref="TrainingConstants.OneRepMaxOutlierTolerance"/>
-/// above the next best is treated as an outlier and the next best is used. Honest progress
-/// moves in smaller steps than one bad RIR estimate does, so a real jump survives.</item>
+/// <item>An <b>estimated</b> best standing more than
+/// <see cref="TrainingConstants.OneRepMaxOutlierTolerance"/> above the next best is treated
+/// as an outlier and the next best is used — but only once the window holds at least
+/// <see cref="TrainingConstants.OneRepMaxOutlierMinSamples"/> values, because with two there
+/// is nothing to corroborate and the rule would just take the lower one. A value the lifter
+/// typed is never demoted: it is a statement, not a measurement.</item>
 /// <item>A manually entered value supersedes everything older than it. It is a deliberate
 /// statement about today, and it is the only way for the lifter to correct an inflated
 /// estimate downward — under "best in the window" a lower manual value was simply
 /// ignored.</item>
+/// <item>Non-positive values are ignored entirely. Bodyweight exercises were logged at 0 kg
+/// and every completed session wrote a 0 kg estimate, so such records exist in history; a
+/// window holding one would otherwise hand the planner a target of 0 kg.</item>
 /// </list>
 /// </summary>
 public static class OneRepMaxBaseline
@@ -50,18 +56,22 @@ public static class OneRepMaxBaseline
     {
         ArgumentNullException.ThrowIfNull(samples);
 
-        if (samples.Count == 0)
+        // Zapis od 0 kg nije procena nego trag vežbe bez opterećenja; da je ovde, plan bi
+        // dobio cilj od 0 kg.
+        var usable = samples.Where(sample => sample.ValueKg > 0).ToList();
+
+        if (usable.Count == 0)
         {
             return null;
         }
 
         var cutoff = now.AddDays(-lookbackDays);
-        var inWindow = samples.Where(sample => sample.RecordedAt >= cutoff).ToList();
+        var inWindow = usable.Where(sample => sample.RecordedAt >= cutoff).ToList();
 
         if (inWindow.Count == 0)
         {
             return allowStaleFallback
-                ? samples.MaxBy(sample => sample.RecordedAt)!.ValueKg
+                ? usable.MaxBy(sample => sample.RecordedAt)!.ValueKg
                 : null;
         }
 
@@ -76,21 +86,23 @@ public static class OneRepMaxBaseline
             : inWindow.Where(sample => sample.RecordedAt >= newestManual.Value).ToList();
 
         var ordered = considered
-            .Select(sample => sample.ValueKg)
-            .OrderByDescending(value => value)
+            .OrderByDescending(sample => sample.ValueKg)
             .ToList();
 
-        if (ordered.Count == 1)
+        var best = ordered[0];
+
+        // Ručni unos se ne obara: vežbač je rekao koliko diže, a ne sistem procenio.
+        if (best.Source == OneRepMaxSource.Manual
+            || ordered.Count < TrainingConstants.OneRepMaxOutlierMinSamples)
         {
-            return ordered[0];
+            return best.ValueKg;
         }
 
-        var best = ordered[0];
-        var secondBest = ordered[1];
+        var secondBest = ordered[1].ValueKg;
 
-        return best > secondBest * (1 + TrainingConstants.OneRepMaxOutlierTolerance)
+        return best.ValueKg > secondBest * (1 + TrainingConstants.OneRepMaxOutlierTolerance)
             ? secondBest
-            : best;
+            : best.ValueKg;
     }
 
     /// <summary>

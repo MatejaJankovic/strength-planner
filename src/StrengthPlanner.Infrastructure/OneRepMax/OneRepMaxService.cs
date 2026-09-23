@@ -92,13 +92,18 @@ public class OneRepMaxService : IOneRepMaxService
                     TrainingConstants.OneRepMaxLookbackDays,
                     allowStaleFallback: true);
 
-                return group
-                    .OrderByDescending(record => record.RecordedAt)
-                    .ThenByDescending(record => record.Id)
-                    .First(record => chosen is null
-                                     || (record.ValueKg == chosen.ValueKg
-                                         && record.RecordedAt == chosen.RecordedAt));
+                return chosen is null
+                    // Nijedan zapis nije upotrebljiv (npr. samo stare nule sa vežbi bez
+                    // opterećenja): vežba se ne prikazuje kao da ima sačuvan maksimum.
+                    ? null
+                    : group
+                        .OrderByDescending(record => record.RecordedAt)
+                        .ThenByDescending(record => record.Id)
+                        .First(record => record.ValueKg == chosen.ValueKg
+                                         && record.RecordedAt == chosen.RecordedAt);
             })
+            .Where(record => record is not null)
+            .Select(record => record!)
             .OrderBy(record => record.Exercise)
             .Select(ToDto)
             .ToList();

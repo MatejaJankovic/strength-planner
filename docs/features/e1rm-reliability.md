@@ -43,12 +43,15 @@ rezimeu. Ta putanja je i ranije postojala za serije iznad 12 ponavljanja.
 
 `OneRepMaxBaseline.Select(samples, now, lookbackDays, allowStaleFallback)`:
 
+0. vrednosti koje nisu pozitivne se odbacuju (vidi nalaze revizije);
 1. prozor od 56 dana;
 2. **najnoviji ručni unos** poništava sve starije uzorke — to je izjava o danas i jedini
    način da vežbač ispravi naduvanu procenu naniže;
-3. najbolja vrednost, osim ako stoji više od **5%** iznad druge po redu — tada druga. Prag
-   je namerno ispod najveće inflacije koju filter još pušta (RIR 3 daje ~7%), pa hvata
-   omašenu procenu, a pravi napredak, koji se kreće u manjim koracima, ne dira;
+3. najbolja vrednost, osim ako je **procena** koja stoji više od **5%** iznad druge po redu
+   i u prozoru ima bar **tri** vrednosti — tada druga. Prag je namerno ispod najveće
+   inflacije koju filter još pušta (RIR 3 daje ~7%), pa hvata omašenu procenu, a pravi
+   napredak, koji se kreće u manjim koracima, ne dira. Ručno unetu vrednost pravilo nikad ne
+   obara;
 4. prazan prozor: najnoviji zapis ikada (generisanje bloka, da se vežbač posle pauze ne
    vrati na prazna opterećenja) ili `null` (preračun unutar bloka, gde rekord od pre pola
    godine nije dokaz).
@@ -69,7 +72,7 @@ zapis samotna naduvana procena.
   van prozora, oba ponašanja praznog prozora, `SelectSample`, i test koji drži prag ispod
   inflacije koju filter propušta.
 
-`dotnet test`: 456 (bilo 434).
+`dotnet test`: 459 (bilo 434).
 
 ## Provereno u živoj aplikaciji
 
@@ -84,6 +87,24 @@ Nov nalog, ručni 1RM za Bench Press 130 kg, ravan blok Upper/Lower.
 | Nov blok | nedelja 1 nosi **105 kg** (136.67 / 1.3). Po starom pravilu bi bilo 115 kg, izvedeno iz 150 |
 | Ručni unos 120 kg, pa nov blok | ekran pokazuje 120 (Manual), nedelja 1 nosi **92.5 kg** (120 / 1.3) |
 
+## Šta je revizija koda našla
+
+Tri stvarne greške, sve u pravilu o ekstremu:
+
+- **Zapis od 0 kg je mogao da postane ciljno opterećenje.** Vežbe sa telesnom masom se
+  upisuju sa 0 kg, pa je svaki završen trening do sada pisao procenu od 0 — takvi zapisi
+  postoje u istoriji. U prozoru sa jednom nulom pravilo je vraćalo 0, a `SessionService` je
+  izgubio staru zaštitu `recentMax > 0`, pa bi naredna nedelja dobila cilj od **0 kg**.
+  Nule se sada odbacuju pre svega ostalog, a ekran „Poznati maksimumi" takvu vežbu ne
+  prikazuje kao sačuvanu.
+- **Sa samo dve vrednosti pravilo je uzimalo manju.** Prve dve sesije jedne vežbe (126.67 iz
+  serije koja je promašila opseg, pa 143.33) davale su 126.67, i nov blok bi krenuo 12.5%
+  lakše — upravo „loš dan odlučuje", zbog čega se i biralo najbolje. Ekstrem se sada
+  proverava tek kad u prozoru ima bar tri vrednosti.
+- **Ručni unos je mogao da bude odbačen kao ekstrem.** Uneseš 120 kg, sledeća serija
+  promaši opseg i proceni 114.08, i 120 > 114.08 × 1.05 — pa bi pravilo odbacilo baš ono što
+  si rekao o sebi. Vrednost koju je vežbač uneo se više ne obara.
+
 ## Poznata ograničenja
 
 - **Stari naduvani zapisi ostaju u istoriji.** Grafik e1RM trenda i „Lični rekordi" prikazuju
@@ -93,6 +114,10 @@ Nov nalog, ručni 1RM za Bench Press 130 kg, ravan blok Upper/Lower.
   ne zna koji je zapis bio omašena procena, a koji dobar dan.
 - **Pravilo o ekstremu hvata jednu vrednost, ne dve.** Dve naduvane procene u istom prozoru
   (150 i 156.7 iznad poštenih 140) prolaze, jer se porede međusobno.
+- **Stvaran skok veći od 5% kasni jednu sesiju.** Ako se procena legitimno popravi za više od
+  praga (dešava se pri prelasku sa nedelje volumena na nedelju intenziteta), plan je uzima
+  tek kad je potvrdi još jedna vrednost. Cena je start najviše 5% niži, što progresija
+  nadoknadi za nedelju-dve.
 - **Vežbač koji radne serije stalno prijavljuje sa RIR 4+** neće imati nijednu procenu:
   trend i rekordi ostaju prazni, a preračun opterećenja pada na pravilo koje izvodi
   implicitni maksimum iz same težine. To je namerno, ali vidljivo.

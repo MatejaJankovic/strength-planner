@@ -38,6 +38,16 @@ public static class TrainingConstants
     /// </summary>
     public const decimal OneRepMaxOutlierTolerance = 0.05m;
 
+    /// <summary>
+    /// How many values the window must hold before the best one may be treated as an outlier.
+    ///
+    /// With two values there is nothing to corroborate: "best stands more than 5% above the
+    /// next" then simply means "take the lower of the two", which is the weak-day problem
+    /// that picking the best was there to avoid. A lifter's first two sessions of an
+    /// exercise are exactly that window.
+    /// </summary>
+    public const int OneRepMaxOutlierMinSamples = 3;
+
     // --- granice ličnog šablona ---
     //
     // Donje granice za serije i ponavljanja NISU ovde: njih već drži Periodization
