@@ -6,12 +6,16 @@ import { ExercisePlanDto } from '../../core/models/training.models';
  * Pravila prate `ProgressionEngine` na serveru, jer je napomena obećanje: ranije je
  * pisalo „opterećenje se zadržava" za otkaz na vrhu opsega, a server je iznad ~125 kg
  * težinu spuštao. Kad se pravilo na serveru menja, menja se i ovde.
+ *
+ * Napomena vidi **jednu** seriju, a server odlučuje po proseku cele vežbe, pa tekst uz
+ * svaki slučaj nosi uslov („ako je cela vežba takva") umesto da obeća tačan broj.
  */
 export type SetFeedback =
   | 'failure-below-range'
   | 'failure-at-top'
   | 'failure-at-top-narrow'
   | 'failure-in-range'
+  | 'at-top-narrow'
   | 'below-range-no-reserve'
   | 'below-range-with-reserve';
 
@@ -36,6 +40,12 @@ export function setFeedback(plan: SetFeedbackPlan, draft: SetFeedbackDraft): Set
     return 'failure-in-range';
   }
 
+  if (draft.reps >= plan.repRangeMax) {
+    // U uskom opsegu vrh sam po sebi ne znači korak: kad rezerve nema, server zadržava
+    // težinu. U običnom opsegu vrh uvek nosi korak, pa tu nema šta da se kaže.
+    return isNarrowRange(plan) ? 'at-top-narrow' : null;
+  }
+
   if (draft.reps >= plan.repRangeMin) {
     return null;
   }
@@ -54,7 +64,7 @@ export function setFeedback(plan: SetFeedbackPlan, draft: SetFeedbackDraft): Set
 
 /**
  * Uzak opseg sa većim ciljnim RIR-om (11-12 @RIR2, 3-4 @RIR3): povratak na dno opsega ne
- * pokriva otkaz na vrhu, pa server tu težinu zadržava umesto da doda korak.
+ * pokriva manjak RIR-a na vrhu, pa server tu težinu zadržava umesto da doda korak.
  */
 function isNarrowRange(plan: SetFeedbackPlan): boolean {
   return plan.targetRir > plan.repRangeMax - plan.repRangeMin;

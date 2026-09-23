@@ -136,7 +136,8 @@ treninga zaredom i traži da opterećenje ne padne.
 - Pomoćni tekst dobija `aria-live`, a RIR grupa `aria-describedby` ka prekidaču, pa se
   razlog nedostupnosti čuje i bez gledanja u ekran.
 - Dodat slučaj za otkaz **iznad** vrha opsega ("Otkaz na vrhu opsega — opterećenje se
-  zadržava, a ne diže"), koji je ranije padao u poruku "unutar opsega".
+  zadržava, a ne diže"), koji je ranije padao u poruku "unutar opsega". Tekst te napomene
+  je kasnije zamenjen, vidi belešku iznad.
 - Komentar u `SessionService` beleži zašto e1RM koristi upisani `Rir`, a ne
   `EffectiveRir`: efektivni RIR ume da bude negativan i služi samo auto-regulaciji, dok
   Epley ionako pretpostavlja seriju do otkaza.

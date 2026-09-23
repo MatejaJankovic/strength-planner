@@ -215,10 +215,12 @@ public class FatigueEvaluatorTests
     [Fact]
     public void AverageRirDeviation_CountsAnUnflaggedImpliedFailureAmongTheCompletedSets()
     {
-        // Serija sa RIR 0 ispod dna opsega je otkaz po brojevima, ali ako kvačica nije
-        // dotaknuta, u bazi stoji IsFailure = false. Takva serija ne ulazi u udeo otkaza
-        // (koji čita zastavicu), pa mora da ostane u proseku RIR-a - inače nedelja u kojoj
-        // je vežbač promašio opseg ne bi imala nijedan signal umora.
+        // Domenska funkcija ne zna za zastavicu iz baze: dobija ono što joj pozivalac
+        // preda. SetLogService danas upisuje IsFailure = true i kad kvačica nije dotaknuta
+        // (ImpliesFailure), ali serije upisane pre te izmene i dalje mogu da stoje sa
+        // false. Takva serija ne ulazi u udeo otkaza, koji čita zastavicu, pa mora da
+        // ostane u proseku RIR-a - inače nedelja u kojoj je vežbač promašio opseg ne bi
+        // imala nijedan signal umora.
         var deviation = FatigueEvaluator.AverageRirDeviation([
             new RirSample(new WorkingSet(6, 0), RepRangeMin: 8, TargetRir: 1)
         ]);

@@ -30,8 +30,10 @@ ne pre njega.
 
 Nula rezerve znači „nisam mogao još jedno ponavljanje". Ispod donje granice opsega, to je
 istovetno sa otkazom — nema kombinacije brojeva u kojoj je „nula rezerve, ali nisam
-otkazao" smisleno. **RIR iznad nule** ostaje drugačiji, stvaran signal: vežbač je stao
-namerno sa rezervom (bol, vreme, forma), ne zato što nije mogao dalje — to se ne dira.
+otkazao" smisleno. **RIR iznad nule** je u ovoj grani ostao drugačiji, stvaran signal:
+vežbač je stao namerno sa rezervom (bol, vreme, forma), ne zato što nije mogao dalje.
+(Kasnije promenjeno — vidi belešku na kraju: razlog zbog kog je vežbač stao ne menja šta
+brojevi govore o opterećenju.)
 
 ## Šta je promenjeno
 

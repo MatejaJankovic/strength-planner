@@ -28,8 +28,10 @@ public sealed class ProgressionEngine
     ///
     /// The load increment used for the double-progression step and for rounding comes
     /// from the exercise (2.5 kg when none is supplied), so dumbbells and machines step
-    /// realistically. <see cref="ProgressionResult.WeightIncreased"/> reports whether the
-    /// result is heavier than the load used, not merely that the top was reached.
+    /// realistically. Rounding never reverses the direction of the correction, and with no
+    /// correction the used load is kept as it is — see <see cref="ApplyCorrection"/>.
+    /// <see cref="ProgressionResult.WeightIncreased"/> reports whether the result is
+    /// heavier than the load used, not merely that the top was reached.
     /// </summary>
     public ProgressionResult ComputeNext(
         decimal usedWeightKg,
@@ -60,7 +62,7 @@ public sealed class ProgressionEngine
 
         if (!allHitTop)
         {
-            nextWeight = WeightMath.RoundToStep(usedWeightKg * (1 + correction), stepKg);
+            nextWeight = ApplyCorrection(usedWeightKg, correction, stepKg);
         }
         else if (RangeResetCoversShortfall(deviation, repRangeMin, repRangeMax))
         {
@@ -95,5 +97,30 @@ public sealed class ProgressionEngine
     private static bool RangeResetCoversShortfall(decimal deviation, int repRangeMin, int repRangeMax)
     {
         return deviation + (repRangeMax - repRangeMin) >= 0;
+    }
+
+    /// <summary>
+    /// Scales the used load by the correction and rounds to the exercise's step, without
+    /// letting the rounding reverse the direction of the correction.
+    ///
+    /// Rounding to the nearest step can cross the used weight when that weight does not sit
+    /// on the step grid — which it need not, since it comes from what the lifter logged. A
+    /// harder-than-planned session at 102 kg with a -1% correction rounds 100.98 kg up to
+    /// 102.5 kg on a 2.5 kg step, so the load rises after a session that asked for less.
+    /// The sign of the correction is the decision; the step is only how fine the result can
+    /// be expressed. With no correction at all the used weight is kept as it is.
+    /// </summary>
+    private static decimal ApplyCorrection(decimal usedWeightKg, decimal correction, decimal stepKg)
+    {
+        if (correction == 0)
+        {
+            return usedWeightKg;
+        }
+
+        var rounded = WeightMath.RoundToStep(usedWeightKg * (1 + correction), stepKg);
+
+        return correction < 0
+            ? Math.Min(rounded, usedWeightKg)
+            : Math.Max(rounded, usedWeightKg);
     }
 }

@@ -66,7 +66,10 @@ public class ProgressionPropertyTests
 
         foreach (var step in new[] { 2m, 2.5m, 5m })
         {
-            foreach (var used in Enumerable.Range(1, 12).Select(k => k * 7 * step))
+            // I težine van mreže koraka: upotrebljena težina dolazi iz onoga što je vežbač
+            // upisao, pa ne mora da bude umnožak koraka. Tu je nemonotonost i bila moguća,
+            // dok zaokruživanje nije prestalo da obrće smer korekcije.
+            foreach (var used in Enumerable.Range(1, 12).Select(k => k * 7 * step).Concat(OffGridWeights))
             {
                 foreach (var (min, max) in Ranges)
                 {
@@ -123,9 +126,22 @@ public class ProgressionPropertyTests
                                                         && !WorkingSet.ImpliesFailure(set.Reps, set.Rir, min, set.IsFailure);
                             var legacyDeviation = LegacyEffectiveRir(set, min) - targetRir;
 
-                            var unchangedCase = allHitTop
-                                ? legacyDeviation >= 0
-                                : !belowFloorWithReserve;
+                            var expected = LegacyNext(used, set, min, max, targetRir, step);
+
+                            // Treći namerno promenjen slučaj: zaokruživanje je znalo da
+                            // obrne smer korekcije kad upotrebljena težina nije umnožak
+                            // koraka - 41.5 kg je uz +3% davalo 40, a 126.3 kg bez ikakve
+                            // korekcije 127.5. Sada takav rezultat ostaje na podignutoj
+                            // težini. Vrh opsega ovde ne ulazi: tamo se dodaje korak.
+                            var roundingReversedTheCorrection = !allHitTop
+                                && (legacyDeviation == 0
+                                    ? expected != used
+                                    : legacyDeviation < 0 ? expected > used : expected < used);
+
+                            var unchangedCase = !roundingReversedTheCorrection
+                                                && (allHitTop
+                                                    ? legacyDeviation >= 0
+                                                    : !belowFloorWithReserve);
 
                             if (!unchangedCase)
                             {
@@ -133,7 +149,6 @@ public class ProgressionPropertyTests
                             }
 
                             compared++;
-                            var expected = LegacyNext(used, set, min, max, targetRir, step);
                             var actual = _engine.ComputeNext(used, sets, targetRir, min, max, step).NextWeightKg;
 
                             if (actual != expected)

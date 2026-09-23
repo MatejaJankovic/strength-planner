@@ -46,4 +46,32 @@ describe('setFeedback', () => {
     expect(setFeedback(hypertrophy, { reps: 10, rir: 1, isFailure: false })).toBeNull();
     expect(setFeedback(hypertrophy, { reps: 12, rir: 0, isFailure: false })).toBeNull();
   });
+
+  it('upozorava na vrh uskog opsega i bez kvačice otkaza', () => {
+    // 11-12 @RIR2: sa RIR 0 server zadržava težinu (odstupanje -2, širina 1), sa RIR 2
+    // dodaje korak. Vrh sam po sebi tu ne znači korak, pa napomena to kaže.
+    expect(setFeedback(narrowVolumeWeek, { reps: 12, rir: 0, isFailure: false })).toBe(
+      'at-top-narrow',
+    );
+    expect(setFeedback(narrowVolumeWeek, { reps: 12, rir: 2, isFailure: false })).toBe(
+      'at-top-narrow',
+    );
+    // U običnom opsegu vrh uvek nosi korak, pa nema šta da se kaže.
+    expect(setFeedback(hypertrophy, { reps: 12, rir: 2, isFailure: false })).toBeNull();
+  });
+
+  /**
+   * Granica koju napomena ne može da pokrije: odluku donosi prosek cele vežbe, a napomena
+   * vidi samo seriju koja se unosi. Zato tekst uz svaki slučaj nosi uslov "ako je cela
+   * vežba takva" - u mešovitoj vežbi (jedna slaba serija, dve lake) server predlaže VEĆE
+   * opterećenje: 5@RIR2 + 12@RIR4 + 12@RIR4 na 100 kg daje 105 kg, jer je prosečan
+   * efektivni RIR 2.33 naspram cilja 1. Prijavila revizija koda.
+   */
+  it('daje istu napomenu za slabu seriju i kad je ostatak vežbe lak', () => {
+    const weakSet = { reps: 5, rir: 2, isFailure: false };
+    const easySet = { reps: 12, rir: 4, isFailure: false };
+
+    expect(setFeedback(hypertrophy, weakSet)).toBe('below-range-with-reserve');
+    expect(setFeedback(hypertrophy, easySet)).toBeNull();
+  });
 });

@@ -260,11 +260,16 @@
                   @switch (feedback) {
                     @case ('failure-below-range') {
                       Promašeno {{ plan.repRangeMin - draft.reps }} ponavljanja do donje granice
-                      opsega - sledeći put predlažemo osetno manje opterećenje.
+                      opsega - ako je cela vežba takva, sledeći put predlažemo osetno manje
+                      opterećenje.
                     }
                     @case ('failure-at-top') {
                       Otkaz na vrhu opsega - ako sve serije stignu do vrha, sledeći put ide
                       korak više.
+                    }
+                    @case ('at-top-narrow') {
+                      Vrh uskog opsega - ovde korak ide samo ako ostane rezerve, pa proveri
+                      predlog u rezimeu.
                     }
                     @case ('failure-at-top-narrow') {
                       Otkaz na vrhu uskog opsega - to je teže od plana; ako su sve serije
@@ -274,12 +279,13 @@
                       Otkaz unutar opsega - RIR je 0.
                     }
                     @case ('below-range-no-reserve') {
-                      Ispod donje granice bez rezerve - računa se kao otkaz, pa sledeći put
-                      ne predlažemo veće opterećenje.
+                      Ispod donje granice bez rezerve - računa se kao otkaz; ako je cela vežba
+                      takva, sledeći put ne predlažemo veće opterećenje.
                     }
                     @case ('below-range-with-reserve') {
                       Ispod donje granice opsega - i sa rezervom je to manje nego što propis
-                      traži, pa sledeći put ne predlažemo veće opterećenje.
+                      traži; ako je cela vežba takva, sledeći put ne predlažemo veće
+                      opterećenje.
                     }
                   }
                 </p>

@@ -130,9 +130,15 @@ testom, jer je napomena obećanje o sledećem treningu i mora da prati server:
 - ispod dna sa rezervom, kad kapacitet ne dostiže propis: „i sa rezervom je to manje nego što
   propis traži"
 
-Napomene govore o **jednoj** seriji, a pravilo gleda prosek celog treninga, pa nijedna ne
-obećava tačan broj: umesto „predlažemo manje opterećenje" piše „ne predlažemo veće", a uz
-uski opseg stoji uslov „ako su sve serije takve". Prijavila revizija koda.
+Napomene govore o **jednoj** seriji, a pravilo odlučuje po proseku cele vežbe, pa svaka
+nosi uslov („ako je cela vežba takva", „ako sve serije stignu do vrha") umesto da obeća
+broj. Revizija koda je izmerila zašto: u vežbi 5@RIR2 + 12@RIR4 + 12@RIR4 na 100 kg prosečan
+efektivni RIR je 2.33 naspram cilja 1, pa server predlaže **105 kg** — iako je prva serija
+bila ispod opsega. Prva verzija napomene je za tu seriju tvrdila da veće opterećenje ne
+sledi. Granica je i zapisana u `set-feedback.spec.ts`.
+
+Dodat je i slučaj koji nije postojao: vrh **uskog** opsega bez kvačice otkaza (11–12 @RIR2).
+Tamo korak zavisi od rezerve, pa napomena to i kaže.
 
 ### Uputstvo (A8)
 
@@ -169,7 +175,7 @@ Sada piše da se, kad nisi siguran, prijavi **manji** RIR. Savet „unesi konzer
 Provereno da testovi hvataju grešku: privremeno vraćanje stare formule u `WorkingSet` i
 `ProgressionEngine` obara **34 testa**, među njima redove od 160, 300, 110 i 260 kg.
 
-`dotnet test`: 395 (bilo 356). Frontend: 120 testova.
+`dotnet test`: 401 (bilo 356). Frontend: 122 testa.
 
 ## Provereno u živoj aplikaciji
 

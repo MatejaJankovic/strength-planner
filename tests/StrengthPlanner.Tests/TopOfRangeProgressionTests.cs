@@ -71,6 +71,65 @@ public class TopOfRangeProgressionTests
         Assert.False(result.WeightIncreased);
     }
 
+    [Theory]
+    // Prosek preko tri serije nije ceo broj, pa granica uslova pada između dva slučaja.
+    // Uski opseg 11-12 @RIR2: tri serije sa RIR 1 daju odstupanje -1, a širina je 1 =>
+    // tačno na granici, korak ide.
+    [InlineData(1, 1, 1, 102.5)]
+    // Ista nedelja, ali jedna serija do otkaza: prosek -1.333, ispod granice => drži.
+    [InlineData(1, 1, 0, 100.0)]
+    public void ComputeNext_DecidesOnTheSessionAverage_NotOnASingleSet(
+        int firstRir,
+        int secondRir,
+        int thirdRir,
+        double expectedKg)
+    {
+        var sets = new List<WorkingSet>
+        {
+            new(12, firstRir),
+            new(12, secondRir),
+            new(12, thirdRir)
+        };
+
+        var result = _engine.ComputeNext(100m, sets, targetRir: 2, repRangeMin: 11, repRangeMax: 12, weightStepKg: 2.5m);
+
+        Assert.Equal((decimal)expectedKg, result.NextWeightKg);
+    }
+
+    [Theory]
+    // Zaokruživanje ne sme da obrne smer korekcije. Upotrebljena težina ne mora da bude
+    // umnožak koraka: dolazi iz onoga što je vežbač upisao.
+    //
+    // 107 kg na mašini (korak 10), odstupanje -1/3 poena => -1%: 105.93 se zaokružuje na
+    // 110, dakle VIŠE od podignutog posle teže nedelje. Pravilo to vraća na 107.
+    [InlineData(107.0, 10.0, 1, 1, 0, 107.0)]
+    // 103 kg, odstupanje +1/3 => +1%: 104.03 se zaokružuje na 100, dakle MANJE od
+    // podignutog posle lakše nedelje.
+    [InlineData(103.0, 10.0, 1, 1, 2, 103.0)]
+    // Bez ikakve korekcije se težina ne "prilepljuje" na mrežu koraka (bilo bi 127.5).
+    [InlineData(126.3, 2.5, 1, 1, 1, 126.3)]
+    public void ComputeNext_DoesNotLetRoundingReverseTheCorrection(
+        double usedKg,
+        double stepKg,
+        int rir1,
+        int rir2,
+        int rir3,
+        double expectedKg)
+    {
+        var sets = new List<WorkingSet> { new(12, rir1), new(12, rir2), new(12, rir3) };
+
+        var result = _engine.ComputeNext(
+            (decimal)usedKg,
+            sets,
+            targetRir: 1,
+            repRangeMin: 11,
+            repRangeMax: 13,
+            weightStepKg: (decimal)stepKg);
+
+        Assert.Equal((decimal)expectedKg, result.NextWeightKg);
+        Assert.False(result.WeightIncreased);
+    }
+
     [Fact]
     public void ComputeNext_KeepsPositiveCorrectionOnTopOfStep()
     {

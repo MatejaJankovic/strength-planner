@@ -358,8 +358,8 @@ Grešku ispravljaš ikonicama pored serije: **olovka** za izmenu, **kanta** za b
 > **Zašto je RIR važan.** Iz razlike između ciljnog i stvarnog RIR-a sistem računa
 > korekciju opterećenja za sledeći put. Pogrešan RIR = pogrešan sledeći trening. Ako
 > nisi siguran, radije reci da je ostalo **manje** nego više: veći RIR znači da je bilo
-> lakše, pa sledeći trening dobija veće opterećenje, a serije sa RIR 4–5 se ne računaju
-> ni u stimulativni volumen.
+> lakše, pa sledeći trening dobija veće opterećenje. Uz to serija sa RIR 4 u stimulativni
+> volumen ulazi upola, a sa RIR 5 ne ulazi uopšte.
 
 ### 3. Završi trening
 

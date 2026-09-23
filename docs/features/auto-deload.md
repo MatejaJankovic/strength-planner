@@ -42,6 +42,11 @@ a ne fiksnom skalom: RIR ne ide ispod nule, pa serija bez otkaza pri cilju RIR 1
 (hipertrofija) najviše može da prijavi −1, dok pri cilju RIR 2 (snaga) može −2. Fiksna
 skala bi istu sliku ocenila različito samo zbog cilja.
 
+> **Kasnija izmena ([`load-progression-top-of-range.md`](load-progression-top-of-range.md)).**
+> Granica „najviše −1" važi za seriju unutar opsega. Od te grane se serija koja je stala
+> **ispod** donje granice opsega meri kapacitetom (ponavljanja + RIR prema dnu opsega), pa
+> može da prijavi i manje od −1; ocena je u tom slučaju ograničena na punu težinu signala.
+
 Signali koji pokazuju u suprotnom smeru se odsecaju na nuli: nedelja lakša od plana, sa
 rastom snage, daje ocenu 0, a ne negativnu vrednost koja bi "kompenzovala" nešto drugo.
 Prva nedelja nema sa čim da uporedi 1RM, pa taj signal doprinosi nulom — nedostatak

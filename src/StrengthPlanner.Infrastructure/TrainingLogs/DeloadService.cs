@@ -405,7 +405,9 @@ public sealed class DeloadService
             set.TargetRir)));
         var completedCount = sets.Count(set => !set.IsFailure);
 
-        // Koliko ispod cilja dovršena serija uopšte može da padne: RIR ne ide ispod nule.
+        // Koliko ispod cilja dovršena serija unutar opsega može da padne: RIR ne ide ispod
+        // nule. Serija koja je stala ispod donje granice opsega ume i niže (kapacitet se meri
+        // prema dnu opsega), pa ocena takvo odstupanje ograniči na punu težinu signala.
         var achievableDeficit = sets.Max(set => (decimal)set.TargetRir);
         var failureShare = (decimal)sets.Count(set => set.IsFailure) / sets.Count;
 
