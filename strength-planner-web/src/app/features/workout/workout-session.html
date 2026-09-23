@@ -255,15 +255,38 @@
                 </mat-icon>
                 <span>Serija do otkaza</span>
               </button>
-              @if (draft.isFailure) {
+              @if (feedbackFor(plan, draft); as feedback) {
                 <p class="entry__hint" role="status" aria-live="polite">
-                  @if (draft.reps < plan.repRangeMin) {
-                    Promašeno {{ plan.repRangeMin - draft.reps }} ponavljanja do donje granice
-                    opsega - sledeći put predlažemo osetno manje opterećenje.
-                  } @else if (draft.reps >= plan.repRangeMax) {
-                    Otkaz na vrhu opsega - opterećenje se zadržava, a ne diže.
-                  } @else {
-                    Otkaz unutar opsega - RIR je 0.
+                  @switch (feedback) {
+                    @case ('failure-below-range') {
+                      Promašeno {{ plan.repRangeMin - draft.reps }} ponavljanja do donje granice
+                      opsega - ako je cela vežba takva, sledeći put predlažemo osetno manje
+                      opterećenje.
+                    }
+                    @case ('failure-at-top') {
+                      Otkaz na vrhu opsega - ako sve serije stignu do vrha, sledeći put ide
+                      korak više.
+                    }
+                    @case ('at-top-narrow') {
+                      Vrh uskog opsega - ovde korak ide samo ako ostane rezerve, pa proveri
+                      predlog u rezimeu.
+                    }
+                    @case ('failure-at-top-narrow') {
+                      Otkaz na vrhu uskog opsega - to je teže od plana; ako su sve serije
+                      takve, opterećenje se zadržava.
+                    }
+                    @case ('failure-in-range') {
+                      Otkaz unutar opsega - RIR je 0.
+                    }
+                    @case ('below-range-no-reserve') {
+                      Ispod donje granice bez rezerve - računa se kao otkaz; ako je cela vežba
+                      takva, sledeći put ne predlažemo veće opterećenje.
+                    }
+                    @case ('below-range-with-reserve') {
+                      Ispod donje granice opsega - i sa rezervom je to manje nego što propis
+                      traži; ako je cela vežba takva, sledeći put ne predlažemo veće
+                      opterećenje.
+                    }
                   }
                 </p>
               }

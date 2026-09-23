@@ -1,5 +1,11 @@
 namespace StrengthPlanner.Domain.Algorithms;
 
+/// <summary>One logged set with the prescription it was performed against.</summary>
+/// <param name="Set">The set as the progression engine sees it.</param>
+/// <param name="RepRangeMin">Floor of the prescribed rep range.</param>
+/// <param name="TargetRir">Prescribed reps in reserve.</param>
+public sealed record RirSample(WorkingSet Set, int RepRangeMin, int TargetRir);
+
 /// <summary>
 /// Scores accumulated fatigue from one completed training week and decides whether the
 /// next week should become a deload.
@@ -65,6 +71,28 @@ public static class FatigueEvaluator
                + failures * FailureWeight
                + e1Rm * E1RmWeight
                + volume * VolumeWeight;
+    }
+
+    /// <summary>
+    /// Mean of (effective RIR - target RIR) over the sets the lifter completed, i.e. those
+    /// not taken to failure; 0 when there are none. Failures are left out so that this
+    /// signal and the failure share stay two separate measurements.
+    ///
+    /// Effective RIR is <see cref="WorkingSet.EffectiveRir"/>, the measure progression uses.
+    /// A set stopped below the range floor with reserve left is therefore "harder than
+    /// planned" here as well; read as raw RIR it scored as easier, so the same set pulled
+    /// progression down and the fatigue score toward "fresh".
+    /// </summary>
+    public static decimal AverageRirDeviation(IEnumerable<RirSample> sets)
+    {
+        ArgumentNullException.ThrowIfNull(sets);
+
+        var completed = sets.Where(sample => !sample.Set.IsFailure).ToList();
+
+        return completed.Count == 0
+            ? 0m
+            : completed.Average(sample =>
+                (decimal)(sample.Set.EffectiveRir(sample.RepRangeMin) - sample.TargetRir));
     }
 
     /// <summary>

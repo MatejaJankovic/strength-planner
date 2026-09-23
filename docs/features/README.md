@@ -48,6 +48,14 @@ Analiza sa ishodom po stavci: [`../analiza-prirucnika.md`](../analiza-prirucnika
 | [Trening samo kroz plan](macrocycle-first.md) | Jedan ulaz umesto dva; brisanje na nivou plana, čime prestaje da se vraća obrisano | #46 |
 | [Pregled bloka](macrocycle-block-preview.md) | Klik na blok pokazuje šta nosi - propis ako je generisan, šablon ako čeka red | #47 |
 
+## Deveti krug — logika progresije opterećenja
+
+Pregled logike treninga (odeljak A: sve što direktno menja predloženu težinu).
+
+| Grana | O čemu je | PR |
+|---|---|---|
+| [Vrh opsega više ne spušta težinu](load-progression-top-of-range.md) | Korekcija po RIR-u je poništavala korak na vrhu opsega, a iznad 125 kg obarala težinu; serija ispod opsega sa rezervom je dizala težinu | — |
+
 ## Ako čitaš samo jedno
 
 [Periodizacija po nedeljama](periodization-models.md) — to je bio najveći raskorak između

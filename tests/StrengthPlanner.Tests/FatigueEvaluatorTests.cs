@@ -176,4 +176,66 @@ public class FatigueEvaluatorTests
             Assert.InRange(score, 0m, 1m);
         }
     }
+
+    [Fact]
+    public void AverageRirDeviation_ReadsABelowFloorSetWithReserveAsHarder()
+    {
+        // 5 ponavljanja sa RIR 2 u 8-12 @RIR1: kapacitet 7, jedno ispod dna. Progresiji je
+        // to -2 poena; sirov RIR bi ovde rekao +1, "lakše od plana".
+        var deviation = FatigueEvaluator.AverageRirDeviation([
+            new RirSample(new WorkingSet(5, 2), RepRangeMin: 8, TargetRir: 1)
+        ]);
+
+        Assert.Equal(-2m, deviation);
+    }
+
+    [Fact]
+    public void AverageRirDeviation_KeepsLoggedRirInsideTheRange()
+    {
+        var deviation = FatigueEvaluator.AverageRirDeviation([
+            new RirSample(new WorkingSet(10, 0), RepRangeMin: 8, TargetRir: 1),
+            new RirSample(new WorkingSet(9, 3), RepRangeMin: 8, TargetRir: 1)
+        ]);
+
+        // (-1 + 2) / 2
+        Assert.Equal(0.5m, deviation);
+    }
+
+    [Fact]
+    public void AverageRirDeviation_LeavesFailuresToTheFailureShare()
+    {
+        var deviation = FatigueEvaluator.AverageRirDeviation([
+            new RirSample(new WorkingSet(5, 0, IsFailure: true), RepRangeMin: 8, TargetRir: 1),
+            new RirSample(new WorkingSet(10, 2), RepRangeMin: 8, TargetRir: 1)
+        ]);
+
+        Assert.Equal(1m, deviation);
+    }
+
+    [Fact]
+    public void AverageRirDeviation_CountsAnUnflaggedImpliedFailureAmongTheCompletedSets()
+    {
+        // Domenska funkcija ne zna za zastavicu iz baze: dobija ono što joj pozivalac
+        // preda. SetLogService danas upisuje IsFailure = true i kad kvačica nije dotaknuta
+        // (ImpliesFailure), ali serije upisane pre te izmene i dalje mogu da stoje sa
+        // false. Takva serija ne ulazi u udeo otkaza, koji čita zastavicu, pa mora da
+        // ostane u proseku RIR-a - inače nedelja u kojoj je vežbač promašio opseg ne bi
+        // imala nijedan signal umora.
+        var deviation = FatigueEvaluator.AverageRirDeviation([
+            new RirSample(new WorkingSet(6, 0), RepRangeMin: 8, TargetRir: 1)
+        ]);
+
+        // Kapacitet 6 naspram dna 8 => -2, minus cilj 1.
+        Assert.Equal(-3m, deviation);
+    }
+
+    [Fact]
+    public void AverageRirDeviation_IsZero_WhenEverySetFailed()
+    {
+        var deviation = FatigueEvaluator.AverageRirDeviation([
+            new RirSample(new WorkingSet(5, 0, IsFailure: true), RepRangeMin: 8, TargetRir: 1)
+        ]);
+
+        Assert.Equal(0m, deviation);
+    }
 }

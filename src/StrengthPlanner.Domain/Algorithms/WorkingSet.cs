@@ -12,8 +12,9 @@ namespace StrengthPlanner.Domain.Algorithms;
 public sealed record WorkingSet(int Reps, int Rir, bool IsFailure = false)
 {
     /// <summary>
-    /// RIR used for auto-regulation, extended below zero for a set that failed short of
-    /// the range.
+    /// RIR used for auto-regulation. At or above the range floor it is the logged RIR
+    /// (0 for a failure). Below the floor it is the lifter's capacity — reps plus the
+    /// reserve that was really left — measured against the floor.
     ///
     /// Failure is detected from the numbers themselves, not only from
     /// <see cref="IsFailure"/>. Zero reps in reserve below the range floor <b>is</b>
@@ -21,12 +22,8 @@ public sealed record WorkingSet(int Reps, int Rir, bool IsFailure = false)
     /// the same physical event whether or not a checkbox recorded it. Reported from real
     /// use: a set logged as 6 reps, RIR 0, out of an 8-12 range, without the checkbox,
     /// scored the same mild -3% as a completed set at the bottom of the range — because
-    /// the earlier version of this method looked at <see cref="IsFailure"/> alone. The
+    /// an earlier version of this method looked at <see cref="IsFailure"/> alone. The
     /// checkbox is easy to forget precisely when it matters most: mid-failure, not before.
-    ///
-    /// RIR above zero is left untouched even below the range floor, since that is a
-    /// genuine, different signal — the lifter stopped on purpose with reserve left
-    /// (pain, time, form), not because they ran out of reps.
     ///
     /// The RIR scale otherwise stops at 0, so a set that failed short of the target rep
     /// range would report the same 0 as a set that just barely reached the bottom of the
@@ -35,15 +32,21 @@ public sealed record WorkingSet(int Reps, int Rir, bool IsFailure = false)
     /// per session. Counting reps missed against the bottom of the range as negative RIR
     /// makes the signal symmetric — failing five reps short reads as -5 and reaches the
     /// same 10% cap that an easy session reaches upward.
+    ///
+    /// The same measure applies below the floor when reserve was left. An earlier version
+    /// returned the logged RIR untouched there, on the grounds that the lifter stopped on
+    /// purpose. The reason for stopping does not change what the numbers say about the
+    /// load: 5 reps with 2 in reserve out of an 8-12 range is a capacity of 7, one rep
+    /// short of the floor, exactly like failing at 7. Read as plain RIR 2, it scored as
+    /// "easier than planned" and made the next session heavier for a lifter who could not
+    /// reach the range at all.
     /// </summary>
     public int EffectiveRir(int repRangeMin)
     {
-        if (!ImpliesFailure(Reps, Rir, repRangeMin, IsFailure))
-        {
-            return Rir;
-        }
+        var reserve = ImpliesFailure(Reps, Rir, repRangeMin, IsFailure) ? 0 : Rir;
+        var repsShortOfFloor = Math.Max(0, repRangeMin - Reps);
 
-        return -Math.Max(0, repRangeMin - Reps);
+        return reserve - repsShortOfFloor;
     }
 
     /// <summary>

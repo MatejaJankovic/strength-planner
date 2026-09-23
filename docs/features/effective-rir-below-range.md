@@ -30,8 +30,10 @@ ne pre njega.
 
 Nula rezerve znači „nisam mogao još jedno ponavljanje". Ispod donje granice opsega, to je
 istovetno sa otkazom — nema kombinacije brojeva u kojoj je „nula rezerve, ali nisam
-otkazao" smisleno. **RIR iznad nule** ostaje drugačiji, stvaran signal: vežbač je stao
-namerno sa rezervom (bol, vreme, forma), ne zato što nije mogao dalje — to se ne dira.
+otkazao" smisleno. **RIR iznad nule** je u ovoj grani ostao drugačiji, stvaran signal:
+vežbač je stao namerno sa rezervom (bol, vreme, forma), ne zato što nije mogao dalje.
+(Kasnije promenjeno — vidi belešku na kraju: razlog zbog kog je vežbač stao ne menja šta
+brojevi govore o opterećenju.)
 
 ## Šta je promenjeno
 
@@ -75,6 +77,13 @@ Testovi: `dotnet test` 350 prolazi (bilo 338, +12 novih — direktno na
 koji dokazuje da opterećenje pada isto bez obzira na checkbox). Provereno da testovi hvataju
 regresiju: privremeno vraćanje stare formule (`ImpliesFailure` da gleda samo zastavicu) obara
 četiri testa, uključujući tačan prijavljeni slučaj.
+
+> **Kasnija izmena ([`load-progression-top-of-range.md`](load-progression-top-of-range.md)).**
+> Kontrolni slučaj iznad, `6` ponavljanja sa `RIR 2`, više nije „netaknut". Ispod dna opsega
+> se sada meri kapacitet (ponavljanja + RIR) prema donjoj granici, bez obzira na to zašto je
+> vežbač stao: 5 sa RIR 2 u 8-12 je kapacitet 7, isto kao otkaz na 7, i spušta sledeći
+> trening umesto da ga diže. `ImpliesFailure` i upisani `IsFailure` su ostali isti - serija
+> sa rezervom se i dalje ne upisuje kao otkaz.
 
 ## Rupa koju je rivju našao: stare serije
 

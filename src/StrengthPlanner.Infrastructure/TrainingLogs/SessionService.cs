@@ -264,6 +264,12 @@ public class SessionService : ISessionService
 
                 nextPlan.TargetWeightKg = nextWeight;
                 summary.NextWeightKg = nextWeight;
+
+                // Strelica se odnosi na ono što se stvarno prikazuje. NextTargetWeight ume
+                // da prepiše predlog progresije (90% pred deload, preračun iz e1RM-a kad
+                // naredna nedelja traži drugi propis), pa se zastavica računa iz konačnog
+                // broja - inače rezime pokazuje "90 kg ↑" pred planirani deload.
+                summary.WeightIncreased = nextWeight > usedWeight;
             }
 
             summaries.Add(summary);

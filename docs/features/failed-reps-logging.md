@@ -111,6 +111,14 @@ nosi **isključivo** korekcija: prvo daje 100 · 0.97 + 2.5 = 99.5 → **100 kg*
 drugo 100 + 2.5 = **102.5 kg** (napreduj). Dodat je regresioni test koji pušta osam
 treninga zaredom i traži da opterećenje ne padne.
 
+> **Kasnija izmena ([`load-progression-top-of-range.md`](load-progression-top-of-range.md)).**
+> „100 · 0.97 + 2.5 → 100 kg (zadrži)" važilo je samo zato što je primer počinjao od 100 kg.
+> Ista formula drži opterećenje samo između ~42 i 125 kg (za šipku); iznad toga ga obara,
+> pa je 160 kg za osam takvih treninga palo na 140, uz strelicu naviše u rezimeu.
+> Regresioni test iz ove grane počinjao je baš od 100 kg i zato je prolazio. Sada otkaz na
+> vrhu opsega nosi ceo korak na svakoj težini, a drži samo u uskim nedeljama sa većim
+> ciljnim RIR-om.
+
 ### Ostalo
 
 - **Otkazivanje izmene ostavljalo je kvačicu upaljenu.** `editSet` prepisuje draft sa
@@ -128,7 +136,8 @@ treninga zaredom i traži da opterećenje ne padne.
 - Pomoćni tekst dobija `aria-live`, a RIR grupa `aria-describedby` ka prekidaču, pa se
   razlog nedostupnosti čuje i bez gledanja u ekran.
 - Dodat slučaj za otkaz **iznad** vrha opsega ("Otkaz na vrhu opsega — opterećenje se
-  zadržava, a ne diže"), koji je ranije padao u poruku "unutar opsega".
+  zadržava, a ne diže"), koji je ranije padao u poruku "unutar opsega". Tekst te napomene
+  je kasnije zamenjen, vidi belešku iznad.
 - Komentar u `SessionService` beleži zašto e1RM koristi upisani `Rir`, a ne
   `EffectiveRir`: efektivni RIR ume da bude negativan i služi samo auto-regulaciji, dok
   Epley ionako pretpostavlja seriju do otkaza.
