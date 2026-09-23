@@ -130,8 +130,13 @@ deload nedelja **92.5 kg** (90% od 102.5). Pre ove grane deload je nosio punih 1
 **Odskok posle deload-a** — nedelja 1: bench 3 × 12 @RIR0 na 100 kg (zarađeno 102.5) i
 Barbell Row 4 × 5 do otkaza; ocena umora 0.60 je pretvorila nedelju 2 u deload i oslobodila
 planirani u nedelji 4. Deload nedelja odrađena sa 2 × 12 @RIR3 na 90 kg → **nedelja 3 nosi
-102.5 kg**, ne 97.5. Vežbe bez serija u nedelji 1 su se vratile na pređašnje planirano
-(Cable Fly 110, Triceps Pushdown 45), umesto da ostanu na 90% deload vrednosti.
+102.5 kg**, ne 97.5.
+
+Vežbe bez serija u nedelji 1 su se vratile blizu pređašnjeg planiranog, iz same deload
+težine: Cable Fly 110 → 100 (deload) → **110**, Triceps Pushdown 45 → 40 → **42.5**. Triceps
+je jedan korak ispod polazne vrednosti i to je cena zaokruživanja naniže: 40 / 0.9 = 44.4, a
+zaokruživanje na najbliži korak bi dalo 45 — tačno ovde, ali na grubljem koraku i težinu koja
+nikad nije podignuta (vidi nalaz revizije ispod).
 
 Bez vodoravnog preliva na 375 px; konzola bez grešaka.
 
