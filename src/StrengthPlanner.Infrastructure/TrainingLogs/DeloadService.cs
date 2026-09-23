@@ -289,26 +289,53 @@ public sealed class DeloadService
         GoalPrescription? goal,
         CancellationToken cancellationToken)
     {
-        var usedWeights = await _db.SetLogs
+        // Serije se grupišu u memoriji, jer referentnu težinu bira domensko pravilo
+        // (WorkingLoad): najteža podignuta, a ne prosek svih. Prosek je jednu back-off
+        // seriju pretvarao u niži deload od 90% onoga što je vežbač zaista radio. Radi se
+        // o jednoj nedelji jednog korisnika, pa je i skup mali.
+        var completedSets = await _db.SetLogs
             .AsNoTracking()
             .Where(set => set.ExercisePlan.WorkoutSession.TrainingWeekId == completedWeekId
                           && set.ExercisePlan.WorkoutSession.TrainingWeek.Mesocycle.UserId == userId)
-            .GroupBy(set => new
+            .Select(set => new
             {
                 set.ExercisePlan.ExerciseId,
-                set.ExercisePlan.WorkoutSession.DayLabel
-            })
-            .Select(group => new
-            {
-                group.Key.ExerciseId,
-                group.Key.DayLabel,
-                AverageWeightKg = group.Average(set => set.WeightKg)
+                set.ExercisePlan.WorkoutSession.DayLabel,
+                set.WeightKg,
+                set.Reps,
+                set.Rir,
+                set.IsFailure
             })
             .ToListAsync(cancellationToken);
 
-        var usedByExerciseAndDay = usedWeights.ToDictionary(
-            item => (item.ExerciseId, item.DayLabel),
-            item => item.AverageWeightKg);
+        var usedByExerciseAndDay = completedSets
+            .GroupBy(set => (set.ExerciseId, set.DayLabel))
+            .ToDictionary(
+                group => group.Key,
+                group => WorkingLoad.Select(group
+                        .Select(set => new LoggedSet(set.WeightKg, set.Reps, set.Rir, set.IsFailure))
+                        .ToList())!
+                    .ReferenceWeightKg);
+
+        // Rezerva za vežbu bez ijedne upisane serije je propis ZAVRŠENE nedelje, ne cilj
+        // same deload nedelje: taj cilj je progresija upravo popunila, pa bi 90% od njega
+        // bilo izvedeno iz težine koja nikada nije podignuta.
+        var plannedInCompletedWeek = await _db.ExercisePlans
+            .AsNoTracking()
+            .Where(plan => plan.WorkoutSession.TrainingWeekId == completedWeekId
+                           && plan.WorkoutSession.TrainingWeek.Mesocycle.UserId == userId
+                           && plan.TargetWeightKg != null)
+            .Select(plan => new
+            {
+                plan.ExerciseId,
+                plan.WorkoutSession.DayLabel,
+                plan.TargetWeightKg
+            })
+            .ToListAsync(cancellationToken);
+
+        var plannedByExerciseAndDay = plannedInCompletedWeek
+            .GroupBy(plan => (plan.ExerciseId, plan.DayLabel))
+            .ToDictionary(group => group.Key, group => group.First().TargetWeightKg!.Value);
 
         var plans = await _db.ExercisePlans
             .Include(plan => plan.WorkoutSession)
@@ -350,11 +377,15 @@ public sealed class DeloadService
                 plan.TargetRir = goal.TargetRir;
             }
 
-            var baseWeight = usedByExerciseAndDay.TryGetValue(
-                (plan.ExerciseId, plan.WorkoutSession.DayLabel),
-                out var used)
+            var key = (plan.ExerciseId, plan.WorkoutSession.DayLabel);
+            decimal? baseWeight = usedByExerciseAndDay.TryGetValue(key, out var used)
                 ? used
-                : plan.TargetWeightKg;
+                : plannedByExerciseAndDay.TryGetValue(key, out var planned)
+                    ? planned
+                    // Poslednja rezerva je cilj same nedelje koja postaje deload: kada je
+                    // progresija upisan taj cilj, nedelja još nije bila rasterećenje, pa je
+                    // to puna težina. Bez ove grane bi ostala nedirnuta, dakle 100%.
+                    : plan.TargetWeightKg;
 
             if (baseWeight is null)
             {

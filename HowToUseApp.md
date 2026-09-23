@@ -367,7 +367,9 @@ Dugme **„Završi trening"** na dnu. Tek tada se sve obračunava. Završen tren
 ponovo otvoriti — ostaje samo za pregled.
 
 Ne moraš uneti sve serije koje plan traži; sistem računa sa onim što si stvarno uneo. Vežba
-bez ijedne serije jednostavno prenosi isto opterećenje u narednu nedelju.
+bez ijedne serije prenosi **planirano** opterećenje u narednu nedelju, ali i za nju važe
+ista pravila: deload nedelja dobija 90% tog broja, a nedelja sa drugačijim opsegom
+ponavljanja svoju težinu za taj propis.
 
 ---
 
@@ -378,8 +380,10 @@ aplikaciji. Za svaku vežbu piše:
 
 - **e1RM** — procenjeni maksimum iz najbolje serije tog dana.
 - **PR** — oznaka ako je to novi lični rekord.
-- **Sledeće** — opterećenje predloženo za istu vežbu u narednoj nedelji, sa strelicom `↑`
-  ako je veće od težine koju si podigao.
+- **Sledeće** — opterećenje predloženo za istu vežbu u narednoj nedelji, sa razlikom prema
+  težini koju si podigao (a za vežbu bez ijedne serije — prema onoj koja je bila planirana):
+  `102.5 kg ↑ +2.5` kad raste, `90 kg ↓ −10` pred deload, bez strelice kad se zadržava. Ako u bloku nema naredne nedelje, oznake nema — sledeći blok
+  svoje težine izvodi iz procene maksimuma.
 
 Povremeno se pojave i dve posebne poruke:
 
@@ -510,6 +514,13 @@ prethodnog bloka.
 
 Ovo je jezgro aplikacije. Ne moraš ga znati da bi je koristio, ali objašnjava zašto brojevi
 izgledaju kako izgledaju.
+
+**Radna težina.** Progresija polazi od **najteže** težine koju si podigao u tom treningu, a
+ne od proseka svih serija. Lakše serije ulaze u račun samo ako su išle do otkaza (ili na
+RIR 0): otkaz na lakšoj težini važi i za težu. Isto pravilo određuje i osnovu deload-a.
+
+**Posle deload-a.** Deload je pauza, ne korak nazad: nedelja posle njega nastavlja od
+težine zarađene u poslednjoj trenažnoj nedelji, a ne od olakšanih deload serija.
 
 **Dupla progresija.** Prvo rasteš u ponavljanjima ka vrhu opsega, pa tek onda u težini.
 Kad **sve** serije jedne vežbe stignu do vrha opsega, sledeći put dobijaš **jedan korak**

@@ -109,8 +109,8 @@
               @if (ex.nextWeightKg != null) {
                 <app-stat-chip
                   label="Sledeće"
-                  [value]="(ex.nextWeightKg | number: '1.0-1') + ' kg' + (ex.weightIncreased ? ' ↑' : '')"
-                  tone="accent"
+                  [value]="nextWeight(ex)"
+                  [tone]="nextWeightTone(ex)"
                 />
               }
             </div>

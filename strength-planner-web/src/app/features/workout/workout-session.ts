@@ -7,6 +7,7 @@ import { extractErrorMessage } from '../../core/api/http-error';
 import { SessionService } from '../../core/api/session.service';
 import {
   AddSetLogRequest,
+  CompletedExerciseSummaryDto,
   CompleteSessionResultDto,
   ExercisePlanDto,
   SetLogDto,
@@ -17,6 +18,7 @@ import { StatChip, StatChipTone } from '../../shared/components/stat-chip/stat-c
 import { EmptyState } from '../../shared/components/empty-state/empty-state';
 import { Loading } from '../../shared/components/loading/loading';
 import { SetFeedback, setFeedback } from './set-feedback';
+import { nextWeightLabel, nextWeightTone } from './next-weight-label';
 
 interface SetDraft {
   weightKg: number;
@@ -158,6 +160,15 @@ export class WorkoutSession {
     if (this.draftOf(planId).isFailure) {
       this.patchDraft(planId, { isFailure: false });
     }
+  }
+
+  /** Oznaka „Sledeće" u rezimeu: predlog i razlika prema podignutoj težini. */
+  protected nextWeight(summary: CompletedExerciseSummaryDto): string {
+    return nextWeightLabel(summary);
+  }
+
+  protected nextWeightTone(summary: CompletedExerciseSummaryDto): StatChipTone {
+    return nextWeightTone(summary);
   }
 
   /** Napomena ispod unosa: šta ova serija znači za sledeći trening (vidi set-feedback.ts). */
