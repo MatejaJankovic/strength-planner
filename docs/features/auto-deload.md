@@ -42,6 +42,12 @@ a ne fiksnom skalom: RIR ne ide ispod nule, pa serija bez otkaza pri cilju RIR 1
 (hipertrofija) najviše može da prijavi −1, dok pri cilju RIR 2 (snaga) može −2. Fiksna
 skala bi istu sliku ocenila različito samo zbog cilja.
 
+> **Kasnija izmena ([`progression-reference-and-summary.md`](progression-reference-and-summary.md)).**
+> Osnova deload-a je najteža podignuta težina, ne prosek svih serija u nedelji; kad vežba
+> nema ni jednu upisanu seriju, uzima se propis završene nedelje, a ne već progresovani cilj
+> same deload nedelje. Uz to, nedelja posle deload-a (kad auto-deload oslobodi planirani) ne
+> nastavlja od deload težine nego od one zarađene pre njega.
+
 > **Kasnija izmena ([`load-progression-top-of-range.md`](load-progression-top-of-range.md)).**
 > Granica „najviše −1" važi za seriju unutar opsega. Od te grane se serija koja je stala
 > **ispod** donje granice opsega meri kapacitetom (ponavljanja + RIR prema dnu opsega), pa
