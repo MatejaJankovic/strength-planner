@@ -90,6 +90,64 @@ public class E1RmCalculatorTests
         Assert.Equal(withGlobalStep, withoutStep);
     }
 
+    [Theory]
+    // Blizu otkaza: procena važi.
+    [InlineData(100.0, 12, 0, true)]
+    [InlineData(100.0, 12, 3, true)]
+    [InlineData(100.0, 1, 0, true)]
+    // Prevelika rezerva: 12 ponavljanja sa RIR 5 čita 156.7 kg tamo gde ista serija do
+    // otkaza čita 140 - naduvanih 12% koje je pravilo "najbolja u 56 dana" čuvalo.
+    [InlineData(100.0, 12, 4, false)]
+    [InlineData(100.0, 12, 5, false)]
+    // Iznad Epley granice, kao i do sada.
+    [InlineData(100.0, 13, 0, false)]
+    // Bez opterećenja nema šta da se skalira (vežbe sa telesnom masom, plank).
+    [InlineData(0.0, 8, 1, false)]
+    public void CanEstimateFrom_AcceptsOnlySetsThatCanCarryAnEstimate(
+        double loadKg,
+        int reps,
+        int rir,
+        bool expected)
+    {
+        Assert.Equal(expected, E1RmCalculator.CanEstimateFrom((decimal)loadKg, reps, rir));
+    }
+
+    [Fact]
+    public void CanEstimateFrom_UsesTheStimulativeFullCreditBoundary()
+    {
+        // Serija koja ne ulazi cela u stimulativni volumen nije ni dokaz o snazi: jedna
+        // granica, dva mesta koja je čitaju.
+        Assert.Equal(StimulativeVolume.FullCreditRir, TrainingConstants.E1RmMaxRir);
+    }
+
+    [Fact]
+    public void BestEstimate_IgnoresSetsWithTooMuchReserve()
+    {
+        // 100 × 12 @RIR5 bi dalo 156.7; ostaje 100 × 10 @RIR1, dakle 100 × (1 + 11/30).
+        var best = _calculator.BestEstimate([
+            new LoggedSet(100m, 12, 5),
+            new LoggedSet(100m, 10, 1)
+        ]);
+
+        AssertWithinTolerance(136.67m, best!.Value, 0.01m);
+    }
+
+    [Fact]
+    public void BestEstimate_ReturnsNull_WhenNoSetQualifies()
+    {
+        Assert.Null(_calculator.BestEstimate([
+            new LoggedSet(100m, 12, 5),
+            new LoggedSet(100m, 15, 0),
+            new LoggedSet(0m, 8, 1)
+        ]));
+    }
+
+    [Fact]
+    public void BestEstimate_ReturnsNull_ForNoSetsAtAll()
+    {
+        Assert.Null(_calculator.BestEstimate([]));
+    }
+
     private static void AssertWithinTolerance(decimal expected, decimal actual, decimal tolerance)
     {
         Assert.True(

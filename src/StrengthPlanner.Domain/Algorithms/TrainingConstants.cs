@@ -15,8 +15,38 @@ public static class TrainingConstants
     // 12 pokriva ceo hipertrofija rep-opseg (8-12); preko toga Epley procena nije pouzdana.
     public const int EpleyRepCap = 12;
 
+    /// <summary>
+    /// Furthest from failure a set may be and still produce an e1RM estimate.
+    ///
+    /// Defined as <see cref="StimulativeVolume.FullCreditRir"/> on purpose: a set that does
+    /// not count as full stimulative volume is not evidence of strength either. Epley
+    /// assumes a set to failure, and research on RIR accuracy is consistent that the
+    /// estimate degrades the further the lifter stops from it — the thesis says so itself,
+    /// and adds that working sets are planned at RIR 1-2.
+    /// </summary>
+    public const int E1RmMaxRir = StimulativeVolume.FullCreditRir;
+
     // Prozor u kome se traži najbolji 1RM za start novog mezociklusa.
     public const int OneRepMaxLookbackDays = 56;
+
+    /// <summary>
+    /// How far the best estimate in the window may stand above the next best before it is
+    /// treated as a single outlier rather than as progress.
+    ///
+    /// Five percent is chosen below the worst inflation the RIR filter still allows: a set
+    /// at RIR 3 reads 150 where the same set to failure reads 140, i.e. about 7%.
+    /// </summary>
+    public const decimal OneRepMaxOutlierTolerance = 0.05m;
+
+    /// <summary>
+    /// How many values the window must hold before the best one may be treated as an outlier.
+    ///
+    /// With two values there is nothing to corroborate: "best stands more than 5% above the
+    /// next" then simply means "take the lower of the two", which is the weak-day problem
+    /// that picking the best was there to avoid. A lifter's first two sessions of an
+    /// exercise are exactly that window.
+    /// </summary>
+    public const int OneRepMaxOutlierMinSamples = 3;
 
     // --- granice ličnog šablona ---
     //

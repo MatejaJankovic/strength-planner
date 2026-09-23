@@ -55,7 +55,8 @@ Pregled logike treninga (odeljak A: sve što direktno menja predloženu težinu)
 | Grana | O čemu je | PR |
 |---|---|---|
 | [Vrh opsega više ne spušta težinu](load-progression-top-of-range.md) | Korekcija po RIR-u je poništavala korak na vrhu opsega, a iznad 125 kg obarala težinu; serija ispod opsega sa rezervom je dizala težinu | #60 |
-| [Radna težina i rezime](progression-reference-and-summary.md) | Progresija je polazila od proseka težina, vežba bez serija je nosila punu težinu u deload, a strelica u rezimeu nije govorila o prikazanom broju | — |
+| [Radna težina i rezime](progression-reference-and-summary.md) | Progresija je polazila od proseka težina, vežba bez serija je nosila punu težinu u deload, a strelica u rezimeu nije govorila o prikazanom broju | #61 |
+| [Pouzdanost procene maksimuma](e1rm-reliability.md) | Serija daleko od otkaza je davala e1RM, a jedna naduvana procena je osam nedelja bila polazna težina bloka | #62 |
 
 ## Ako čitaš samo jedno
 

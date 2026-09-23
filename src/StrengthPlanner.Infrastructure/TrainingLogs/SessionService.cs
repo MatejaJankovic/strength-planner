@@ -153,16 +153,26 @@ public class SessionService : ISessionService
 
         // Za preračun opterećenja se gleda samo skorašnji prozor, isto kao pri generisanju
         // bloka. Rekord od pre pola godine je istorija, a ne procena trenutne snage — a
-        // ovde bi postao ciljno opterećenje naredne nedelje.
-        var recentCutoff = DateTime.UtcNow.AddDays(-TrainingConstants.OneRepMaxLookbackDays);
-        var recentMaxByExerciseId = await _db.OneRepMaxRecords
-            .AsNoTracking()
-            .Where(record => record.UserId == userId
-                             && exerciseIds.Contains(record.ExerciseId)
-                             && record.RecordedAt >= recentCutoff)
+        // ovde bi postao ciljno opterećenje naredne nedelje. Sirov maksimum prozora je
+        // zamenjen pravilom iz domena (OneRepMaxBaseline): jedna naduvana procena ne sme
+        // osam nedelja da bude polazna težina.
+        var samplesByExerciseId = (await _db.OneRepMaxRecords
+                .AsNoTracking()
+                .Where(record => record.UserId == userId && exerciseIds.Contains(record.ExerciseId))
+                .Select(record => new
+                {
+                    record.ExerciseId,
+                    record.ValueKg,
+                    record.Source,
+                    record.RecordedAt
+                })
+                .ToListAsync(cancellationToken))
             .GroupBy(record => record.ExerciseId)
-            .Select(group => new { ExerciseId = group.Key, ValueKg = group.Max(record => record.ValueKg) })
-            .ToDictionaryAsync(record => record.ExerciseId, record => record.ValueKg, cancellationToken);
+            .ToDictionary(
+                group => group.Key,
+                group => (IReadOnlyList<OneRepMaxSample>)group
+                    .Select(record => new OneRepMaxSample(record.ValueKg, record.Source, record.RecordedAt))
+                    .ToList());
 
         // Samo sesije koje još nisu završene: complete van redosleda ne sme da
         // prepiše ciljeve već odrađenih treninga.
@@ -276,14 +286,27 @@ public class SessionService : ISessionService
 
             if (nextPlan is not null)
             {
-                recentMaxByExerciseId.TryGetValue(plan.ExerciseId, out var recentMax);
+                // Procena iz ovog treninga ulazi kao još jedan uzorak, a ne kao presuda:
+                // pravilo je bira samo ako nije samotni ekstrem u prozoru.
+                var samples = samplesByExerciseId.GetValueOrDefault(plan.ExerciseId, []).ToList();
+                if (bestEstimate.HasValue)
+                {
+                    samples.Add(new OneRepMaxSample(bestEstimate.Value, OneRepMaxSource.Estimated, now));
+                }
+
+                var baselineOneRepMax = OneRepMaxBaseline.Select(
+                    samples,
+                    now,
+                    TrainingConstants.OneRepMaxLookbackDays,
+                    allowStaleFallback: false);
+
                 var nextWeight = NextWeekLoad.For(
                     referenceWeightKg,
                     progressionWeightKg,
                     currentPrescription,
                     PrescriptionOf(nextPlan),
                     nextPlan.WorkoutSession.TrainingWeek.IsDeload,
-                    bestEstimate ?? (recentMax > 0 ? recentMax : null),
+                    baselineOneRepMax,
                     weightStepKg);
 
                 // Null znači da o vežbi nema nijednog podatka; zatečeni cilj se tada ne
@@ -549,24 +572,17 @@ public class SessionService : ISessionService
             .Where(workoutSession => workoutSession.TrainingWeek.Mesocycle.UserId == userId);
     }
 
+    /// <summary>
+    /// Best e1RM the session produced, or null when no set may produce one.
+    ///
+    /// The recorded <c>Rir</c> is used on purpose, not <see cref="WorkingSet.EffectiveRir"/>:
+    /// Epley assumes a set to failure, so 0 is the right value for one, while effective RIR
+    /// can go negative and serves auto-regulation alone. Which sets qualify is
+    /// <see cref="E1RmCalculator.CanEstimateFrom"/>, shared with the fatigue score.
+    /// </summary>
     private decimal? EstimateBestOneRepMax(IReadOnlyList<SetLog> logs)
     {
-        decimal? bestEstimate = null;
-
-        // Namerno upisani Rir, ne WorkingSet.EffectiveRir: Epley ionako pretpostavlja
-        // seriju do otkaza, pa je za otkaz tačna vrednost 0. Efektivni RIR ume da bude
-        // negativan i služi isključivo auto-regulaciji — ovde bi oborio procenu i pukao
-        // na proveri u E1RmCalculator.
-        foreach (var log in logs.Where(log => log.Reps <= TrainingConstants.EpleyRepCap))
-        {
-            var estimate = _e1RmCalculator.EstimateOneRepMax(log.WeightKg, log.Reps, log.Rir);
-            if (!bestEstimate.HasValue || estimate > bestEstimate.Value)
-            {
-                bestEstimate = estimate;
-            }
-        }
-
-        return bestEstimate;
+        return _e1RmCalculator.BestEstimate(logs.Select(ToLoggedSet));
     }
 
     private static WorkoutSessionDto ToDto(

@@ -28,6 +28,11 @@ Pojedinačan mezociklus je makrociklus sa jednim blokom — nema posebnog sluča
 Postojeći ekran "Novi plan" i dalje radi isto, samo sada pravi plan sa jednim blokom, pa
 se kasnije može produžiti. Migracija prevodi sve zatečene mezociklase u takve planove.
 
+> **Kasnija izmena ([`e1rm-reliability.md`](e1rm-reliability.md)).** Pravilo „najbolja
+> procena u prozoru" ima od tada dva izuzetka: samotna vrednost više od 5% iznad druge po
+> redu se preskače, a ručno unet maksimum poništava starije procene. Bez toga je jedna
+> optimistična RIR procena osam nedelja bila polazna težina svakog novog bloka.
+
 ### Prelazak na sledeći blok
 
 Kada se završi poslednji trening bloka, sledeći se generiše odmah i postaje aktivan.

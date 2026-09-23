@@ -82,25 +82,36 @@ public class MesocycleGenerator : IMesocycleGenerator
         var oneRepMaxRecords = await _db.OneRepMaxRecords
             .AsNoTracking()
             .Where(record => record.UserId == userId && exerciseIds.Contains(record.ExerciseId))
-            .OrderByDescending(record => record.RecordedAt)
-            .ThenByDescending(record => record.Id)
+            .Select(record => new
+            {
+                record.ExerciseId,
+                record.ValueKg,
+                record.Source,
+                record.RecordedAt
+            })
             .ToListAsync(cancellationToken);
 
-        // Najbolji 1RM u skorašnjem prozoru, ne najnoviji: poslednji zapis može
-        // biti sa slabijeg dana pa bi novi ciklus krenuo preblago. Ako u prozoru
-        // nema ničega, uzmi najnoviji zapis ikada.
-        var lookbackCutoff = DateTime.UtcNow.AddDays(-TrainingConstants.OneRepMaxLookbackDays);
+        // Od koje vrednosti blok kreće odlučuje domensko pravilo (OneRepMaxBaseline):
+        // najbolja u prozoru od 56 dana, osim kada samotno stoji iznad ostalih — tada
+        // druga po redu — a najnoviji ručni unos poništava starije procene. Prazan prozor
+        // pada na najnoviji zapis ikada, da se vežbač koji se vraća posle pauze ne vrati
+        // i na prazna opterećenja.
+        var now = DateTime.UtcNow;
         var oneRepMaxByExerciseId = oneRepMaxRecords
             .GroupBy(record => record.ExerciseId)
-            .ToDictionary(
-                group => group.Key,
-                group =>
-                {
-                    var recent = group.Where(record => record.RecordedAt >= lookbackCutoff).ToList();
-                    return recent.Count > 0
-                        ? recent.Max(record => record.ValueKg)
-                        : group.First().ValueKg;
-                });
+            .Select(group => new
+            {
+                ExerciseId = group.Key,
+                ValueKg = OneRepMaxBaseline.Select(
+                    group
+                        .Select(record => new OneRepMaxSample(record.ValueKg, record.Source, record.RecordedAt))
+                        .ToList(),
+                    now,
+                    TrainingConstants.OneRepMaxLookbackDays,
+                    allowStaleFallback: true)
+            })
+            .Where(entry => entry.ValueKg is not null)
+            .ToDictionary(entry => entry.ExerciseId, entry => entry.ValueKg!.Value);
 
         // Kada generator radi unutar već otvorene transakcije (npr. pri automatskom
         // prelasku na sledeći blok dugoročnog plana), ne otvara svoju — inače bi
