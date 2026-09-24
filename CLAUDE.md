@@ -117,9 +117,10 @@ prose — no need for academic style.
 
 ## Scope note
 
-Two rounds of work, all merged to `main`. Every branch got its own PR, an agent code
+Nine rounds of work, all merged to `main`. Every branch got its own PR, an agent code
 review, fixes for what the review turned up, and a plain-language write-up in
-`docs/features/`.
+`docs/features/`. (This line said "two rounds" until round 9 — a count in prose goes stale
+the moment it is written, which is why the rounds below are a list and not a number.)
 
 **Round 1 — five "future improvements" from the thesis conclusion:**
 
@@ -326,6 +327,99 @@ twice: card and field rules copied across profile screens, then the sub-screen h
 copied across the three screens that use those rules. When a third screen wants a block,
 move it — an `@use` reaching into another feature's folder hides that the rules are no
 longer that feature's.
+
+**Round 9 — an audit of the training logic itself, against the thesis and the handbook.**
+The user asked for every inconsistency in how sets are entered, volume is counted and load
+is raised. Eight of them touch the load the lifter is handed — seven in the arithmetic, one
+in what the guide advises about judging RIR — and that is section A, the part that was
+built. Analysis and outcomes per finding are in each write-up.
+
+| Branch | What it fixed | PR |
+|---|---|---|
+| `fix/load-progression` | Reaching the top of the rep range could hold or *lower* the load while the summary showed an arrow up; a set below the range with reserve raised it | #60 |
+| `fix/progression-reference-and-summary` | Progression started from the **average** of the session's weights, a skipped exercise carried full load into a deload, and the arrow did not describe the number beside it | #61 |
+| `fix/e1rm-reliability` | A set far from failure produced an e1RM, and one inflated estimate stayed the block's starting load for eight weeks | #62 |
+| `feature/bodyweight-load` | A pull-up was logged as 0 kg, so its e1RM was 0, its tonnage 0, and progression offered one step more (1 kg, its equipment's) on a set that was never loaded | #63 |
+
+Sequential, each merged before the next branched.
+
+The finding that shaped the round: **the regression test for the load rule passed by
+accident.** `ComputeNext_DoesNotDriveWeightDown_...` used 100 kg, and 100 kg happens to sit
+inside the band (~42–125 kg on a 2.5 kg step) where the old formula's `-3% + step` cancels
+out. At 160 kg the same rule *lowered* the weight eight sessions in a row while reporting a
+rise. One number chosen for a test decided whether a whole rule was believed to work, so it
+was replaced by a grid `[Theory]` plus property tests over steps × weights × ranges ×
+target RIR, with the old formula kept as an oracle for everywhere the change was not
+intended. Measured by restoring the old rule surgically on the current tree: the load
+formula alone fails **28** of 500 tests, and reverting the effective-RIR rule and the arrow
+with it fails **42**. (This line claimed 34 until the entry was fact-checked; that number is
+in no run anyone can reproduce. A count of failing tests is a measurement like any other and
+has to be taken, not remembered.)
+
+Decisions worth keeping:
+
+- **The range reset pays the RIR shortfall.** Coming back to the bottom of the range is
+  worth `max - min` reps, so a top-of-range session steps up whenever
+  `deviation + (max - min) >= 0` — by Epley exactly the condition under which the next
+  prescription can be lifted at the used load. Only a narrow week with a large target RIR
+  (11–12 at RIR 2) fails it, and there the load holds. Reaching the top never lowers it.
+- **The reference load is the heaviest lifted, not the average.** A lighter set counts
+  toward it only if it went to failure: failing at 90 kg means failing at least as early at
+  100. A lighter set that kept reserve says nothing about the heavier one.
+- **Rounding must not reverse the correction.** The step is how finely a load can be
+  expressed; the sign of the correction is the decision. At 107 kg on a 10 kg step a -1%
+  correction gives 105.93, which the old code rounded *up* to 110 — the load rose after a
+  session that asked for less. (`ComputeNext_DoesNotLetRoundingReverseTheCorrection` uses
+  exactly that case. The example first written here, 102 kg on a 2.5 kg step, does not
+  reverse at all: 100.98 rounds to 100.)
+- **A set far from failure is not evidence of a maximum.** `CanEstimateFrom` is one
+  predicate (load > 0, reps ≤ 12, RIR ≤ 3) shared by the summary, the fatigue score and the
+  baseline; 100 kg × 12 at RIR 5 "reads" 157 kg where the same set to failure reads 140.
+- **Body mass is load.** Every rule works on `added + body`, and the result converts back to
+  what goes on the belt — rounded in *added* space, because the step exists on the belt and
+  not on the body.
+
+Seven measurements from this round contradicted the expectation behind the change, and each
+is recorded next to the code rather than dropped:
+
+1. The 100 kg test above.
+2. **The rebound after a deload, which nobody had reported.** A week following a deload
+   progressed from the deload's 90%, so the load came back below what had been earned. It
+   exists whenever fatigue pulls a deload forward and releases the planned one. Found by a
+   completeness critic on the design, not by use.
+3. **The migration's backfill had to be abandoned.** The plan was to write `mass × share`
+   into every existing set. Counting first showed that not one bodyweight set was logged at
+   0 kg — all 119 carried 38–77 kg, the number the lifter typed for the whole movement — so
+   the backfill would have counted the same body twice and pushed a pull-up estimate from
+   ~90 kg to ~200. Only plans of sessions that had not started were converted.
+4. **A set read `0 kg` when logged and `TM × 12` after a reload.** `SetLog → SetLogDto` was
+   built by hand in three services and the new column reached two of them; an object
+   initializer need not be complete, so it compiled and typechecked. The fix deleted the
+   third place: `SetLogMapper.ToDto` is the only path now. Nothing but the running app could
+   have found it.
+5. **A test was green for a wrong implementation.** Every `AddedTarget` case carried a body
+   portion that was itself a multiple of the step — 80 kg against 2.5 kg, since 80 = 32 × 2.5,
+   or no portion at all — and for such a portion, rounding the total and rounding the added
+   load are *identically equal*. Flipping the implementation kept the whole suite green (489
+   tests as it then stood, mid-branch). The cases now use portions that are not multiples of
+   the step (51.2 at 1 kg, 68 at 2.5), and the property grid asserts the proposal is always
+   on the grid; the flipped version now fails 5 of 500.
+6. **`UndoDeload` invented load at the floor** — a regression introduced by the same branch
+   that made it portion-aware. A deload target of zero is where the clamp engaged, so the
+   load it came from is gone; dividing by 0.90 anyway "restored" `80 / 0.9 - 80 = 8.888…`,
+   floored to the step as `TM + 8 kg`, prescribed to a lifter who does pull-ups with nothing
+   added. A clamp is not invertible, and understating is the safe direction here.
+7. **The write-up's headline measurement used a step the exercise does not have.** It said a
+   pull-up goes from 13 kg to 17.5; a pull-up steps by 1 kg (`EquipmentWeightStep` for
+   "Bodyweight"), so the real numbers are 12 → 16. The test reached 17.5 only because it
+   passed the step by hand — a test that supplies a constant the app derives will happily
+   describe an app that does not exist.
+
+One process note, because it cost two green runs: **a review agent proved a point by editing
+the working tree and did not put it back.** It flipped `AddedTarget` to total-space rounding
+to measure that the suite stayed green, reported that correctly, and left the edit on disk;
+the next two `dotnet test` runs were against its version. Check `git status` after a review
+agent has run, before believing a result.
 
 Deliberately **out of scope**: i18n, full-history analytics, undulating periodization,
 PWA/offline, changing an already-generated block's periodization model, email delivery (so no
