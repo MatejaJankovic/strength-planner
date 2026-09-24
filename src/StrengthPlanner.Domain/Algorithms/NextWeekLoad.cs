@@ -135,8 +135,16 @@ public static class NextWeekLoad
     /// step less.
     ///
     /// The factor applies to the total, so the body portion is added before dividing and
-    /// taken off again after: a pull-up deloaded to body mass alone must not restore
-    /// "0 / 0.9 = 0 added" when the body it carries was itself lightened by a belt.
+    /// taken off again after: a pull-up deloaded from a belt must restore what was on that
+    /// belt, not 90% of it.
+    ///
+    /// Zero added kilograms is the one value that cannot be undone, and it is returned as
+    /// it is. <see cref="BodyweightLoad.AddedTarget"/> clamps there, so a zero says only
+    /// "the deload wanted no more than the body" — the load it was derived from is gone.
+    /// Dividing anyway restores about 11% of body mass out of nothing: a lifter who does
+    /// pull-ups with nothing added came back from a deload week prescribed 8 kg on a belt.
+    /// Understating is the safe direction here, and it self-corrects in one session through
+    /// the RIR correction, while an invented 8 kg is a week of missed sets.
     /// </summary>
     public static decimal? UndoDeload(
         decimal? deloadWeightKg,
@@ -146,6 +154,11 @@ public static class NextWeekLoad
         if (deloadWeightKg is null)
         {
             return null;
+        }
+
+        if (deloadWeightKg.Value <= 0)
+        {
+            return 0m;
         }
 
         var restoredTotalKg =

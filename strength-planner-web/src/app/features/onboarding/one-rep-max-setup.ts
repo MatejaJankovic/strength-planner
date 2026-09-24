@@ -118,14 +118,24 @@ export class OneRepMaxSetup {
     }));
   });
 
+  /**
+   * Brojac prati samo redove koji se unose. Vezba sa telesnom masom se procenjuje, pa se
+   * ne broji ni u brojilac ni u imenilac - inace bi „Sacuvano 3 / 6" racunalo red koji
+   * korisnik ne moze da popuni.
+   */
+  protected readonly enterableRows = computed(() => this.rows().filter((row) => !row.isBodyweight));
+
   protected readonly savedCount = computed(
-    () => this.rows().filter((row) => row.savedValueKg !== null).length,
+    () => this.enterableRows().filter((row) => row.savedValueKg !== null).length,
   );
 
   protected readonly addableExercises = computed<ExerciseDto[]>(() => {
     const shown = new Set(this.rows().map((row) => row.exerciseId));
+    // Vezbe sa telesnom masom se NE filtriraju: korisnik koji trazi zgib u ovom spisku
+    // treba da nadje red koji mu objasni zasto se maksimum ne unosi. Kad bi ih spisak
+    // precutao, ne bi bilo ni pitanja ni odgovora - samo vezba koje nema.
     return this.exercises()
-      .filter((exercise) => !shown.has(exercise.id) && !exercise.isBodyweight)
+      .filter((exercise) => !shown.has(exercise.id))
       .sort((a, b) => a.name.localeCompare(b.name));
   });
 

@@ -117,11 +117,19 @@
                 />
               }
             </div>
-            @if (ex.loadFloorReached) {
-              <p class="summary__note">
-                Ispod sopstvene mase nema šta da se skine, pa sledeći put napreduj kroz
-                ponavljanja.
-              </p>
+            @switch (floorNote(ex)) {
+              @case ('at-bodyweight') {
+                <p class="summary__note">
+                  Ispod sopstvene mase nema šta da se skine, pa sledeći put napreduj kroz
+                  ponavljanja.
+                </p>
+              }
+              @case ('unloaded') {
+                <p class="summary__note">
+                  Ova vežba nije bila opterećena, pa napredak ide kroz ponavljanja, ne kroz
+                  kilograme.
+                </p>
+              }
             }
           </li>
         }

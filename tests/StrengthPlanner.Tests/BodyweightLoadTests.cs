@@ -60,6 +60,32 @@ public class BodyweightLoadTests
         Assert.Equal(expected, BodyweightLoad.AddedTarget(rawTotalKg, portionKg, stepKg));
     }
 
+    [Theory]
+    // Sklek: 0.64 od 80 kg je 51.2, što nije umnožak koraka od 1 kg. Ukupno 55.796 traži
+    // 4.596 na pojasu, dakle 5; zaokruživanje ukupnog bi dalo 56 - 51.2 = 4.8, težinu koja
+    // se ne može staviti ni na jedan pojas.
+    [InlineData(55.796, 51.2, 1, 5)]
+    [InlineData(60.4, 51.2, 1, 9)]
+    // Iskorak: 0.85 od 80 kg je 68, uz korak od 2.5 kg takođe van mreže.
+    [InlineData(75.6, 68, 2.5, 7.5)]
+    [InlineData(70.1, 68, 2.5, 2.5)]
+    public void AddedTarget_PutsTheResultOnTheStepGrid_EvenWhenTheBodyIsNot(
+        decimal rawTotalKg,
+        decimal portionKg,
+        decimal stepKg,
+        decimal expected)
+    {
+        // Ovo je jedino svojstvo zbog koga AddedTarget postoji: mreža koraka je na pojasu,
+        // ne na telu. Sve dosadašnje provere su nosile deo tela od 80 kg uz korak od 2.5,
+        // a 80 = 32 × 2.5 — za takav deo su dve različite implementacije identične. Ceo
+        // paket (489 testova) je ostao zelen sa zaokruživanjem nad UKUPNIM opterećenjem,
+        // koje vraća težinu van mreže koraka i onda je nosi dalje kao osnovu.
+        var added = BodyweightLoad.AddedTarget(rawTotalKg, portionKg, stepKg);
+
+        Assert.Equal(expected, added);
+        Assert.Equal(0m, added % stepKg);
+    }
+
     [Fact]
     public void IsAtBodyweightFloor_OnlyWhenTheWantedTotalIsLighterThanTheBody()
     {
@@ -74,21 +100,38 @@ public class BodyweightLoadTests
     public void ComputeNext_ScalesTheWholeLoadAndReturnsWhatGoesOnTheBelt()
     {
         // Zgib sa +10 kg na vežbaču od 80 kg, tri serije po 12 (opseg 8-12) sa RIR 3 na
-        // cilju 1. Bez tela se korekcija od 6% primenjivala na DODATIH 10 kg, pa je
-        // predlog rastao za 0.6 kg umesto za 5.4 — zgib je „napredovao" polovinom koraka.
+        // cilju 1. Korak je 1 kg, koliko EquipmentWeightStep daje opremi „Bodyweight" —
+        // isti broj koji DbSeeder upisuje vežbi. Test je prvo koristio 2.5 kg i time
+        // pokazivao napredak koji zgib u aplikaciji nikada ne bi dobio.
         var result = _engine.ComputeNext(
             usedWeightKg: 10m,
             workingSets: [new WorkingSet(12, 3), new WorkingSet(12, 3), new WorkingSet(12, 3)],
             targetRir: 1,
             repRangeMin: 8,
             repRangeMax: 12,
-            weightStepKg: 2.5m,
+            weightStepKg: EquipmentWeightStep.ForEquipment(BodyweightLoad.BodyweightEquipment),
             bodyweightLoadKg: 80m);
 
-        // Ukupno 90 -> 90 * 1.06 + 2.5 = 97.9; na pojas ide 17.5.
-        Assert.Equal(17.5m, result.NextWeightKg);
+        // Ukupno 90 -> 90 × 1.06 + 1 = 96.4; na pojas ide 16.
+        Assert.Equal(16m, result.NextWeightKg);
         Assert.True(result.WeightIncreased);
         Assert.False(result.LoadFloorReached);
+    }
+
+    [Fact]
+    public void ComputeNext_OnTheOldRule_WouldHaveProposedFourKilogramsLess()
+    {
+        // Merenje koje stoji u docs/features/bodyweight-load.md: bez dela telesne mase se
+        // isti trening skalirao samo nad dodatim kilogramima, pa je korekcija od 6%
+        // vredela 0.6 kg umesto 5.4.
+        var sets = new[] { new WorkingSet(12, 3), new WorkingSet(12, 3), new WorkingSet(12, 3) };
+        var step = EquipmentWeightStep.ForEquipment(BodyweightLoad.BodyweightEquipment);
+
+        var withoutBody = _engine.ComputeNext(10m, sets, 1, 8, 12, step);
+        var withBody = _engine.ComputeNext(10m, sets, 1, 8, 12, step, 80m);
+
+        Assert.Equal(12m, withoutBody.NextWeightKg);
+        Assert.Equal(16m, withBody.NextWeightKg);
     }
 
     [Fact]
@@ -135,14 +178,39 @@ public class BodyweightLoadTests
     }
 
     [Fact]
-    public void ComputeNext_WithoutABodyPortion_IsExactlyWhatItWasBefore()
+    public void ComputeNext_WithoutABodyPortion_StillFollowsTheRuleThatWasThereBefore()
     {
-        var sets = new[] { new WorkingSet(10, 2), new WorkingSet(10, 2), new WorkingSet(9, 1) };
+        // Ovaj test je poredio poziv sa samim sobom: bodyweightLoadKg ima podrazumevanu
+        // vrednost 0, pa su dva izraza bila ISTI poziv iste čiste metode i tvrdnja nije
+        // mogla da padne ni za jednu implementaciju. Sada se poredi sa brojem koji pravilo
+        // daje: prosečan RIR 2 na cilju 1 je +3%, 105 × 1.03 = 108.15, zaokruženo 107.5.
+        var sets = new[] { new WorkingSet(10, 2), new WorkingSet(10, 2), new WorkingSet(9, 2) };
 
-        var withoutParameter = _engine.ComputeNext(100m, sets, 1, 8, 12, 2.5m);
-        var withZero = _engine.ComputeNext(100m, sets, 1, 8, 12, 2.5m, 0m);
+        var result = _engine.ComputeNext(105m, sets, 1, 8, 12, 2.5m);
 
-        Assert.Equal(withoutParameter, withZero);
+        Assert.Equal(107.5m, result.NextWeightKg);
+        Assert.True(result.WeightIncreased);
+        Assert.False(result.LoadFloorReached);
+    }
+
+    [Fact]
+    public void ComputeNext_ProposesNoStep_WhenAnExternalExerciseWasLoggedAtZero()
+    {
+        // Ponašanje koje je ova grana promenila za vežbe BEZ telesne mase: pre nje je
+        // 0 kg na vrhu opsega davalo 0 × 1 + 2.5 = 2.5 kg, dakle „stavi tanjir" na seriju
+        // koju niko nije opteretio. Ostatak paketa to ne vidi: mreža težina u
+        // ProgressionPropertyTests počinje od jednog koraka, nikada od nule.
+        var result = _engine.ComputeNext(
+            usedWeightKg: 0m,
+            workingSets: [new WorkingSet(12, 1), new WorkingSet(12, 1), new WorkingSet(12, 1)],
+            targetRir: 1,
+            repRangeMin: 8,
+            repRangeMax: 12,
+            weightStepKg: 2.5m);
+
+        Assert.Equal(0m, result.NextWeightKg);
+        Assert.False(result.WeightIncreased);
+        Assert.True(result.LoadFloorReached);
     }
 
     [Fact]
@@ -199,6 +267,76 @@ public class BodyweightLoadTests
             bodyweightLoadKg: 80m);
 
         Assert.Equal(0m, next);
+    }
+
+    [Fact]
+    public void NextWeekLoad_DerivesANewPrescriptionFromTheTotalMaximum()
+    {
+        // Naredna nedelja traži drugačiji propis, a maksimum je poznat: 109.33 kg je
+        // procena iz zgiba bez pojasa (telo od 80 kg, deset ponavljanja sa RIR 1). Radno
+        // opterećenje za 8 sa RIR 1 je 109.33 / 1.3 = 84.10 ukupno, pa na pojas ide 4.
+        // Bez dela tela bi ovde stajalo 84 kg DODATIH — 164 kg ukupno za vežbača od 80.
+        var next = NextWeekLoad.For(
+            referenceWeightKg: 0m,
+            progressionWeightKg: 0m,
+            current: new LoadPrescription(11, 12, 1),
+            next: new LoadPrescription(8, 12, 1),
+            nextIsDeload: false,
+            oneRepMaxKg: 109.33m,
+            weightStepKg: 1m,
+            bodyweightLoadKg: 80m);
+
+        Assert.Equal(4m, next);
+    }
+
+    [Fact]
+    public void NextWeekLoad_DeloadsFromTheTotalMaximum_WhenNothingWasLogged()
+    {
+        // Preskočena vežba pred deload: opterećenje se izvodi iz maksimuma i rasterećuje.
+        // 109.33 / 1.3 = 84.10 ukupno, 90% je 75.69 — ispod tela od 80, pa deload nedelja
+        // propisuje sopstvenu masu.
+        var next = NextWeekLoad.For(
+            referenceWeightKg: null,
+            progressionWeightKg: null,
+            current: new LoadPrescription(8, 12, 1),
+            next: new LoadPrescription(8, 12, 1),
+            nextIsDeload: true,
+            oneRepMaxKg: 109.33m,
+            weightStepKg: 1m,
+            bodyweightLoadKg: 80m);
+
+        Assert.Equal(0m, next);
+    }
+
+    [Fact]
+    public void NextWeekLoad_CarriesTheMaximumIntoAnUntrainedWeek_OnTheAddedScale()
+    {
+        // Isti propis, ali o vežbi nema ni serija ni progresije: opterećenje se izvodi iz
+        // maksimuma. 150 / 1.3 = 115.38 ukupno -> 35 na pojasu (telo 80, korak 1).
+        var next = NextWeekLoad.For(
+            referenceWeightKg: null,
+            progressionWeightKg: null,
+            current: new LoadPrescription(8, 12, 1),
+            next: new LoadPrescription(8, 12, 1),
+            nextIsDeload: false,
+            oneRepMaxKg: 150m,
+            weightStepKg: 1m,
+            bodyweightLoadKg: 80m);
+
+        Assert.Equal(35m, next);
+    }
+
+    [Fact]
+    public void UndoDeload_KeepsTheFloorInsteadOfInventingLoad()
+    {
+        // Zgib rasterećen na sopstvenu masu: deload cilj je 0 dodatnih. Deljenje sa 0.9
+        // nad ukupnim je odatle „vraćalo" 80 / 0.9 - 80 = 8.88, pa je nedelja posle
+        // deload-a propisivala „TM + 8 kg" vežbaču koji nikada nije dodao ni kilogram.
+        // Nula se ne može obrnuti — AddedTarget je tu odsekao — pa se i vraća kao nula.
+        Assert.Equal(0m, NextWeekLoad.UndoDeload(0m, 1m, 80m));
+
+        // Bez dela tela je to isto ponašanje koje je bilo i pre ove grane.
+        Assert.Equal(0m, NextWeekLoad.UndoDeload(0m, 2.5m));
     }
 
     [Fact]

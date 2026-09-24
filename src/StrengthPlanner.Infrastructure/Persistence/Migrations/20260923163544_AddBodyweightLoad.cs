@@ -16,11 +16,17 @@ namespace StrengthPlanner.Infrastructure.Persistence.Migrations
     /// would have counted the same body twice and pushed a pull-up estimate from 90 kg to
     /// about 200. History therefore keeps meaning exactly what it meant when it was written.
     ///
-    /// Plans of sessions that have <b>not</b> been performed yet are the one exception, and
-    /// they are converted rather than left alone: their target used to be the whole load
-    /// and now means what is added to the body, so a pull-up planned at 40 kg would have
-    /// read as "put 40 kg on your belt". Subtracting the body portion turns that into "your
-    /// own body", clamped at zero. Completed sessions are history and are not touched.
+    /// Plans of sessions that have <b>not been started</b> are the one exception, and they
+    /// are converted rather than left alone: their target used to be the whole load and now
+    /// means what is added to the body, so a pull-up planned at 40 kg would have read as
+    /// "put 40 kg on your belt". Subtracting the body portion turns that into "your own
+    /// body", clamped at zero.
+    ///
+    /// A session already in progress is left alone together with its completed ones, and the
+    /// reason is that it holds both halves: sets logged in the old scale and a plan target in
+    /// the old scale. Converting only the target would leave the two disagreeing inside one
+    /// session, with the lifter typing the next set in the units the first three used. So a
+    /// session keeps whichever scale it was started in.
     /// </summary>
     public partial class AddBodyweightLoad : Migration
     {
@@ -77,7 +83,7 @@ namespace StrengthPlanner.Infrastructure.Persistence.Migrations
                   AND "Exercises"."Id" = "ExercisePlans"."ExerciseId"
                   AND "Exercises"."BodyweightShare" > 0
                   AND "ExercisePlans"."TargetWeightKg" IS NOT NULL
-                  AND "WorkoutSessions"."Status" <> 'Completed';
+                  AND "WorkoutSessions"."Status" = 'Planned';
                 """);
 
             // One record in the development database holds 0 kg, from a bodyweight exercise

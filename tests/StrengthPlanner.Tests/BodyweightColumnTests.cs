@@ -53,7 +53,9 @@ public class BodyweightColumnTests
     {
         var property = PropertyOf<Exercise>(nameof(Exercise.BodyweightShare));
 
-        // numeric(3,2): 0.00 do 1.00, što je tačno opseg koji udeo sme da ima.
+        // numeric(3,2) drži do 9.99, dakle šire od opsega [0, 1] koji udeo sme da ima;
+        // koliko je šire ne odlučuje ovaj test nego onaj ispod, koji kapacitet kolone
+        // vezuje za najveći dozvoljen udeo.
         Assert.Equal(3, property.GetPrecision());
         Assert.Equal(2, property.GetScale());
         // Podrazumevana nula znači da vežba bez udela ostaje ono što je bila: spoljno
@@ -65,10 +67,17 @@ public class BodyweightColumnTests
     [Fact]
     public void BodyweightShare_FitsEveryShareTheDomainAllows()
     {
-        // Najveći dozvoljen udeo je celo telo. Da je kolona numeric(2,2), 1.00 se ne bi
-        // moglo upisati uopšte — a upravo taj udeo nosi zgib.
-        Assert.Equal(1m, BodyweightLoad.MaxShare);
-        Assert.True(BodyweightLoad.IsValidShare(BodyweightLoad.MaxShare));
+        // Najveći dozvoljen udeo je celo telo, i upravo taj udeo nosi zgib. Ovaj test je
+        // prvo tvrdio `IsValidShare(MaxShare)`, što je `MaxShare <= MaxShare` — tačno za
+        // svaku vrednost konstante, i nezavisno od kolone o kojoj je test. Sada se čita
+        // kapacitet iz modela i poredi sa domenom: kolona numeric(2,2) drži do 0.99, pa
+        // bi udeo zgiba padao na upisu (22003 numeric field overflow) pri seedovanju, i to
+        // pri pokretanju API-ja.
+        var property = PropertyOf<Exercise>(nameof(Exercise.BodyweightShare));
+
+        Assert.True(
+            BodyweightLoad.MaxShare <= LargestStorable(property),
+            $"Kolona drži do {LargestStorable(property)}, a domen dozvoljava {BodyweightLoad.MaxShare}.");
     }
 
     [Fact]
@@ -81,6 +90,35 @@ public class BodyweightColumnTests
         Assert.Equal(2, property.GetScale());
         Assert.Equal(0m, property.GetDefaultValue());
         Assert.False(property.IsNullable);
+    }
+
+    [Fact]
+    public void BodyweightLoadKg_HoldsThePortionOfTheHeaviestProfileTheAppAccepts()
+    {
+        // Registracija prihvata masu do 400 kg (RegisterDto.BodyweightKg), a najveći udeo
+        // je celo telo, pa je najveći snimak koji aplikacija može da proizvede 400 kg.
+        const decimal heaviestProfileKg = 400m;
+        var property = PropertyOf<SetLog>(nameof(SetLog.BodyweightLoadKg));
+
+        var largestPortion = BodyweightLoad.PortionKg(heaviestProfileKg, BodyweightLoad.MaxShare);
+
+        Assert.True(
+            largestPortion <= LargestStorable(property),
+            $"Kolona drži do {LargestStorable(property)}, a najveći deo tela je {largestPortion}.");
+    }
+
+    /// <summary>Largest value a numeric(precision, scale) column can hold.</summary>
+    private static decimal LargestStorable(IProperty property)
+    {
+        var precision = property.GetPrecision();
+        var scale = property.GetScale();
+        Assert.NotNull(precision);
+        Assert.NotNull(scale);
+
+        var whole = (decimal)Math.Pow(10, precision!.Value - scale!.Value);
+        var smallestFraction = (decimal)Math.Pow(10, -scale.Value);
+
+        return whole - smallestFraction;
     }
 
     [Fact]

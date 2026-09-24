@@ -20,6 +20,7 @@ import { Loading } from '../../shared/components/loading/loading';
 import { SetFeedback, setFeedback } from './set-feedback';
 import { nextWeightLabel, nextWeightTone } from './next-weight-label';
 import { loadLabel } from './load-label';
+import { LoadFloorNote, loadFloorNote } from './load-floor-note';
 
 interface SetDraft {
   weightKg: number;
@@ -170,6 +171,14 @@ export class WorkoutSession {
 
   protected nextWeightTone(summary: CompletedExerciseSummaryDto): StatChipTone {
     return nextWeightTone(summary);
+  }
+
+  /**
+   * Zašto rezime kaže da sledeći put nema kilograma više (vidi load-floor-note.ts).
+   * Server u oba slučaja vraća istu zastavicu, a uzrok se čita iz dela telesne mase.
+   */
+  protected floorNote(summary: CompletedExerciseSummaryDto): LoadFloorNote | null {
+    return loadFloorNote(summary);
   }
 
   /**

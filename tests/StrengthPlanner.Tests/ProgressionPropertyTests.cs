@@ -239,6 +239,14 @@ public class ProgressionPropertyTests
                                     failures.Add($"floor reached but proposes {result.NextWeightKg} ({described})");
                                 }
 
+                                // Predlog mora da bude umnozak koraka: tanjiri se stavljaju
+                                // na pojas, a deo tela (51.2 kg uz korak od 1 kg) nije na
+                                // mrezi. Zaokruzivanje nad ukupnim daje 4.8 kg na pojasu.
+                                if (result.NextWeightKg % step != 0)
+                                {
+                                    failures.Add($"off the step grid: {result.NextWeightKg} ({described})");
+                                }
+
                                 if (set.Reps >= max && result.NextWeightKg < added)
                                 {
                                     failures.Add($"top of range lowered {added} -> {result.NextWeightKg} ({described})");

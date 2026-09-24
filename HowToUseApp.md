@@ -130,10 +130,11 @@ Barbell Row.
    dodaj joj 1RM na isti način.
 4. **Nastavi na plan**.
 
-**Vežbe koje diže sopstvena masa** (zgib, sklek, iskorak) se ovde ne unose i ne mogu se
-dodati iz kataloga. Njihov maksimum je *ukupno* opterećenje — telo plus ono što je dodato —
-pa uneto „100" ne bi značilo ništa određeno. Sistem ga procenjuje sam, iz prvih serija koje
-odradiš; do tada u redu piše „Još nema procene".
+**Vežbe koje diže sopstvena masa** (zgib, sklek, iskorak) se ovde ne unose. Njihov maksimum
+je *ukupno* opterećenje — telo plus ono što je dodato — pa uneto „100" ne bi značilo ništa
+određeno. Sistem ga procenjuje sam, iz prvih serija koje odradiš. Takvu vežbu možeš dodati
+na spisak iz kataloga, ali njen red nema polje za unos: piše „Ne unosi se" i, kad procena
+postoji, njenu vrednost — inače „Još nema procene". U brojač „Sačuvano" se ne računa.
 
 **Ako ne znaš svoj 1RM**, imaš tri opcije, sve tri legitimne:
 
