@@ -16,7 +16,6 @@ public sealed class DeloadService
 {
     private readonly AppDbContext _db;
     private readonly VolumeLandmarkService _landmarks;
-    private readonly E1RmCalculator _e1RmCalculator = new();
 
     public DeloadService(AppDbContext db, VolumeLandmarkService landmarks)
     {
@@ -551,9 +550,9 @@ public sealed class DeloadService
     }
 
     /// <summary>
-    /// Relativna promena najboljeg procenjenog 1RM u odnosu na prethodnu nedelju,
-    /// usrednjena po vežbama koje su rađene u obe. Nula kada poređenja nema — nedostatak
-    /// podatka ne sme da se protumači kao pad.
+    /// Relativna promena snage u odnosu na poslednju uporedivu nedelju, po pravilu iz
+    /// <see cref="StrengthChange"/>. Nula kada poređenja nema — nedostatak podatka ne sme
+    /// da se protumači kao pad.
     /// </summary>
     private async Task<decimal> GetE1RmChangeShareAsync(
         Guid userId,
@@ -605,39 +604,21 @@ public sealed class DeloadService
             return 0m;
         }
 
-        var current = BestE1RmByExercise(currentSets);
-        var previous = BestE1RmByExercise(previousSets);
-
-        var changes = new List<decimal>();
-
-        foreach (var (exerciseId, currentBest) in current)
-        {
-            if (previous.TryGetValue(exerciseId, out var previousBest) && previousBest > 0)
-            {
-                changes.Add((currentBest - previousBest) / previousBest);
-            }
-        }
-
-        return changes.Count == 0 ? 0m : changes.Average();
+        // Poređenje je domensko pravilo (StrengthChange): ista vežba, isti broj efektivnih
+        // ponavljanja, tolerancija jednog. Bez uslova uporedivosti je serija na vrhu jedne
+        // nedelje naspram serije na dnu sledeće — obe po propisu — čitala kao pad od skoro
+        // deset odsto, dvostruko od 5% na kojima signal dobija punu težinu.
+        //
+        // Nedostatak uporedivog para je nedostatak dokaza, pa nosi nulu, kao i nedostatak
+        // uporedive nedelje iznad.
+        return StrengthChange.ChangeShare(
+            currentSets.Select(ToStrengthSample),
+            previousSets.Select(ToStrengthSample)) ?? 0m;
     }
 
-    private Dictionary<Guid, decimal> BestE1RmByExercise(IReadOnlyList<SetSignal> sets)
+    private static StrengthSample ToStrengthSample(SetSignal set)
     {
-        var best = new Dictionary<Guid, decimal>();
-
-        // Isti predikat koji odlučuje da li serija uopšte daje procenu (E1RmCalculator):
-        // signal umora ne sme da se gradi na proceni koju sistem nigde drugde ne priznaje.
-        foreach (var set in sets.Where(set => E1RmCalculator.CanEstimateFrom(set.TotalLoadKg, set.Reps, set.Rir)))
-        {
-            var estimate = _e1RmCalculator.EstimateOneRepMax(set.TotalLoadKg, set.Reps, set.Rir);
-
-            if (!best.TryGetValue(set.ExerciseId, out var current) || estimate > current)
-            {
-                best[set.ExerciseId] = estimate;
-            }
-        }
-
-        return best;
+        return new StrengthSample(set.ExerciseId, set.Reps, set.Rir, set.TotalLoadKg);
     }
 
     /// <summary>
