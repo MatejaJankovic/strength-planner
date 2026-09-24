@@ -177,6 +177,14 @@ odmah ispod, *"Sledeće 82.5 kg ↑"*. Rezime se sada usklađuje sa stvarnim pla
 provereno da za svih šest vežbi prijavljuje tačno ono što stoji u deload nedelji
 (72.5 / 70 kg), bez strelice naviše.
 
+### Kasnija izmena (pregled logike treninga, odeljak B)
+
+Kad se deload pokrene, uz prepolovljene serije i 90% opterećenja ide i **ciljni RIR + 2**
+(hipertrofija 3, snaga 4). Ovde je pisalo samo prve dve stvari, jer je treća i u kodu
+izostajala: deload propisan na ciljnom RIR-u je po naporu bio radna serija — na 90%
+opterećenja se RIR 1 dostiže tek na vrhu opsega. Signal umora se ne menja: deload nedelje
+se ionako ne ocenjuju. Vidi [`deload-intensity.md`](deload-intensity.md).
+
 ### Sitnije
 
 - Poređenje e1RM je išlo sa prethodnom nedeljom bez obzira na to da li je ona bila

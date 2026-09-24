@@ -280,7 +280,7 @@ konačna reč:
 | Radi i dalje | Šta to znači za tvoje brojeve |
 |---|---|
 | Periodizacija | tvoj opseg se pomera kroz nedelje kao i svaki drugi (linearan model: više ponavljanja na startu, manje pred kraj) |
-| Deload | poslednja nedelja polovi **tvoj** broj serija i vraća **tvoj** opseg ponavljanja |
+| Deload | poslednja nedelja polovi **tvoj** broj serija, vraća **tvoj** opseg ponavljanja i diže ciljni RIR za dva |
 | Ciljni volumen (MAV) | predlog serija se pomera ka nedeljnom cilju mišića, ali ostaje blizu tvog broja |
 | Progresija iz serija | opterećenje raste iz onoga što stvarno odradiš, isto kao inače |
 
@@ -414,7 +414,7 @@ Povremeno se pojave i dve posebne poruke:
 
 **„Nedelja N je pretvorena u deload."** — sistem je iz upravo završene nedelje izmerio
 dovoljno umora da rasterećenje pomeri unapred. Serije su prepolovljene, opterećenje spušteno
-na 90% onoga što si stvarno koristio. Ako je blok već imao planirani deload, on otpada —
+na 90% onoga što si stvarno koristio, a ciljni RIR podignut za dva. Ako je blok već imao planirani deload, on otpada —
 mezociklus nosi jedno rasterećenje.
 
 **„Blok X od Y je otvoren."** — završio si ceo blok dugoročnog plana, pa je sledeći
@@ -592,7 +592,13 @@ ničega, uzima se najnoviji zapis ikada.
 signala: odstupanje RIR-a, udeo serija do otkaza, pad procenjenog 1RM i volumen u odnosu na
 MRV. Nijedan signal sam ne može da pokrene deload — najteži nosi 0.35 naspram praga 0.60, pa
 se bar dva moraju složiti. Kad se pokrene: serije prepolovljene, opterećenje 90% stvarno
-korišćenog.
+korišćenog, ciljni RIR podignut za dva.
+
+**Deload rasterećuje i napor.** Ciljni RIR deload nedelje je tvoj ciljni RIR **+2**
+(hipertrofija 3, snaga 4). Pad opterećenja od 10% po Epley-u vredi oko tri ponavljanja, pa
+se isti opseg na 90% odrađuje sa više u rezervi: sa maksimumom od 130 kg deload je 90 kg, a
+RIR 1 se na toj težini dostiže tek na dvanaestom ponavljanju — po naporu skoro normalna
+radna serija. Opseg ponavljanja se ne dira, jer bi to promenilo i sam pokret.
 
 **Sastav treninga.** Iz spiska vežbi u danu uzimaju se prvo složene (do broja koji tvoj nivo
 dozvoljava), pa izolacione dok se ne popune mesta. Trening nikad nema manje od tri vežbe.

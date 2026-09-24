@@ -60,7 +60,10 @@ public class PeriodizationTests
         Assert.Equal(2, deload.Sets);
         Assert.Equal(HypertrophyMin, deload.RepRangeMin);
         Assert.Equal(HypertrophyMax, deload.RepRangeMax);
-        Assert.Equal(HypertrophyRir, deload.TargetRir);
+
+        // Jedina stvar koja se u ravnom bloku promenila od kada modeli postoje: deload
+        // ostavlja vise u rezervi nego cilj. Opterecenje na 90% i RIR 1 nisu isli zajedno.
+        Assert.Equal(Periodization.DeloadRir(HypertrophyRir), deload.TargetRir);
     }
 
     [Fact]
@@ -387,17 +390,19 @@ public class PeriodizationTests
     }
 
     [Fact]
-    public void DeloadWeek_KeepsTheGoalRepRangeAndRir()
+    public void DeloadWeek_KeepsTheGoalRepRange_AndRaisesTheReserve()
     {
         // Rasterećenje nosi opterećenje (90% stvarnog) i polovinu serija; menjanje i
-        // opsega bi promenilo i sam pokret, a ne samo njegovu težinu.
+        // opsega bi promenilo i sam pokret, a ne samo njegovu težinu. RIR je drugo:
+        // 90% opterećenja se u istom opsegu odrađuje sa više u rezervi, pa je deload
+        // propisan na ciljnom RIR-u bio radna serija po naporu.
         foreach (var model in Enum.GetValues<PeriodizationModel>())
         {
             var deload = Hypertrophy(model)[^1];
 
             Assert.Equal(HypertrophyMin, deload.RepRangeMin);
             Assert.Equal(HypertrophyMax, deload.RepRangeMax);
-            Assert.Equal(HypertrophyRir, deload.TargetRir);
+            Assert.Equal(HypertrophyRir + Periodization.DeloadRirShift, deload.TargetRir);
         }
     }
 
