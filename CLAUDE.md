@@ -117,7 +117,7 @@ prose — no need for academic style.
 
 ## Scope note
 
-Nine rounds of work, all merged to `main`. Every branch got its own PR, an agent code
+Ten rounds of work, all merged to `main`. Every branch got its own PR, an agent code
 review, fixes for what the review turned up, and a plain-language write-up in
 `docs/features/`. (This line said "two rounds" until round 9 — a count in prose goes stale
 the moment it is written, which is why the rounds below are a list and not a number.)
@@ -420,6 +420,104 @@ the working tree and did not put it back.** It flipped `AddedTarget` to total-sp
 to measure that the suite stayed green, reported that correctly, and left the edit on disk;
 the next two `dotnet test` runs were against its version. Check `git status` after a review
 agent has run, before believing a result.
+
+**Round 10 — the same audit, section B: what a week prescribes.** Periodization, deload
+and volume — six findings, all four branches merged.
+
+| Branch | What it fixed | PR |
+|---|---|---|
+| `fix/rep-window-and-fixed-reps` | The volume phase of a hypertrophy block came out as a two-rep window (11-12), and a custom template that prescribed exactly 5 reps was planned as 5-6 | #65 |
+| `fix/deload-intensity` | A deload dropped the load to 90% and kept the goal RIR, so by effort it was a normal working set | #66 |
+| `fix/isolation-rep-range` | A strength block prescribed 3-6 reps (3-4 in the intensity week) for lateral raises, flyes and curls — five exercises in six for an advanced lifter | #67 |
+| `fix/weekly-volume-target` | Balancing aimed every week at MAV, so the set wave existed in the prescription and not in the proposal; a strength block aimed at hypertrophy MAV | #68 |
+
+Sequential, each merged before the next branched. 500 → 550 tests on the server, 136 → 139
+on the client.
+
+The finding that shaped the round: **two defects were covering for each other.** The Epley
+cap narrowed a week's rep window instead of moving it, and that narrowing was the only
+thing that told two weeks of the inverse block apart. Restoring the old clamp alone fails 6
+of 510 tests, removing the set that a swallowed shift now returns fails 3, and doing both
+fails **7, not 9**. The two single reverts fail 8 cases between them, so exactly one case
+passes when both defects are present, and it is the test demanding that every training week
+have its own prescription — a degenerate two-rep window was how the model looked like it
+used a week it did not use.
+
+Decisions worth keeping:
+
+- **The two rep bounds are clamped for different reasons, so they behave differently.**
+  Twelve is a *measurement* limit — above it Epley reads nothing — so a window that would
+  cross it slides back and keeps its width. Three is a *training* decision — below it the
+  block is not what it says it is — so there the window really does narrow, and strength
+  weeks lean on RIR for the rest of the intensity.
+- **What the cap swallows comes back as a set.** A volume phase means more work; when reps
+  cannot carry it, sets do. Only hypertrophy ranges reach the cap, so strength blocks are
+  unchanged.
+- **A fixed rep target is a prescription.** 5x5 is a program, not a carelessly entered
+  range, and the width of a range may now be zero.
+- **A deload rests the effort too.** Ten percent of load is worth about three effective reps
+  by Epley, so the deload target RIR is the goal's plus two: with a 1RM of 130 kg the deload
+  sits at 90 kg, where RIR 1 is reached at the twelfth rep.
+- **The range follows the exercise, the reserve follows the block.** Three lateral raises are
+  not a test of force production. Keeping one target RIR per block is also what lets the
+  deload and the released-week restore work from a single number instead of a second stored
+  anchor per exercise.
+- **A volume target that cannot move is not a target.** The weekly target is MAV scaled by
+  how far periodization moved the prescription, clamped to [MEV, MRV], and a strength block
+  aims halfway between MEV and MAV — derived from the limits the lifter already learns
+  rather than from a new multiplier. A flat block gives a ratio of one, so it still aims at
+  MAV exactly and nothing about an existing flat block moves.
+- **The base week is read, not derived.** Every model has a week with no shift, and no
+  version of `Periodization` has ever moved it, so both the deload and the volume target
+  read the block's base from it rather than inverting a shift out of a stored number.
+
+Seven measurements from this round contradicted the expectation behind the change:
+
+1. The 6 / 3 / 7 failure counts above.
+2. **The first version of the isolation fix passed every test and changed nothing in the
+   app.** The generator computed one prescription per week and handed it to every exercise
+   of a built-in template, so the new range reached the anchor columns and never the week:
+   Cable Fly stood at 6-9 with an anchor of 8-12. Same shape as `SetLogDto` in round 9 —
+   right rule, green tests, untouched application, because the tests checked the rule and
+   not whether anything called it. Only the end-to-end run found it.
+3. **A stale build sent that diagnosis down the wrong path first.** `git checkout --` after
+   a revert experiment restores the source, not the binaries, so the live check was being
+   served by the reverted code. Rebuild before believing a live result taken right after an
+   experiment — the sibling of round 9's lesson about a review agent leaving an edit behind.
+4. **Inverting the set shift misreads rows an older rule wrote.** Adding the cap bonus made
+   `BaseSetsFrom` subtract a set that was never added. Measured on the dev database: 440
+   plan rows sit in a week that now carries the bonus, 392 of them predate it, and 168 of
+   those carry a rep window of 11-15 — reps this code cannot produce. Twelve blocks, and 188 of
+   those rows sit in a block that is still active — one of which already has a deload in
+   week 2, which can only be an auto-deload, since a planned one is always the last week. A migration was
+   considered and rejected: the anchors come from several rule versions, and a week freed
+   after an auto-deload carries another week's phase, so no query can tell which rule wrote
+   which row. Reading the base week fixes old and new data alike and was shorter than the
+   migration would have been.
+5. **The same inversion cannot undo the minimum-set clamp either** — not a new defect, but
+   the same fix shortened its reach. A base of 2 and a base of 3 both prescribe 2 sets in a
+   week that removes one, so a two-set custom template used to get a "deload" of two sets,
+   which is no deload at all.
+6. **Raising the deload RIR turned a harmless fallback into a wrong one.**
+   `goal?.TargetRir ?? plan.TargetRir` read the same number either way while a deload kept
+   the goal RIR; from #66 on, the plan of a planned deload carries the deload RIR, so
+   restoring that week would have prescribed a training week two reserves light. The goal is
+   now required, and a missing mesocycle row returns null instead of assuming a flat block.
+7. **Both landmark clamps fire in normal use, and that is visible in the numbers.** A
+   hypertrophy volume week aims at MRV (22 sets of chest against a prescription of 24) and a
+   strength intensity week floors at MEV (10 against a computed 9.75). Which also moves what
+   the landmark learning hears: a strength block's weeks now sit lower, so MAV mostly stops
+   learning from them while the intensity week, resting on MEV, starts saying something
+   about MEV. Recorded in `adaptive-volume-landmarks.md`; whether RIR is the right signal
+   for volume limits at all is a section C finding and was not built.
+
+One number in this round's own write-ups had to be corrected the same way round 9's were:
+`rep-window-and-fixed-reps.md` said the suite went "503 → 514", and 503 is a mid-branch
+count no commit carries. The round started at 500.
+
+Still unbuilt from the same audit: **section C** (how volume limits and the fatigue score
+read RIR) and **section D** (code against guide against thesis). Section E and the
+suggestions list are untouched.
 
 Deliberately **out of scope**: i18n, full-history analytics, undulating periodization,
 PWA/offline, changing an already-generated block's periodization model, email delivery (so no

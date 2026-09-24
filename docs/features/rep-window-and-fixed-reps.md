@@ -143,8 +143,13 @@ se osnova koju blok nikada nije imao:
 
 Izmereno nad dev bazom: **440** redova stoji u nedelji koja od sada nosi bonus, **392** njih
 je upisala starija verzija pravila, a **168** tih nosi prozor `11-15` — broj ponavljanja koji
-ovaj kod ne ume ni da proizvede. Pogođeno je **12 blokova, 5 aktivnih**, i jedan od njih već
-ima auto-deload u nedelji 2, dakle tačno tu putanju.
+ovaj kod ne ume ni da proizvede. Pogođeno je **12 blokova**, a **188** tih redova stoji u
+bloku koji je i dalje aktivan — i jedan od njih već ima deload u nedelji 2, što može biti
+samo auto-deload, jer planirani uvek stoji poslednji. Dakle tačno ta putanja.
+
+(Ovde je prvo pisalo „5 aktivnih": to je bio broj aktivnih blokova samo u preseku sa
+`BaseRepRangeMax = 12`, a ne mera koju je upit dao. Izmeren je broj REDOVA u aktivnim
+blokovima.)
 
 Migracija je razmatrana i odbačena: podaci nose anchor-e iz više verzija pravila, a
 oslobođena nedelja posle auto-deload-a nosi propis *druge* nedelje, pa nijedan upit ne može
@@ -197,4 +202,6 @@ zadrži širinu 4 u svakoj nedelji; snaga sme da suzi, ali samo kada stoji na po
 zaista jednak osnovi za oba cilja i za fiksan broj) i
 `RecoveringTheBase_CannotUndoTheMinimumSetClamp` (granica koju obrtanje ne ume da razveze).
 
-Ukupno: 503 → 514 testova na serveru, 136 → 139 na klijentu.
+Ukupno: 500 → 514 testova na serveru, 136 → 139 na klijentu. (Ovde je prvo pisalo
+„503 → 514": 503 je bio broj usred grane, koji nijedan commit ne nosi. Runda je počela na
+500 — ista vrsta greške kao u devetoj rundi, pa isto ispravljena naglas.)
