@@ -57,6 +57,7 @@ Pregled logike treninga (odeljak A: sve što direktno menja predloženu težinu)
 | [Vrh opsega više ne spušta težinu](load-progression-top-of-range.md) | Korekcija po RIR-u je poništavala korak na vrhu opsega, a iznad 125 kg obarala težinu; serija ispod opsega sa rezervom je dizala težinu | #60 |
 | [Radna težina i rezime](progression-reference-and-summary.md) | Progresija je polazila od proseka težina, vežba bez serija je nosila punu težinu u deload, a strelica u rezimeu nije govorila o prikazanom broju | #61 |
 | [Pouzdanost procene maksimuma](e1rm-reliability.md) | Serija daleko od otkaza je davala e1RM, a jedna naduvana procena je osam nedelja bila polazna težina bloka | #62 |
+| [Sopstvena masa je opterećenje](bodyweight-load.md) | Zgib se vodio kao 0 kg, pa je e1RM bio nula, tonaža nula, a progresija je nudila „+2.5 kg" na vežbi koja se ne opterećuje | #63 |
 
 ## Ako čitaš samo jedno
 

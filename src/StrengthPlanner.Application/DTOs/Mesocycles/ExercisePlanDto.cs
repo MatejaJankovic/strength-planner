@@ -25,5 +25,15 @@ public class ExercisePlanDto
 
     /// <summary>Korak kojim klijent pomera opterećenje za ovu vežbu (kg).</summary>
     public decimal WeightStepKg { get; set; }
+
+    /// <summary>
+    /// Vežba nosi deo telesne mase, pa je <see cref="TargetWeightKg"/> ono što se DODAJE
+    /// (pojas, traka), a 0 znači „sopstvenom masom". Netačno i za vežbu sa telesnom masom
+    /// ako profil nema unetu masu: tada se ne zna šta bi se dodavalo.
+    /// </summary>
+    public bool IsBodyweight { get; set; }
+
+    /// <summary>Koliko kilograma telesne mase ova vežba nosi; 0 za spoljno opterećenje.</summary>
+    public decimal BodyweightLoadKg { get; set; }
     public List<SetLogDto> SetLogs { get; set; } = new();
 }

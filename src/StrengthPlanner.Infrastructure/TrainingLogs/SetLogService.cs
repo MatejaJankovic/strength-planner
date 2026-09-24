@@ -30,7 +30,12 @@ public class SetLogService : ISetLogService
         var planInfo = await _db.ExercisePlans
             .Where(plan => plan.Id == exercisePlanId
                            && plan.WorkoutSession.TrainingWeek.Mesocycle.UserId == userId)
-            .Select(plan => new { plan.WorkoutSession.Status, plan.RepRangeMin })
+            .Select(plan => new
+            {
+                plan.WorkoutSession.Status,
+                plan.RepRangeMin,
+                plan.Exercise.BodyweightShare
+            })
             .FirstOrDefaultAsync(cancellationToken);
 
         if (planInfo is null)
@@ -48,6 +53,18 @@ public class SetLogService : ISetLogService
         var isFailure = WorkingSet.ImpliesFailure(
             request.Reps, request.Rir, planInfo.RepRangeMin, request.IsFailure);
 
+        // Deo telesne mase se SNIMA pri upisu, a ne računa kasnije: kilogram promenjen u
+        // profilu ne sme da menja e1RM, tonažu i umor iz serija koje su već odrađene.
+        var bodyweightLoadKg = planInfo.BodyweightShare <= 0
+            ? 0m
+            : BodyweightLoad.PortionKg(
+                await _db.Profiles
+                    .AsNoTracking()
+                    .Where(profile => profile.UserId == userId)
+                    .Select(profile => (decimal?)profile.BodyweightKg)
+                    .FirstOrDefaultAsync(cancellationToken) ?? 0m,
+                planInfo.BodyweightShare);
+
         var setLog = new SetLog
         {
             Id = Guid.NewGuid(),
@@ -60,6 +77,7 @@ public class SetLogService : ISetLogService
             // Rir is already 0, so there is never a request.Rir to normalize away here.
             Rir = request.Rir,
             IsFailure = isFailure,
+            BodyweightLoadKg = bodyweightLoadKg,
             PerformedAt = DateTime.UtcNow
         };
 
@@ -95,6 +113,8 @@ public class SetLogService : ISetLogService
         var isFailure = WorkingSet.ImpliesFailure(
             request.Reps, request.Rir, setLog.ExercisePlan.RepRangeMin, request.IsFailure);
 
+        // BodyweightLoadKg se namerno ne dira: izmena ispravlja ponavljanja, RIR ili dodatu
+        // težinu, a telesna masa tog dana je ostala ista.
         setLog.WeightKg = request.WeightKg;
         setLog.Reps = request.Reps;
         setLog.Rir = request.Rir;
@@ -169,16 +189,6 @@ public class SetLogService : ISetLogService
 
     private static SetLogDto ToDto(SetLog setLog)
     {
-        return new SetLogDto
-        {
-            Id = setLog.Id,
-            ExercisePlanId = setLog.ExercisePlanId,
-            SetNumber = setLog.SetNumber,
-            WeightKg = setLog.WeightKg,
-            Reps = setLog.Reps,
-            Rir = setLog.Rir,
-            IsFailure = setLog.IsFailure,
-            PerformedAt = setLog.PerformedAt
-        };
+        return SetLogMapper.ToDto(setLog);
     }
 }

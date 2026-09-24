@@ -23,6 +23,10 @@ public class ExerciseConfiguration : IEntityTypeConfiguration<Exercise>
             .HasPrecision(6, 2)
             .HasDefaultValue(TrainingConstants.WeightStepKg);
 
+        builder.Property(e => e.BodyweightShare)
+            .HasPrecision(3, 2)
+            .HasDefaultValue(0m);
+
         // Enum -> string radi čitljivosti u bazi.
         builder.Property(e => e.Type)
             .HasConversion<string>()

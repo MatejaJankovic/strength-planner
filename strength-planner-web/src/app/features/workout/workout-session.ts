@@ -19,6 +19,8 @@ import { EmptyState } from '../../shared/components/empty-state/empty-state';
 import { Loading } from '../../shared/components/loading/loading';
 import { SetFeedback, setFeedback } from './set-feedback';
 import { nextWeightLabel, nextWeightTone } from './next-weight-label';
+import { loadLabel } from './load-label';
+import { LoadFloorNote, loadFloorNote } from './load-floor-note';
 
 interface SetDraft {
   weightKg: number;
@@ -171,6 +173,26 @@ export class WorkoutSession {
     return nextWeightTone(summary);
   }
 
+  /**
+   * Zašto rezime kaže da sledeći put nema kilograma više (vidi load-floor-note.ts).
+   * Server u oba slučaja vraća istu zastavicu, a uzrok se čita iz dela telesne mase.
+   */
+  protected floorNote(summary: CompletedExerciseSummaryDto): LoadFloorNote | null {
+    return loadFloorNote(summary);
+  }
+
+  /**
+   * Opterećenje jedne odrađene serije. Kod vežbe sa telesnom masom je upisana težina samo
+   * ono što je dodato, pa se piše „TM + 5 kg".
+   *
+   * Gleda SNIMAK iz serije, a ne zastavicu plana: serija upisana pre nego što je telesna
+   * masa postojala u računu nosi 0 i mora da se čita kao obična težina, jer se tako i
+   * računala.
+   */
+  protected setLoad(set: SetLogDto): string {
+    return loadLabel(set.weightKg, set.bodyweightLoadKg > 0);
+  }
+
   /** Napomena ispod unosa: šta ova serija znači za sledeći trening (vidi set-feedback.ts). */
   protected feedbackFor(plan: ExercisePlanDto, draft: SetDraft): SetFeedback | null {
     return setFeedback(plan, draft);
@@ -289,6 +311,10 @@ export class WorkoutSession {
       reps: request.reps,
       rir: request.rir,
       isFailure: request.isFailure,
+      // Deo telesne mase koji ce server snimiti uz seriju. Ovde se uzima iz plana da bi
+      // red odmah pisao „TM + 5 kg"; odgovor servera ga svakako prepisuje pravom
+      // vrednoscu u replaceSet.
+      bodyweightLoadKg: plan.bodyweightLoadKg,
       performedAt: new Date().toISOString(),
     };
     this.appendSet(plan.id, optimistic);

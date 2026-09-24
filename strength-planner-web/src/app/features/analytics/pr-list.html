@@ -22,6 +22,9 @@
             </span>
           </div>
         </div>
+        @if (pr.isBodyweight) {
+          <p class="pr__scale">Ukupno opterećenje, sa telesnom masom.</p>
+        }
         @if (pr.achievedAt) {
           <p class="pr__date numeric">Postignuto {{ pr.achievedAt | date: 'd. M. y.' }}</p>
         }

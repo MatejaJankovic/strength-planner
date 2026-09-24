@@ -21,7 +21,7 @@
   } @else {
     <section class="setup">
       <p class="setup__progress numeric" aria-live="polite">
-        Sačuvano {{ savedCount() }} / {{ rows().length }}
+        Sačuvano {{ savedCount() }} / {{ enterableRows().length }}
       </p>
 
       @if (saveError(); as message) {
@@ -36,7 +36,9 @@
           <li class="lift">
             <div class="lift__info">
               <span class="lift__name">{{ row.name }}</span>
-              @if (row.savedValueKg !== null && !isDirty(row)) {
+              @if (row.isBodyweight) {
+                <span class="lift__current">Ne unosi se</span>
+              } @else if (row.savedValueKg !== null && !isDirty(row)) {
                 <span class="lift__saved">
                   <mat-icon aria-hidden="true">check_circle</mat-icon>
                   Sačuvano
@@ -48,6 +50,18 @@
               }
             </div>
 
+            @if (row.isBodyweight) {
+              <div class="lift__control lift__control--estimated">
+                <span class="lift__estimated numeric">
+                  @if (row.savedValueKg !== null) {
+                    {{ row.savedValueKg | number: '1.0-1' }} kg
+                  } @else {
+                    Još nema procene
+                  }
+                </span>
+                <span class="lift__note">Procenjuje se iz odrađenih serija</span>
+              </div>
+            } @else {
             <div class="lift__control">
               <div class="stepper">
                 <button
@@ -99,6 +113,7 @@
                 }
               </button>
             </div>
+            }
           </li>
         }
       </ul>

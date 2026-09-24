@@ -304,18 +304,26 @@ public sealed class DeloadService
                 set.WeightKg,
                 set.Reps,
                 set.Rir,
-                set.IsFailure
+                set.IsFailure,
+                set.BodyweightLoadKg
             })
             .ToListAsync(cancellationToken);
 
+        // Cuva se UKUPNO opterecenje reference: 90% se primenjuje na ono sto je telo
+        // zaista pomerilo, pa se tek onda vraca u dodate kilograme.
         var usedByExerciseAndDay = completedSets
             .GroupBy(set => (set.ExerciseId, set.DayLabel))
             .ToDictionary(
                 group => group.Key,
                 group => WorkingLoad.Select(group
-                        .Select(set => new LoggedSet(set.WeightKg, set.Reps, set.Rir, set.IsFailure))
+                        .Select(set => new LoggedSet(
+                            set.WeightKg,
+                            set.Reps,
+                            set.Rir,
+                            set.IsFailure,
+                            set.BodyweightLoadKg))
                         .ToList())!
-                    .ReferenceWeightKg);
+                    .ReferenceTotalLoadKg);
 
         // Rezerva za vežbu bez ijedne upisane serije je propis ZAVRŠENE nedelje, ne cilj
         // same deload nedelje: taj cilj je progresija upravo popunila, pa bi 90% od njega
@@ -350,6 +358,11 @@ public sealed class DeloadService
             userId,
             exerciseIds,
             cancellationToken);
+        var bodyweightByExerciseId = await BodyweightPortionResolver.ResolveAsync(
+            _db,
+            userId,
+            exerciseIds,
+            cancellationToken);
 
         foreach (var plan in plans)
         {
@@ -378,22 +391,29 @@ public sealed class DeloadService
             }
 
             var key = (plan.ExerciseId, plan.WorkoutSession.DayLabel);
-            decimal? baseWeight = usedByExerciseAndDay.TryGetValue(key, out var used)
+            var bodyweightLoadKg = BodyweightPortionResolver.PortionFor(
+                bodyweightByExerciseId,
+                plan.ExerciseId);
+
+            // Rezerve nose DODATE kilograme (to je ono sto plan cuva), pa im se deo tela
+            // dodaje ovde; odradjena referenca je vec ukupna.
+            decimal? baseTotalKg = usedByExerciseAndDay.TryGetValue(key, out var used)
                 ? used
                 : plannedByExerciseAndDay.TryGetValue(key, out var planned)
-                    ? planned
+                    ? planned + bodyweightLoadKg
                     // Poslednja rezerva je cilj same nedelje koja postaje deload: kada je
                     // progresija upisan taj cilj, nedelja još nije bila rasterećenje, pa je
                     // to puna težina. Bez ove grane bi ostala nedirnuta, dakle 100%.
-                    : plan.TargetWeightKg;
+                    : plan.TargetWeightKg + bodyweightLoadKg;
 
-            if (baseWeight is null)
+            if (baseTotalKg is null)
             {
                 continue;
             }
 
-            plan.TargetWeightKg = WeightMath.RoundToStep(
-                baseWeight.Value * TrainingConstants.DeloadWeightFactor,
+            plan.TargetWeightKg = BodyweightLoad.AddedTarget(
+                baseTotalKg.Value * TrainingConstants.DeloadWeightFactor,
+                bodyweightLoadKg,
                 WeightStepResolver.StepFor(weightStepByExerciseId, plan.ExerciseId));
         }
     }
@@ -419,6 +439,7 @@ public sealed class DeloadService
                 set.Rir,
                 set.IsFailure,
                 set.WeightKg,
+                set.BodyweightLoadKg,
                 set.ExercisePlan.TargetRir,
                 set.ExercisePlan.RepRangeMin))
             .ToListAsync(cancellationToken);
@@ -499,6 +520,7 @@ public sealed class DeloadService
                 set.Rir,
                 set.IsFailure,
                 set.WeightKg,
+                set.BodyweightLoadKg,
                 set.ExercisePlan.TargetRir,
                 set.ExercisePlan.RepRangeMin))
             .ToListAsync(cancellationToken);
@@ -530,9 +552,9 @@ public sealed class DeloadService
 
         // Isti predikat koji odlučuje da li serija uopšte daje procenu (E1RmCalculator):
         // signal umora ne sme da se gradi na proceni koju sistem nigde drugde ne priznaje.
-        foreach (var set in sets.Where(set => E1RmCalculator.CanEstimateFrom(set.WeightKg, set.Reps, set.Rir)))
+        foreach (var set in sets.Where(set => E1RmCalculator.CanEstimateFrom(set.TotalLoadKg, set.Reps, set.Rir)))
         {
-            var estimate = _e1RmCalculator.EstimateOneRepMax(set.WeightKg, set.Reps, set.Rir);
+            var estimate = _e1RmCalculator.EstimateOneRepMax(set.TotalLoadKg, set.Reps, set.Rir);
 
             if (!best.TryGetValue(set.ExerciseId, out var current) || estimate > current)
             {
@@ -582,8 +604,13 @@ public sealed class DeloadService
         int Rir,
         bool IsFailure,
         decimal WeightKg,
+        decimal BodyweightLoadKg,
         int TargetRir,
-        int RepRangeMin);
+        int RepRangeMin)
+    {
+        /// <summary>Everything the set moved, body included.</summary>
+        public decimal TotalLoadKg => WeightKg + BodyweightLoadKg;
+    }
 }
 
 /// <summary>Rezultat automatskog deload-a, za poruku korisniku posle treninga.</summary>

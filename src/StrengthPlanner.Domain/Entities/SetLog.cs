@@ -19,4 +19,10 @@ public class SetLog
     // Serija izvučena do otkaza — korisnik nije mogao još jedno ponavljanje.
     // Koliko je ponavljanja promašeno u odnosu na rep-opseg računa progresija.
     public bool IsFailure { get; set; }
+
+    // Deo telesne mase koji je ova serija nosila, snimljen u trenutku upisa (masa iz
+    // profila × udeo vežbe). Snima se, a ne računa kasnije, da kilogram promenjen u
+    // profilu ne bi menjao istoriju: e1RM, tonaža i umor iz ove serije ostaju onakvi
+    // kakvi su bili tog dana. Nula za sve što se opterećuje spolja.
+    public decimal BodyweightLoadKg { get; set; }
 }

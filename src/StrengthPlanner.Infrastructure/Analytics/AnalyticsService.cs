@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using StrengthPlanner.Application.DTOs.Analytics;
 using StrengthPlanner.Application.Exceptions;
 using StrengthPlanner.Application.Interfaces;
+using StrengthPlanner.Domain.Algorithms;
+using StrengthPlanner.Infrastructure.Exercises;
 using StrengthPlanner.Infrastructure.Persistence;
 
 namespace StrengthPlanner.Infrastructure.Analytics;
@@ -36,6 +38,16 @@ public class AnalyticsService : IAnalyticsService
         Guid userId,
         CancellationToken cancellationToken = default)
     {
+        var bodyweightKg = await BodyweightPortionResolver.LoadBodyweightAsync(_db, userId, cancellationToken);
+        var shareByExerciseId = await _db.Exercises
+            .AsNoTracking()
+            .Where(exercise => exercise.BodyweightShare > 0)
+            .Select(exercise => new { exercise.Id, exercise.BodyweightShare })
+            .ToDictionaryAsync(
+                exercise => exercise.Id,
+                exercise => BodyweightLoad.PortionKg(bodyweightKg, exercise.BodyweightShare),
+                cancellationToken);
+
         var e1RmRecords = await _db.OneRepMaxRecords
             .AsNoTracking()
             .Where(record => record.UserId == userId)
@@ -55,13 +67,16 @@ public class AnalyticsService : IAnalyticsService
                     .ThenByDescending(record => record.AchievedAt)
                     .First());
 
+        // Najteža serija se meri UKUPNIM opterećenjem, kao i e1RM iznad: zgib bez pojasa je
+        // inače imao rekord „0 kg" pored procene maksimuma od 120. Snimak iz serije, a ne
+        // trenutna masa — rekord je ono što je tada podignuto.
         var weightRecords = await _db.SetLogs
             .AsNoTracking()
             .Where(set => set.ExercisePlan.WorkoutSession.TrainingWeek.Mesocycle.UserId == userId)
             .Select(set => new PersonalRecordSource(
                 set.ExercisePlan.ExerciseId,
                 set.ExercisePlan.Exercise.Name,
-                set.WeightKg,
+                set.WeightKg + set.BodyweightLoadKg,
                 set.PerformedAt))
             .ToListAsync(cancellationToken);
 
@@ -91,7 +106,8 @@ public class AnalyticsService : IAnalyticsService
                     Exercise = bestE1Rm?.Exercise ?? bestWeight?.Exercise ?? string.Empty,
                     BestE1Rm = bestE1Rm?.ValueKg,
                     BestWeight = bestWeight?.ValueKg,
-                    AchievedAt = achievedAt
+                    AchievedAt = achievedAt,
+                    IsBodyweight = shareByExerciseId.ContainsKey(exerciseId)
                 };
             })
             .OrderBy(record => record.Exercise)
@@ -119,7 +135,9 @@ public class AnalyticsService : IAnalyticsService
             .Select(group => new
             {
                 WeekNumber = group.Key,
-                TonnageKg = group.Sum(set => set.WeightKg * set.Reps)
+                // Tonaža ide nad ukupnim opterećenjem: trening od 40 zgibova je posao, a
+                // sabirao se kao nula.
+                TonnageKg = group.Sum(set => (set.WeightKg + set.BodyweightLoadKg) * set.Reps)
             })
             .ToDictionaryAsync(item => item.WeekNumber, item => item.TonnageKg, cancellationToken);
 

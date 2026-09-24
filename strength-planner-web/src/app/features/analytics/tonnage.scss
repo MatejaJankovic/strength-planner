@@ -47,6 +47,11 @@
   color: var(--color-above, #e4572e);
 }
 
+.ton-note--scale {
+  font-size: 0.78rem;
+  margin-top: 0.4rem;
+}
+
 .trows {
   display: grid;
   gap: 0.75rem;

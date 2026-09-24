@@ -95,7 +95,7 @@ public static class WorkoutTemplateCatalog
                 new("Legs",
                 [
                     "Back Squat", "Romanian Deadlift", "Goblet Squat",
-                    "Leg Extension", "Leg Curl", "Calf Raise", "Plank", "Cable Crunch"
+                    "Leg Extension", "Leg Curl", "Calf Raise", "Machine Crunch", "Cable Crunch"
                 ])
             ]),
         new(
@@ -110,7 +110,7 @@ public static class WorkoutTemplateCatalog
                 new("Lower A",
                 [
                     "Back Squat", "Romanian Deadlift", "Bulgarian Split Squat",
-                    "Leg Curl", "Calf Raise", "Leg Extension", "Plank", "Cable Crunch"
+                    "Leg Curl", "Calf Raise", "Leg Extension", "Machine Crunch", "Cable Crunch"
                 ]),
                 new("Upper B",
                 [
@@ -120,7 +120,7 @@ public static class WorkoutTemplateCatalog
                 new("Lower B",
                 [
                     "Deadlift", "Front Squat", "Hip Thrust",
-                    "Leg Extension", "Cable Crunch", "Leg Curl", "Calf Raise", "Plank"
+                    "Leg Extension", "Cable Crunch", "Leg Curl", "Calf Raise", "Machine Crunch"
                 ])
             ]),
         new(
@@ -140,7 +140,7 @@ public static class WorkoutTemplateCatalog
                 new("Day C",
                 [
                     "Overhead Press", "Leg Press",
-                    "Leg Curl", "Dumbbell Fly", "Rear Delt Fly", "Skull Crusher", "Plank"
+                    "Leg Curl", "Dumbbell Fly", "Rear Delt Fly", "Skull Crusher", "Machine Crunch"
                 ]),
                 new("Day D",
                 [
@@ -160,7 +160,7 @@ public static class WorkoutTemplateCatalog
                 new("Lower",
                 [
                     "Back Squat", "Romanian Deadlift",
-                    "Leg Curl", "Leg Extension", "Calf Raise", "Plank"
+                    "Leg Curl", "Leg Extension", "Calf Raise", "Machine Crunch"
                 ]),
                 new("Push",
                 [
@@ -170,7 +170,7 @@ public static class WorkoutTemplateCatalog
                 new("Pull",
                 [
                     "Pull-up", "Seated Cable Row",
-                    "Straight-Arm Pulldown", "Hammer Curl", "Rear Delt Fly", "Plank"
+                    "Straight-Arm Pulldown", "Hammer Curl", "Rear Delt Fly", "Machine Crunch"
                 ]),
                 new("Legs",
                 [
@@ -200,17 +200,17 @@ public static class WorkoutTemplateCatalog
                 new("Push B",
                 [
                     "Incline Bench Press", "Dumbbell Shoulder Press",
-                    "Dumbbell Fly", "Rear Delt Fly", "Skull Crusher", "Plank"
+                    "Dumbbell Fly", "Rear Delt Fly", "Skull Crusher", "Machine Crunch"
                 ]),
                 new("Pull B",
                 [
                     "Pull-up", "Seated Cable Row",
-                    "Rear Delt Fly", "Hammer Curl", "Dumbbell Curl", "Plank"
+                    "Rear Delt Fly", "Hammer Curl", "Dumbbell Curl", "Machine Crunch"
                 ]),
                 new("Legs B",
                 [
                     "Leg Press", "Hip Thrust",
-                    "Leg Extension", "Leg Curl", "Calf Raise", "Plank"
+                    "Leg Extension", "Leg Curl", "Calf Raise", "Machine Crunch"
                 ])
             ]),
         new(
@@ -225,7 +225,7 @@ public static class WorkoutTemplateCatalog
                 new("Lower A",
                 [
                     "Back Squat", "Romanian Deadlift",
-                    "Leg Extension", "Calf Raise", "Plank", "Cable Crunch"
+                    "Leg Extension", "Calf Raise", "Machine Crunch", "Cable Crunch"
                 ]),
                 new("Upper B",
                 [
@@ -235,7 +235,7 @@ public static class WorkoutTemplateCatalog
                 new("Lower B",
                 [
                     "Deadlift", "Front Squat",
-                    "Leg Curl", "Calf Raise", "Plank", "Cable Crunch"
+                    "Leg Curl", "Calf Raise", "Machine Crunch", "Cable Crunch"
                 ]),
                 new("Upper C",
                 [
@@ -248,7 +248,7 @@ public static class WorkoutTemplateCatalog
                     // Ovaj dan nema izolaciju za noge: Leg Curl i Leg Extension su svaki
                     // jednom potrošeni na Lower A/B, a treći put bi gurnuo kvadriceps ili
                     // zadnju ložu preko MRV na tri treninga za noge nedeljno (izmereno).
-                    "Face Pull", "Calf Raise", "Plank", "Cable Crunch"
+                    "Face Pull", "Calf Raise", "Machine Crunch", "Cable Crunch"
                 ])
             ],
             // Šest treninga nedeljno je jedini raspored u katalogu koji dostiže tri puta
@@ -266,12 +266,12 @@ public static class WorkoutTemplateCatalog
                 new("Legs A",
                 [
                     "Bulgarian Split Squat", "Leg Press",
-                    "Leg Extension", "Calf Raise", "Plank", "Cable Crunch"
+                    "Leg Extension", "Calf Raise", "Machine Crunch", "Cable Crunch"
                 ]),
                 new("Legs B",
                 [
                     "Single-Leg Romanian Deadlift", "Front Squat",
-                    "Leg Curl", "Calf Raise", "Plank", "Cable Crunch"
+                    "Leg Curl", "Calf Raise", "Machine Crunch", "Cable Crunch"
                 ]),
                 new("Legs C",
                 [
@@ -279,7 +279,7 @@ public static class WorkoutTemplateCatalog
                     // Leg Curl i Leg Extension su svaki jednom potrošeni na Legs A/B; treći
                     // put bi na tri treninga za noge nedeljno gurnuo kvadriceps ili zadnju
                     // ložu preko MRV (izmereno).
-                    "Straight-Arm Pulldown", "Calf Raise", "Plank", "Cable Crunch"
+                    "Straight-Arm Pulldown", "Calf Raise", "Machine Crunch", "Cable Crunch"
                 ]),
                 new("Upper A",
                 [

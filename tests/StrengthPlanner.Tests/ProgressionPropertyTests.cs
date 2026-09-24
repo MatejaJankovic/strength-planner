@@ -196,6 +196,95 @@ public class ProgressionPropertyTests
         AssertNone(failures);
     }
 
+    [Fact]
+    public void ABodyPortion_ScalesTheWholeLoadAndOnlyMovesTheStepGrid()
+    {
+        // Vezba sa telesnom masom mora da se ponasa kao ista vezba u kojoj je telo teg:
+        // isti propis, ista korekcija, isti korak. Jedina dozvoljena razlika je gde pada
+        // mreza koraka, jer se zaokruzuje ono sto ide na pojas, a deo tela nije umnozak
+        // koraka. Bez ovoga je 3% korekcije na zgibu sa +10 kg menjalo 0.3 kg.
+        var failures = new List<string>();
+        var portions = new[] { 51.2m, 68m, 80m };
+
+        foreach (var step in new[] { 1m, 2.5m, 5m })
+        {
+            foreach (var portion in portions)
+            {
+                foreach (var added in new[] { 0m, step, 4 * step, 8 * step })
+                {
+                    foreach (var (min, max) in Ranges)
+                    {
+                        for (var targetRir = 1; targetRir <= 4; targetRir++)
+                        {
+                            foreach (var set in AllSets(max))
+                            {
+                                var sets = new[] { set, set, set };
+                                var result = _engine.ComputeNext(
+                                    added,
+                                    sets,
+                                    targetRir,
+                                    min,
+                                    max,
+                                    step,
+                                    portion);
+                                var described = $"{Describe(set, min, max, targetRir, step)} at {added}+{portion} kg";
+
+                                if (result.NextWeightKg < 0)
+                                {
+                                    failures.Add($"negative added load {result.NextWeightKg} ({described})");
+                                }
+
+                                if (result.LoadFloorReached && result.NextWeightKg != 0)
+                                {
+                                    failures.Add($"floor reached but proposes {result.NextWeightKg} ({described})");
+                                }
+
+                                // Predlog mora da bude umnozak koraka: tanjiri se stavljaju
+                                // na pojas, a deo tela (51.2 kg uz korak od 1 kg) nije na
+                                // mrezi. Zaokruzivanje nad ukupnim daje 4.8 kg na pojasu.
+                                if (result.NextWeightKg % step != 0)
+                                {
+                                    failures.Add($"off the step grid: {result.NextWeightKg} ({described})");
+                                }
+
+                                if (set.Reps >= max && result.NextWeightKg < added)
+                                {
+                                    failures.Add($"top of range lowered {added} -> {result.NextWeightKg} ({described})");
+                                }
+
+                                if (result.LoadFloorReached)
+                                {
+                                    continue;
+                                }
+
+                                // Isti scenario sa telom pretvorenim u teg: ukupno
+                                // opterecenje sme da se razlikuje najvise za jedan korak,
+                                // koliko nosi zaokruzivanje u dodatom prostoru.
+                                var asExternalLoad = _engine.ComputeNext(
+                                    added + portion,
+                                    sets,
+                                    targetRir,
+                                    min,
+                                    max,
+                                    step);
+                                var difference = Math.Abs(
+                                    (result.NextWeightKg + portion) - asExternalLoad.NextWeightKg);
+
+                                if (difference > step)
+                                {
+                                    failures.Add(
+                                        $"total {result.NextWeightKg + portion} vs {asExternalLoad.NextWeightKg} ({described})");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        AssertNone(failures);
+    }
+
     private decimal Next(
         decimal used,
         WorkingSet set,

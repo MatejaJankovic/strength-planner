@@ -12,6 +12,10 @@ public class SetLogConfiguration : IEntityTypeConfiguration<SetLog>
 
         builder.Property(sl => sl.WeightKg).HasPrecision(6, 2);
 
+        builder.Property(sl => sl.BodyweightLoadKg)
+            .HasPrecision(6, 2)
+            .HasDefaultValue(0m);
+
         builder.Property(sl => sl.IsFailure).HasDefaultValue(false);
 
         // Progresija računa da otkaz znači RIR 0; invarijanta se brani i u bazi,

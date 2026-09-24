@@ -26,6 +26,8 @@ export interface PersonalRecordDto {
   bestE1Rm?: number | null;
   bestWeight?: number | null;
   achievedAt?: string | null;
+  /** Vezba nosi deo telesne mase, pa su oba rekorda UKUPNO opterecenje (telo + dodato). */
+  isBodyweight: boolean;
 }
 
 export interface OneRepMaxDto {

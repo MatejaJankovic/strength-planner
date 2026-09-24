@@ -12,5 +12,11 @@ public class SetLogDto
     /// <summary>Serija izvučena do otkaza (RIR je tada uvek 0).</summary>
     public bool IsFailure { get; set; }
 
+    /// <summary>
+    /// Deo telesne mase koji je ova serija nosila, snimljen u trenutku upisa; 0 za spoljno
+    /// opterećenje. <see cref="WeightKg"/> ostaje samo dodato opterećenje.
+    /// </summary>
+    public decimal BodyweightLoadKg { get; set; }
+
     public DateTime PerformedAt { get; set; }
 }
