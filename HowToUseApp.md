@@ -603,8 +603,10 @@ ničega, uzima se najnoviji zapis ikada.
 **Automatski deload.** Iz svake završene nedelje se računa ocena umora (0–1) iz četiri
 signala: odstupanje RIR-a, udeo serija do otkaza, pad procenjenog 1RM i volumen u odnosu na
 MRV. Nijedan signal sam ne može da pokrene deload — najteži nosi 0.35 naspram praga 0.60, pa
-se bar dva moraju složiti. Kad se pokrene: serije prepolovljene, opterećenje 90% stvarno
-korišćenog, ciljni RIR podignut za dva.
+se bar dva moraju složiti, i to **i u krajnjem slučaju**: nedelja u kojoj je baš svaka serija
+išla do otkaza nosi taj jedan signal (0.25) i sama ne pokreće deload; uz stvaran pad snage
+ili volumen na MRV-u ga pokreće. Kad se pokrene: serije prepolovljene, opterećenje 90%
+stvarno korišćenog, ciljni RIR podignut za dva.
 
 **Deload rasterećuje i napor.** Ciljni RIR deload nedelje je tvoj ciljni RIR **+2**
 (hipertrofija 3, snaga 4). Pad opterećenja od 10% po Epley-u vredi oko tri ponavljanja, pa

@@ -177,6 +177,16 @@ odmah ispod, *"Sledeće 82.5 kg ↑"*. Rezime se sada usklađuje sa stvarnim pla
 provereno da za svih šest vežbi prijavljuje tačno ono što stoji u deload nedelji
 (72.5 / 70 kg), bez strelice naviše.
 
+### Kasnija izmena (odeljak C): jedan uzrok je punio dva signala
+
+Pravilo „nijedan signal sam ne može da pokrene deload" je imalo izuzetak koji ga je rušio u
+krajnjem slučaju: nedelja bez ijedne dovršene serije je RIR signal čitala kao 1.0, a udeo
+otkaza je iz **istog** razloga već bio 1.0 — 0.35 + 0.25 je tačno prag. Izmereno u živoj
+aplikaciji: ista nedelja je davala **0.703** i deload odmah, a sada daje **0.353** i deload
+ne; ponovljena još jednom daje **0.65** i deload, jer tada govori i član o padu snage.
+Postojao je i test koji je tvrdio to isto pravilo i prolazio zbog ulaza koji servis ne
+proizvodi. Vidi [`independent-fatigue-signals.md`](independent-fatigue-signals.md).
+
 ### Kasnija izmena (pregled logike treninga, odeljak B)
 
 Kad se deload pokrene, uz prepolovljene serije i 90% opterećenja ide i **ciljni RIR + 2**
