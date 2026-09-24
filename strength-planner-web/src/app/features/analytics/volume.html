@@ -57,9 +57,12 @@
         </div>
         <p class="vrow__meta numeric">
           MEV {{ row.mev }} ·
-          @if (row.weekTarget !== null) {
+          @if (row.isDeloadWeek) {
+            <strong>MAV {{ row.mav }}</strong>
+            <span class="vrow__learned">(deload - cilj se ne gađa)</span>
+          } @else if (row.weekTarget !== null) {
             <strong>cilj ove nedelje {{ row.weekTarget | number: '1.0-1' }}</strong>
-            <span class="vrow__learned">MAV {{ row.mav }}</span>
+            <span class="vrow__learned">(MAV {{ row.mav }})</span>
           } @else {
             <strong>cilj {{ row.mav }}</strong>
           }

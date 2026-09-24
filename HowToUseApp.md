@@ -442,8 +442,13 @@ naduvane vrednosti ako ih ima; plan ih ne koristi (vidi „Start novog bloka").
 stimulativnih serija odradio i gde to pada u odnosu na tvoje granice.
 
 - **MEV** — minimum ispod kog nema stimulusa
-- **MAV** — ciljna vrednost, gađaj ovaj marker
+- **MAV** — naučena ciljna vrednost mišića
 - **MRV** — plafon iznad kog nema oporavka
+
+Marker cilja prati **nedelju**, a ne MAV: nedelja volumena gađa iznad MAV-a (do MRV-a),
+nedelja intenziteta ispod njega, a blok snage niže od hipertrofijskog — teže serije koštaju
+više oporavka. Kada se razlikuju, u redu piše i jedno i drugo: `cilj ove nedelje 22
+(MAV 16)`. U deload nedelji cilja nema — manji volumen je tamo namera.
 
 Boja trake govori da li si ispod, u zoni ili iznad. **Ne broji se svaka serija isto**:
 serija sa RIR 0–3 (ili do otkaza) ulazi cela, RIR 4 ulazi upola, a serija dalja od otkaza
