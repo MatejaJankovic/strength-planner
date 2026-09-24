@@ -4,7 +4,14 @@ namespace StrengthPlanner.Domain.Algorithms;
 /// <param name="Set">The set as the progression engine sees it.</param>
 /// <param name="RepRangeMin">Floor of the prescribed rep range.</param>
 /// <param name="TargetRir">Prescribed reps in reserve.</param>
-public sealed record RirSample(WorkingSet Set, int RepRangeMin, int TargetRir);
+/// <param name="Weight">
+/// How much this set counts in the average. One for the fatigue score, which asks about
+/// the week as a whole; the volume limits weigh each set by what it contributed to the
+/// muscle group and by how close to failure it came, since that is the measure they learn
+/// from. The parameter exists so both sides can share <b>one</b> definition of the signal:
+/// they had two, and the two disagreed by two whole RIR points on the same three sets.
+/// </param>
+public sealed record RirSample(WorkingSet Set, int RepRangeMin, int TargetRir, decimal Weight = 1m);
 
 /// <summary>
 /// Scores accumulated fatigue from one completed training week and decides whether the
@@ -25,6 +32,13 @@ public sealed record RirSample(WorkingSet Set, int RepRangeMin, int TargetRir);
 /// the RIR signal is measured only over sets the lifter completed. A set taken to
 /// failure short of the range would otherwise push both the RIR average and the failure
 /// share, and the "two must agree" rule would be satisfied by a single event.
+///
+/// That held for every week except the extreme one, where it was undone by a special case:
+/// a week with no completed sets at all used to read the RIR signal as 1.0 - its worst
+/// value - while the failure share was already 1.0 for the same reason. 0.35 + 0.25 is
+/// exactly the threshold, so "every set went to failure" triggered a deload by itself. It
+/// now contributes nothing, because a week with nothing completed holds no RIR evidence,
+/// and the failure share is the signal that fact belongs to.
 /// </summary>
 public static class FatigueEvaluator
 {
@@ -58,11 +72,13 @@ public static class FatigueEvaluator
     {
         ArgumentNullException.ThrowIfNull(fatigue);
 
-        // Nedelja u kojoj nijedna serija nije dovršena nema prosek koji bi se merio,
-        // ali to odsustvo je najgore moguće očitavanje, a ne neutralno.
-        var rir = fatigue.AllSetsFailed
-            ? 1m
-            : Normalize(-fatigue.AverageRirDeviation, 0m, Math.Max(1m, fatigue.AchievableRirDeficit));
+        // Nedelja bez ijedne dovršene serije nema prosek koji bi se merio, pa ovaj signal
+        // doprinosi nulom. Ranije je takvo odsustvo čitano kao najgore moguće očitavanje
+        // (1.0), što je istu činjenicu — "sve je išlo do otkaza" — pustilo da puni i ovaj
+        // signal i udeo otkaza: 0.35 + 0.25 = tačno prag, iz jednog uzroka. Merenjem se
+        // videlo i kao litica: dvadeset otkaza je davalo 0.60, a devetnaest otkaza uz JEDNU
+        // dovršenu seriju na cilju 0.25.
+        var rir = Normalize(-fatigue.AverageRirDeviation, 0m, Math.Max(1m, fatigue.AchievableRirDeficit));
         var failures = Normalize(fatigue.FailureShare, 0m, FailureShareAtFullWeight);
         var e1Rm = Normalize(-fatigue.E1RmChangeShare, 0m, E1RmDropAtFullWeight);
         var volume = Normalize(fatigue.VolumeVsMrvShare, VolumeShareFloor, VolumeShareAtFullWeight);
@@ -74,25 +90,35 @@ public static class FatigueEvaluator
     }
 
     /// <summary>
-    /// Mean of (effective RIR - target RIR) over the sets the lifter completed, i.e. those
-    /// not taken to failure; 0 when there are none. Failures are left out so that this
-    /// signal and the failure share stay two separate measurements.
+    /// Weighted mean of (effective RIR - target RIR) over the sets the lifter completed,
+    /// i.e. those not taken to failure; 0 when there are none. Failures are left out so
+    /// that this signal and the failure share stay two separate measurements.
     ///
     /// Effective RIR is <see cref="WorkingSet.EffectiveRir"/>, the measure progression uses.
     /// A set stopped below the range floor with reserve left is therefore "harder than
     /// planned" here as well; read as raw RIR it scored as easier, so the same set pulled
     /// progression down and the fatigue score toward "fresh".
+    ///
+    /// This is the <b>only</b> definition of the signal. The volume limits used to compute
+    /// their own over every set including failures, which on the same three sets read -2
+    /// where this reads 0 - and there a single failed set blocked both halves of the "had
+    /// reps to spare" test, which is an AND. Same name, two measures, one of them counting
+    /// one event twice.
     /// </summary>
     public static decimal AverageRirDeviation(IEnumerable<RirSample> sets)
     {
         ArgumentNullException.ThrowIfNull(sets);
 
         var completed = sets.Where(sample => !sample.Set.IsFailure).ToList();
+        var weight = completed.Sum(sample => sample.Weight);
 
-        return completed.Count == 0
-            ? 0m
-            : completed.Average(sample =>
-                (decimal)(sample.Set.EffectiveRir(sample.RepRangeMin) - sample.TargetRir));
+        if (weight == 0m)
+        {
+            return 0m;
+        }
+
+        return completed.Sum(sample =>
+            sample.Weight * (sample.Set.EffectiveRir(sample.RepRangeMin) - sample.TargetRir)) / weight;
     }
 
     /// <summary>

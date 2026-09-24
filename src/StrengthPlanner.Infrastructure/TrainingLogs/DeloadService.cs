@@ -532,7 +532,6 @@ public sealed class DeloadService
             new WorkingSet(set.Reps, set.Rir, set.IsFailure),
             set.RepRangeMin,
             set.TargetRir)));
-        var completedCount = sets.Count(set => !set.IsFailure);
 
         // Koliko ispod cilja dovršena serija unutar opsega može da padne: RIR ne ide ispod
         // nule. Serija koja je stala ispod donje granice opsega ume i niže (kapacitet se meri
@@ -546,7 +545,6 @@ public sealed class DeloadService
         return new WeeklyFatigue(
             rirDeviation,
             achievableDeficit,
-            AllSetsFailed: completedCount == 0,
             failureShare,
             e1RmChange,
             volumeShare);

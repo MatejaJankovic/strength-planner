@@ -286,18 +286,23 @@ public sealed class VolumeLandmarkService
                         return new VolumeResponse(0, rawWeight, 0, failureShare);
                     }
 
-                    // Prosek mora da deli isti ponder sa imeniocem: kada se volumen meri
-                    // stimulativnim doprinosom, i odstupanje RIR-a se meri nad istim tim
-                    // serijama, inače to nije ponderisani prosek nego mešavina dve mere.
-                    var deviation = measured.Sum(item =>
-                        item.Contribution
-                        * item.Credit
-                        * (item.Set.EffectiveRir(item.RepRangeMin) - item.TargetRir));
+                    // Odstupanje RIR-a se računa istom domenskom funkcijom koju koristi
+                    // ocena umora: samo nad dovršenim serijama, ponderisano doprinosom
+                    // mišiću i blizinom otkaza. Ovde je ranije stajala druga računica — nad
+                    // SVIM serijama — pa je jedan otkaz obarao i prosek i udeo otkaza, a
+                    // uslov "imao je rezerve" je I-uslov nad ta dva. Jedan događaj je
+                    // zatvarao obe polovine.
+                    var deviation = FatigueEvaluator.AverageRirDeviation(measured.Select(item =>
+                        new RirSample(
+                            item.Set,
+                            item.RepRangeMin,
+                            item.TargetRir,
+                            item.Contribution * item.Credit)));
 
                     return new VolumeResponse(
                         stimulativeWeight,
                         rawWeight,
-                        deviation / stimulativeWeight,
+                        deviation,
                         failureShare);
                 });
     }

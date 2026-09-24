@@ -19,11 +19,12 @@ namespace StrengthPlanner.Domain.Algorithms;
 /// week would score differently purely because of the goal. A set stopped below the range
 /// floor can read further below target; the score clamps it to the full weight.
 /// </param>
-/// <param name="AllSetsFailed">
-/// True when the week produced no completed sets at all. There is then no RIR evidence
-/// to average, but the absence is itself the worst possible reading, not a neutral one.
+/// <param name="FailureShare">
+/// Share of the week's sets taken to failure, 0 to 1. This is where "the week went to
+/// failure" is measured, and it is the only place: a companion flag used to push the RIR
+/// signal to its worst value for the same reason, which let one fact reach the deload
+/// threshold on its own.
 /// </param>
-/// <param name="FailureShare">Share of the week's sets taken to failure, 0 to 1.</param>
 /// <param name="E1RmChangeShare">
 /// Relative change in the week's best estimated 1RM against the most recent comparable
 /// week, as a share (-0.03 is a 3% drop). Zero when there is nothing to compare
@@ -37,7 +38,6 @@ namespace StrengthPlanner.Domain.Algorithms;
 public sealed record WeeklyFatigue(
     decimal AverageRirDeviation,
     decimal AchievableRirDeficit,
-    bool AllSetsFailed,
     decimal FailureShare,
     decimal E1RmChangeShare,
     decimal VolumeVsMrvShare);

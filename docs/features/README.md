@@ -71,6 +71,15 @@ blok, rasterecenje i cilj volumena.
 | [Izolacija ne ide na opseg snage](isolation-rep-range.md) | Blok snage je propisivao 3–6 (u petoj nedelji 3–4) i za bočno podizanje, letenje i pregibe — pet od šest vežbi naprednog vežbača | #67 |
 | [Cilj volumena prati nedelju](weekly-volume-target.md) | Balansiranje je svaku nedelju gadjalo u MAV, pa je talas serija iz periodizacije nestajao (24, 24, 16, 16, 12 → 16 svake nedelje); blok snage je gadjao hipertrofijski MAV | #68 |
 
+## Jedanaesti krug — učenje granica i ocena umora
+
+Isti pregled logike treninga, odeljak C: kako se signali čitaju — šta nosi umor, a šta
+granice volumena.
+
+| Grana | O čemu je | PR |
+|---|---|---|
+| [Nezavisni signali umora](independent-fatigue-signals.md) | Nedelja u kojoj je sve išlo do otkaza je istom činjenicom punila dva od četiri signala i sama pokretala deload; granice volumena su imale drugu definiciju iste mere | #70 |
+
 ## Ako čitaš samo jedno
 
 [Periodizacija po nedeljama](periodization-models.md) — to je bio najveći raskorak između
