@@ -89,11 +89,25 @@ preceni.
   kombinaciji prolaze, uključujući onaj o različitim nedeljama — staro sužavanje je bilo
   ono što je nedelje činilo različitim. Dve greške su se međusobno pokrivale.
 
+## Nedelja 1 od sada polazi teže
+
+Polazno opterećenje se izvodi iz maksimuma i iz propisa te nedelje, pa širi prozor nosi
+veću težinu: za 1RM od 140 kg prva nedelja linearnog bloka daje **105 kg** umesto 97.5.
+
+| Propis nedelje 1 | Efektivna ponavljanja | Težina |
+|---|---|---|
+| 11–12 @RIR 2 (bilo) | 11 + 2 = 13 | 140 / (1 + 13/30) = 97.67 → **97.5** |
+| 8–12 @RIR 2 (sada) | 8 + 2 = 10 | 140 / (1 + 10/30) = **105.0** |
+
+Nije bilo u nalazu, ali je direktna posledica: nedelja koja ne traži jedanaest ponavljanja
+nosi veće opterećenje pri istoj snazi. Izmereno u živoj aplikaciji — kartica Bench Press u
+nedelji 1 pokazuje 105.0 kg.
+
 ## Posledica za obrtanje pomeraja
 
 `Periodization.BaseSetsFrom` obrće pomeraj serija (deload polovi **polazni** broj bloka, a
 ne ono što nedelja nosi). Pomeraj sada zavisi i od opsega, pa metoda prima
-`baseRepRangeMax`:
+`baseRepRangeMax`. Od revizije ovo je **rezerva**, a ne glavni put — vidi tačku 1 ispod:
 
 ```csharp
 Periodization.BaseSetsFrom(model, weekNumber, weekSets, plan.BaseRepRangeMax)
@@ -107,6 +121,58 @@ Nije se sve promenilo: dve različite osnove i dalje mogu da daju istu nedelju, 
 sudar sada potrebna **ista širina**. Primer u testu je morao da se promeni sa 11–12 / 12–12
 (danas daju različite nedelje) na 9–11 / 10–12, gde su obe širine dva i obe iznad granice.
 Tvrdnja je ostala, primer nije.
+
+## Šta je revizija našla
+
+Iscrpna proba nad **svim** opsezima koje korisnik može da unese (3–12 × 3–12, serije 2–10,
+ciljni RIR 1–4, sva tri modela) našla je tri stvari. Dve su popravljene u ovoj grani, treća
+je zapisana.
+
+### 1. Obrtanje pomeraja pogrešno čita zatečene redove
+
+Ovo je greška koju je uvela sama ova grana. `PrescribedSets` u bazi je upisala ona verzija
+pravila koja je tada radila. Kada obrtanje odbije i bonus koji tada nije postojao, dobije
+se osnova koju blok nikada nije imao:
+
+| Blok iz dev baze | Nedelja 1 | Nedelja 3 (osnova) | Izvedeno iz nedelje 1 | Deload |
+|---|---|---|---|---|
+| stari, linearan | 5 | **4** | 5 − 2 = **3** | 2 umesto 2 (slučajno isto) |
+| stari, linearan | 4 | **3** | 4 − 2 = **2** | **1 umesto 2** |
+| stari, obrnut (nedelja 5) | 4 | **3** | 4 − 2 = **2** | **1 umesto 2** |
+| nov, ova grana | 6 | 4 | 6 − 2 = 4 | 2 (tačno) |
+
+Izmereno nad dev bazom: **440** redova stoji u nedelji koja od sada nosi bonus, **392** njih
+je upisala starija verzija pravila, a **168** tih nosi prozor `11-15` — broj ponavljanja koji
+ovaj kod ne ume ni da proizvede. Pogođeno je **12 blokova, 5 aktivnih**, i jedan od njih već
+ima auto-deload u nedelji 2, dakle tačno tu putanju.
+
+Migracija je razmatrana i odbačena: podaci nose anchor-e iz više verzija pravila, a
+oslobođena nedelja posle auto-deload-a nosi propis *druge* nedelje, pa nijedan upit ne može
+sa sigurnošću da razluči ko je koji red upisao.
+
+Popravka je zato u kodu, i kraća je od migracije: polazni broj serija se **čita** iz nedelje
+koja nosi osnovu (`Periodization.BaseWeekNumber` — treća u periodizovanom bloku, prva u
+ravnom), a ne izvodi iz pomeraja. Nijedna verzija ovog fajla nikada nije pomerala tu nedelju,
+pa je njen `PrescribedSets` osnova i za stare i za nove redove. Izvođenje ostaje samo kao
+rezerva, za slučaj da je i sama osnovna nedelja postala deload.
+
+### 2. Obrtanje ne može da razveza ni donju granicu serija
+
+Zatečena greška, ne uvedena ovde, ali je popravka iz tačke 1 i njoj skraćuje domašaj.
+Osnova 2 i osnova 3 u nedelji koja skida seriju daju **istu** vrednost (obe dve, jer
+`MinSets` secka), pa izvođenje vraća tri u oba slučaja. Lični šablon sa dve serije je zato
+dobijao deload od dve serije — dakle nikakvo rasterećenje. Pinovano testom
+`RecoveringTheBase_CannotUndoTheMinimumSetClamp`; čitanje osnovne nedelje daje 2 i deload od
+jedne serije.
+
+### 3. Jedan par identičnih nedelja ostaje, i to na dnu
+
+Na svim opsezima koje korisnik može da unese ostaje **tačno jedan** par identičnih nedelja:
+linearan model, fiksna **3** ponavljanja — nedelje 3 i 4 su obe `4×3-3 @RIR1`. To je isti
+sudar koji je granica pravila na vrhu, samo na podu: ponavljanja ne mogu ispod tri, RIR ne
+može ispod jedan, pa nedelji prelaza nema čime da se razlikuje. Bonus tu ne pomaže — pomeraj
+je nadole, a nadole se ništa ne pojede, nego se odlučeno odseca. Zapisano, ne popravljeno:
+fiksne tri ponavljanja su donja ivica onoga što obrazac unosa dozvoljava.
 
 ## Prikaz
 
@@ -127,4 +193,8 @@ zadrži širinu 4 u svakoj nedelji; snaga sme da suzi, ali samo kada stoji na po
 `TheThreeRepFloor_StillNarrowsTheWindow`, `ASwallowedRepShift_ComesBackAsASet`, i
 `BaseSetsFrom_InvertsEveryTrainingWeek` proširen na oba cilja i na fiksan broj.
 
-Ukupno: 503 → 510 testova na serveru, 136 → 139 na klijentu.
+`TheBaseWeek_CarriesTheBasePrescriptionItself` (osnovna nedelja po modelu, i da njen propis
+zaista jednak osnovi za oba cilja i za fiksan broj) i
+`RecoveringTheBase_CannotUndoTheMinimumSetClamp` (granica koju obrtanje ne ume da razveze).
+
+Ukupno: 503 → 514 testova na serveru, 136 → 139 na klijentu.

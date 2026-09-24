@@ -138,6 +138,7 @@ public sealed class DeloadService
 
         await ApplyDeloadAsync(
             userId,
+            mesocycleId,
             weekId,
             nextWeek.Id,
             nextWeek.WeekNumber,
@@ -202,9 +203,16 @@ public sealed class DeloadService
             return null;
         }
 
-        // Polazni broj serija bloka se izvodi iz bilo koje preostale trenažne nedelje.
-        // Ne čita se iz profila namerno: korisnik koji je usred bloka promenio nivo
-        // iskustva ne sme time da promeni oblik već napravljenog plana.
+        // Polazni broj serija bloka se čita iz nedelje koja nosi osnovu, a izvodi se iz
+        // druge nedelje samo kada je i ona postala deload. Ne čita se iz profila namerno:
+        // korisnik koji je usred bloka promenio nivo iskustva ne sme time da promeni oblik
+        // već napravljenog plana.
+        var baseSetsFromBaseWeek = await LoadBaseSetsAsync(
+            userId,
+            mesocycleId,
+            model,
+            cancellationToken);
+
         var reference = await _db.ExercisePlans
             .AsNoTracking()
             .Where(plan => plan.WorkoutSession.TrainingWeek.MesocycleId == mesocycleId
@@ -230,9 +238,14 @@ public sealed class DeloadService
                 group => group.Key,
                 group =>
                 {
-                    // Osnovni opseg ide uz broj serija: kada Epley granica pojede pomeraj
-                    // ponavljanja, nedelja ga nosi kao seriju, pa se ista brojka razlaze
-                    // drugacije za hipertrofijsku nego za vezbu snage.
+                    if (baseSetsFromBaseWeek.TryGetValue(group.Key, out var storedBaseSets))
+                    {
+                        return storedBaseSets;
+                    }
+
+                    // Rezerva: osnovni opseg ide uz broj serija, jer kada Epley granica
+                    // pojede pomeraj ponavljanja, nedelja ga nosi kao seriju — pa se ista
+                    // brojka razlaze drugacije za hipertrofijsku nego za vezbu snage.
                     var sample = group.First();
                     return Periodization.BaseSetsFrom(
                         model,
@@ -290,6 +303,7 @@ public sealed class DeloadService
     /// </summary>
     private async Task ApplyDeloadAsync(
         Guid userId,
+        Guid mesocycleId,
         Guid completedWeekId,
         Guid deloadWeekId,
         int deloadWeekNumber,
@@ -371,6 +385,11 @@ public sealed class DeloadService
             userId,
             exerciseIds,
             cancellationToken);
+        var baseSetsByExerciseAndDay = await LoadBaseSetsAsync(
+            userId,
+            mesocycleId,
+            model,
+            cancellationToken);
 
         foreach (var plan in plans)
         {
@@ -380,11 +399,15 @@ public sealed class DeloadService
             // Obrtanje ide nad propisom: predlog je u međuvremenu pomeren balansiranjem
             // volumena, pa bi polovljenje njegove vrednosti dalo deload izveden iz broja
             // koji periodizacija nikada nije propisala.
-            var baseSets = Periodization.BaseSetsFrom(
-                model,
-                deloadWeekNumber,
-                plan.PrescribedSets,
-                plan.BaseRepRangeMax);
+            var baseSets = baseSetsByExerciseAndDay.TryGetValue(
+                (plan.WorkoutSession.DayLabel, plan.ExerciseId),
+                out var storedBaseSets)
+                ? storedBaseSets
+                : Periodization.BaseSetsFrom(
+                    model,
+                    deloadWeekNumber,
+                    plan.PrescribedSets,
+                    plan.BaseRepRangeMax);
             plan.TargetSets = Periodization.DeloadSets(baseSets);
             plan.PrescribedSets = plan.TargetSets;
 
@@ -428,6 +451,42 @@ public sealed class DeloadService
                 bodyweightLoadKg,
                 WeightStepResolver.StepFor(weightStepByExerciseId, plan.ExerciseId));
         }
+    }
+
+    /// <summary>
+    /// Polazni broj serija bloka, po paru (naziv dana, vežba), pročitan iz nedelje koja
+    /// nosi osnovu — one bez ijednog pomeraja (<see cref="Periodization.BaseWeekNumber"/>).
+    ///
+    /// Čita se, a ne izvodi. Obrtanje pomeraja radi samo nad redom koji je upisala ova
+    /// verzija pravila; zatečeni red nosi broj koji je propisala neka starija, pa bi iz
+    /// njega izvedena osnova bila nedelja koju blok nikada nije imao. Prazno kada je i sama
+    /// osnovna nedelja postala deload — tada pozivalac pada na izvođenje.
+    /// </summary>
+    private async Task<Dictionary<(string DayLabel, Guid ExerciseId), int>> LoadBaseSetsAsync(
+        Guid userId,
+        Guid mesocycleId,
+        PeriodizationModel model,
+        CancellationToken cancellationToken)
+    {
+        var baseWeekNumber = Periodization.BaseWeekNumber(model);
+
+        var plans = await _db.ExercisePlans
+            .AsNoTracking()
+            .Where(plan => plan.WorkoutSession.TrainingWeek.MesocycleId == mesocycleId
+                           && plan.WorkoutSession.TrainingWeek.Mesocycle.UserId == userId
+                           && plan.WorkoutSession.TrainingWeek.WeekNumber == baseWeekNumber
+                           && !plan.WorkoutSession.TrainingWeek.IsDeload)
+            .Select(plan => new
+            {
+                plan.WorkoutSession.DayLabel,
+                plan.ExerciseId,
+                plan.PrescribedSets
+            })
+            .ToListAsync(cancellationToken);
+
+        return plans
+            .GroupBy(plan => (plan.DayLabel, plan.ExerciseId))
+            .ToDictionary(group => group.Key, group => group.First().PrescribedSets);
     }
 
     /// <summary>

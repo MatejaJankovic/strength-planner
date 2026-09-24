@@ -233,7 +233,46 @@ public static class Periodization
     }
 
     /// <summary>
+    /// The week of this block whose prescription <b>is</b> the base: no rep shift, no RIR
+    /// shift, no set shift.
+    ///
+    /// Reading the base set count from that week is strictly better than inverting a
+    /// shift, and the reason is the stored data. A plan row written by an earlier version
+    /// of this file carries the set count that version prescribed, and inverting today's
+    /// shift out of it recovers a base the block never had. Measured on the development
+    /// database: 440 rows sit in a week whose shift today includes
+    /// <see cref="CappedShiftSetBonus"/>, and 392 of them were written before that bonus
+    /// existed - 168 of those carry a rep window (11-15) that today's code cannot even
+    /// produce. No migration can tell those versions apart with confidence, and a restored
+    /// planned deload carries another week's phase entirely. The base week needs none of
+    /// that: no version of this file ever shifted it.
+    /// </summary>
+    public static int BaseWeekNumber(PeriodizationModel model)
+    {
+        var shapes = ShapesFor(model);
+
+        for (var index = 0; index < shapes.Length; index++)
+        {
+            var shape = shapes[index];
+
+            if (!shape.IsDeload && shape.RepShift == 0 && shape.RirShift == 0 && shape.SetShift == 0)
+            {
+                return index + 1;
+            }
+        }
+
+        throw new InvalidOperationException(
+            $"Periodization model {model} has no week that carries the base prescription.");
+    }
+
+    /// <summary>
     /// Recovers the block's base set count from what a training week actually carries.
+    ///
+    /// Prefer <see cref="BaseWeekNumber"/> and read the base week directly; this is the
+    /// fallback for when that week is itself a deload. It cannot undo either clamp: a week
+    /// pinned at <see cref="MinSets"/> could have come from two different bases (2 and 3
+    /// both prescribe 2 sets in a week that removes one), and a row written by an older
+    /// rule carries a shift that is not today's.
     ///
     /// The deload logic needs it: it has stored plans, not the profile that produced them,
     /// and reading the experience level again would silently re-shape a block in progress

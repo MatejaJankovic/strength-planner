@@ -166,6 +166,61 @@ public class PeriodizationTests
     }
 
     /// <summary>
+    /// Nedelja koja nosi osnovu postoji u svakom modelu, i to je jedina nedelja iz koje se
+    /// polazni broj serija sme da PROCITA. Zatecen red nosi broj koji je propisala starija
+    /// verzija pravila, pa bi iz njega izvedena osnova bila nedelja koju blok nikada nije
+    /// imao (izmereno nad dev bazom: 392 od 440 redova u takvim nedeljama upisala je
+    /// starija verzija pravila, a 168 njih nosi prozor 11-15, koji ovaj kod ne ume da
+    /// napravi).
+    /// </summary>
+    [Theory]
+    [InlineData(PeriodizationModel.Flat, 1)]
+    [InlineData(PeriodizationModel.Linear, 3)]
+    [InlineData(PeriodizationModel.Inverse, 3)]
+    public void TheBaseWeek_CarriesTheBasePrescriptionItself(PeriodizationModel model, int expected)
+    {
+        Assert.Equal(expected, Periodization.BaseWeekNumber(model));
+
+        foreach (var (min, max, rir) in new[]
+                 {
+                     (HypertrophyMin, HypertrophyMax, HypertrophyRir),
+                     (StrengthMin, StrengthMax, StrengthRir),
+                     (5, 5, HypertrophyRir)
+                 })
+        {
+            var week = Periodization.ForWeek(model, expected, min, max, rir, Sets);
+
+            Assert.False(week.IsDeload);
+            Assert.Equal(min, week.RepRangeMin);
+            Assert.Equal(max, week.RepRangeMax);
+            Assert.Equal(rir, week.TargetRir);
+            Assert.Equal(Sets, week.Sets);
+        }
+    }
+
+    /// <summary>
+    /// A rezerva se ne pretvara da može sve: obrtanje pomeraja ne može da razlikuje dve
+    /// osnove koje daju isti broj serija. Osnova 2 i osnova 3 u nedelji koja skida seriju
+    /// obe propisuju dve (jer <see cref="Periodization.MinSets"/> secka), pa izvođenje
+    /// vraća tri i za jednu i za drugu. Posledica je deload od dve serije tamo gde bi
+    /// trebalo jedna — zato se osnova čita iz osnovne nedelje kad je god dostupna.
+    /// </summary>
+    [Fact]
+    public void RecoveringTheBase_CannotUndoTheMinimumSetClamp()
+    {
+        var fromTwo = Periodization.ForWeek(PeriodizationModel.Linear, 5, HypertrophyMin, HypertrophyMax, HypertrophyRir, 2);
+        var fromThree = Periodization.ForWeek(PeriodizationModel.Linear, 5, HypertrophyMin, HypertrophyMax, HypertrophyRir, 3);
+
+        Assert.Equal(Periodization.MinSets, fromTwo.Sets);
+        Assert.Equal(fromTwo.Sets, fromThree.Sets);
+
+        var recovered = Periodization.BaseSetsFrom(PeriodizationModel.Linear, 5, fromTwo.Sets, HypertrophyMax);
+
+        Assert.Equal(3, recovered);
+        Assert.NotEqual(2, recovered);
+    }
+
+    /// <summary>
     /// Epley granica je granica MERENJA, pa pomera prozor umesto da ga sužava: nedelja
     /// zadržava širinu opsega iz koga je propisana. Bez toga je faza volumena
     /// hipertrofije ispadala kao 11-12, gde dupla progresija nema po čemu da raste.
