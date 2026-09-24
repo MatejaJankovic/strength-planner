@@ -285,7 +285,7 @@ konačna reč:
 |---|---|
 | Periodizacija | tvoj opseg se pomera kroz nedelje kao i svaki drugi (linearan model: više ponavljanja na startu, manje pred kraj) |
 | Deload | poslednja nedelja polovi **tvoj** broj serija, vraća **tvoj** opseg ponavljanja i diže ciljni RIR za dva |
-| Ciljni volumen (MAV) | predlog serija se pomera ka nedeljnom cilju mišića, ali ostaje blizu tvog broja |
+| Ciljni volumen | predlog serija se pomera ka cilju **te nedelje** (vidi „Nedeljni volumen"), ali ostaje blizu tvog broja |
 | Progresija iz serija | opterećenje raste iz onoga što stvarno odradiš, isto kao inače |
 
 Primer (napredan nalog): uneseš Bench Press **6 serija × 5–8**, cilj hipertrofija, linearan
@@ -442,8 +442,13 @@ naduvane vrednosti ako ih ima; plan ih ne koristi (vidi „Start novog bloka").
 stimulativnih serija odradio i gde to pada u odnosu na tvoje granice.
 
 - **MEV** — minimum ispod kog nema stimulusa
-- **MAV** — ciljna vrednost, gađaj ovaj marker
+- **MAV** — naučena ciljna vrednost mišića
 - **MRV** — plafon iznad kog nema oporavka
+
+Marker cilja prati **nedelju**, a ne MAV: nedelja volumena gađa iznad MAV-a (do MRV-a),
+nedelja intenziteta ispod njega, a blok snage niže od hipertrofijskog — teže serije koštaju
+više oporavka. Kada se razlikuju, u redu piše i jedno i drugo: `cilj ove nedelje 22
+(MAV 16)`. U deload nedelji cilja nema — manji volumen je tamo namera.
 
 Boja trake govori da li si ispod, u zoni ili iznad. **Ne broji se svaka serija isto**:
 serija sa RIR 0–3 (ili do otkaza) ulazi cela, RIR 4 ulazi upola, a serija dalja od otkaza

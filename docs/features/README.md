@@ -69,6 +69,7 @@ blok, rasterecenje i cilj volumena.
 | [Prozor ponavljanja i fiksan broj](rep-window-and-fixed-reps.md) | Faza volumena hipertrofije je ispadala kao opseg od dva ponavljanja (11–12), a lični šablon sa 5–5 je u planu dobijao 5–6 | #65 |
 | [Deload rasterećuje i napor](deload-intensity.md) | Deload je spuštao opterećenje na 90% ali držao ciljni RIR, pa je po naporu bio normalna radna serija | #66 |
 | [Izolacija ne ide na opseg snage](isolation-rep-range.md) | Blok snage je propisivao 3–6 (u petoj nedelji 3–4) i za bočno podizanje, letenje i pregibe — pet od šest vežbi naprednog vežbača | #67 |
+| [Cilj volumena prati nedelju](weekly-volume-target.md) | Balansiranje je svaku nedelju gadjalo u MAV, pa je talas serija iz periodizacije nestajao (24, 24, 16, 16, 12 → 16 svake nedelje); blok snage je gadjao hipertrofijski MAV | #68 |
 
 ## Ako čitaš samo jedno
 

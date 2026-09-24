@@ -245,6 +245,14 @@ poboljšanje koje ijedno pomeranje može da donese je 0.5.
 - **`workout-session.scss` prelazi budžet od 6 kB** i posle ovog dodatka stoji na 7.59 kB.
   Prelazio ga je i pre (7.02 kB); granica na kojoj build pada je 8 kB, pa je dodatak
   namerno skraćen da ostane ispod nje. Datoteku treba razdvojiti pre sledećeg dodavanja.
+> **Kasnija izmena (pregled logike treninga, odeljak B).** Cilj nije više MAV u svakoj
+> nedelji. MAV je jedna vrednost po mišiću, pa je balansiranje ravnalo upravo ono čime
+> periodizacija razlikuje fazu volumena od faze intenziteta — izmereno: propis za grudi je
+> išao 24, 24, 16, 16, 12 serija, a predlog je u svakoj nedelji ispadao 16. Cilj se od tada
+> pomera koliko i propis, a blok snage gađa na pola puta između MEV-a i MAV-a. Ravan blok
+> daje odnos jedan, dakle i dalje tačno MAV. Vidi
+> [`weekly-volume-target.md`](weekly-volume-target.md).
+
 - Pri proveri je nađena **postojeća greška u rasporedu**, nevezana za ovu granu: donji deo
   dugmeta „Završi trening" stoji ispod fiksne donje navigacije, pa klik na njegovu sredinu
   vodi na `/plan` umesto da završi trening. `main` rezerviše 112 px, a navigacija zauzima

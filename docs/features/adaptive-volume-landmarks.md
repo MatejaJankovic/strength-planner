@@ -159,3 +159,14 @@ preuzima istim uslovnim `UPDATE`-om; drugi zahtev dobija 409. Posle ispravke:
   prikazuje pri promeni nedelje.
 - `personalCount` je bio deklarisan iznad `rows` koji koristi; radilo je samo zato što
   je `computed` lenj. Premešten ispod.
+
+## Kasnija izmena (odeljak B): koja nedelja o čemu govori
+
+Granice se uče iz nedelja koje su **blizu** njih: MAV se pomera kada je volumen ≥ 0.9 × MAV,
+MEV kada je ≤ MEV. Od trenutka kada cilj volumena prati nedelju i cilj bloka
+([`weekly-volume-target.md`](weekly-volume-target.md)), nedelje bloka snage sede niže, pa iz
+njih MAV uglavnom ne uči — a nedelja intenziteta, koja stoji na MEV-u, uči o MEV-u.
+
+Zapisano zato što se iz koda ne vidi: pravila adaptacije se nisu menjala, promenilo se koje
+nedelje ih uopšte dodiruju. Da li je RIR dobar signal za granice volumena je zaseban nalaz
+(odeljak C), i nije rađen.

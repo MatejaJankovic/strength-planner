@@ -11,11 +11,16 @@ public class VolumeService : IVolumeService
 {
     private readonly AppDbContext _db;
     private readonly VolumeLandmarkService _landmarks;
+    private readonly WeeklyVolumeTargetResolver _weeklyTargets;
 
-    public VolumeService(AppDbContext db, VolumeLandmarkService landmarks)
+    public VolumeService(
+        AppDbContext db,
+        VolumeLandmarkService landmarks,
+        WeeklyVolumeTargetResolver weeklyTargets)
     {
         _db = db;
         _landmarks = landmarks;
+        _weeklyTargets = weeklyTargets;
     }
 
     public async Task<IReadOnlyList<WeeklyVolumeDto>> GetWeeklyVolumeAsync(
@@ -29,13 +34,15 @@ public class VolumeService : IVolumeService
             throw new TrainingLogException(TrainingLogErrorType.Validation, "Week number must be greater than zero.");
         }
 
-        var weekExists = await _db.TrainingWeeks.AnyAsync(
-            week => week.MesocycleId == mesocycleId
-                    && week.WeekNumber == weekNumber
-                    && week.Mesocycle.UserId == userId,
-            cancellationToken);
+        var weekId = await _db.TrainingWeeks
+            .AsNoTracking()
+            .Where(week => week.MesocycleId == mesocycleId
+                           && week.WeekNumber == weekNumber
+                           && week.Mesocycle.UserId == userId)
+            .Select(week => (Guid?)week.Id)
+            .FirstOrDefaultAsync(cancellationToken);
 
-        if (!weekExists)
+        if (weekId is null)
         {
             throw new TrainingLogException(TrainingLogErrorType.NotFound, "Training week was not found.");
         }
@@ -70,6 +77,13 @@ public class VolumeService : IVolumeService
             .ToDictionaryAsync(group => group.Id, group => group.Name, cancellationToken);
         var effective = await _landmarks.GetEffectiveAsync(userId, cancellationToken);
 
+        // Isti izvor iz koga balansiranje gadja cilj, da ekran i plan ne govore razlicito.
+        var weeklyTargets = await _weeklyTargets.ResolveAsync(
+            userId,
+            weekId.Value,
+            effective,
+            cancellationToken);
+
         return effective
             .Select(entry =>
             {
@@ -87,6 +101,12 @@ public class VolumeService : IVolumeService
                     DefaultMav = landmark.SeedMav,
                     DefaultMrv = landmark.SeedMrv,
                     IsPersonal = landmark.IsPersonal,
+                    WeekTargetSets = weeklyTargets.IsDeloadWeek
+                        ? null
+                        : weeklyTargets.ByMuscleGroupId.TryGetValue(entry.Key, out var target)
+                            ? target.TargetSets
+                            : null,
+                    IsDeloadWeek = weeklyTargets.IsDeloadWeek,
                     Status = GetStatus(sets, landmark.Mev, landmark.Mrv)
                 };
             })

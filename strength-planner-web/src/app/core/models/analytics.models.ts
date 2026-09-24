@@ -3,9 +3,16 @@ export interface VolumeItemDto {
   /** Stimulativne serije: doprinos svake serije skaliran blizinom otkaza. */
   sets: number;
   mev: number;
-  /** Maksimalni adaptivni volumen — ciljni broj serija. */
+  /** Maksimalni adaptivni volumen — naucena granica, i cilj osnovne nedelje. */
   mav: number;
   mrv: number;
+  /**
+   * Cilj koji gadja izabrana nedelja: MAV pomeren koliko i propis, i spusten kod bloka
+   * snage. Null u deload nedelji i za misic koji ta nedelja ne trenira.
+   */
+  weekTargetSets: number | null;
+  /** True kada je izabrana nedelja rasterecenje. */
+  isDeloadWeek: boolean;
   /** Populaciona seed granica — vrednost na koju reset vraca. */
   defaultMev: number;
   defaultMav: number;

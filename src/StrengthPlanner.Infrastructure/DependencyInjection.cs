@@ -80,6 +80,7 @@ public static class DependencyInjection
         services.AddScoped<ISetLogService, SetLogService>();
         services.AddScoped<ISessionService, SessionService>();
         services.AddScoped<VolumeLandmarkService>();
+        services.AddScoped<WeeklyVolumeTargetResolver>();
         services.AddScoped<WeeklySetPlanner>();
         services.AddScoped<DeloadService>();
         services.AddScoped<IVolumeService, VolumeService>();
