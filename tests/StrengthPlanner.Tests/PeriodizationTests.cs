@@ -68,12 +68,16 @@ public class PeriodizationTests
     {
         var weeks = Hypertrophy(PeriodizationModel.Linear);
 
-        // Prva nedelja: viša donja granica ponavljanja, lakše serije, više serija.
-        // Gornja granica staje na Epley granici — vidi RepRange_NeverExceedsTheEpleyCap.
-        Assert.Equal(11, weeks[0].RepRangeMin);
-        Assert.Equal(12, weeks[0].RepRangeMax);
+        // Prva nedelja: lakše serije i više serija. Ponavljanja se ne mogu dodati —
+        // hipertrofijski opseg već stoji na Epley granici — pa pomeraj koji granica
+        // pojede nedelja dobija u seriji: +1 iz oblika, +1 iz granice.
+        //
+        // Ranije je ovde pisalo 11-12: prozor od dva ponavljanja koji je donju granicu
+        // DIGAO za tri, dakle nedelju napravio težom, i to u fazi volumena.
+        Assert.Equal(HypertrophyMin, weeks[0].RepRangeMin);
+        Assert.Equal(HypertrophyMax, weeks[0].RepRangeMax);
         Assert.Equal(HypertrophyRir + 1, weeks[0].TargetRir);
-        Assert.Equal(Sets + 1, weeks[0].Sets);
+        Assert.Equal(Sets + 1 + Periodization.CappedShiftSetBonus, weeks[0].Sets);
 
         // Peta nedelja: manje ponavljanja i manje serija.
         Assert.Equal(6, weeks[4].RepRangeMin);
@@ -132,16 +136,89 @@ public class PeriodizationTests
         // sme time da promeni oblik već napravljenog plana.
         foreach (var model in Enum.GetValues<PeriodizationModel>())
         {
-            var weeks = Hypertrophy(model);
-
-            foreach (var week in weeks.Where(week => !week.IsDeload))
+            // Oba cilja i fiksan broj ponavljanja: pomeraj serija više nije konstanta
+            // oblika — nedelja kojoj je Epley granica pojela ponavljanja nosi seriju više —
+            // pa se osnova ne može izvesti bez opsega iz koga je nedelja propisana.
+            foreach (var (min, max, rir) in new[]
+                     {
+                         (HypertrophyMin, HypertrophyMax, HypertrophyRir),
+                         (StrengthMin, StrengthMax, StrengthRir),
+                         (5, 5, HypertrophyRir)
+                     })
             {
-                Assert.Equal(Sets, Periodization.BaseSetsFrom(model, week.WeekNumber, week.Sets));
-            }
+                var weeks = Periodization.ForBlock(model, min, max, rir, Sets);
 
-            Assert.Throws<ArgumentOutOfRangeException>(
-                () => Periodization.BaseSetsFrom(model, weeks[^1].WeekNumber, weeks[^1].Sets));
+                foreach (var week in weeks.Where(week => !week.IsDeload))
+                {
+                    Assert.Equal(
+                        Sets,
+                        Periodization.BaseSetsFrom(model, week.WeekNumber, week.Sets, max));
+                }
+
+                Assert.Throws<ArgumentOutOfRangeException>(
+                    () => Periodization.BaseSetsFrom(
+                        model,
+                        weeks[^1].WeekNumber,
+                        weeks[^1].Sets,
+                        max));
+            }
         }
+    }
+
+    /// <summary>
+    /// Epley granica je granica MERENJA, pa pomera prozor umesto da ga sužava: nedelja
+    /// zadržava širinu opsega iz koga je propisana. Bez toga je faza volumena
+    /// hipertrofije ispadala kao 11-12, gde dupla progresija nema po čemu da raste.
+    /// </summary>
+    [Fact]
+    public void TheEpleyCap_MovesTheRepWindow_InsteadOfNarrowingIt()
+    {
+        foreach (var model in new[] { PeriodizationModel.Linear, PeriodizationModel.Inverse })
+        {
+            // Hipertrofija stoji na samoj granici, pa je ona jedina koja tu i seče:
+            // svaka nedelja zadržava širinu od četiri ponavljanja.
+            Assert.All(Hypertrophy(model), week => Assert.Equal(
+                HypertrophyMax - HypertrophyMin,
+                week.RepRangeMax - week.RepRangeMin));
+
+            // Snaga prozor sužava, ali samo na donjem kraju — i tada stoji tačno na podu
+            // od tri ponavljanja, što je odluka, a ne posledica merenja.
+            Assert.All(Strength(model), week => Assert.True(
+                week.RepRangeMax - week.RepRangeMin == StrengthMax - StrengthMin
+                || week.RepRangeMin == Periodization.MinReps,
+                $"{model} nedelja {week.WeekNumber}: {week.RepRangeMin}-{week.RepRangeMax}"));
+        }
+    }
+
+    /// <summary>
+    /// Donja granica je trenažna odluka, ne merna, pa ona sme da suži prozor: ispod tri
+    /// ponavljanja blok više nije ono što piše da jeste.
+    /// </summary>
+    [Fact]
+    public void TheThreeRepFloor_StillNarrowsTheWindow()
+    {
+        var intensityWeek = Strength(PeriodizationModel.Linear)[4];
+
+        Assert.Equal(Periodization.MinReps, intensityWeek.RepRangeMin);
+        Assert.Equal(4, intensityWeek.RepRangeMax);
+    }
+
+    /// <summary>
+    /// Kada granica pojede pomeraj ponavljanja, nedelja ga dobija u seriji. Blok snage ne
+    /// dodiruje granicu, pa tamo nema ni bonusa — isti broj serija kao pre ove izmene.
+    /// </summary>
+    [Fact]
+    public void ASwallowedRepShift_ComesBackAsASet()
+    {
+        var hypertrophy = Hypertrophy(PeriodizationModel.Inverse)
+            .Where(week => !week.IsDeload)
+            .Select(week => week.Sets);
+        var strength = Strength(PeriodizationModel.Inverse)
+            .Where(week => !week.IsDeload)
+            .Select(week => week.Sets);
+
+        Assert.Equal(new[] { 3, 3, 4, 5, 6 }, hypertrophy);
+        Assert.Equal(new[] { 3, 3, 4, 4, 5 }, strength);
     }
 
     [Fact]

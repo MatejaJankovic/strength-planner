@@ -112,11 +112,17 @@ public class CustomTemplateTests
         // pomeraj, a za opseg takav postupak ne može da postoji. Periodization opseg i
         // odseca na granice, pa dve različite osnove daju istu nedelju - iz nje se ne može
         // znati od koje se pošlo.
-        var fromEleven = Periodization.ForWeek(PeriodizationModel.Linear, 1, 11, 12, 1, 4);
-        var fromTwelve = Periodization.ForWeek(PeriodizationModel.Linear, 1, 12, 12, 1, 4);
+        //
+        // Primer je morao da se promeni kada je granica počela da POMERA prozor umesto da
+        // ga sužava: 11-12 i 12-12 od tada daju različite nedelje, jer svaka nosi svoju
+        // širinu. Sudar traži istu širinu, pa 9-11 i 10-12 — obe širine dva, obe iznad
+        // granice — i dalje završe kao ista nedelja. Tvrdnja je ostala, primer nije.
+        var fromNineEleven = Periodization.ForWeek(PeriodizationModel.Linear, 1, 9, 11, 1, 4);
+        var fromTenTwelve = Periodization.ForWeek(PeriodizationModel.Linear, 1, 10, 12, 1, 4);
 
-        Assert.Equal(fromEleven.RepRangeMin, fromTwelve.RepRangeMin);
-        Assert.Equal(fromEleven.RepRangeMax, fromTwelve.RepRangeMax);
+        Assert.Equal(fromNineEleven.RepRangeMin, fromTenTwelve.RepRangeMin);
+        Assert.Equal(fromNineEleven.RepRangeMax, fromTenTwelve.RepRangeMax);
+        Assert.Equal(fromNineEleven.Sets, fromTenTwelve.Sets);
     }
 
     [Fact]

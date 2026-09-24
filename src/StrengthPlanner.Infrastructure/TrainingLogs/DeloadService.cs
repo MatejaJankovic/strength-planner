@@ -216,6 +216,7 @@ public sealed class DeloadService
                 plan.WorkoutSession.DayLabel,
                 plan.ExerciseId,
                 plan.PrescribedSets,
+                plan.BaseRepRangeMax,
                 plan.WorkoutSession.TrainingWeek.WeekNumber
             })
             .ToListAsync(cancellationToken);
@@ -229,8 +230,15 @@ public sealed class DeloadService
                 group => group.Key,
                 group =>
                 {
+                    // Osnovni opseg ide uz broj serija: kada Epley granica pojede pomeraj
+                    // ponavljanja, nedelja ga nosi kao seriju, pa se ista brojka razlaze
+                    // drugacije za hipertrofijsku nego za vezbu snage.
                     var sample = group.First();
-                    return Periodization.BaseSetsFrom(model, sample.WeekNumber, sample.PrescribedSets);
+                    return Periodization.BaseSetsFrom(
+                        model,
+                        sample.WeekNumber,
+                        sample.PrescribedSets,
+                        sample.BaseRepRangeMax);
                 });
 
         var plans = await _db.ExercisePlans
@@ -372,7 +380,11 @@ public sealed class DeloadService
             // Obrtanje ide nad propisom: predlog je u međuvremenu pomeren balansiranjem
             // volumena, pa bi polovljenje njegove vrednosti dalo deload izveden iz broja
             // koji periodizacija nikada nije propisala.
-            var baseSets = Periodization.BaseSetsFrom(model, deloadWeekNumber, plan.PrescribedSets);
+            var baseSets = Periodization.BaseSetsFrom(
+                model,
+                deloadWeekNumber,
+                plan.PrescribedSets,
+                plan.BaseRepRangeMax);
             plan.TargetSets = Periodization.DeloadSets(baseSets);
             plan.PrescribedSets = plan.TargetSets;
 
