@@ -83,7 +83,7 @@ public sealed class WeeklyVolumeTargetResolver
                 landmark.Mrv);
         }
 
-        return new WeeklyVolumeTargets(targets, week.IsDeload, week.Goal);
+        return new WeeklyVolumeTargets(targets, week.IsDeload);
     }
 
     /// <summary>
@@ -125,12 +125,10 @@ public sealed class WeeklyVolumeTargetResolver
 /// </summary>
 /// <param name="ByMuscleGroupId">Target and ceiling per muscle group the system has limits for.</param>
 /// <param name="IsDeloadWeek">True when the week aims at rest rather than at a volume target.</param>
-/// <param name="Goal">Goal of the block the week belongs to.</param>
 public sealed record WeeklyVolumeTargets(
     IReadOnlyDictionary<Guid, MuscleVolumeTarget> ByMuscleGroupId,
-    bool IsDeloadWeek,
-    Domain.Enums.Goal? Goal)
+    bool IsDeloadWeek)
 {
     public static readonly WeeklyVolumeTargets None =
-        new(new Dictionary<Guid, MuscleVolumeTarget>(), IsDeloadWeek: false, Goal: null);
+        new(new Dictionary<Guid, MuscleVolumeTarget>(), IsDeloadWeek: false);
 }
