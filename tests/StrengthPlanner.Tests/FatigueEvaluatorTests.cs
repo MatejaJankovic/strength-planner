@@ -11,20 +11,18 @@ public class FatigueEvaluatorTests
     /// <summary>Nedelja hipertrofije (ciljni RIR 1) koja je prošla tačno po planu.</summary>
     private static WeeklyFatigue Hypertrophy(
         decimal rirDeviation = 0m,
-        bool allSetsFailed = false,
         decimal failureShare = 0m,
         decimal e1RmChange = 0m,
         decimal volumeShare = 0m) =>
-        new(rirDeviation, AchievableRirDeficit: 1m, allSetsFailed, failureShare, e1RmChange, volumeShare);
+        new(rirDeviation, AchievableRirDeficit: 1m, failureShare, e1RmChange, volumeShare);
 
     /// <summary>Nedelja snage (ciljni RIR 2).</summary>
     private static WeeklyFatigue Strength(
         decimal rirDeviation = 0m,
-        bool allSetsFailed = false,
         decimal failureShare = 0m,
         decimal e1RmChange = 0m,
         decimal volumeShare = 0m) =>
-        new(rirDeviation, AchievableRirDeficit: 2m, allSetsFailed, failureShare, e1RmChange, volumeShare);
+        new(rirDeviation, AchievableRirDeficit: 2m, failureShare, e1RmChange, volumeShare);
 
     [Fact]
     public void Score_IsZero_ForAWeekThatWentToPlan()
@@ -37,7 +35,6 @@ public class FatigueEvaluatorTests
     {
         var wrecked = Hypertrophy(
             rirDeviation: -3m,
-            allSetsFailed: true,
             failureShare: 1m,
             e1RmChange: -0.20m,
             volumeShare: 1.5m);
@@ -94,7 +91,6 @@ public class FatigueEvaluatorTests
     {
         var fatigue = Hypertrophy(
             (decimal)rirDeviation,
-            allSetsFailed: false,
             (decimal)failureShare,
             (decimal)e1RmChange,
             (decimal)volumeShare);
@@ -115,15 +111,51 @@ public class FatigueEvaluatorTests
         Assert.False(FatigueEvaluator.ShouldDeload(completedSetsWentToPlan));
     }
 
+    /// <summary>
+    /// Nedelja u kojoj nijedna serija nije dovršena nosi tu činjenicu kroz udeo otkaza, i
+    /// samo kroz njega. Ranije je ista činjenica dizala i RIR signal na najgore očitavanje
+    /// (1.0), pa je 0.35 + 0.25 davalo tačno prag — jedan uzrok je pokretao deload, u
+    /// pravilu koje kaže da nijedan signal to ne može sam.
+    /// </summary>
     [Fact]
-    public void Score_TreatsAWeekWithoutASingleCompletedSetAsTheWorstReading()
+    public void Score_ReadsAWeekWithoutACompletedSet_ThroughTheFailureShareAlone()
     {
-        // Kada nijedna serija nije dovršena, proseka nema — ali to odsustvo je najgore
-        // moguće očitavanje, a ne neutralno.
-        var everySetFailed = Hypertrophy(rirDeviation: 0m, allSetsFailed: true, failureShare: 1m);
+        var everySetFailed = Hypertrophy(rirDeviation: 0m, failureShare: 1m);
 
-        Assert.Equal(0.60m, FatigueEvaluator.Score(everySetFailed));
-        Assert.True(FatigueEvaluator.ShouldDeload(everySetFailed));
+        Assert.Equal(0.25m, FatigueEvaluator.Score(everySetFailed));
+        Assert.False(FatigueEvaluator.ShouldDeload(everySetFailed));
+    }
+
+    /// <summary>
+    /// Ista nedelja sa još jednim stvarnim signalom i dalje pokreće deload. To je razlika
+    /// između "sve je išlo do otkaza" i "sve je išlo do otkaza, a snaga je pala".
+    /// </summary>
+    [Fact]
+    public void ADeload_StillFollows_WhenASecondSignalAgrees()
+    {
+        Assert.Equal(0.50m, FatigueEvaluator.Score(Hypertrophy(failureShare: 1m, e1RmChange: -0.05m)));
+        Assert.Equal(0.40m, FatigueEvaluator.Score(Hypertrophy(failureShare: 1m, volumeShare: 1m)));
+        Assert.True(FatigueEvaluator.ShouldDeload(
+            Hypertrophy(failureShare: 1m, e1RmChange: -0.05m, volumeShare: 1m)));
+    }
+
+    /// <summary>
+    /// Merenje koje je porušilo staro pravilo: jedna serija od dvadeset je pomerala ocenu
+    /// za 0.35 i odlučivala o deload-u. Dvadeset otkaza je davalo 0.60, a devetnaest otkaza
+    /// uz jednu dovršenu seriju na cilju 0.25 — litica, a ne mera.
+    /// </summary>
+    [Fact]
+    public void OneCompletedSet_NoLongerSwingsTheScoreByATerm()
+    {
+        var everySetFailed = Hypertrophy(rirDeviation: 0m, failureShare: 1m);
+        var oneSetCompleted = Hypertrophy(rirDeviation: 0m, failureShare: 19m / 20m);
+
+        var gap = FatigueEvaluator.Score(everySetFailed) - FatigueEvaluator.Score(oneSetCompleted);
+
+        // Tacno nula, a ne samo malo: udeo otkaza dostize punu tezinu na 0.5, pa i 0.95 i
+        // 1.0 nose isti maksimum. Ranije je ta jedna serija menjala ocenu za 0.35 i sama
+        // odlucivala o deload-u.
+        Assert.Equal(0m, gap);
     }
 
     [Fact]
@@ -163,10 +195,10 @@ public class FatigueEvaluatorTests
     {
         var extremes = new[]
         {
-            new WeeklyFatigue(-100m, 1m, true, 5m, -5m, 10m),
-            new WeeklyFatigue(100m, 1m, false, -5m, 5m, -10m),
-            new WeeklyFatigue(0m, 0m, false, 0m, 0m, 0m),
-            new WeeklyFatigue(-1m, -3m, false, 0m, 0m, 0m)
+            new WeeklyFatigue(-100m, 1m, 5m, -5m, 10m),
+            new WeeklyFatigue(100m, 1m, -5m, 5m, -10m),
+            new WeeklyFatigue(0m, 0m, 0m, 0m, 0m),
+            new WeeklyFatigue(-1m, -3m, 0m, 0m, 0m)
         };
 
         foreach (var fatigue in extremes)
@@ -175,6 +207,45 @@ public class FatigueEvaluatorTests
 
             Assert.InRange(score, 0m, 1m);
         }
+    }
+
+    /// <summary>
+    /// Ista funkcija sada služi i granicama volumena, pa prima ponder po seriji (doprinos
+    /// mišiću × blizina otkaza). Važno je da ponder ne vraća otkaze u prosek: granice su
+    /// računale SVOJU verziju nad svim serijama, i na ove tri je dobijala −2 tamo gde ocena
+    /// umora dobija 0 — pa je jedan otkaz zatvarao oba uslova I-testa "imao je rezerve".
+    /// </summary>
+    [Fact]
+    public void AverageRirDeviation_TakesAWeight_AndStillLeavesFailuresOut()
+    {
+        RirSample[] sets =
+        [
+            new(new WorkingSet(10, 1), 8, 1, Weight: 1m),
+            new(new WorkingSet(10, 1), 8, 1, Weight: 0.5m),
+            new(new WorkingSet(3, 0, IsFailure: true), 8, 1, Weight: 1m)
+        ];
+
+        Assert.Equal(0m, FatigueEvaluator.AverageRirDeviation(sets));
+
+        // Stara računica granica volumena, ostavljena kao oracle: prosek nad SVIM serijama.
+        var overEverySet = sets.Average(sample =>
+            (decimal)(sample.Set.EffectiveRir(sample.RepRangeMin) - sample.TargetRir));
+
+        Assert.Equal(-2m, overEverySet);
+    }
+
+    /// <summary>Ponder zaista pomera prosek, i to u odnosu na svoju sumu, ne na broj serija.</summary>
+    [Fact]
+    public void AverageRirDeviation_LeansTowardTheHeavierSet()
+    {
+        RirSample[] sets =
+        [
+            new(new WorkingSet(10, 3), 8, 1, Weight: 3m),
+            new(new WorkingSet(10, 1), 8, 1, Weight: 1m)
+        ];
+
+        // (3 × 2 + 1 × 0) / 4
+        Assert.Equal(1.5m, FatigueEvaluator.AverageRirDeviation(sets));
     }
 
     [Fact]
