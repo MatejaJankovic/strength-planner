@@ -67,6 +67,7 @@ blok, rasterecenje i cilj volumena.
 | Grana | O čemu je | PR |
 |---|---|---|
 | [Prozor ponavljanja i fiksan broj](rep-window-and-fixed-reps.md) | Faza volumena hipertrofije je ispadala kao opseg od dva ponavljanja (11–12), a lični šablon sa 5–5 je u planu dobijao 5–6 | #65 |
+| [Deload rasterećuje i napor](deload-intensity.md) | Deload je spuštao opterećenje na 90% ali držao ciljni RIR, pa je po naporu bio normalna radna serija | #66 |
 
 ## Ako čitaš samo jedno
 
