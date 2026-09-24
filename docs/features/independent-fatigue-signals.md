@@ -91,6 +91,24 @@ Ono što nedelja sa otkazima **i** drugim signalom daje:
 | Sve do otkaza + volumen na MRV-u | **0.40** |
 | Sve do otkaza + oba | **0.65** → deload |
 
+## Posledica za granice volumena, izmerena
+
+Pragovi `VolumeAdaptation` su kalibrisani na **staru** definiciju, pa jedna stvar menja
+ponašanje i tamo. Nedelja od deset serija: osam odrađenih tačno po planu, dve do otkaza pet
+ponavljanja ispod dna.
+
+| | Prosek odstupanja | Udeo otkaza | Umor? | MRV |
+|---|---|---|---|---|
+| Stara računica (sve serije) | **−1.2** | 0.2 | da (kroz prosek) | **21** |
+| Deljena definicija (dovršene) | **0** | 0.2 | ne | **22** |
+
+Dakle nedelja u kojoj je petina serija otišla do otkaza, a ostatak prošao po planu, više ne
+spušta plafon oporavka. Oba signala tada kažu isto: dovršeni rad je bio po planu, a otkaza
+je bilo manje od četvrtine (prag je 0.25). Ako je petina otkaza dovoljno da nedelja bude
+preteška, o tome se raspravlja na pragu **udela otkaza**, gde se to i meri — a ne kroz
+prosek RIR-a, koji meri drugo. Pinovano testom
+`AWeekWithAFifthOfItsSetsFailed_NoLongerCountsAsFatiguedTwice`, koji drži oba broja.
+
 ## Šta je izmereno
 
 - Vraćanje starog čitanja obara **4 od 554** testa, među njima i
@@ -103,9 +121,9 @@ Ono što nedelja sa otkazima **i** drugim signalom daje:
 
 ## Testovi
 
-`FatigueEvaluatorTests` (24 tvrdnje): novo čitanje krajnjeg slučaja, da drugi signal i
+`FatigueEvaluatorTests` (24 tvrdnje) i `VolumeAdaptationTests`: novo čitanje krajnjeg slučaja, da drugi signal i
 dalje pokreće deload, litica kao nula, ponder koji pomera prosek u odnosu na svoju sumu, i
 da ponder ne vraća otkaze u prosek — sa starom računicom ostavljenom u testu kao oracle
 (−2 naspram 0).
 
-Ukupno: 550 → 554 testa na serveru, 139 na klijentu (bez izmena).
+Ukupno: 550 → 555 testova na serveru, 139 na klijentu (bez izmena).

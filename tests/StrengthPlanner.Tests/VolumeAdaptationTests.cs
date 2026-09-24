@@ -337,4 +337,52 @@ public class VolumeAdaptationTests
 
         Assert.True(current.Mav > Seed.Mav, "Cilj mora da može da poraste kada nedelja to pokaže.");
     }
+
+    /// <summary>
+    /// Posledica deljene definicije signala, izmerena a ne pretpostavljena.
+    ///
+    /// Nedelja od deset serija: osam odrađenih tačno po planu, dve do otkaza pet
+    /// ponavljanja ispod dna. Udeo otkaza je 0.2, ispod praga umora (0.25). Stara
+    /// računica je otkaze puštala i u prosek RIR-a (−1.2), pa je taj isti otkaz
+    /// prelazio drugi prag i MRV je padao. Sada oba signala kažu isto: dovršeni rad je
+    /// išao po planu, a otkaza je bilo manje od četvrtine — pa MRV stoji.
+    ///
+    /// Ako je 20% otkaza dovoljno da nedelja bude „preteška", o tome se raspravlja na
+    /// pragu udela otkaza, gde se to i meri. Ne kroz prosek RIR-a, koji meri drugo.
+    /// </summary>
+    [Fact]
+    public void AWeekWithAFifthOfItsSetsFailed_NoLongerCountsAsFatiguedTwice()
+    {
+        RirSample[] week =
+        [
+            .. Enumerable.Repeat(new RirSample(new WorkingSet(10, 1), 8, 1), 8),
+            .. Enumerable.Repeat(new RirSample(new WorkingSet(3, 0, IsFailure: true), 8, 1), 2)
+        ];
+
+        var shared = FatigueEvaluator.AverageRirDeviation(week);
+        var overEverySet = week.Average(sample =>
+            (decimal)(sample.Set.EffectiveRir(sample.RepRangeMin) - sample.TargetRir));
+
+        Assert.Equal(0m, shared);
+        Assert.Equal(-1.2m, overEverySet);
+
+        var landmarks = new VolumeLandmarkValues(Mev: 10, Mav: 16, Mrv: 22);
+        var response = new VolumeResponse(
+            PerformedSets: 10,
+            RawSets: 10,
+            AverageRirDeviation: shared,
+            FailureShare: 0.2m);
+
+        var adjusted = VolumeAdaptation.Adjust(landmarks, landmarks, response);
+
+        Assert.Equal(landmarks.Mrv, adjusted.Mrv);
+
+        // Sa starom računicom bi ista nedelja spustila plafon.
+        var withOldReading = VolumeAdaptation.Adjust(
+            landmarks,
+            landmarks,
+            new VolumeResponse(10, 10, overEverySet, 0.2m));
+
+        Assert.Equal(landmarks.Mrv - 1, withOldReading.Mrv);
+    }
 }
