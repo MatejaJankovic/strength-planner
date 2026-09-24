@@ -23,17 +23,27 @@ namespace StrengthPlanner.Infrastructure.Mesocycles;
 /// volume already performed, and never a second time as volume still planned.
 ///
 /// Deload weeks are skipped entirely. Their halved sets are the whole point of the week,
-/// and pulling them back up to MAV would undo the rest.
+/// and pulling them back up to the target would undo the rest.
+///
+/// What the week aims at comes from <see cref="WeeklyVolumeTargetResolver"/> rather than
+/// straight from MAV. Aiming every week at MAV erased the one thing a periodization model
+/// says out loud: measured on a linear hypertrophy block, the prescription for chest ran
+/// 20, 20, 16, 16, 12 sets and every week came out of balancing at 16.
 /// </summary>
 public sealed class WeeklySetPlanner
 {
     private readonly AppDbContext _db;
     private readonly VolumeLandmarkService _landmarks;
+    private readonly WeeklyVolumeTargetResolver _weeklyTargets;
 
-    public WeeklySetPlanner(AppDbContext db, VolumeLandmarkService landmarks)
+    public WeeklySetPlanner(
+        AppDbContext db,
+        VolumeLandmarkService landmarks,
+        WeeklyVolumeTargetResolver weeklyTargets)
     {
         _db = db;
         _landmarks = landmarks;
+        _weeklyTargets = weeklyTargets;
     }
 
     /// <summary>
@@ -131,16 +141,22 @@ public sealed class WeeklySetPlanner
             entry => entry.Key,
             entry => entry.Value.RawSets);
 
+        // Cilj nedelje, a ne MAV: faza volumena i faza intenziteta se razlikuju upravo po
+        // kolicini rada, pa cilj mora da se pomera zajedno sa propisom. Ravna nedelja daje
+        // odnos jedan, dakle tacno MAV - zatecen blok se ne menja.
+        var weeklyTargets = await _weeklyTargets.ResolveAsync(
+            userId,
+            trainingWeekId,
+            landmarks,
+            cancellationToken);
+
         var targets = slots
             .SelectMany(slot => slot.Muscles.Select(muscle => muscle.MuscleGroupId))
             .Concat(responses.Keys)
             .Distinct()
-            .Where(landmarks.ContainsKey)
+            .Where(weeklyTargets.ByMuscleGroupId.ContainsKey)
             .OrderBy(muscleGroupId => muscleGroupId)
-            .Select(muscleGroupId => new MuscleVolumeTarget(
-                muscleGroupId,
-                landmarks[muscleGroupId].Mav,
-                landmarks[muscleGroupId].Mrv))
+            .Select(muscleGroupId => weeklyTargets.ByMuscleGroupId[muscleGroupId])
             .ToList();
 
         var allocated = WeeklySetAllocation.Allocate(slots, targets, completedStimulative, completedRaw);

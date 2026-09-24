@@ -52,11 +52,18 @@
             [style.width.%]="row.barPct"
           ></div>
           <span class="marker marker--mev" [style.left.%]="row.mevPct" aria-hidden="true"></span>
-          <span class="marker marker--mav" [style.left.%]="row.mavPct" aria-hidden="true"></span>
+          <span class="marker marker--mav" [style.left.%]="row.targetPct" aria-hidden="true"></span>
           <span class="marker marker--mrv" [style.left.%]="row.mrvPct" aria-hidden="true"></span>
         </div>
         <p class="vrow__meta numeric">
-          MEV {{ row.mev }} · <strong>cilj {{ row.mav }}</strong> · MRV {{ row.mrv }}
+          MEV {{ row.mev }} ·
+          @if (row.weekTarget !== null) {
+            <strong>cilj ove nedelje {{ row.weekTarget | number: '1.0-1' }}</strong>
+            <span class="vrow__learned">MAV {{ row.mav }}</span>
+          } @else {
+            <strong>cilj {{ row.mav }}</strong>
+          }
+          · MRV {{ row.mrv }}
           @if (row.isPersonal) {
             <span class="vrow__learned">
               lično (podrazumevano {{ row.defaultMev }}/{{ row.defaultMav }}/{{ row.defaultMrv }})
@@ -75,8 +82,14 @@
     </div>
     <p class="legend__note">
       Boja pokazuje da li si unutar pojasa: ispod MEV-a nema stimulusa, iznad MRV-a nema
-      oporavka. Unutar pojasa gađaj marker cilja (MAV) - volumen na kome telo najbolje
-      napreduje bez ulaska u prekomeran zamor.
+      oporavka. Unutar pojasa gađaj marker cilja - volumen na kome telo najbolje napreduje
+      bez ulaska u prekomeran zamor.
+    </p>
+    <p class="legend__note">
+      Cilj se pomera zajedno sa nedeljom: nedelja volumena gađa iznad MAV-a, nedelja
+      intenziteta ispod njega, a blok snage niže od hipertrofijskog — teže serije koštaju
+      više oporavka. Kad piše i „cilj ove nedelje" i „MAV", prvi je ono što plan gađa, a
+      drugi naučena granica. U deload nedelji cilja nema: tamo je manji volumen namera.
     </p>
     <p class="legend__note">
       Broje se samo stimulativne serije: serija do otkaza ili blizu njega (RIR 0–3) ulazi

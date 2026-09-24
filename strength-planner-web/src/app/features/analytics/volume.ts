@@ -17,6 +17,13 @@ interface VolumeRow extends VolumeItemDto {
   mevPct: number;
   mavPct: number;
   mrvPct: number;
+  /**
+   * Gde stoji marker cilja. Nedelja volumena gadja iznad MAV-a, nedelja intenziteta ispod,
+   * pa marker prati nedelju - inace bi ekran pokazivao cilj koji plan ne gadja.
+   */
+  targetPct: number;
+  /** Cilj ove nedelje kada se razlikuje od MAV-a; inace null, da se broj ne ponavlja. */
+  weekTarget: number | null;
 }
 
 @Component({
@@ -108,12 +115,17 @@ export class Volume {
     return s.items.map((item) => {
       const sets = Number(item.sets);
       const scale = Math.max(sets, item.mrv) * 1.15 || 1;
+      const weekTarget = item.weekTargetSets === null ? null : Number(item.weekTargetSets);
+      // Razlika manja od desetinke serije je zaokruzivanje, a ne druga namera.
+      const differs = weekTarget !== null && Math.abs(weekTarget - item.mav) >= 0.1;
       return {
         ...item,
         barPct: toPct(sets / scale),
         mevPct: toPct(item.mev / scale),
         mavPct: toPct(item.mav / scale),
         mrvPct: toPct(item.mrv / scale),
+        targetPct: toPct((differs ? weekTarget! : item.mav) / scale),
+        weekTarget: differs ? weekTarget : null,
       };
     });
   });
