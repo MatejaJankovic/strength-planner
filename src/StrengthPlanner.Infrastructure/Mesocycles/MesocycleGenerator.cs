@@ -246,8 +246,13 @@ public class MesocycleGenerator : IMesocycleGenerator
                     // Vežba iz ličnog šablona nosi svoje serije i opseg; ista periodizacija
                     // ih pomera kroz blok kao što pomera propis izveden iz cilja, jer
                     // ForWeek i inače prima "osnovu" kao parametar. RIR ostaje iz cilja.
-                    var baseRepRangeMin = planned.RepRangeMin ?? goalSettings.RepRangeMin;
-                    var baseRepRangeMax = planned.RepRangeMax ?? goalSettings.RepRangeMax;
+                    //
+                    // Kada šablon ne kaže opseg, on se izvodi iz cilja I iz tipa vežbe:
+                    // izolacija u bloku snage ostaje na 8-12, jer se snaga izražava u
+                    // složenim pokretima, a ne u trojci na bočnom podizanju.
+                    var exerciseSettings = GoalPrescriptions.ForExercise(goal, exercise.Type);
+                    var baseRepRangeMin = planned.RepRangeMin ?? exerciseSettings.RepRangeMin;
+                    var baseRepRangeMax = planned.RepRangeMax ?? exerciseSettings.RepRangeMax;
 
                     var exercisePrescription = planned.Sets is null
                         ? prescription
