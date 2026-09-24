@@ -57,6 +57,12 @@ public static class Periodization
     /// detection, and the e1RM term of the fatigue score. A volume week pushed past the cap
     /// would therefore go dark exactly where the block is heaviest — the plan would look
     /// fine while the system stopped measuring it.
+    ///
+    /// The cap therefore <b>moves</b> a week rep window instead of narrowing it, and what
+    /// it swallows comes back as a set — see <see cref="CappedShiftSetBonus"/>. A
+    /// hypertrophy block starts at 8-12, flush against the cap, so the volume phase used to
+    /// come out as 11-12: a two-rep window that raised the floor by three reps while
+    /// pretending to be the easier week, and left double progression nothing to climb.
     /// </summary>
     public const int MaxReps = TrainingConstants.EpleyRepCap;
 
@@ -76,6 +82,21 @@ public static class Periodization
 
     /// <summary>Below two sets an exercise stops being trained.</summary>
     public const int MinSets = 2;
+
+    /// <summary>
+    /// Sets a week gains when <see cref="MaxReps"/> swallows its upward rep shift.
+    ///
+    /// A volume phase means more work at a greater distance from failure. Reps are the
+    /// first lever, but a goal whose range already ends at the cap has none left — and a
+    /// week that cannot express its own phase is a week the model does not use: with the
+    /// window merely sliding back, the inverse block came out with two identical weeks
+    /// (its base week and its transition week), which is what the narrowed window had been
+    /// hiding. The work goes into sets instead, which the weekly volume target then follows.
+    ///
+    /// One set, however many reps were swallowed. Sets and reps are not interchangeable
+    /// one for one, and the bonus is meant to keep the phase legible, not to reprice it.
+    /// </summary>
+    public const int CappedShiftSetBonus = 1;
 
     /// <summary>One week's shifts away from the goal's base prescription.</summary>
     private sealed record WeekShape(int RepShift, int RirShift, int SetShift, bool IsDeload = false);
@@ -160,41 +181,115 @@ public static class Periodization
                 TargetRir: baseTargetRir);
         }
 
-        // Opseg se pomera kao celina, ali donja granica ne sme ispod tri ponavljanja.
-        // Kod snage (3-6) to znači da faza intenziteta ostaje uska — tamo se intenzitet
-        // podiže RIR-om, jer niže od tri ponavljanja blok više nije hipertrofija.
-        var repRangeMin = Math.Clamp(baseRepRangeMin + shape.RepShift, MinReps, MaxReps - 1);
-        var repRangeMax = Math.Clamp(
-            baseRepRangeMax + shape.RepShift,
-            repRangeMin + 1,
-            MaxReps);
+        var (repRangeMin, repRangeMax) = RepWindow(baseRepRangeMin, baseRepRangeMax, shape.RepShift);
 
         return new WeekPrescription(
             weekNumber,
             IsDeload: false,
-            Sets: Math.Max(MinSets, baseSets + shape.SetShift),
+            Sets: SetsFor(shape, baseRepRangeMax, baseSets),
             RepRangeMin: repRangeMin,
             RepRangeMax: repRangeMax,
             TargetRir: Math.Clamp(baseTargetRir + shape.RirShift, MinRir, MaxRir));
     }
 
     /// <summary>
-    /// How many sets a training week carries, given the block's base set count.
-    /// Throws for a deload week, whose halving cannot be inverted.
+    /// One week rep window: the whole range moves by the week shift, keeping its width.
+    ///
+    /// The two bounds are clamped for different reasons, and that is why they behave
+    /// differently. <see cref="MaxReps"/> is a <i>measurement</i> limit — above it no e1RM
+    /// can be read — so a window that would cross it slides back down and stays as wide as
+    /// the range it came from. <see cref="MinReps"/> is a <i>training</i> decision: below
+    /// three reps the block stops being what it says it is, so there the window really does
+    /// narrow, and strength weeks lean on RIR for the rest of the intensity.
+    ///
+    /// The width may be zero. A lifter who prescribes 5 reps means five, not five or six.
     /// </summary>
-    public static int SetsForWeek(PeriodizationModel model, int weekNumber, int baseSets)
+    private static (int Min, int Max) RepWindow(int baseRepRangeMin, int baseRepRangeMax, int repShift)
     {
-        return ForWeek(model, weekNumber, MinReps, MinReps + 1, MinRir, baseSets).Sets;
+        var width = Math.Max(0, baseRepRangeMax - baseRepRangeMin);
+        var max = Math.Clamp(baseRepRangeMax + repShift, MinReps, MaxReps);
+
+        return (Math.Clamp(max - width, MinReps, max), max);
+    }
+
+    /// <summary>
+    /// A week set count: the shape own shift, plus the set the Epley cap owes it.
+    /// </summary>
+    private static int SetsFor(WeekShape shape, int baseRepRangeMax, int baseSets)
+    {
+        return Math.Max(MinSets, baseSets + SetShift(shape, baseRepRangeMax));
+    }
+
+    /// <summary>
+    /// Sets this week stands away from the block base week. Not a constant of the shape
+    /// any more: a week whose rep shift ran into <see cref="MaxReps"/> carries it as a set,
+    /// so the shift can only be read together with the range it was applied to.
+    /// </summary>
+    private static int SetShift(WeekShape shape, int baseRepRangeMax)
+    {
+        var swallowed = shape.RepShift > 0 && baseRepRangeMax + shape.RepShift > MaxReps;
+
+        return shape.SetShift + (swallowed ? CappedShiftSetBonus : 0);
+    }
+
+    /// <summary>
+    /// The week of this block whose prescription <b>is</b> the base: no rep shift, no RIR
+    /// shift, no set shift.
+    ///
+    /// Reading the base set count from that week is strictly better than inverting a
+    /// shift, and the reason is the stored data. A plan row written by an earlier version
+    /// of this file carries the set count that version prescribed, and inverting today's
+    /// shift out of it recovers a base the block never had. Measured on the development
+    /// database: 440 rows sit in a week whose shift today includes
+    /// <see cref="CappedShiftSetBonus"/>, and 392 of them were written before that bonus
+    /// existed - 168 of those carry a rep window (11-15) that today's code cannot even
+    /// produce. No migration can tell those versions apart with confidence, and a restored
+    /// planned deload carries another week's phase entirely. The base week needs none of
+    /// that: no version of this file ever shifted it.
+    /// </summary>
+    public static int BaseWeekNumber(PeriodizationModel model)
+    {
+        var shapes = ShapesFor(model);
+
+        for (var index = 0; index < shapes.Length; index++)
+        {
+            var shape = shapes[index];
+
+            if (!shape.IsDeload && shape.RepShift == 0 && shape.RirShift == 0 && shape.SetShift == 0)
+            {
+                return index + 1;
+            }
+        }
+
+        throw new InvalidOperationException(
+            $"Periodization model {model} has no week that carries the base prescription.");
     }
 
     /// <summary>
     /// Recovers the block's base set count from what a training week actually carries.
     ///
+    /// Prefer <see cref="BaseWeekNumber"/> and read the base week directly; this is the
+    /// fallback for when that week is itself a deload. It cannot undo either clamp: a week
+    /// pinned at <see cref="MinSets"/> could have come from two different bases (2 and 3
+    /// both prescribe 2 sets in a week that removes one), and a row written by an older
+    /// rule carries a shift that is not today's.
+    ///
     /// The deload logic needs it: it has stored plans, not the profile that produced them,
     /// and reading the experience level again would silently re-shape a block in progress
     /// for anyone who changed their level part-way through.
+    ///
+    /// <paramref name="baseRepRangeMax"/> is what keeps it invertible. Since the Epley cap
+    /// can turn a rep shift into a set (<see cref="CappedShiftSetBonus"/>), the same week
+    /// number carries a different set shift for a hypertrophy exercise than for a strength
+    /// one, and only the range it was prescribed from says which. This is the same reason
+    /// <c>ExercisePlan.BaseRepRangeMin/Max</c> are stored at all: a clamp cannot be undone
+    /// from its own result.
     /// </summary>
-    public static int BaseSetsFrom(PeriodizationModel model, int weekNumber, int weekSets)
+    public static int BaseSetsFrom(
+        PeriodizationModel model,
+        int weekNumber,
+        int weekSets,
+        int baseRepRangeMax)
     {
         var shapes = ShapesFor(model);
 
@@ -206,7 +301,7 @@ public static class Periodization
                 "Base sets can only be recovered from a training week of this block.");
         }
 
-        return Math.Max(MinSets, weekSets - shapes[weekNumber - 1].SetShift);
+        return Math.Max(MinSets, weekSets - SetShift(shapes[weekNumber - 1], baseRepRangeMax));
     }
 
     /// <summary>A deload halves the sets, but never below one.</summary>

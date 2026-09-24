@@ -59,6 +59,15 @@ Pregled logike treninga (odeljak A: sve što direktno menja predloženu težinu)
 | [Pouzdanost procene maksimuma](e1rm-reliability.md) | Serija daleko od otkaza je davala e1RM, a jedna naduvana procena je osam nedelja bila polazna težina bloka | #62 |
 | [Sopstvena masa je opterećenje](bodyweight-load.md) | Zgib se vodio kao 0 kg, pa je e1RM bio nula, tonaža nula, a progresija je nudila korak više (1 kg) na vežbi koja se ne opterećuje | #63 |
 
+## Deseti krug — periodizacija, deload, volumen
+
+Isti pregled logike treninga, odeljak B: sve što odlučuje o propisu nedelje — raspored kroz
+blok, rasterecenje i cilj volumena.
+
+| Grana | O čemu je | PR |
+|---|---|---|
+| [Prozor ponavljanja i fiksan broj](rep-window-and-fixed-reps.md) | Faza volumena hipertrofije je ispadala kao opseg od dva ponavljanja (11–12), a lični šablon sa 5–5 je u planu dobijao 5–6 | #65 |
+
 ## Ako čitaš samo jedno
 
 [Periodizacija po nedeljama](periodization-models.md) — to je bio najveći raskorak između

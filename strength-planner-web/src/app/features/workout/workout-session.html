@@ -173,7 +173,7 @@
               [value]="plan.setLogs.length + ' / ' + plan.targetSets"
               [tone]="setsTone(plan)"
             />
-            <app-stat-chip label="Opseg" [value]="plan.repRangeMin + '–' + plan.repRangeMax" />
+            <app-stat-chip label="Opseg" [value]="repRange(plan)" />
             <app-stat-chip label="RIR cilj" [value]="plan.targetRir" />
           </div>
           @if (plan.targetSets !== plan.prescribedSets) {
@@ -294,12 +294,12 @@
                       korak više.
                     }
                     @case ('at-top-narrow') {
-                      Vrh uskog opsega - ovde korak ide samo ako ostane rezerve, pa proveri
-                      predlog u rezimeu.
+                      Vrh propisanih ponavljanja - ovde korak ide samo ako ostane rezerve, pa
+                      proveri predlog u rezimeu.
                     }
                     @case ('failure-at-top-narrow') {
-                      Otkaz na vrhu uskog opsega - to je teže od plana; ako su sve serije
-                      takve, opterećenje se zadržava.
+                      Otkaz na vrhu propisanih ponavljanja - to je teže od plana; ako su sve
+                      serije takve, opterećenje se zadržava.
                     }
                     @case ('failure-in-range') {
                       Otkaz unutar opsega - RIR je 0.

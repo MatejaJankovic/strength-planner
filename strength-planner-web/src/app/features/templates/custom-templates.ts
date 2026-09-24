@@ -12,6 +12,7 @@ import {
   TEMPLATE_LIMITS,
 } from '../../core/models/training.models';
 import { Loading } from '../../shared/components/loading/loading';
+import { repRangeLabel } from '../../shared/rep-range-label';
 
 /** Vežba u danu koji se sastavlja. Drži se identifikator, naziv se čita iz kataloga. */
 interface DraftExercise {
@@ -33,6 +34,11 @@ interface DraftDay {
   styleUrl: './custom-templates.scss',
 })
 export class CustomTemplates {
+  /** Propisana ponavljanja: `8-12`, ili samo `5` kada je propisan tacan broj. */
+  protected repRange(repRangeMin: number, repRangeMax: number): string {
+    return repRangeLabel(repRangeMin, repRangeMax);
+  }
+
   private readonly customTemplateService = inject(CustomTemplateService);
   private readonly exerciseService = inject(ExerciseService);
   private readonly router = inject(Router);

@@ -56,6 +56,14 @@ Dve granice su tvrde i obe postoje zbog sistema oko njih, ne zbog trenažne teor
   1RM-a, a tu procenu čitaju tri stvari: trend snage, prepoznavanje rekorda i član ocene
   umora. Nedelja volumena propisana na 11–15 izgledala bi uredno, a sistem bi u njoj
   prestao da meri.
+
+  > **Kasnija izmena (pregled logike treninga, odeljak B).** Tabela iznad pokazuje kako je
+  > granica radila u ovom krugu: prozor se **sužavao**, pa je faza volumena hipertrofije
+  > ispadala 11–12 — nedelja koja treba da bude lakša tražila je tri ponavljanja više na
+  > donjoj granici, i dupla progresija u njoj nije imala po čemu da raste. Granica od tada
+  > prozor **pomera** i zadržava širinu, a ponavljanja koja pojede vraća kao seriju: nedelje
+  > 1 i 2 su sada `6 × 8–12`. Kod snage se nije promenilo ništa, jer 3–6 granicu ne
+  > dodiruje. Vidi [`rep-window-and-fixed-reps.md`](rep-window-and-fixed-reps.md).
 - **Najniži ciljni RIR je 1, ne 0.** Umor se meri kao *manjak* u odnosu na cilj, a ispod
   nule manjka nema — ponavljanja u rezervi ne idu u minus. Nedelja propisana do otkaza tiho
   bi izgubila najteži član ocene umora (0.35) i nikada ne bi mogla da pokrene raniji deload.
@@ -111,6 +119,9 @@ Promenljiva dužina bloka dodiruje više mesta nego što se čini:
   | Ravan | 4 | 4 × 8–12, RIR 1 @ 107.5 kg |
   | Linearan | 6 | 5 × 11–12, RIR 2 @ 97.5 kg |
   | Obrnut | 6 | 3 × 6–10, RIR 2 @ 110.0 kg |
+
+  (Linearna prva nedelja je od kasnije izmene `6 × 8–12`, pa i njeno polazno opterećenje
+  nije više 97.5 kg — izvodi se iz propisa te nedelje.)
 
   Ista snaga, tri različita polazna opterećenja — jer se izvode iz propisa te nedelje.
 

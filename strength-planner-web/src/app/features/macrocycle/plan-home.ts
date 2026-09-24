@@ -16,6 +16,7 @@ import {
   WorkoutTemplateDto,
 } from '../../core/models/training.models';
 import { EmptyState } from '../../shared/components/empty-state/empty-state';
+import { repRangeLabel } from '../../shared/rep-range-label';
 import { Loading } from '../../shared/components/loading/loading';
 
 /**
@@ -39,6 +40,11 @@ const MAX_BLOCKS = 6;
   styleUrl: './plan-home.scss',
 })
 export class PlanHome {
+  /** Propisana ponavljanja: `8-12`, ili samo `5` kada je propisan tacan broj. */
+  protected repRange(repRangeMin: number, repRangeMax: number): string {
+    return repRangeLabel(repRangeMin, repRangeMax);
+  }
+
   private readonly macrocycleService = inject(MacrocycleService);
   private readonly mesocycleService = inject(MesocycleService);
   private readonly router = inject(Router);
