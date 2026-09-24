@@ -80,6 +80,23 @@ public static class Periodization
     /// <summary>Above four reps in reserve a set stops driving adaptation.</summary>
     public const int MaxRir = 4;
 
+    /// <summary>
+    /// Reps in reserve a deload week adds to the goal target.
+    ///
+    /// A deload halves the sets and drops the load to 90% of what was used, but it used to
+    /// keep the goal RIR, and the two do not fit together. Ten percent of a one-rep max is
+    /// worth about three effective reps by Epley, so the same rep range at 90% is reached
+    /// with roughly three more in reserve: a hypertrophy deload prescribed at RIR 1 asked
+    /// the lifter to come within one rep of failure on a load where that is no longer
+    /// possible. With a 1RM of 130 kg the deload sits at 90 kg, and RIR 1 there means
+    /// something close to a normal working set - which is what a deload is not.
+    ///
+    /// Two, not three, and clamped by <see cref="MaxRir"/>: understating the reserve keeps
+    /// the week a training week rather than a warm-up, and the deload load is already set
+    /// from what was really lifted rather than from an estimate.
+    /// </summary>
+    public const int DeloadRirShift = 2;
+
     /// <summary>Below two sets an exercise stops being trained.</summary>
     public const int MinSets = 2;
 
@@ -147,8 +164,9 @@ public static class Periodization
     /// <summary>
     /// One week's prescription; <paramref name="weekNumber"/> counts from 1.
     ///
-    /// A deload week keeps the goal's rep range and RIR and halves the sets. Its load is
-    /// set separately, to 90% of what was actually used, once the previous week finishes.
+    /// A deload week keeps the goal's rep range, halves the sets and leaves more in
+    /// reserve (<see cref="DeloadRir"/>). Its load is set separately, to 90% of what was
+    /// actually used, once the previous week finishes.
     /// </summary>
     public static WeekPrescription ForWeek(
         PeriodizationModel model,
@@ -178,7 +196,7 @@ public static class Periodization
                 Sets: DeloadSets(baseSets),
                 RepRangeMin: baseRepRangeMin,
                 RepRangeMax: baseRepRangeMax,
-                TargetRir: baseTargetRir);
+                TargetRir: DeloadRir(baseTargetRir));
         }
 
         var (repRangeMin, repRangeMax) = RepWindow(baseRepRangeMin, baseRepRangeMax, shape.RepShift);
@@ -308,6 +326,15 @@ public static class Periodization
     public static int DeloadSets(int baseSets)
     {
         return Math.Max(1, (int)Math.Ceiling(baseSets / 2m));
+    }
+
+    /// <summary>
+    /// Target RIR of a deload week, given the goal it deloads from.
+    /// See <see cref="DeloadRirShift"/> for why it is not the goal RIR itself.
+    /// </summary>
+    public static int DeloadRir(int baseTargetRir)
+    {
+        return Math.Clamp(baseTargetRir + DeloadRirShift, MinRir, MaxRir);
     }
 
     /// <summary>The whole block, week by week.</summary>

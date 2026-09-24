@@ -131,10 +131,16 @@ public sealed class DeloadService
             .Select(mesocycle => new { mesocycle.Goal, mesocycle.PeriodizationModel })
             .FirstOrDefaultAsync(cancellationToken);
 
-        var goal = block is null
-            ? (GoalPrescription?)null
-            : GoalPrescriptions.ForGoal(block.Goal);
-        var model = block?.PeriodizationModel ?? PeriodizationModel.Flat;
+        // Bez mezociklusa nema ni cilja ni modela, a pretpostavljati ih (ravan blok, RIR
+        // iz samog plana) znaci propisati nedelju iz pogodjenih vrednosti. Upit je vec
+        // filtriran po korisniku, pa je null ovde "nije njegov blok".
+        if (block is null)
+        {
+            return null;
+        }
+
+        var goal = GoalPrescriptions.ForGoal(block.Goal);
+        var model = block.PeriodizationModel;
 
         await ApplyDeloadAsync(
             userId,
@@ -186,7 +192,7 @@ public sealed class DeloadService
         Guid mesocycleId,
         int autoDeloadWeekNumber,
         PeriodizationModel model,
-        GoalPrescription? goal,
+        GoalPrescription goal,
         CancellationToken cancellationToken)
     {
         var planned = await _db.TrainingWeeks
@@ -279,7 +285,10 @@ public sealed class DeloadService
                 autoDeloadWeekNumber,
                 plan.BaseRepRangeMin,
                 plan.BaseRepRangeMax,
-                goal?.TargetRir ?? plan.TargetRir,
+                // RIR cilja, nikada onaj koji plan nosi: plan ove nedelje je planirani
+                // deload, pa nosi RIR deload-a (cilj + DeloadRirShift). Propisati nedelju
+                // iz njega znacilo bi trenaznu nedelju dve rezerve laksu od plana.
+                goal.TargetRir,
                 baseSets);
 
             // Nedelja dobija nov propis, pa se sidro pomera zajedno sa predlogom;
@@ -308,7 +317,7 @@ public sealed class DeloadService
         Guid deloadWeekId,
         int deloadWeekNumber,
         PeriodizationModel model,
-        GoalPrescription? goal,
+        GoalPrescription goal,
         CancellationToken cancellationToken)
     {
         // Serije se grupišu u memoriji, jer referentnu težinu bira domensko pravilo
@@ -411,19 +420,16 @@ public sealed class DeloadService
             plan.TargetSets = Periodization.DeloadSets(baseSets);
             plan.PrescribedSets = plan.TargetSets;
 
-            // Rasterećenje vraća osnovni rep-opseg i RIR cilja. Kod ravnog bloka su već
-            // takvi, pa se ništa ne menja; kod periodizovanog je ovo jedina stvar koja
-            // sprečava deload propisan do otkaza.
+            // Rasterećenje vraća osnovni rep-opseg, a RIR diže iznad cilja. Kod
+            // periodizovanog bloka je opseg jedina stvar koja sprečava deload propisan do
+            // otkaza; RIR je druga, i nju je deload ranije ispuštao.
             //
             // Osnova je opseg tog plana, a ne cilja: kod ličnog šablona to je opseg koji je
             // korisnik uneo za tu vežbu. Za ugrađen šablon su iste vrednosti.
             plan.RepRangeMin = plan.BaseRepRangeMin;
             plan.RepRangeMax = plan.BaseRepRangeMax;
 
-            if (goal is not null)
-            {
-                plan.TargetRir = goal.TargetRir;
-            }
+            plan.TargetRir = Periodization.DeloadRir(goal.TargetRir);
 
             var key = (plan.ExerciseId, plan.WorkoutSession.DayLabel);
             var bodyweightLoadKg = BodyweightPortionResolver.PortionFor(
