@@ -19,6 +19,51 @@ public class StrengthChangeTests
     private static readonly Guid Squat = new("00000000-0000-0000-0000-0000000000b2");
 
     /// <summary>
+    /// Ravan blok — podrazumevani — je mesto gde artefakt zaista živi: propis je iste
+    /// nedelje isti, pa se opterećenje **prenosi** uz korak umesto da se izvodi iz sveže
+    /// procene. Nedelja odrađena na vrhu opsega pa nedelja na dnu, sa opterećenjem
+    /// 107.5 → 110: stara mera čita pad od 7.2% na glavnim dizanjima (prosek nedelje 3.5%,
+    /// ocena umora +0.174), a nedelja je od početka do kraja po propisu.
+    /// </summary>
+    [Fact]
+    public void InAFlatBlock_TopThenFloor_UsedToReadAsADecline()
+    {
+        var calculator = new E1RmCalculator();
+
+        var topLastWeek = calculator.EstimateOneRepMax(107.5m, 12, 1);
+        var floorThisWeek = calculator.EstimateOneRepMax(110m, 8, 1);
+        var oldReading = (floorThisWeek - topLastWeek) / topLastWeek;
+
+        Assert.Equal(154.1m, topLastWeek, precision: 1);
+        Assert.Equal(143.0m, floorThisWeek, precision: 1);
+        Assert.True(oldReading < -0.07m, $"Staro čitanje je {oldReading:P1}.");
+
+        // 8 + 1 naspram 12 + 1: nije uporedivo, pa nema dokaza ni u jednom smeru.
+        Assert.Null(StrengthChange.ChangeShare(
+            [new StrengthSample(Bench, 8, 1, 110m)],
+            [new StrengthSample(Bench, 12, 1, 107.5m)]));
+    }
+
+    /// <summary>
+    /// A u periodizovanom bloku artefakta nema ni po staroj meri: propis sa drugim RIR-om
+    /// izvodi opterećenje iz sveže procene (105 → 117.5 kg), pa dve procene stoje u krugu
+    /// od jednog procenta. Zato nalaz koji je krivio pomeranje prozora gleda u pogrešan
+    /// blok — merenje u živoj aplikaciji daje istu ocenu umora i sa starim i sa novim
+    /// pravilom.
+    /// </summary>
+    [Fact]
+    public void InAPeriodizedBlock_TheLoadIsReDerived_SoThereIsNoArtefactToBeginWith()
+    {
+        var calculator = new E1RmCalculator();
+
+        var topLastWeek = calculator.EstimateOneRepMax(105m, 12, 2);
+        var floorThisWeek = calculator.EstimateOneRepMax(117.5m, 8, 1);
+        var change = (floorThisWeek - topLastWeek) / topLastWeek;
+
+        Assert.True(Math.Abs(change) < 0.01m, $"Promena je {change:P1}, očekivano ispod 1%.");
+    }
+
+    /// <summary>
     /// Merenje koje je pokrenulo ovu granu, sada kao test. Nedelje 3 i 4 linearnog
     /// hipertrofijskog bloka: u prvoj vežbač pogodi vrh opsega, u drugoj dno — oba puta
     /// tačno ono što propis traži, uz opterećenje izvedeno iz istog maksimuma.

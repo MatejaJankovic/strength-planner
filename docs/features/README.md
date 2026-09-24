@@ -79,6 +79,7 @@ granice volumena.
 | Grana | O čemu je | PR |
 |---|---|---|
 | [Nezavisni signali umora](independent-fatigue-signals.md) | Nedelja u kojoj je sve išlo do otkaza je istom činjenicom punila dva od četiri signala i sama pokretala deload; granice volumena su imale drugu definiciju iste mere | #70 |
+| [Pad snage poredivim sa poredivim](comparable-strength-change.md) | Nedelja odrađena na vrhu opsega pa nedelja na dnu — obe po propisu — čitala se kao pad snage od 7.2% u ravnom bloku | #71 |
 
 ## Ako čitaš samo jedno
 

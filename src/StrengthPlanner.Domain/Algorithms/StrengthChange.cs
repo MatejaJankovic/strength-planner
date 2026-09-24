@@ -12,14 +12,29 @@ public sealed record StrengthSample(Guid ExerciseId, int Reps, int Rir, decimal 
 ///
 /// The fatigue score reads a drop in estimated strength as one of its four signals, and it
 /// used to measure that as the week's <i>best</i> estimate against the previous week's
-/// best, per exercise. Where in the prescribed range the lifter lands is itself part of the
-/// prescription, and it moves: a set at the top of an 8-12 week and a set at the floor of
-/// the next one are both compliant. Measured through the app's own rules, that pair reads
-/// as a <b>9.3% to 9.9% collapse</b> — enough to saturate a signal whose full weight sits
-/// at 5% — in weeks where nothing about the plan changed except which end of the range was
-/// hit. The audit expected the artefact to come from the rep window moving; with the load
-/// re-derived for a new prescription, that part contributes at most 0.42% for hypertrophy
-/// and 3.29% for strength.
+/// best, per exercise, with no test of whether the two sets were comparable at all. Where
+/// in the prescribed range the lifter lands is itself part of the prescription: a set at
+/// the top of an 8-12 week and a set at the floor of the next are both compliant, and the
+/// estimate from 12 reps is far above the one from 8 at a similar load.
+///
+/// Measured in the running app, a week logged at the top followed by one logged at the
+/// floor — nothing but compliance in both:
+///
+/// <list type="bullet">
+/// <item><b>Flat block</b> (the default, where the same prescription carries the load
+/// forward with a step): the main lifts read 154.1 against 143.0, a 7.2% drop, the average
+/// over the week's exercises is 3.5%, and the fatigue score picks up <b>0.174</b> from a
+/// week in which nothing went wrong.</item>
+/// <item><b>Periodized block</b>: <b>nothing</b>. A changed prescription re-derives its
+/// load from the week's own fresh estimate (105 kg became 117.5 kg, not 110), so the next
+/// reading lands within 0.8% and the score is identical either way.</item>
+/// </list>
+///
+/// Which reverses the audit's expectation: it blamed the rep window moving, and the moving
+/// window is the case that corrects itself. (An earlier version of this comment quoted
+/// 9.3-9.9%, computed by holding the one-rep max fixed across the block. No path in the app
+/// does that - the estimate feeds the next load - so the figure described a lifter this
+/// system does not have.)
 ///
 /// So the comparison is made between sets that are actually comparable: the same exercise
 /// at the same effective reps, within <see cref="ComparableRepSpread"/>. Estimates rather

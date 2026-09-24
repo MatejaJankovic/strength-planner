@@ -177,6 +177,15 @@ odmah ispod, *"Sledeće 82.5 kg ↑"*. Rezime se sada usklađuje sa stvarnim pla
 provereno da za svih šest vežbi prijavljuje tačno ono što stoji u deload nedelji
 (72.5 / 70 kg), bez strelice naviše.
 
+### Kasnija izmena (odeljak C): pad snage se meri poredivim sa poredivim
+
+Član o padu snage je poredio najbolju procenu nedelje sa najboljom procenom prethodne, bez
+pitanja da li su te dve serije uporedive. Gde u opsegu vežbač padne je deo propisa: nedelja
+na vrhu pa nedelja na dnu su obe po propisu, a u **ravnom** bloku (gde se opterećenje prenosi
+uz korak) to čita kao pad od 7.2% na glavnim dizanjima i donosi **0.174** ocene. U
+periodizovanom bloku artefakta nema — novi propis izvodi opterećenje iz sveže procene, pa je
+razlika 0.8%. Vidi [`comparable-strength-change.md`](comparable-strength-change.md).
+
 ### Kasnija izmena (odeljak C): jedan uzrok je punio dva signala
 
 Pravilo „nijedan signal sam ne može da pokrene deload" je imalo izuzetak koji ga je rušio u
