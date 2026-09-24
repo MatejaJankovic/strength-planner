@@ -254,15 +254,17 @@ public class MesocycleGenerator : IMesocycleGenerator
                     var baseRepRangeMin = planned.RepRangeMin ?? exerciseSettings.RepRangeMin;
                     var baseRepRangeMax = planned.RepRangeMax ?? exerciseSettings.RepRangeMax;
 
-                    var exercisePrescription = planned.Sets is null
-                        ? prescription
-                        : Periodization.ForWeek(
-                            periodizationModel,
-                            weekNumber,
-                            baseRepRangeMin,
-                            baseRepRangeMax,
-                            goalSettings.TargetRir,
-                            planned.Sets.Value);
+                    // Propis se racuna po vezbi, a ne po nedelji. Dok su sve vezbe delile
+                    // opseg cilja, nedeljni propis je bio isti za svaku i racunao se jednom;
+                    // sada izolacija nosi svoj opseg, pa deljeni propis nije ni tacan.
+                    // Za slozene vezbe iz ugradjenog sablona daje identicne brojeve.
+                    var exercisePrescription = Periodization.ForWeek(
+                        periodizationModel,
+                        weekNumber,
+                        baseRepRangeMin,
+                        baseRepRangeMax,
+                        goalSettings.TargetRir,
+                        planned.Sets ?? startingSets);
 
                     var targetWeightKg = GetInitialTargetWeight(
                         weekNumber,
