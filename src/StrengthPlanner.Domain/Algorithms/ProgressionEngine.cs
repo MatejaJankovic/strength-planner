@@ -123,8 +123,10 @@ public sealed class ProgressionEngine
     ///
     /// Rounding to the nearest step can cross the used weight when that weight does not sit
     /// on the step grid — which it need not, since it comes from what the lifter logged. A
-    /// harder-than-planned session at 102 kg with a -1% correction rounds 100.98 kg up to
-    /// 102.5 kg on a 2.5 kg step, so the load rises after a session that asked for less.
+    /// harder-than-planned session at 107 kg with a -1% correction gives 105.93 kg, which
+    /// rounds up to 110 kg on a 10 kg step, so the load rises after a session that asked for
+    /// less. (This comment first used 102 kg on a 2.5 kg step, where 100.98 rounds to 100
+    /// and nothing reverses — the regression test always used the 107 kg case.)
     /// The sign of the correction is the decision; the step is only how fine the result can
     /// be expressed. With no correction at all the used weight is kept as it is.
     /// </summary>

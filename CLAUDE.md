@@ -330,15 +330,16 @@ longer that feature's.
 
 **Round 9 — an audit of the training logic itself, against the thesis and the handbook.**
 The user asked for every inconsistency in how sets are entered, volume is counted and load
-is raised. Eight of them changed the weight the lifter is handed, and that is section A —
-the part that was built. Analysis and outcomes per finding are in each write-up.
+is raised. Eight of them touch the load the lifter is handed — seven in the arithmetic, one
+in what the guide advises about judging RIR — and that is section A, the part that was
+built. Analysis and outcomes per finding are in each write-up.
 
 | Branch | What it fixed | PR |
 |---|---|---|
 | `fix/load-progression` | Reaching the top of the rep range could hold or *lower* the load while the summary showed an arrow up; a set below the range with reserve raised it | #60 |
 | `fix/progression-reference-and-summary` | Progression started from the **average** of the session's weights, a skipped exercise carried full load into a deload, and the arrow did not describe the number beside it | #61 |
 | `fix/e1rm-reliability` | A set far from failure produced an e1RM, and one inflated estimate stayed the block's starting load for eight weeks | #62 |
-| `feature/bodyweight-load` | A pull-up was logged as 0 kg, so its e1RM was 0, its tonnage 0, and progression offered "+2.5 kg" on a set that was never loaded | #63 |
+| `feature/bodyweight-load` | A pull-up was logged as 0 kg, so its e1RM was 0, its tonnage 0, and progression offered one step more (1 kg, its equipment's) on a set that was never loaded | #63 |
 
 Sequential, each merged before the next branched.
 
@@ -349,7 +350,11 @@ out. At 160 kg the same rule *lowered* the weight eight sessions in a row while 
 rise. One number chosen for a test decided whether a whole rule was believed to work, so it
 was replaced by a grid `[Theory]` plus property tests over steps × weights × ranges ×
 target RIR, with the old formula kept as an oracle for everywhere the change was not
-intended. 34 of them fail against the old rule.
+intended. Measured by restoring the old rule surgically on the current tree: the load
+formula alone fails **28** of 500 tests, and reverting the effective-RIR rule and the arrow
+with it fails **42**. (This line claimed 34 until the entry was fact-checked; that number is
+in no run anyone can reproduce. A count of failing tests is a measurement like any other and
+has to be taken, not remembered.)
 
 Decisions worth keeping:
 
@@ -362,8 +367,11 @@ Decisions worth keeping:
   toward it only if it went to failure: failing at 90 kg means failing at least as early at
   100. A lighter set that kept reserve says nothing about the heavier one.
 - **Rounding must not reverse the correction.** The step is how finely a load can be
-  expressed; the sign of the correction is the decision. At 102 kg with -1% the old code
-  rounded 100.98 up to 102.5.
+  expressed; the sign of the correction is the decision. At 107 kg on a 10 kg step a -1%
+  correction gives 105.93, which the old code rounded *up* to 110 — the load rose after a
+  session that asked for less. (`ComputeNext_DoesNotLetRoundingReverseTheCorrection` uses
+  exactly that case. The example first written here, 102 kg on a 2.5 kg step, does not
+  reverse at all: 100.98 rounds to 100.)
 - **A set far from failure is not evidence of a maximum.** `CanEstimateFrom` is one
   predicate (load > 0, reps ≤ 12, RIR ≤ 3) shared by the summary, the fatigue score and the
   baseline; 100 kg × 12 at RIR 5 "reads" 157 kg where the same set to failure reads 140.
@@ -390,16 +398,17 @@ is recorded next to the code rather than dropped:
    third place: `SetLogMapper.ToDto` is the only path now. Nothing but the running app could
    have found it.
 5. **A test was green for a wrong implementation.** Every `AddedTarget` case carried a body
-   portion of 80 kg with a 2.5 kg step, and 80 = 32 × 2.5 — for a portion on the step grid,
-   rounding the total and rounding the added load are *identically equal*. Flipping the
-   implementation kept all 489 tests green. The cases now use portions that are not
-   multiples of the step (51.2 at 1 kg, 68 at 2.5), and the property grid asserts the
-   proposal is always on the grid; the flipped version fails 5 tests.
+   portion that was itself a multiple of the step — 80 kg against 2.5 kg, since 80 = 32 × 2.5,
+   or no portion at all — and for such a portion, rounding the total and rounding the added
+   load are *identically equal*. Flipping the implementation kept the whole suite green (489
+   tests as it then stood, mid-branch). The cases now use portions that are not multiples of
+   the step (51.2 at 1 kg, 68 at 2.5), and the property grid asserts the proposal is always
+   on the grid; the flipped version now fails 5 of 500.
 6. **`UndoDeload` invented load at the floor** — a regression introduced by the same branch
    that made it portion-aware. A deload target of zero is where the clamp engaged, so the
-   load it came from is gone; dividing by 0.90 anyway "restored" `80 / 0.9 - 80 = 8.88`, and
-   a lifter who does pull-ups with nothing added came back prescribed `TM + 8 kg`. A clamp is
-   not invertible, and understating is the safe direction here.
+   load it came from is gone; dividing by 0.90 anyway "restored" `80 / 0.9 - 80 = 8.888…`,
+   floored to the step as `TM + 8 kg`, prescribed to a lifter who does pull-ups with nothing
+   added. A clamp is not invertible, and understating is the safe direction here.
 7. **The write-up's headline measurement used a step the exercise does not have.** It said a
    pull-up goes from 13 kg to 17.5; a pull-up steps by 1 kg (`EquipmentWeightStep` for
    "Bodyweight"), so the real numbers are 12 → 16. The test reached 17.5 only because it

@@ -330,7 +330,7 @@ public class BodyweightLoadTests
     public void UndoDeload_KeepsTheFloorInsteadOfInventingLoad()
     {
         // Zgib rasterećen na sopstvenu masu: deload cilj je 0 dodatnih. Deljenje sa 0.9
-        // nad ukupnim je odatle „vraćalo" 80 / 0.9 - 80 = 8.88, pa je nedelja posle
+        // nad ukupnim je odatle „vraćalo" 80 / 0.9 - 80 = 8.888…, pa je nedelja posle
         // deload-a propisivala „TM + 8 kg" vežbaču koji nikada nije dodao ni kilogram.
         // Nula se ne može obrnuti — AddedTarget je tu odsekao — pa se i vraća kao nula.
         Assert.Equal(0m, NextWeekLoad.UndoDeload(0m, 1m, 80m));

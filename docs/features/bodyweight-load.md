@@ -11,7 +11,7 @@ Zgib se logovao kao `0 kg`. Sve što je niže u lancu čitalo je taj broj doslov
 |---|---|
 | Procena maksimuma | `0 × (1 + 11/30) = 0` — nula je ulazila u `OneRepMaxRecords` kao maksimum |
 | Tonaža | `0 × 10 = 0` — trening od četrdeset zgibova sabirao je nulu |
-| Progresija | vrh opsega je davao `0 + korak`, dakle „stavi 2.5 kg" na seriju koja nikada nije bila opterećena |
+| Progresija | vrh opsega je davao `0 + korak`, dakle „stavi 1 kg" (korak opreme „Bodyweight") na seriju koja nikada nije bila opterećena |
 | Rekordi | „najveća težina 0 kg" |
 
 Profil već nosi `BodyweightKg` — od registracije, i koristi se za granice volumena. Do
@@ -70,7 +70,7 @@ se ne može staviti.
 tada 0 dodatnih kilograma i `ProgressionResult.LoadFloorReached` je `true`, što rezime
 prikazuje rečenicom da se dalje napreduje kroz ponavljanja. Kada nema ni tela ni tegova
 (plank upisan sa 0), `ComputeNext` vraća 0 bez koraka — to je jedini način da se ukloni
-„+2.5 kg" sa vežbe koja se ne opterećuje.
+korak sa vežbe koja se ne opterećuje.
 
 Isto se provuklo i kroz ostatak lanca: `WorkingLoad` poredi serije po ukupnom opterećenju,
 `E1RmCalculator.BestEstimate` procenjuje iz ukupnog, `NextWeekLoad` (svih pet pravila i
@@ -156,7 +156,8 @@ Tri nalaza su prošla adversarijalnu proveru i ispravljena su u istoj grani.
 je deload izveden, deljenjem sa 0.90. Uz deo telesne mase je to počelo da radi nad ukupnim
 opterećenjem — što je tačno, osim kada je deload cilj **nula**. Nula je mesto gde je
 `AddedTarget` odsekao, pa informacija o polaznoj težini više ne postoji; deljenje je odatle
-„vraćalo" `80 / 0.9 − 80 = 8.88`. Zgib bez pojasa je posle deload nedelje dobijao **TM + 8 kg**,
+„vraćalo" `80 / 0.9 − 80 = 8.888…`, zaokruženo naniže na korak. Zgib bez pojasa je posle
+deload nedelje dobijao **TM + 8 kg**,
 skok od 10% ukupnog opterećenja vežbaču koji nikada nije dodao ni kilogram. Na `main`-u je
 ista funkcija vraćala 0. Sada se nula vraća kao nula: ne može se obrnuti, a potcenjivanje
 se ispravlja samo, u jednoj sesiji, kroz RIR korekciju.

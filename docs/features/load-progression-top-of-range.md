@@ -173,7 +173,9 @@ Sada piše da se, kad nisi siguran, prijavi **manji** RIR. Savet „unesi konzer
 - `set-feedback.spec.ts`: sedam slučajeva napomene.
 
 Provereno da testovi hvataju grešku: privremeno vraćanje stare formule u `WorkingSet` i
-`ProgressionEngine` obara **34 testa**, među njima redove od 160, 300, 110 i 260 kg.
+`ProgressionEngine` obara **42 testa**, među njima redove od 160, 300, 110 i 260 kg.
+Sama formula, bez efektivnog RIR-a i strelice, obara 28. (Ovde je prvo pisalo 34 — broj koji
+se ni jednim postupkom ne dobija. Izmereno je tek kada je unos u `CLAUDE.md` proveravan.)
 
 `dotnet test`: 401 (bilo 356). Frontend: 122 testa.
 
