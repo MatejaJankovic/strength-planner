@@ -246,18 +246,25 @@ public class MesocycleGenerator : IMesocycleGenerator
                     // Vežba iz ličnog šablona nosi svoje serije i opseg; ista periodizacija
                     // ih pomera kroz blok kao što pomera propis izveden iz cilja, jer
                     // ForWeek i inače prima "osnovu" kao parametar. RIR ostaje iz cilja.
-                    var baseRepRangeMin = planned.RepRangeMin ?? goalSettings.RepRangeMin;
-                    var baseRepRangeMax = planned.RepRangeMax ?? goalSettings.RepRangeMax;
+                    //
+                    // Kada šablon ne kaže opseg, on se izvodi iz cilja I iz tipa vežbe:
+                    // izolacija u bloku snage ostaje na 8-12, jer se snaga izražava u
+                    // složenim pokretima, a ne u trojci na bočnom podizanju.
+                    var exerciseSettings = GoalPrescriptions.ForExercise(goal, exercise.Type);
+                    var baseRepRangeMin = planned.RepRangeMin ?? exerciseSettings.RepRangeMin;
+                    var baseRepRangeMax = planned.RepRangeMax ?? exerciseSettings.RepRangeMax;
 
-                    var exercisePrescription = planned.Sets is null
-                        ? prescription
-                        : Periodization.ForWeek(
-                            periodizationModel,
-                            weekNumber,
-                            baseRepRangeMin,
-                            baseRepRangeMax,
-                            goalSettings.TargetRir,
-                            planned.Sets.Value);
+                    // Propis se racuna po vezbi, a ne po nedelji. Dok su sve vezbe delile
+                    // opseg cilja, nedeljni propis je bio isti za svaku i racunao se jednom;
+                    // sada izolacija nosi svoj opseg, pa deljeni propis nije ni tacan.
+                    // Za slozene vezbe iz ugradjenog sablona daje identicne brojeve.
+                    var exercisePrescription = Periodization.ForWeek(
+                        periodizationModel,
+                        weekNumber,
+                        baseRepRangeMin,
+                        baseRepRangeMax,
+                        goalSettings.TargetRir,
+                        planned.Sets ?? startingSets);
 
                     var targetWeightKg = GetInitialTargetWeight(
                         weekNumber,

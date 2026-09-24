@@ -190,8 +190,12 @@ zaista dobija, a koliko ih uđe i koje odlučuje tvoj nivo iskustva (složene ve
 
 | Cilj | Opseg ponavljanja | Ciljni RIR |
 |---|---|---|
-| **Snaga** | 3–6 | 2 |
+| **Snaga** | 3–6 za složene, **8–12 za izolacije** | 2 |
 | **Hipertrofija** | 8–12 | 1 |
+
+> Opseg prati vežbu, a ciljni RIR blok. Trojka na bočnom podizanju nije provera sile:
+> snaga se izražava u pokretima koji mogu da nose opterećenje, pa izolacija i u bloku snage
+> ostaje u opsegu u kome ima smisla. Lični šablon nosi opsege koje si sam uneo.
 
 **3. Raspored kroz nedelje (periodizacija).**
 
@@ -546,6 +550,9 @@ prethodnog bloka.
 
 Ovo je jezgro aplikacije. Ne moraš ga znati da bi je koristio, ali objašnjava zašto brojevi
 izgledaju kako izgledaju.
+
+**Opseg prati vežbu.** U bloku snage složene vežbe idu na 3–6, a izolacije ostaju na
+8–12 — ciljni RIR je isti za obe, jer on govori koliko nedelja treba da bude teška.
 
 **Radna težina.** Progresija polazi od **najteže** težine koju si podigao u tom treningu, a
 ne od proseka svih serija. Lakše serije ulaze u račun samo ako su išle do otkaza (ili na
