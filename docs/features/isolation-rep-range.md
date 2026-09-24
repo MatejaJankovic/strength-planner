@@ -107,7 +107,7 @@ To je dosledno: faza volumena za vežbu kojoj je prozor zatvoren izražava se se
 
 ## Testovi
 
-`GoalPrescriptionTests` (14 tvrdnji): pravilo po cilju i tipu, da ciljni RIR ostaje po
+`GoalPrescriptionTests` (15 tvrdnji): pravilo po cilju i tipu, da ciljni RIR ostaje po
 bloku, da se hipertrofija ne menja, da razlika preživi periodizaciju i deload, i da katalog
 zaista razvrstava vežbe (Lateral Raise, Cable Fly, Barbell Curl, Triceps Pushdown i Leg
 Curl kao izolacije; Bench Press, Back Squat, Deadlift i Barbell Row kao složene).
@@ -116,4 +116,8 @@ Poslednji test prolazi kroz **sve** ugrađene šablone i traži da nijedna izola
 snage ne stoji na opsegu snage (preko 50 mesta). On drži ishod, ne prolaz kroz kod:
 vezivanje pravila za generator dokazuje E2E, jer servisi nemaju test harness.
 
-Ukupno: 522 → 536 testova na serveru, 139 na klijentu (bez izmena).
+Jedna tvrdnja drži i posledicu za opterećenje: opseg odlučuje o polaznoj težini, pa bočno
+podizanje sa maksimumom od 40 kg u bloku snage startuje sa **30 kg** (8–12 pri RIR 2) umesto
+sa 35 (3–6 pri RIR 2).
+
+Ukupno: 522 → 537 testova na serveru, 139 na klijentu (bez izmena).

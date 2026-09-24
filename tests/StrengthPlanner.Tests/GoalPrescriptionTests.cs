@@ -92,6 +92,34 @@ public class GoalPrescriptionTests
     }
 
     /// <summary>
+    /// Opseg odlučuje i o polaznom opterećenju, pa izolacija sa poznatim maksimumom u bloku
+    /// snage od sada startuje lakše — što je i smisao izmene. Za bočno podizanje sa
+    /// maksimumom od 40 kg: propis 8–12 pri RIR 2 traži deset efektivnih ponavljanja, a
+    /// 3–6 samo pet.
+    /// </summary>
+    [Fact]
+    public void TheRangeAlsoDecidesTheStartingLoad()
+    {
+        var calculator = new E1RmCalculator();
+        var strength = GoalPrescriptions.ForExercise(Goal.Strength, ExerciseType.Compound);
+        var isolation = GoalPrescriptions.ForExercise(Goal.Strength, ExerciseType.Isolation);
+
+        var onStrengthRange = calculator.WorkingWeightFor(
+            oneRepMax: 40m,
+            targetReps: strength.RepRangeMin,
+            targetRir: strength.TargetRir,
+            weightStepKg: 2.5m);
+        var onIsolationRange = calculator.WorkingWeightFor(
+            oneRepMax: 40m,
+            targetReps: isolation.RepRangeMin,
+            targetRir: isolation.TargetRir,
+            weightStepKg: 2.5m);
+
+        Assert.Equal(35m, onStrengthRange);
+        Assert.Equal(30m, onIsolationRange);
+    }
+
+    /// <summary>
     /// Ishod koji plan treba da dobije, izračunat iz kataloga i pravila: u bloku snage
     /// nijedna izolacija iz ugrađenog šablona ne stoji na opsegu snage, a svaka složena
     /// vežba stoji. Vezivanje ovog pravila za generator dokazuje E2E, jer servisi nemaju
