@@ -97,6 +97,12 @@ ponavljanja takav postupak **ne može da postoji**: `ForWeek` opseg i odseca na 
 osnove 11-12 i 12-12 daju istu nedelju i iz nje se ne zna od koje se pošlo. To je i zapisano
 kao test.
 
+> **Kasnija izmena (odeljak B).** Oba dela ove rečenice su se pomerila, a tvrdnja je
+> ostala. `BaseSetsFrom` i dalje obrće pomeraj, ali mu je potreban i osnovni opseg, jer
+> pomeraj serija više nije konstanta oblika nedelje. A sudar osnova sada traži istu
+> **širinu**: 11-12 i 12-12 od tada daju različite nedelje, pa je primer u testu zamenjen
+> parom 9-11 / 10-12. Vidi [`rep-window-and-fixed-reps.md`](rep-window-and-fixed-reps.md).
+
 Zato `ExercisePlan` sada pamti `BaseRepRangeMin` i `BaseRepRangeMax`. Migracija ih popunjava
 za zatečene planove iz cilja njihovog mezociklusa - 10.976 redova, 9.176 hipertrofija (8-12)
 i 1.800 snaga (3-6), nijedan nije ostao na nuli.

@@ -63,8 +63,12 @@ export function setFeedback(plan: SetFeedbackPlan, draft: SetFeedbackDraft): Set
 }
 
 /**
- * Uzak opseg sa većim ciljnim RIR-om (11-12 @RIR2, 3-4 @RIR3): povratak na dno opsega ne
- * pokriva manjak RIR-a na vrhu, pa server tu težinu zadržava umesto da doda korak.
+ * Opseg uži od ciljnog RIR-a (3-4 @RIR3, fiksnih 5 ponavljanja @RIR2): povratak na dno
+ * opsega ne pokriva manjak RIR-a na vrhu, pa server tu težinu zadržava umesto da doda
+ * korak.
+ *
+ * Širina nula je krajnji slučaj istog pravila: lični šablon sme da propiše tačan broj
+ * ponavljanja (5×5), i tada ceo teret pada na sam RIR.
  */
 function isNarrowRange(plan: SetFeedbackPlan): boolean {
   return plan.targetRir > plan.repRangeMax - plan.repRangeMin;

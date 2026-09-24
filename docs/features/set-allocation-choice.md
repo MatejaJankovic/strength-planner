@@ -34,6 +34,14 @@ prvu nedelju nego **sidro**, a nedelje su pomaci od njega — kod linearnog sidr
 treću nedelju. Da je prva nedelja jednaka trećoj, model ne bi bio linearan. Ravan model
 ponavljanja uopšte ne dira.
 
+> **Kasnija izmena (odeljak B).** Brojevi u linearnoj tabeli iznad su se promenili: prve
+> dve nedelje su sada `8–12`, sa jednom serijom više. Epley granica od tada opseg
+> **pomera** umesto da ga sužava, pa se od sidra 8–12 nagore nema kuda — faza volumena
+> hipertrofije se izražava serijama i RIR-om. Prva nedelja tada jeste jednaka trećoj *po
+> ponavljanjima*, a model je i dalje linearan: razlikuju se po serijama (6 naspram 5) i po
+> ciljnom RIR-u (3 naspram 2). Vidi
+> [`rep-window-and-fixed-reps.md`](rep-window-and-fixed-reps.md).
+
 **Serije** je menjalo nešto drugo: MAV alokator iz runde 5, koji se pokreće odmah po
 generisanju plana (`MesocycleGenerator`) i bira serije tako da nedelja padne u ciljnu zonu
 volumena svakog mišića. To radi u **svakom** modelu, pa i u ravnom — zato je 3 postalo 5 i

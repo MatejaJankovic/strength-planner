@@ -20,6 +20,7 @@ import { Loading } from '../../shared/components/loading/loading';
 import { SetFeedback, setFeedback } from './set-feedback';
 import { nextWeightLabel, nextWeightTone } from './next-weight-label';
 import { loadLabel } from './load-label';
+import { repRangeLabel } from '../../shared/rep-range-label';
 import { LoadFloorNote, loadFloorNote } from './load-floor-note';
 
 interface SetDraft {
@@ -191,6 +192,11 @@ export class WorkoutSession {
    */
   protected setLoad(set: SetLogDto): string {
     return loadLabel(set.weightKg, set.bodyweightLoadKg > 0);
+  }
+
+  /** Propisana ponavljanja: `8–12`, ili samo `5` kada je propisan tačan broj. */
+  protected repRange(plan: ExercisePlanDto): string {
+    return repRangeLabel(plan.repRangeMin, plan.repRangeMax);
   }
 
   /** Napomena ispod unosa: šta ova serija znači za sledeći trening (vidi set-feedback.ts). */

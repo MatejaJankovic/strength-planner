@@ -7,15 +7,32 @@ import { setFeedback } from './set-feedback';
  */
 describe('setFeedback', () => {
   const hypertrophy = { repRangeMin: 8, repRangeMax: 12, targetRir: 1 };
-  const narrowVolumeWeek = { repRangeMin: 11, repRangeMax: 12, targetRir: 2 };
+  // Uzak opseg više ne dolazi iz periodizacije - faza volumena hipertrofije se od
+  // ispravke Epley granice propisuje kao 8-12 - nego iz ličnog šablona i iz nedelje
+  // intenziteta snage (3-4 @RIR3).
+  const narrowRange = { repRangeMin: 11, repRangeMax: 12, targetRir: 2 };
+  const fixedReps = { repRangeMin: 5, repRangeMax: 5, targetRir: 2 };
 
   it('najavljuje korak za otkaz na vrhu običnog opsega', () => {
     expect(setFeedback(hypertrophy, { reps: 12, rir: 0, isFailure: true })).toBe('failure-at-top');
   });
 
   it('najavljuje zadržavanje za otkaz na vrhu uskog opsega sa većim ciljnim RIR-om', () => {
-    expect(setFeedback(narrowVolumeWeek, { reps: 12, rir: 0, isFailure: true })).toBe(
+    expect(setFeedback(narrowRange, { reps: 12, rir: 0, isFailure: true })).toBe(
       'failure-at-top-narrow',
+    );
+  });
+
+  it('fiksan broj ponavljanja tretira kao krajnji slučaj uskog opsega', () => {
+    // 5x5 @RIR2: širina nula, pa korak nosi samo rezerva. Otkaz na petom ponavljanju je
+    // teže od plana i težina se zadržava.
+    expect(setFeedback(fixedReps, { reps: 5, rir: 2, isFailure: false })).toBe('at-top-narrow');
+    expect(setFeedback(fixedReps, { reps: 5, rir: 0, isFailure: true })).toBe(
+      'failure-at-top-narrow',
+    );
+    // Ispod propisanog broja se i dalje meri kapacitet: 4 + 2 = 6 naspram 5 + 2.
+    expect(setFeedback(fixedReps, { reps: 4, rir: 2, isFailure: false })).toBe(
+      'below-range-with-reserve',
     );
   });
 
@@ -50,10 +67,10 @@ describe('setFeedback', () => {
   it('upozorava na vrh uskog opsega i bez kvačice otkaza', () => {
     // 11-12 @RIR2: sa RIR 0 server zadržava težinu (odstupanje -2, širina 1), sa RIR 2
     // dodaje korak. Vrh sam po sebi tu ne znači korak, pa napomena to kaže.
-    expect(setFeedback(narrowVolumeWeek, { reps: 12, rir: 0, isFailure: false })).toBe(
+    expect(setFeedback(narrowRange, { reps: 12, rir: 0, isFailure: false })).toBe(
       'at-top-narrow',
     );
-    expect(setFeedback(narrowVolumeWeek, { reps: 12, rir: 2, isFailure: false })).toBe(
+    expect(setFeedback(narrowRange, { reps: 12, rir: 2, isFailure: false })).toBe(
       'at-top-narrow',
     );
     // U običnom opsegu vrh uvek nosi korak, pa nema šta da se kaže.

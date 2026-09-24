@@ -57,7 +57,7 @@
                       <li class="tday__exercise">
                         <span>{{ exercise.exerciseName }}</span>
                         <span class="numeric">
-                          {{ exercise.sets }}×{{ exercise.repRangeMin }}-{{ exercise.repRangeMax }}
+                          {{ exercise.sets }}×{{ repRange(exercise.repRangeMin, exercise.repRangeMax) }}
                         </span>
                       </li>
                     }

@@ -198,8 +198,12 @@ zaista dobija, a koliko ih uđe i koje odlučuje tvoj nivo iskustva (složene ve
 | Model | Trajanje | Kako izgleda |
 |---|---|---|
 | **Ravan** | 4 nedelje | isti propis svake nedelje; napredak nosi dupla progresija |
-| **Linearan** | 6 nedelja | kreće volumenom (više ponavljanja, lakše), završava intenzitetom |
+| **Linearan** | 6 nedelja | kreće volumenom (više serija, lakše serije), završava intenzitetom |
 | **Obrnut** | 6 nedelja | teško dok si svež, volumen pred kraj |
+
+> Kod hipertrofije faza volumena nosi **serije**, a ne ponavljanja: opseg 8–12 već stoji na
+> gornjoj granici od 12, preko koje procena maksimuma ne važi. Kod snage (3–6) se pomeraju i
+> ponavljanja.
 
 U svakom modelu je **poslednja nedelja deload** (rasterećenje).
 
@@ -251,6 +255,9 @@ Biraš sve sam:
 - **vežbe u svakom danu** (1–12), iz kataloga i iz svojih vežbi, redosledom kojim ih dodaš;
 - **broj serija** za svaku vežbu (2–10);
 - **opseg ponavljanja** za svaku vežbu (3–12, donja granica ne sme biti veća od gornje).
+  Ako u oba polja upišeš **isti broj**, dobijaćeš tačno toliko ponavljanja — 5×5 je program,
+  pa se i propisuje kao 5, ne kao 5–6. Periodizacija taj broj pomera kroz blok
+  (5 → 8 u nedelji volumena, 3 u nedelji intenziteta), ali ga ne razvlači u opseg.
 
 Možeš imati do 20 sačuvanih šablona.
 
@@ -550,9 +557,10 @@ težine zarađene u poslednjoj trenažnoj nedelji, a ne od olakšanih deload ser
 **Dupla progresija.** Prvo rasteš u ponavljanjima ka vrhu opsega, pa tek onda u težini.
 Kad **sve** serije jedne vežbe stignu do vrha opsega, sledeći put dobijaš **jedan korak**
 više težine. Korak dolazi i kada su serije na vrhu išle do otkaza: sledeći trening kreće
-od dna opsega, a to je dovoljno rezerve. Izuzetak su nedelje sa uskim opsegom i većim
-ciljnim RIR-om (npr. 11–12 sa RIR 2), gde otkaz na vrhu zadržava težinu. Vrh opsega nikad
-ne spušta opterećenje.
+od dna opsega, a to je dovoljno rezerve. Izuzetak je opseg **uži od ciljnog RIR-a** —
+nedelja intenziteta snage (3–4 sa RIR 3) ili fiksan broj ponavljanja iz ličnog šablona
+(5×5 sa RIR 2) — gde otkaz na vrhu zadržava težinu, a korak nosi samo rezerva. Vrh opsega
+nikad ne spušta opterećenje.
 
 **Sopstvena masa je opterećenje.** Zgib, sklek i iskorak nose deo tvoje telesne mase: 100%,
 64% i 85% redom. Sve računice — korekcija, procena maksimuma, deload, tonaža — rade sa
@@ -596,6 +604,13 @@ tvoje vežbe, pa i dan sa jednom vežbom ostaje dan sa jednom vežbom.
 model), opterećenje se ne prenosi kroz „+ jedan korak" nego se ponovo izvodi iz najsvežije
 procene 1RM-a i propisa te nedelje. Nedelja koja pada sa 10 na 5 ponavljanja mora da bude
 osetno teža, a ne ista uvećana za korak.
+
+**Granica od 12 ponavljanja pomera opseg, ne sužava ga.** Nedelja koja bi propisala više od
+12 ponavljanja se spusti nazad i **zadrži širinu** tvog opsega, a ponavljanja koja granica
+pojede dobijaš kao **jednu seriju više**. Zato faza volumena hipertrofije stoji na 8–12 sa
+šest serija, a ne na 11–12 sa pet — dupla progresija u opsegu od dva ponavljanja nema po
+čemu da raste. Donja granica od 3 ponavljanja je drugačija: ona sme da suzi opseg, jer ispod
+tri ponavljanja blok više nije ono što piše da jeste.
 
 ---
 

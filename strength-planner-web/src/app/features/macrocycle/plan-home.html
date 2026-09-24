@@ -96,7 +96,7 @@
                             <li class="pday__exercise">
                               <span>{{ plan.exerciseName }}</span>
                               <span class="numeric">
-                                {{ plan.targetSets }}×{{ plan.repRangeMin }}-{{ plan.repRangeMax }}
+                                {{ plan.targetSets }}×{{ repRange(plan.repRangeMin, plan.repRangeMax) }}
                               </span>
                             </li>
                           }
