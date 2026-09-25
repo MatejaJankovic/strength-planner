@@ -566,17 +566,14 @@ public sealed class DeloadService
             return 0m;
         }
 
-        // Poređenje ide sa poslednjom nedeljom koja NIJE bila deload: deload serije su
-        // namerno submaksimalne, pa bi nedelja posle deload-a uvek izgledala kao skok.
-        var comparableWeekNumber = await _db.TrainingWeeks
-            .AsNoTracking()
-            .Where(week => week.MesocycleId == mesocycleId
-                           && week.Mesocycle.UserId == userId
-                           && week.WeekNumber < weekNumber
-                           && !week.IsDeload)
-            .OrderByDescending(week => week.WeekNumber)
-            .Select(week => (int?)week.WeekNumber)
-            .FirstOrDefaultAsync(cancellationToken);
+        // Koja je nedelja uporediva odlučuje jedno pravilo (ComparableWeek), jer isto
+        // pitanje postavlja i učenje granica volumena.
+        var comparableWeekNumber = await ComparableWeek.PreviousTrainingWeekAsync(
+            _db,
+            userId,
+            mesocycleId,
+            weekNumber,
+            cancellationToken);
 
         if (comparableWeekNumber is null)
         {

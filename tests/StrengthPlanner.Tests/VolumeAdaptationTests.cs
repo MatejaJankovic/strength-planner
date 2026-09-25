@@ -80,24 +80,55 @@ public class VolumeAdaptationTests
         Assert.Equal(22, result.Mrv);
     }
 
+    /// <summary>
+    /// Pravilo koje je pregled prijavio kao obrnuto. Ranije: nedelja na MEV-u koja je bila
+    /// laka → MEV raste. Ali „lako" je iskaz o opterećenju, a njega ispravlja progresija;
+    /// minimalna doza je pitanje o stimulusu. Nedelja na MEV-u koja je **donela napredak**
+    /// znači da je minimum niži nego što se mislilo.
+    /// </summary>
     [Fact]
-    public void Adjust_RaisesMev_WhenMinimumVolumeWasComfortable()
+    public void Adjust_LowersMev_WhenTheMinimumVolumeStillProducedProgress()
     {
-        var response = new VolumeResponse(PerformedSets: 9m, RawSets: 9m, AverageRirDeviation: 1.5m, FailureShare: 0m);
+        var response = new VolumeResponse(
+            PerformedSets: 9m,
+            RawSets: 9m,
+            AverageRirDeviation: 0m,
+            FailureShare: 0m,
+            StrengthChangeShare: 0.03m);
+
+        var result = VolumeAdaptation.Adjust(Seed, Seed, response);
+
+        Assert.Equal(9, result.Mev);
+    }
+
+    /// <summary>Ovoliko ne održava ni postignuto, pa je minimum viši.</summary>
+    [Fact]
+    public void Adjust_RaisesMev_WhenTheMinimumVolumeDidNotEvenHold()
+    {
+        var response = new VolumeResponse(
+            PerformedSets: 9m,
+            RawSets: 9m,
+            AverageRirDeviation: 0m,
+            FailureShare: 0m,
+            StrengthChangeShare: -0.03m);
 
         var result = VolumeAdaptation.Adjust(Seed, Seed, response);
 
         Assert.Equal(11, result.Mev);
     }
 
+    /// <summary>
+    /// A nedelja na MEV-u koja je samo bila laka, bez ijednog podatka o snazi, ne pomera
+    /// ništa. To je razlika između ćutanja i dokaza.
+    /// </summary>
     [Fact]
-    public void Adjust_LowersMev_WhenMinimumVolumeAlreadyProducedFatigue()
+    public void Adjust_LeavesMevAlone_WhenTheWeekWasMerelyComfortable()
     {
-        var response = new VolumeResponse(PerformedSets: 9m, RawSets: 9m, AverageRirDeviation: -2m, FailureShare: 0m);
+        var response = new VolumeResponse(PerformedSets: 9m, RawSets: 9m, AverageRirDeviation: 1.5m, FailureShare: 0m);
 
         var result = VolumeAdaptation.Adjust(Seed, Seed, response);
 
-        Assert.Equal(9, result.Mev);
+        Assert.Equal(Seed.Mev, result.Mev);
     }
 
     [Fact]
@@ -242,25 +273,53 @@ public class VolumeAdaptationTests
     }
 
     [Fact]
-    public void Adjust_RaisesMav_WhenTheTargetVolumeStillLeftRepsInReserve()
+    public void Adjust_RaisesMav_WhenTheTargetVolumeProducedNoProgress()
     {
-        // Nedelja odrađena na ciljnom volumenu koja je i dalje ostavljala rezervu znači
-        // da je cilj postavljen prenisko.
-        var response = new VolumeResponse(PerformedSets: 16m, RawSets: 16m, AverageRirDeviation: 1.5m, FailureShare: 0m);
+        // Nedelja odrađena na ciljnom volumenu posle koje snaga stoji: stimulus je premali
+        // za toliko rada. Ranije je isti zaključak izvlačen iz rezerve u RIR-u, što je iskaz
+        // o opterećenju — i što je zajedno sa progresijom zatvaralo petlju.
+        var response = new VolumeResponse(
+            PerformedSets: 16m,
+            RawSets: 16m,
+            AverageRirDeviation: 0m,
+            FailureShare: 0m,
+            StrengthChangeShare: 0m);
 
         var result = VolumeAdaptation.Adjust(Seed, Seed, response);
 
         Assert.Equal(17, result.Mav);
     }
 
+    /// <summary>Snaga pada na volumenu oko cilja: cilj je previsok.</summary>
     [Fact]
-    public void Adjust_LowersMav_WhenTheTargetVolumeProducedFatigue()
+    public void Adjust_LowersMav_WhenStrengthDeclinedAtTheTargetVolume()
     {
-        var response = new VolumeResponse(PerformedSets: 16m, RawSets: 16m, AverageRirDeviation: -1.5m, FailureShare: 0m);
+        var response = new VolumeResponse(
+            PerformedSets: 16m,
+            RawSets: 16m,
+            AverageRirDeviation: 0m,
+            FailureShare: 0m,
+            StrengthChangeShare: -0.03m);
 
         var result = VolumeAdaptation.Adjust(Seed, Seed, response);
 
         Assert.Equal(15, result.Mav);
+    }
+
+    /// <summary>Napredak znači da cilj radi — tada se ne dira.</summary>
+    [Fact]
+    public void Adjust_HoldsMav_WhenTheTargetVolumeIsProducingProgress()
+    {
+        var response = new VolumeResponse(
+            PerformedSets: 16m,
+            RawSets: 16m,
+            AverageRirDeviation: 0m,
+            FailureShare: 0m,
+            StrengthChangeShare: 0.03m);
+
+        var result = VolumeAdaptation.Adjust(Seed, Seed, response);
+
+        Assert.Equal(Seed.Mav, result.Mav);
     }
 
     [Fact]
@@ -292,7 +351,12 @@ public class VolumeAdaptationTests
     {
         // 16 + 50% = 24; posle toga cilj prestaje da raste ma koliko nedelja prošlo.
         var current = Seed;
-        var goodWeek = new VolumeResponse(PerformedSets: 40m, RawSets: 40m, AverageRirDeviation: 2m, FailureShare: 0m);
+        var goodWeek = new VolumeResponse(
+            PerformedSets: 40m,
+            RawSets: 40m,
+            AverageRirDeviation: 2m,
+            FailureShare: 0m,
+            StrengthChangeShare: 0m);
 
         for (var week = 0; week < 30; week++)
         {
@@ -331,7 +395,12 @@ public class VolumeAdaptationTests
         // Druga strana iste medalje: ako se cilj samo izvodi iz MEV-a i MRV-a, ne uči se
         // ništa i MAV nema smisla kao zasebna vrednost.
         var current = Seed;
-        var response = new VolumeResponse(16m, 16m, AverageRirDeviation: 1.5m, FailureShare: 0m);
+        var response = new VolumeResponse(
+            16m,
+            16m,
+            AverageRirDeviation: 0m,
+            FailureShare: 0m,
+            StrengthChangeShare: 0m);
 
         current = VolumeAdaptation.Adjust(current, Seed, response);
 
@@ -384,5 +453,103 @@ public class VolumeAdaptationTests
             new VolumeResponse(10, 10, overEverySet, 0.2m));
 
         Assert.Equal(landmarks.Mrv - 1, withOldReading.Mrv);
+    }
+
+    /// <summary>
+    /// Petlja koju je pregled prijavio, sada kao test — i merenje koje ju je pokazalo.
+    ///
+    /// Vežbač čije su težine prelake prijavljuje rezervu na svakoj seriji. Ranije je ista
+    /// ta činjenica dizala MAV (16 → 17) **i** kroz progresiju opterećenje (100 → 107.5 kg):
+    /// jedan uzrok, dve korekcije, a sa balansiranjem između njih i više serija na težem
+    /// opterećenju. Sada rezervu čita samo progresija; granica volumena ćuti jer o
+    /// stimulusu nije ništa rečeno.
+    /// </summary>
+    [Fact]
+    public void AnEasyWeekAtTheTarget_NoLongerRaisesTheTargetAsWell()
+    {
+        var easyAtTarget = new VolumeResponse(
+            PerformedSets: 16m,
+            RawSets: 16m,
+            AverageRirDeviation: 2m,
+            FailureShare: 0m);
+
+        var result = VolumeAdaptation.Adjust(Seed, Seed, easyAtTarget);
+
+        Assert.Equal(Seed.Mav, result.Mav);
+        Assert.Equal(Seed.Mev, result.Mev);
+
+        // Ista nedelja kroz progresiju i dalje diže opterećenje — ta korekcija je ostala
+        // tamo gde joj je mesto.
+        var progression = new ProgressionEngine().ComputeNext(
+            usedWeightKg: 100m,
+            workingSets: [new WorkingSet(12, 3), new WorkingSet(12, 3), new WorkingSet(12, 3)],
+            targetRir: 1,
+            repRangeMin: 8,
+            repRangeMax: 12,
+            weightStepKg: 2.5m);
+
+        Assert.Equal(107.5m, progression.NextWeightKg);
+    }
+
+    /// <summary>
+    /// Nedelja bez ijednog uporedivog merenja (prva u bloku, ili ona čija se ponavljanja ne
+    /// poklapaju sa prethodnom) ne pomera ni minimum ni cilj. Plafon oporavka sme da se
+    /// pomeri i tada, jer njega nose otkazi i RIR — to su iskazi o oporavku, ne o stimulusu.
+    /// </summary>
+    [Fact]
+    public void AWeekWithoutAStrengthMeasurement_MovesNeitherTheMinimumNorTheTarget()
+    {
+        var silent = new VolumeResponse(
+            PerformedSets: 16m,
+            RawSets: 16m,
+            AverageRirDeviation: -2m,
+            FailureShare: 0.3m);
+
+        var result = VolumeAdaptation.Adjust(Seed, Seed, silent);
+
+        Assert.Equal(Seed.Mev, result.Mev);
+        Assert.Equal(Seed.Mav, result.Mav);
+        Assert.Equal(Seed.Mrv - 1, result.Mrv);
+    }
+
+    /// <summary>
+    /// Pad snage je i signal umora: plafon oporavka ga čita čak i kada su RIR i otkazi
+    /// uredni. Nedelja u kojoj snaga pada nije nedelja na kojoj se gradi plafon.
+    /// </summary>
+    [Fact]
+    public void ADeclineInStrength_CountsAsFatigueForTheCeiling()
+    {
+        var declined = new VolumeResponse(
+            PerformedSets: 16m,
+            RawSets: 16m,
+            AverageRirDeviation: 0m,
+            FailureShare: 0m,
+            StrengthChangeShare: -0.03m);
+
+        var result = VolumeAdaptation.Adjust(Seed, Seed, declined);
+
+        Assert.Equal(Seed.Mrv - 1, result.Mrv);
+    }
+
+    /// <summary>
+    /// Prag razdvaja promenu od zaokruživanja: ispod jednog procenta nedelja je ravna, jer
+    /// je najmanji stvaran pomak jedan korak tega (2.5 kg je 2.5% na stotinu).
+    /// </summary>
+    [Theory]
+    [InlineData(0.005, 17)]   // ispod praga: ravna nedelja, cilj raste
+    [InlineData(0.02, 16)]    // napredak: cilj stoji
+    [InlineData(-0.02, 15)]   // pad: cilj se spušta
+    public void TheThresholdSeparatesAChangeFromRounding(double change, int expectedMav)
+    {
+        var response = new VolumeResponse(
+            PerformedSets: 16m,
+            RawSets: 16m,
+            AverageRirDeviation: 0m,
+            FailureShare: 0m,
+            StrengthChangeShare: (decimal)change);
+
+        var result = VolumeAdaptation.Adjust(Seed, Seed, response);
+
+        Assert.Equal(expectedMav, result.Mav);
     }
 }
