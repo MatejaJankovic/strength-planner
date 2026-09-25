@@ -117,7 +117,7 @@ prose — no need for academic style.
 
 ## Scope note
 
-Ten rounds of work, all merged to `main`. Every branch got its own PR, an agent code
+Eleven rounds of work, all merged to `main`. Every branch got its own PR, an agent code
 review, fixes for what the review turned up, and a plain-language write-up in
 `docs/features/`. (This line said "two rounds" until round 9 — a count in prose goes stale
 the moment it is written, which is why the rounds below are a list and not a number.)
@@ -515,9 +515,89 @@ One number in this round's own write-ups had to be corrected the same way round 
 `rep-window-and-fixed-reps.md` said the suite went "503 → 514", and 503 is a mid-branch
 count no commit carries. The round started at 500.
 
-Still unbuilt from the same audit: **section C** (how volume limits and the fatigue score
-read RIR) and **section D** (code against guide against thesis). Section E and the
-suggestions list are untouched.
+Still unbuilt at the time: **section C** (how volume limits and the fatigue score read RIR)
+— built in round 11 — and **section D** (code against guide against thesis). Section E and
+the suggestions list are untouched.
+
+**Round 11 — the same audit, section C: how the signals are read.** What counts as fatigue,
+and what the volume limits learn from — three findings, three branches, all merged.
+
+| Branch | What it fixed | PR |
+|---|---|---|
+| `fix/independent-fatigue-signals` | A week in which every set went to failure filled two of the four fatigue signals from one fact and crossed the deload threshold by itself; the volume limits kept a second, different definition of the same signal | #70 |
+| `fix/comparable-strength-change` | The strength term compared the week's best estimate against the previous week's best, with no test of whether the two sets were comparable | #71 |
+| `fix/volume-limits-learn-from-strength` | MEV and MAV moved on how the sets felt against their target RIR — a statement about load, which progression already corrects — so one cause moved two dials | #72 |
+
+Sequential, each merged before the next branched. 550 → 578 tests on the server, 139 on the
+client (unchanged).
+
+The finding that shaped the round: **a test asserted the rule the code was breaking, and
+passed.** `FatigueEvaluator`'s documentation states that no single signal may trigger a
+deload, and `ShouldDeload_IsFalse_WhenOnlyOneSignalIsMaxedOut` carries the row
+`[InlineData(0, 1, 0, 0)]` — failure share at 1.0, everything else zero, asserting no
+deload. It passed because the test set `allSetsFailed: false` alongside a share of 1.0, and
+**the service never produces that pair**: it derives the flag from the same count as the
+share. The rule was asserted and violated at the same time, on an input that cannot occur.
+The same species as the 100 kg regression test in round 9, and the reason both rounds now
+check what a green test is actually standing on.
+
+Decisions worth keeping:
+
+- **A fact belongs to one signal.** "Every set went to failure" is the failure share, and
+  only that. It used to also push the RIR signal to its worst value, and 0.35 + 0.25 is
+  exactly the threshold. Measured as a cliff too: twenty failed sets scored 0.60 and
+  nineteen failed sets plus **one** completed set scored 0.25.
+- **Like is compared with like.** A strength change is read only between sets at the same
+  effective reps, within one. Where in the prescribed range a lifter lands is part of the
+  prescription, and comparing the top of one week with the floor of the next measures the
+  plan, not the lifter.
+- **RIR is a statement about load; adaptation is the statement about stimulus.** The
+  recovery ceiling keeps RIR, failures and a real decline. The target and the minimum read
+  the strength trend and nothing else, because that is the only evidence that a volume was
+  worth doing.
+- **The minimum rule was backwards.** A week at MEV that produced progress means the
+  minimum effective dose is *lower* than it was thought to be, not higher.
+- **Silence is not a flat week.** A week with nothing comparable to measure against moves
+  neither the target nor the minimum. Below one percent — less than a single 2.5 kg step on
+  a 100 kg lift — a week is flat, which is a measurement; no comparable pair at all is not.
+
+Six measurements from this round contradicted the expectation behind the change:
+
+1. The safeguard test above, green on an unreachable input.
+2. **C17 was half refuted and half worse than reported.** The audit blamed the rep window
+   moving between weeks. Measured, that case corrects itself: a changed prescription
+   re-derives its load from the week's own fresh estimate (105 kg became 117.5, not 110),
+   the two readings land 0.8% apart, and the fatigue score is identical either way. The
+   artefact lives in the **flat** block — the default — where the load carries forward with
+   a step: the same compliant week reads 154.1 against 143.0 on the main lifts, a 7.2% drop,
+   3.5% averaged over the week, and **0.174** of the score out of a week in which nothing
+   went wrong.
+3. **A number of my own had to be corrected mid-branch.** My first probe reported a 9.3%
+   collapse for that case; it derived both weeks' loads from a fixed 140 kg maximum, which
+   no path in the app does. It described a lifter whose estimate never updates.
+4. **Removing the double count changed the volume limits too, and by a measurable amount.**
+   Their thresholds were calibrated against the old all-sets reading. A week of ten sets —
+   eight on plan, two taken to failure five reps below the floor — used to read −1.2 and
+   drop MRV; it now reads 0, the failure share is 0.2 against a threshold of 0.25, and the
+   ceiling holds.
+5. **The loop between load and volume was real and is now measured.** A week at MAV whose
+   sets were two RIR easier than planned raised MAV from 16 to 17 *and* pushed the load from
+   100 kg to 107.5 kg, from the same sets. Live, the new rules give: no comparison → nothing
+   moves; strength flat at the target → 16 → 17; strength up → held at 17.
+6. **"A flat week raises the target" brakes itself.** The target is judged only when the week
+   sat at 90% of it or above, so a steady sixteen-set week lifts it from 16 to 18 and stops
+   — the drift clamp is never reached.
+
+One thing this round deliberately did **not** do, recorded because it is a direction rather
+than a defect: all three changes make the system less willing to move things on its own. The
+auto-deload now needs two real signals in every case, and the limits hold whenever the
+strength signal is missing — available in about two thirds of weeks that have a previous
+one, measured over the development database. If that proves too slow, the levers are the
+0.60 threshold, the one-percent strength threshold and `MaxWeeklyStep`; the thing not to do
+is put RIR back into a question about stimulus.
+
+Still unbuilt from the same audit: **section D** (code against guide against thesis) and
+section E (the exercise model), plus the suggestions list.
 
 Deliberately **out of scope**: i18n, full-history analytics, undulating periodization,
 PWA/offline, changing an already-generated block's periodization model, email delivery (so no
