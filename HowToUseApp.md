@@ -456,6 +456,23 @@ donosi zamor ali ne i volumen. Granice se **uče iz tvojih podataka** — posle 
 nedelje pomeraju se najviše za jednu seriju, i najviše 50% od podrazumevane vrednosti.
 Dugme **„Vrati podrazumevane granice"** poništava naučeno.
 
+Svaka granica uči iz onoga što njoj pripada. **MRV** (plafon oporavka) čita umor: rezervu u
+RIR-u, otkaze i pad snage. **MAV** i **MEV** čitaju **napredak** — da li je ono što dižeš
+poraslo u odnosu na poslednju uporedivu nedelju:
+
+| Nedelja | Šta se pomera |
+|---|---|
+| na cilju, a snaga raste | ništa — cilj radi |
+| na cilju, a snaga stoji | cilj gore (premalo stimulusa za toliko rada) |
+| na cilju, a snaga pada | cilj dole |
+| na minimumu, a snaga raste | minimum dole (toliko je bilo dovoljno) |
+| na minimumu, a snaga pada | minimum gore |
+
+Nedelja koja nema sa čim da se uporedi — prva u bloku, ili ona čija se ponavljanja ne
+poklapaju sa prethodnom — **ne pomera** ni cilj ni minimum. Ranije je granice pomerao
+osećaj serija (RIR), ali to je iskaz o **težini tegova**, a nju već ispravlja progresija:
+lagana nedelja je značila i teže tegove i više serija, iz istog podatka.
+
 **Nedeljna tonaža.** Zbir `težina × ponavljanja` po nedeljama, sa označenim deload
 nedeljama. Korisno da se vidi da li blok stvarno raste. Vežbe koje diže sopstvena masa
 ulaze sa **ukupnim** opterećenjem (telo + dodato), ne samo sa onim što je dodato — inače bi

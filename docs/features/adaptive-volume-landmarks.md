@@ -160,6 +160,16 @@ preuzima istim uslovnim `UPDATE`-om; drugi zahtev dobija 409. Posle ispravke:
 - `personalCount` je bio deklarisan iznad `rows` koji koristi; radilo je samo zato što
   je `computed` lenj. Premešten ispod.
 
+## Kasnija izmena (odeljak C): granice uče iz snage
+
+Sve tri granice je pomerao isti signal — odstupanje RIR-a od cilja. To je iskaz o
+**opterećenju**, a njega ispravlja progresija, pa je jedan uzrok pomerao dva točka: izmereno,
+nedelja na MAV-u sa dva RIR poena rezerve dizala je MAV sa 16 na 17 **i** opterećenje sa 100
+na 107.5 kg. Od tada MRV (oporavak) čita RIR, otkaze i pad snage, a MAV i MEV (stimulus)
+čitaju promenu snage. Pravilo za MEV je uz to bilo obrnuto — sada nedelja na minimumu koja
+je donela napredak **spušta** minimum. Vidi
+[`volume-limits-learn-from-strength.md`](volume-limits-learn-from-strength.md).
+
 ## Kasnija izmena (odeljak B): koja nedelja o čemu govori
 
 Granice se uče iz nedelja koje su **blizu** njih: MAV se pomera kada je volumen ≥ 0.9 × MAV,
