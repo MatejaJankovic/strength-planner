@@ -552,4 +552,50 @@ public class VolumeAdaptationTests
 
         Assert.Equal(expectedMav, result.Mav);
     }
+
+    /// <summary>
+    /// „Ravna nedelja → cilj gore" ne ide u nedogled, i koči se sama: cilj se sudi tek kada
+    /// je nedelja na ≥ 90% njega, pa kako cilj raste, isti volumen prestaje da ga dodiruje.
+    /// Sa nedeljom od 16 serija cilj stane na 18 — dve serije iznad polazne vrednosti.
+    /// </summary>
+    [Fact]
+    public void RaisingTheTargetOnFlatWeeks_StopsItself()
+    {
+        var current = Seed;
+        var flatWeek = new VolumeResponse(
+            PerformedSets: 16m,
+            RawSets: 16m,
+            AverageRirDeviation: 0m,
+            FailureShare: 0m,
+            StrengthChangeShare: 0m);
+
+        for (var week = 0; week < 20; week++)
+        {
+            current = VolumeAdaptation.Adjust(current, Seed, flatWeek);
+        }
+
+        Assert.Equal(18, current.Mav);
+    }
+
+    /// <summary>
+    /// Uzak pojas: nedelja može istovremeno da bude na minimumu i blizu cilja, pa pad snage
+    /// gura MEV gore a MAV dole. Pojas to ne sme da izvrne — cilj ostaje strogo između.
+    /// </summary>
+    [Fact]
+    public void ANarrowBand_SurvivesAWeekThatIsBothAtTheMinimumAndNearTheTarget()
+    {
+        var narrow = new VolumeLandmarkValues(Mev: 10, Mav: 11, Mrv: 13);
+        var declined = new VolumeResponse(
+            PerformedSets: 10m,
+            RawSets: 10m,
+            AverageRirDeviation: 0m,
+            FailureShare: 0m,
+            StrengthChangeShare: -0.03m);
+
+        var result = VolumeAdaptation.Adjust(narrow, Seed, declined);
+
+        Assert.True(result.Mev < result.Mav, $"MEV {result.Mev}, MAV {result.Mav}");
+        Assert.True(result.Mav < result.Mrv, $"MAV {result.Mav}, MRV {result.Mrv}");
+        Assert.True(result.Mrv - result.Mev >= VolumeAdaptation.MinBandWidth);
+    }
 }
