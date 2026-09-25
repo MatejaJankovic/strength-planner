@@ -122,6 +122,14 @@ public sealed class VolumeLandmarkService
             return;
         }
 
+        // Dokaz o stimulusu, po mišiću. Traži se samo na putanji učenja granica — ostali
+        // pozivaoci odgovora (balansiranje, udeo prema MRV-u) ga ne čitaju, pa ne plaćaju
+        // ni upite.
+        var strengthByMuscleGroupId = await GetStrengthChangeAsync(
+            userId,
+            trainingWeekId,
+            cancellationToken);
+
         var seeds = await GetScaledSeedsAsync(userId, cancellationToken);
 
         var personal = await _db.UserVolumeLandmarks
@@ -135,12 +143,16 @@ public sealed class VolumeLandmarkService
                 continue;
             }
 
+            var measured = strengthByMuscleGroupId.TryGetValue(muscleGroupId, out var change)
+                ? response with { StrengthChangeShare = change }
+                : response;
+
             personal.TryGetValue(muscleGroupId, out var row);
             var current = row is null
                 ? seed
                 : new VolumeLandmarkValues(row.Mev, row.Mav, row.Mrv);
 
-            var adjusted = VolumeAdaptation.Adjust(current, seed, response);
+            var adjusted = VolumeAdaptation.Adjust(current, seed, measured);
             if (adjusted == current)
             {
                 continue;
@@ -209,6 +221,82 @@ public sealed class VolumeLandmarkService
             .ToListAsync(cancellationToken);
 
         _db.UserVolumeLandmarks.RemoveRange(rows);
+    }
+
+    /// <summary>
+    /// Koliko se promenila snaga po mišićnoj grupi u odnosu na poslednju uporedivu nedelju.
+    ///
+    /// Poređenje je domensko pravilo (<see cref="StrengthChange"/>): ista vežba, isti broj
+    /// efektivnih ponavljanja. Mišiću se pripisuju sve vežbe koje ga opterećuju, i primarno i
+    /// sekundarno, sa istim težinom — doprinos meri koliko je vežba nosila <i>volumena</i> za
+    /// taj mišić, a ovde se pita nešto drugo: da li je ono što mišić diže poraslo. Mišić koji
+    /// je ograničavajući faktor u sekundarnoj ulozi o tome govori jednako.
+    ///
+    /// Prazno kada nema uporedive nedelje: prva nedelja bloka, ili nedelja čija se
+    /// ponavljanja ne poklapaju sa prethodnom. Granice tada stoje.
+    /// </summary>
+    private async Task<Dictionary<Guid, decimal>> GetStrengthChangeAsync(
+        Guid userId,
+        Guid trainingWeekId,
+        CancellationToken cancellationToken)
+    {
+        var week = await _db.TrainingWeeks
+            .AsNoTracking()
+            .Where(candidate => candidate.Id == trainingWeekId && candidate.Mesocycle.UserId == userId)
+            .Select(candidate => new { candidate.MesocycleId, candidate.WeekNumber })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (week is null)
+        {
+            return [];
+        }
+
+        var previousWeekNumber = await ComparableWeek.PreviousTrainingWeekAsync(
+            _db,
+            userId,
+            week.MesocycleId,
+            week.WeekNumber,
+            cancellationToken);
+
+        if (previousWeekNumber is null)
+        {
+            return [];
+        }
+
+        var samples = await _db.SetLogs
+            .AsNoTracking()
+            .Where(set => set.ExercisePlan.WorkoutSession.TrainingWeek.MesocycleId == week.MesocycleId
+                          && set.ExercisePlan.WorkoutSession.TrainingWeek.Mesocycle.UserId == userId
+                          && (set.ExercisePlan.WorkoutSession.TrainingWeek.WeekNumber == week.WeekNumber
+                              || set.ExercisePlan.WorkoutSession.TrainingWeek.WeekNumber == previousWeekNumber))
+            .SelectMany(set => set.ExercisePlan.Exercise.Muscles.Select(muscle => new
+            {
+                muscle.MuscleGroupId,
+                IsCurrent = set.ExercisePlan.WorkoutSession.TrainingWeek.WeekNumber == week.WeekNumber,
+                set.ExercisePlan.ExerciseId,
+                set.Reps,
+                set.Rir,
+                TotalLoadKg = set.WeightKg + set.BodyweightLoadKg
+            }))
+            .ToListAsync(cancellationToken);
+
+        var changes = new Dictionary<Guid, decimal>();
+
+        foreach (var group in samples.GroupBy(sample => sample.MuscleGroupId))
+        {
+            var change = StrengthChange.ChangeShare(
+                group.Where(sample => sample.IsCurrent)
+                    .Select(sample => new StrengthSample(sample.ExerciseId, sample.Reps, sample.Rir, sample.TotalLoadKg)),
+                group.Where(sample => !sample.IsCurrent)
+                    .Select(sample => new StrengthSample(sample.ExerciseId, sample.Reps, sample.Rir, sample.TotalLoadKg)));
+
+            if (change is not null)
+            {
+                changes[group.Key] = change.Value;
+            }
+        }
+
+        return changes;
     }
 
     /// <summary>
