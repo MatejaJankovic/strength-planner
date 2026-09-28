@@ -25,15 +25,16 @@
     </div>
   </div>
 
-  @if (exercisesWithoutLoad(); as missing) {
+  @if (exercisesWithoutMax(); as missing) {
     @if (missing.length > 0) {
       <section class="missing" role="note">
         <p class="missing__text">
           <mat-icon aria-hidden="true">help_outline</mat-icon>
           <span>
-            Za {{ missing.length === 1 ? 'ovu vežbu nema' : 'ove vežbe nema' }} poznat
-            maksimum, pa plan za njih ne predlaže opterećenje:
-            <strong>{{ missing.join(', ') }}</strong>. Možeš ih uneti, ili prvi put upisati
+            {{ missing.length }}
+            {{ missing.length === 1 ? 'vežba u ovom bloku nema' : 'vežbi u ovom bloku nema' }}
+            poznat maksimum, pa za njih nema ni predloga opterećenja:
+            <strong>{{ missingMaxSummary() }}</strong>. Možeš ih uneti, ili prvi put upisati
             težinu po osećaju - od tada sistem računa sam.
           </span>
         </p>

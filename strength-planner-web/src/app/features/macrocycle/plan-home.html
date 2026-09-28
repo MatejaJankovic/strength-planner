@@ -395,7 +395,11 @@
           }
         </button>
         @if (confirmingTakeover()) {
-          <button class="btn btn--ghost" type="button" (click)="cancelTakeover()">Odustani</button>
+          <!-- Ne piše „Odustani": pored njega već stoji dugme koje zatvara ceo čarobnjak,
+               a ovo samo povlači potvrdu i ostavlja unos kakav jeste. -->
+          <button class="btn btn--ghost" type="button" (click)="cancelTakeover()">
+            Ne, zadrži trenutni
+          </button>
         }
         <button class="btn btn--ghost" type="button" [disabled]="creating()" (click)="closeWizard()">
           Odustani

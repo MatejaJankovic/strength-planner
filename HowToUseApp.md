@@ -235,8 +235,14 @@ Klik na **„Napravi plan"** generiše ceo blok odjednom — sve nedelje, svi tr
 vežbe sa serijama, opsegom ponavljanja i ciljnim RIR-om. Aplikacija te vodi na ekran
 „Trening".
 
+Ako u bloku ima vežbi za koje nemaš unet maksimum, ekran „Trening" to **kaže** na vrhu:
+koliko ih je, koje su prve po imenu, i dugme koje vodi na unos. Nije prepreka — plan radi i
+bez njih, samo prvi put težinu uneseš po osećaju — ali više nije ni prećutano.
+
 > Pravljenje novog plana **gasi prethodni aktivni** (ne briše ga — samo prestaje da bude
-> aktivan). Brisanje je zasebno dugme, opisano niže.
+> aktivan). Zato „Napravi plan" prvo **pita**, i imenuje plan koji se gasi; potvrda je
+> drugi klik. Odrađeni treninzi i procene maksimuma ostaju, ali se na taj plan više ne
+> vraćaš kroz ekran „Trening". Brisanje je zasebno dugme, opisano niže.
 
 ### B) Više blokova u lancu
 
