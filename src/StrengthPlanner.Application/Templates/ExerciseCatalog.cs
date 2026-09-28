@@ -43,8 +43,18 @@ public static class ExerciseCatalog
 
     public static readonly IReadOnlyList<ExerciseSeed> Exercises =
     [
+        // Čučanj ne nosi zadnju ložu. Ona u čučnju radi izometrijski — drži koleno i kuk
+        // u odnosu, a ne skraćuje se pod opterećenjem — pa serija čučnja nije pola serije
+        // za zadnju ložu ma koliko teška bila. Katalog je to i sam govorio na dva mesta:
+        // Front Squat i Split Squat je nikada nisu ni imali, a Back Squat i Bulgarian
+        // Split Squat, isti obrazac pokreta, jesu.
+        //
+        // Posledica koju je taj kredit imao nije bila kozmetička: u šablonu Upper/Lower x3
+        // je POLOVINA nedeljnog volumena zadnje lože dolazila od čučnjeva i iskoraka
+        // (8 od 16, uz MAV 11), pa je balansiranje videlo mišić preko cilja i skidalo
+        // serije sa pregiba — jedine vežbe koja ga zaista gradi.
         new("Back Squat", ExerciseType.Compound, "Barbell",
-            [new("Quads", 1.0m), new("Glutes", 0.5m), new("Hamstrings", 0.5m)]),
+            [new("Quads", 1.0m), new("Glutes", 0.5m)]),
         new("Front Squat", ExerciseType.Compound, "Barbell",
             [new("Quads", 1.0m), new("Glutes", 0.5m)]),
         new("Leg Press", ExerciseType.Compound, "Machine",
@@ -66,25 +76,34 @@ public static class ExerciseCatalog
         // bučice i telesnu težinu, i dodaju jedini unilateralni obrazac u katalogu — dosad
         // nijedna vežba nije izolovala jednu nogu.
         new("Bulgarian Split Squat", ExerciseType.Compound, "Dumbbell",
-            [new("Quads", 1.0m), new("Glutes", 0.5m), new("Hamstrings", 0.5m)]),
+            [new("Quads", 1.0m), new("Glutes", 0.5m)]),
         // Iskorak na jednoj nozi nosi telo bez oslonjene potkolenice i stopala.
         new("Split Squat", ExerciseType.Compound, "Bodyweight",
             [new("Quads", 1.0m), new("Glutes", 0.5m)], BodyweightShare: 0.85m),
         new("Walking Lunge", ExerciseType.Compound, "Dumbbell",
-            [new("Quads", 1.0m), new("Glutes", 0.5m), new("Hamstrings", 0.5m)]),
+            [new("Quads", 1.0m), new("Glutes", 0.5m)]),
         new("Goblet Squat", ExerciseType.Compound, "Dumbbell",
             [new("Quads", 1.0m), new("Glutes", 0.5m)]),
         new("Step-Up", ExerciseType.Compound, "Dumbbell",
-            [new("Glutes", 1.0m), new("Quads", 0.5m), new("Hamstrings", 0.5m)]),
+            [new("Glutes", 1.0m), new("Quads", 0.5m)]),
         new("Single-Leg Romanian Deadlift", ExerciseType.Compound, "Dumbbell",
             [new("Hamstrings", 1.0m), new("Glutes", 0.5m)]),
 
+        // Horizontalni potisak ne ulazi u budžet ramena. Prednji deltoid u njemu radi i
+        // raste — ali „Shoulders" je zbirna grupa, a njen MAV se troši na bočni i zadnji
+        // deltoid, koje potisak ne radi. Dok je potisak punio taj budžet, balansiranje je
+        // mišić videlo blizu cilja i skidalo serije sa bočnog podizanja: sa jedne vežbe
+        // koja te glave zaista gradi.
+        //
+        // I ovde je katalog sam sebi protivrečio: Push-up je isti obrazac pokreta i nikada
+        // nije imao udeo u ramenima. Vertikalni potisci (Overhead Press, Dumbbell Shoulder
+        // Press) zadržavaju rame kao PRIMARNI mišić — oni bočni deltoid zaista opterećuju.
         new("Bench Press", ExerciseType.Compound, "Barbell",
-            [new("Chest", 1.0m), new("Triceps", 0.5m), new("Shoulders", 0.5m)]),
+            [new("Chest", 1.0m), new("Triceps", 0.5m)]),
         new("Incline Bench Press", ExerciseType.Compound, "Barbell",
-            [new("Chest", 1.0m), new("Shoulders", 0.5m), new("Triceps", 0.5m)]),
+            [new("Chest", 1.0m), new("Triceps", 0.5m)]),
         new("Dumbbell Bench Press", ExerciseType.Compound, "Dumbbell",
-            [new("Chest", 1.0m), new("Triceps", 0.5m), new("Shoulders", 0.5m)]),
+            [new("Chest", 1.0m), new("Triceps", 0.5m)]),
         // Sklek u gornjem položaju nosi oko dve trećine telesne mase.
         new("Push-up", ExerciseType.Compound, "Bodyweight",
             [new("Chest", 1.0m), new("Triceps", 0.5m)], BodyweightShare: 0.64m),

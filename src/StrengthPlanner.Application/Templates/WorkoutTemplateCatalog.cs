@@ -115,7 +115,11 @@ public static class WorkoutTemplateCatalog
                 new("Upper B",
                 [
                     "Pull-up", "Incline Bench Press", "Dumbbell Shoulder Press",
-                    "Dumbbell Fly", "Overhead Triceps Extension", "Straight-Arm Pulldown", "Hammer Curl", "Rear Delt Fly"
+                    // Zadnji deltoid je pomeren ispred ruku. Sastav treninga uzima izolacije
+                    // redom, pa je sa poslednjeg mesta nikada nije ni stizao do srednjeg
+                    // nivoa — a otkako potisak ne puni budžet ramena, ovo je jedina direktna
+                    // serija za rame u ovom danu.
+                    "Dumbbell Fly", "Rear Delt Fly", "Overhead Triceps Extension", "Straight-Arm Pulldown", "Hammer Curl"
                 ]),
                 new("Lower B",
                 [
