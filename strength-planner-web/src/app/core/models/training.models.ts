@@ -170,6 +170,8 @@ export interface ExercisePlanDto {
   /** Cilj je izveden iz poznatog maksimuma, a ne iz odrađenih serija prethodne nedelje. */
   targetWeightIsEstimate?: boolean;
   weightStepKg: number;
+  /** Sprava: "Barbell", "Dumbbell", "Machine", "Cable", "Bodyweight". */
+  equipment?: string;
   /**
    * Vezba nosi deo telesne mase, pa je `targetWeightKg` ono sto se DODAJE, a 0 znaci
    * „sopstvenom masom". Netacno i za vezbu sa telesnom masom kad profil nema unetu masu.

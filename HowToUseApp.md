@@ -403,6 +403,16 @@ Predlog težine dolazi iz dva izvora, i aplikacija kaže iz kog:
 Druga vrsta se pojavljuje i kad tek uneseš maksimum za vežbu koja ga nije imala: plan je već
 napravljen, ali predlog se računa pri otvaranju treninga, pa nov broj važi odmah.
 
+**Kod bučica se unosi težina jedne bučice, ne zbir obe.** Tako je i korak podešen: stalak
+se pomera po 2 kg po bučici (10, 12, 14…), pa bi uneti zbir davao predloge kojih na stalku
+nema — 42 kg tamo gde postoje 40 i 44. Isto važi i za tonažu i za procenu maksimuma: svi
+brojevi za vežbu sa bučicama govore o jednoj strani, dosledno.
+
+**0 kg kod vežbe koja se opterećuje spolja** aplikacija označava kao grešku: prazna šipka je
+oko 20 kg. Serija upisana na nuli ne daje ni procenu maksimuma ni tonažu, a iz nje se ne može
+izvesti ni predlog za sledeći put. Vežbe koje nosi sopstvena masa su izuzete — tamo 0 znači
+„sopstvenom masom", što je tačan unos, a plank se i loguje na nuli.
+
 Kod vežbi koje diže sopstvena masa polje se zove **„Dodatno opterećenje"** i u njega ide
 samo ono što si stavio na sebe (pojas, traka) — **0 znači sopstvenom masom**. Ispod polja
 piše koliko je to kilograma za tebe: zgib nosi celu telesnu masu, sklek oko dve trećine,

@@ -232,6 +232,22 @@
           <p class="card__hint">Nema 1RM za ovu vežbu - unesi težinu po osećaju.</p>
         }
 
+        @switch (loadNote(plan, draft)) {
+          @case ('single-dumbbell') {
+            <p class="card__hint">Unosi težinu <strong>jedne</strong> bučice, ne zbir obe.</p>
+          }
+          @case ('zero-on-loaded') {
+            <p class="card__hint card__hint--warn">
+              <mat-icon aria-hidden="true">warning_amber</mat-icon>
+              <span>
+                0 kg, a ova vežba se opterećuje spolja - prazna šipka je već oko 20 kg.
+                Serija upisana na nuli ne daje ni procenu maksimuma ni tonažu, a ni predlog
+                za sledeći put.
+              </span>
+            </p>
+          }
+        }
+
         @if (plan.targetWeightIsEstimate) {
           <p class="card__hint card__hint--estimate">
             <mat-icon aria-hidden="true">calculate</mat-icon>

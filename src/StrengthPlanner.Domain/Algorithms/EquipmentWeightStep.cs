@@ -13,8 +13,14 @@ public static class EquipmentWeightStep
     /// <summary>Largest step the system will ever use, in kilograms.</summary>
     public const decimal MaxStepKg = 10m;
 
-    // Barbell: 2 x 1.25 kg plates. Dumbbell: racks usually move in 2 kg pairs.
-    // Machine/cable: fixed stack increments. Bodyweight: added load on a belt.
+    // Barbell: 2 x 1.25 kg plates. Machine/cable: fixed stack increments.
+    // Bodyweight: added load on a belt.
+    //
+    // Dumbbell is 2 kg because a rack moves in 2 kg steps PER DUMBBELL (10, 12, 14…), which
+    // is the same thing as saying the logged weight is one dumbbell rather than the pair.
+    // That convention was implied by this number and stated nowhere, so a lifter entering
+    // the sum got proposals no rack can produce - 42 kg where the rack offers 40 or 44. The
+    // screens now say it where the weight is typed.
     private static readonly IReadOnlyDictionary<string, decimal> StepsByEquipment =
         new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase)
         {
