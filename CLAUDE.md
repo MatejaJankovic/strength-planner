@@ -117,7 +117,7 @@ prose — no need for academic style.
 
 ## Scope note
 
-Twelve rounds of work, all merged to `main`. Every branch got its own PR, an agent code
+Thirteen rounds of work, all merged to `main`. Every branch got its own PR, an agent code
 review, fixes for what the review turned up, and a plain-language write-up in
 `docs/features/`. (This line said "two rounds" until round 9 — a count in prose goes stale
 the moment it is written, which is why the rounds below are a list and not a number.)
@@ -706,8 +706,90 @@ Two things this round names rather than fixes:
   The app does not and will not: requiring history to be deleted before starting a block is
   not a good rule, and is not the one that was chosen.
 
-Still unbuilt from the same audit: **section E** (the exercise model), plus the suggestions
-list. Sections A through D are done.
+Still unbuilt at the time: **section E** (the exercise model) — built in round 13 — plus the
+suggestions list.
+
+**Round 13 — the same audit, section E: the exercise model.** Which muscle an exercise
+actually trains, where it sits in a template, and what the weight field means. Five findings,
+three branches, all merged.
+
+| Branch | What it fixed | PR |
+|---|---|---|
+| `fix/muscle-contributions` | Pressing filled the shoulder budget and squatting the hamstring budget, so balancing cut sets from the exercises that build those muscles | #81 |
+| `fix/template-placement` | The only back isolation in one template sat on a leg day; in another the upper-body exercise there turned out to be necessary | #82 |
+| `fix/dumbbell-and-zero-load` | Nothing said a dumbbell weight is one dumbbell, and 0 kg on a loaded lift dropped the exercise out of every calculation | #83 |
+
+Sequential, each merged before the next branched. 613 tests on the server (unchanged), 144 →
+150 on the client.
+
+The finding that shaped the round: **the catalogue already contained both answers and used
+the wrong one.** `Push-up` and `Bench Press` are the same movement pattern and only one
+credited `Shoulders`; `Split Squat` and `Bulgarian Split Squat` are the same pattern and only
+one credited `Hamstrings`. So neither correction rested on my judgement about training — the
+model disagreed with itself, and the inconsistent half was in both cases the one feeding a
+budget that direct work has to fit into. Section E was about beliefs encoded as data, and the
+data was its own best witness.
+
+Decisions worth keeping:
+
+- **A helping share belongs to the muscle that grows from the work, not the one that
+  participates.** The front delt does grow from pressing — but "Shoulders" is an aggregate
+  whose target is spent on the side and rear delt, which pressing does not train. The
+  hamstring in a squat works isometrically and does not grow from it. Hip hinges that do
+  shorten keep their share.
+- **The aggregate groups stay, and are now said out loud.** Splitting "Shoulders" and "Back"
+  into heads is the real fix, but it needs per-head MEV/MAV/MRV values, a migration of every
+  user's learned limits and rework of analytics. The handbook the seeds came from gives only
+  a range, so new numbers would be a decision about the model rather than a correction of a
+  defect — the owner's call, not mine. The volume screen now states the aggregation and what
+  to do when a group sits in the band while one part of it lags.
+- **A third leg day has session time but no leg volume.** Measured, not assumed, and it means
+  an upper-body isolation there is correct rather than careless.
+- **A convention that lives only in a constant has not been stated.** The 2 kg dumbbell step
+  *was* the decision that the logged weight is one dumbbell; it was never written anywhere a
+  lifter reads.
+- **Equipment decides what zero means, not the bodyweight share.** Plank carries `Bodyweight`
+  equipment with a share of 0, so a rule keyed on the share would have warned on every plank
+  set.
+
+Seven measurements from this round contradicted the expectation behind the change:
+
+1. **Removing the press credit exposed a gap the model had been hiding.** An existing test
+   caught it: Upper/Lower at the intermediate level fell to **4 shoulder sets against MEV 8**,
+   because session composition takes isolations in order and `Rear Delt Fly` sat last in
+   "Upper B", never reached. The template cleared MEV only through pressing. Moving the rear
+   delt ahead of the arm work restores 8 — from two exercises that train the shoulder rather
+   than one plus two presses.
+2. **Section E's placement finding is half wrong.** Both obvious fixes fail: dropping the
+   exercise leaves an advanced session at **4 of a required 5**, and replacing it with leg
+   work reads **quads 16.5 against MRV 16** on the beginner scale. The slot has to hold an
+   upper-body isolation. Only `Legs Specialization` had a genuine defect — its one back
+   isolation was on a leg day — and without it that template reads **back 8 against MEV 10**,
+   so it was load-bearing where it stood.
+3. **No migration was needed, and that was checked rather than assumed.**
+   `ReconcileSystemExercisesAsync` aligns system exercises with the catalogue on every start.
+   Verified against the running database: before the restart it held
+   `Bench Press → Shoulders 0.50`, after it did not, and `Overhead Press` still had
+   `Shoulders 1.00`.
+4. **Round 12's stylesheet warning came true in the very next change to that screen.** Adding
+   two notes pushed `workout-session.scss` to 8.05 kB and **broke the build** against the hard
+   8 kB budget. The recommendation was carried out rather than deferred again: four blocks
+   sizing `mat-icon` identically became one, and the file is now **7.93 kB** — below where the
+   branch started.
+5. **The first draft of the zero warning was false on most of the screen.** It said "prazna
+   šipka je oko 20 kg" on a cable fly and a lateral raise, which have no bar.
+6. **A 643px overflow that was not there.** Measuring layout right after changing the
+   emulated viewport reports the previous layout: the page had not reflowed. After a reload
+   the same page measures 0. Reload before believing a layout measurement, the same shape as
+   round 10's lesson about rebuilding before believing a live one.
+7. **This round added no server tests, and that is the honest outcome.** The existing suite
+   already covered the changes and twice decided them: it found the Upper/Lower shoulder gap
+   and it rejected both naive fixes to the template placement. Writing a test to assert what
+   `ExerciseCatalogTests` and `WorkoutTemplateCatalogTests` already assert would have added
+   coverage that was not missing.
+
+Still unbuilt from the same audit: only the **suggestions list**. Sections A through E are
+done.
 
 Deliberately **out of scope**: i18n, full-history analytics, undulating periodization,
 PWA/offline, changing an already-generated block's periodization model, email delivery (so no
