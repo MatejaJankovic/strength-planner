@@ -774,6 +774,14 @@ public class SessionService : ISessionService
         IReadOnlyDictionary<Guid, decimal> weightStepOverrides,
         CancellationToken cancellationToken)
     {
+        // Samo za trening koji tek predstoji. Završen ili preskočen nosi istoriju: predlog
+        // za nešto što se već desilo (ili neće) nije predlog nego šum — a i upit ispod bi se
+        // plaćao pri svakom listanju istorije.
+        if (!SessionLifecycle.IsPending(session.Status))
+        {
+            return [];
+        }
+
         var missing = session.ExercisePlans
             .Where(plan => plan.TargetWeightKg is null)
             .ToList();

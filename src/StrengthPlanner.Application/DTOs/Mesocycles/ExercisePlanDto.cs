@@ -26,9 +26,13 @@ public class ExercisePlanDto
     /// <summary>
     /// Cilj nije došao iz odrađenih serija nego je izveden iz poznatog maksimuma.
     ///
-    /// Tako stoji dok isti dan prethodne nedelje nije završen — a od te nedelje nadalje ga
-    /// progresija prepisuje brojem koji je vežbač zaista zaradio. Razlika se prikazuje, jer
-    /// predlog iz procene i predlog iz odrađenog nisu isto jaka tvrdnja.
+    /// Tako stoji dok za tu vežbu nema odrađenog treninga od koga bi se cilj računao —
+    /// najčešće zato što isti dan prethodne nedelje nije završen, ali i kada je maksimum
+    /// unet pošto je blok već generisan. Čim taj trening postoji, progresija upisuje broj
+    /// koji je vežbač zaista zaradio. Razlika se prikazuje, jer predlog iz procene i predlog
+    /// iz odrađenog nisu isto jaka tvrdnja.
+    ///
+    /// Računa se samo za trening koji tek predstoji: završen i preskočen nose istoriju.
     /// </summary>
     public bool TargetWeightIsEstimate { get; set; }
 

@@ -367,7 +367,7 @@ Predlog težine dolazi iz dva izvora, i aplikacija kaže iz kog:
 | Šta piše | Odakle predlog |
 |---|---|
 | ništa posebno | iz onoga što si **stvarno digao** isti dan prethodne nedelje |
-| *„Predlog je izveden iz tvog maksimuma…"* | iz **poznatog 1RM-a**, jer taj dan prethodne nedelje još nije odrađen |
+| *„Predlog je izveden iz tvog maksimuma…"* | iz **poznatog 1RM-a**, jer za tu vežbu još nema odrađenog treninga od koga bi se računao |
 | *„Nema 1RM za ovu vežbu"* | **nema ga** — unesi težinu po osećaju, dalje sistem računa sam |
 
 Druga vrsta se pojavljuje i kad tek uneseš maksimum za vežbu koja ga nije imala: plan je već

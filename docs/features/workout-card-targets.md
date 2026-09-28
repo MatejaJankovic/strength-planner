@@ -82,6 +82,19 @@ Uživo, blok napravljen bez ijednog maksimuma, pa naknadno upisan 1RM od 160 kg 
 122.5 je Epley nad 9 efektivnih ponavljanja (8 na RIR 1) iz 160 kg, zaokruženo na korak od
 2.5 kg.
 
+## Šta je pregled uhvatio
+
+Dve stvari koje je ova grana uvela, obe ispravljene pre spajanja:
+
+1. **Predlog se izvodio i za završen trening.** Sesija koja je gotova (ili preskočena) nosi
+   istoriju; predlog za nešto što se već desilo nije predlog nego šum, a upit ka zapisima
+   maksimuma bi se plaćao pri svakom listanju istorije. Sada se računa samo za trening koji
+   tek predstoji.
+2. **Napomena je tvrdila nešto što nije uvek tačno.** Pisala je „isti dan prethodne nedelje
+   još nije odrađen" — što u prvoj nedelji, kada je maksimum unet posle generisanja bloka,
+   jednostavno nije istina. Sada kaže ono što važi u oba slučaja: za tu vežbu još nema
+   odrađenog treninga od koga bi se cilj računao.
+
 ## Poznato ograničenje
 
 Kao i kod nivoa iskustva u ovoj rundi: **samo pravilo** je pokriveno testovima
