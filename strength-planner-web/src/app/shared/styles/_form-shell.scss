@@ -56,6 +56,12 @@ form {
   text-transform: uppercase;
 }
 
+.field__hint {
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  margin: 0;
+}
+
 .field__error {
   color: var(--color-above, #e4572e);
   font-size: 0.8rem;

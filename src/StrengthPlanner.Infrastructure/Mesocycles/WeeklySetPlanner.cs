@@ -72,7 +72,7 @@ public sealed class WeeklySetPlanner
             return [];
         }
 
-        var landmarks = await _landmarks.GetEffectiveAsync(userId, cancellationToken);
+        var landmarks = await _landmarks.GetEffectiveAsync(userId, mesocycleId, cancellationToken);
         var muscleNames = await _db.MuscleGroups
             .AsNoTracking()
             .ToDictionaryAsync(group => group.Id, group => group.Name, cancellationToken);

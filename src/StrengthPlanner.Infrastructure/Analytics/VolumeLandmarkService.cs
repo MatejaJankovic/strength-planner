@@ -22,12 +22,16 @@ public sealed class VolumeLandmarkService
 
     /// <summary>
     /// Efektivne granice po mišićnoj grupi: lične ako postoje, inače seed vrednosti.
+    ///
+    /// Blok se traži jer seed vrednosti skalira nivo iskustva, a nivo pripada bloku, ne
+    /// profilu koji se u međuvremenu mogao promeniti.
     /// </summary>
     public async Task<Dictionary<Guid, EffectiveLandmark>> GetEffectiveAsync(
         Guid userId,
+        Guid mesocycleId,
         CancellationToken cancellationToken)
     {
-        var seeds = await GetScaledSeedsAsync(userId, cancellationToken);
+        var seeds = await GetScaledSeedsAsync(userId, mesocycleId, cancellationToken);
 
         var personal = await _db.UserVolumeLandmarks
             .AsNoTracking()
@@ -91,12 +95,13 @@ public sealed class VolumeLandmarkService
 
         foreach (var weekId in pendingWeekIds)
         {
-            await AdaptWeekAsync(userId, weekId, completedAt, cancellationToken);
+            await AdaptWeekAsync(userId, mesocycleId, weekId, completedAt, cancellationToken);
         }
     }
 
     private async Task AdaptWeekAsync(
         Guid userId,
+        Guid mesocycleId,
         Guid trainingWeekId,
         DateTime completedAt,
         CancellationToken cancellationToken)
@@ -130,7 +135,7 @@ public sealed class VolumeLandmarkService
             trainingWeekId,
             cancellationToken);
 
-        var seeds = await GetScaledSeedsAsync(userId, cancellationToken);
+        var seeds = await GetScaledSeedsAsync(userId, mesocycleId, cancellationToken);
 
         var personal = await _db.UserVolumeLandmarks
             .Where(landmark => landmark.UserId == userId)
@@ -190,13 +195,10 @@ public sealed class VolumeLandmarkService
     /// </summary>
     private async Task<Dictionary<Guid, VolumeLandmarkValues>> GetScaledSeedsAsync(
         Guid userId,
+        Guid mesocycleId,
         CancellationToken cancellationToken)
     {
-        var level = await _db.Profiles
-            .AsNoTracking()
-            .Where(profile => profile.UserId == userId)
-            .Select(profile => (ExperienceLevel?)profile.ExperienceLevel)
-            .FirstOrDefaultAsync(cancellationToken) ?? ExperienceLevel.Intermediate;
+        var level = await BlockExperienceLevel.ForBlockAsync(_db, userId, mesocycleId, cancellationToken);
 
         var seeds = await _db.VolumeLandmarks
             .AsNoTracking()

@@ -96,7 +96,7 @@ public sealed class DeloadService
         // da su na otkazu. Nepotreban deload ih košta nedelje napretka, pa im ostaje samo
         // planirani deload na kraju bloka.
         var threshold = ExperienceProgramming.DeloadThreshold(
-            await GetExperienceLevelAsync(userId, cancellationToken));
+            await BlockExperienceLevel.ForBlockAsync(_db, userId, mesocycleId, cancellationToken));
 
         if (claimed == 0 || threshold is null || score < threshold.Value)
         {
@@ -163,17 +163,6 @@ public sealed class DeloadService
             cancellationToken);
 
         return new DeloadOutcome(weekNumber, nextWeek.WeekNumber, score, plannedDeloadRestored);
-    }
-
-    private async Task<ExperienceLevel> GetExperienceLevelAsync(
-        Guid userId,
-        CancellationToken cancellationToken)
-    {
-        return await _db.Profiles
-            .AsNoTracking()
-            .Where(profile => profile.UserId == userId)
-            .Select(profile => (ExperienceLevel?)profile.ExperienceLevel)
-            .FirstOrDefaultAsync(cancellationToken) ?? ExperienceLevel.Intermediate;
     }
 
     /// <summary>
@@ -539,7 +528,7 @@ public sealed class DeloadService
         var failureShare = (decimal)sets.Count(set => set.IsFailure) / sets.Count;
 
         var e1RmChange = await GetE1RmChangeShareAsync(userId, mesocycleId, weekNumber, sets, cancellationToken);
-        var volumeShare = await GetVolumeVsMrvShareAsync(userId, weekId, cancellationToken);
+        var volumeShare = await GetVolumeVsMrvShareAsync(userId, mesocycleId, weekId, cancellationToken);
 
         return new WeeklyFatigue(
             rirDeviation,
@@ -624,6 +613,7 @@ public sealed class DeloadService
     /// </summary>
     private async Task<decimal> GetVolumeVsMrvShareAsync(
         Guid userId,
+        Guid mesocycleId,
         Guid weekId,
         CancellationToken cancellationToken)
     {
@@ -633,7 +623,7 @@ public sealed class DeloadService
             return 0m;
         }
 
-        var landmarks = await _landmarks.GetEffectiveAsync(userId, cancellationToken);
+        var landmarks = await _landmarks.GetEffectiveAsync(userId, mesocycleId, cancellationToken);
         decimal highest = 0m;
 
         foreach (var (muscleGroupId, response) in responses)
