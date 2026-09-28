@@ -150,7 +150,7 @@ export interface WorkoutSessionDto {
   isAutoDeload: boolean;
   dayLabel: string;
   date?: string | null;
-  status: 'Planned' | 'InProgress' | 'Completed' | string;
+  status: 'Planned' | 'InProgress' | 'Completed' | 'Skipped' | string;
   exercisePlans: ExercisePlanDto[];
 }
 
@@ -280,6 +280,8 @@ export interface MacrocycleBlockDto {
   mesocycleId?: string | null;
   status: 'planned' | 'active' | 'completed' | string;
   completedSessions: number;
+  /** Koliko je treninga preskočeno; ne ulazi u traku napretka, ali blok zatvara. */
+  skippedSessions: number;
   totalSessions: number;
 }
 

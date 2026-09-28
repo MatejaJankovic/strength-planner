@@ -49,4 +49,26 @@ public class SessionsController : AuthorizedControllerBase
         var result = await _sessionService.CompleteAsync(GetUserId(), id, cancellationToken);
         return Ok(result);
     }
+
+    /// <summary>Označava planiran trening kao preskočen, da nedelja može da se zatvori.</summary>
+    [HttpPost("{id:guid}/skip")]
+    [ProducesResponseType(typeof(WorkoutSessionDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Skip(Guid id, CancellationToken cancellationToken)
+    {
+        var session = await _sessionService.SkipAsync(GetUserId(), id, cancellationToken);
+        return Ok(session);
+    }
+
+    /// <summary>Vraća preskočen trening na plan.</summary>
+    [HttpPost("{id:guid}/unskip")]
+    [ProducesResponseType(typeof(WorkoutSessionDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Unskip(Guid id, CancellationToken cancellationToken)
+    {
+        var session = await _sessionService.UnskipAsync(GetUserId(), id, cancellationToken);
+        return Ok(session);
+    }
 }

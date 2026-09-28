@@ -71,6 +71,11 @@
                 </div>
                 <p class="tblock__count numeric">
                   {{ block.completedSessions }} / {{ block.totalSessions }} treninga
+                  @if (block.skippedSessions > 0) {
+                    <span class="tblock__skipped">
+                      &middot; {{ block.skippedSessions }} presko&#269;eno
+                    </span>
+                  }
                 </p>
               } @else {
                 <p class="tblock__count">

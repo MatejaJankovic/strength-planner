@@ -79,6 +79,8 @@ export class WorkoutDashboard {
         return { label: 'Završeno', tone: 'optimal' };
       case 'InProgress':
         return { label: 'U toku', tone: 'accent' };
+      case 'Skipped':
+        return { label: 'Preskočeno', tone: 'below' };
       default:
         return { label: 'Planirano', tone: 'neutral' };
     }

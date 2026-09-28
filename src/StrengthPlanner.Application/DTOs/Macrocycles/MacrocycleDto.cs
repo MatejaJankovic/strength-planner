@@ -38,5 +38,13 @@ public class MacrocycleBlockDto
 
     /// <summary>Broj završenih treninga i ukupan broj, za prikaz napretka.</summary>
     public int CompletedSessions { get; set; }
+
+    /// <summary>
+    /// Koliko je treninga preskočeno. Stoji odvojeno od završenih, jer traka napretka
+    /// pokazuje šta je odrađeno — a blok je gotov kada nema šta da čeka, što je zbir ovo
+    /// dvoje.
+    /// </summary>
+    public int SkippedSessions { get; set; }
+
     public int TotalSessions { get; set; }
 }

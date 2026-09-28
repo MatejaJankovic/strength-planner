@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using StrengthPlanner.Application.DTOs.Mesocycles;
 using StrengthPlanner.Application.DTOs.Sessions;
 using StrengthPlanner.Application.DTOs.SetLogs;
@@ -78,6 +79,16 @@ public class SessionService : ISessionService
             throw new TrainingLogException(TrainingLogErrorType.Conflict, "Completed workout sessions cannot be started again.");
         }
 
+        // Preskočen trening se ne pokreće prećutno. Nedelja je na osnovu njega već
+        // zatvorena, pa je „predomislio sam se" odluka koja ima svoje dugme — inače bi
+        // start na preskočenom treningu vratio 200 i ne bi promenio ništa.
+        if (session.Status == SessionStatus.Skipped)
+        {
+            throw new TrainingLogException(
+                TrainingLogErrorType.Conflict,
+                "A skipped workout must be put back on the plan before it can be started.");
+        }
+
         if (session.Status == SessionStatus.Planned)
         {
             session.Status = SessionStatus.InProgress;
@@ -92,6 +103,168 @@ public class SessionService : ISessionService
             detailedSession,
             weightStepOverrides,
             await ResolvePortionsAsync(userId, detailedSession, cancellationToken));
+    }
+
+    public async Task<WorkoutSessionDto> SkipAsync(
+        Guid userId,
+        Guid sessionId,
+        CancellationToken cancellationToken = default)
+    {
+        await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+
+        var session = await LoadForLifecycleChangeAsync(userId, sessionId, cancellationToken);
+
+        if (!SessionLifecycle.CanSkip(session.Status))
+        {
+            throw new TrainingLogException(
+                TrainingLogErrorType.Conflict,
+                "Only a workout that has not been started can be skipped.");
+        }
+
+        // Uslovni UPDATE, isto kao kod završetka: čitanje bez zaključavanja ne sprečava da
+        // dva zahteva oba prođu, a sve ispod sme da se odigra tačno jednom.
+        var claimed = await _db.WorkoutSessions
+            .Where(candidate => candidate.Id == sessionId && candidate.Status == SessionStatus.Planned)
+            .ExecuteUpdateAsync(
+                setters => setters.SetProperty(candidate => candidate.Status, SessionStatus.Skipped),
+                cancellationToken);
+
+        if (claimed == 0)
+        {
+            throw new TrainingLogException(
+                TrainingLogErrorType.Conflict,
+                "Only a workout that has not been started can be skipped.");
+        }
+
+        // Granice volumena se NE obračunavaju: preskakanje nikada ne može da nedelju učini
+        // u celosti odrađenom, a nedelja sa rupom o potrebnom volumenu ne govori ništa.
+        //
+        // Ocena umora i prelazak na sledeći blok se pokreću, jer oba pitaju da li je nešto
+        // preostalo — a sada ne preostaje. To je cela poenta ove operacije.
+        await _deloads.EvaluatePendingWeeksAsync(
+            userId,
+            session.TrainingWeek.MesocycleId,
+            cancellationToken);
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        await AdvanceBlockIfFinishedAsync(
+            userId,
+            session.TrainingWeek.MesocycleId,
+            DateTime.UtcNow,
+            transaction,
+            cancellationToken);
+
+        await transaction.CommitAsync(cancellationToken);
+
+        return await ReadBackAsync(userId, sessionId, cancellationToken);
+    }
+
+    public async Task<WorkoutSessionDto> UnskipAsync(
+        Guid userId,
+        Guid sessionId,
+        CancellationToken cancellationToken = default)
+    {
+        var session = await LoadForLifecycleChangeAsync(userId, sessionId, cancellationToken);
+
+        if (!SessionLifecycle.CanUnskip(session.Status))
+        {
+            throw new TrainingLogException(
+                TrainingLogErrorType.Conflict,
+                "Only a skipped workout can be put back on the plan.");
+        }
+
+        // Ništa se ne poništava unazad. Auto-deload koji je nedelja u međuvremenu dobila
+        // ostaje, i sledeći blok koji je generisan ostaje — oba su se desila zato što u tom
+        // trenutku zaista nije bilo šta da se čeka, i oba su upisana u istoriju vežbača.
+        // Vraćanje treninga na plan znači da će se odraditi, ne da se prošlost prepisuje.
+        await _db.WorkoutSessions
+            .Where(candidate => candidate.Id == sessionId && candidate.Status == SessionStatus.Skipped)
+            .ExecuteUpdateAsync(
+                setters => setters.SetProperty(candidate => candidate.Status, SessionStatus.Planned),
+                cancellationToken);
+
+        return await ReadBackAsync(userId, sessionId, cancellationToken);
+    }
+
+    /// <summary>
+    /// Generiše sledeći blok plana kada od tekućeg više ništa ne preostaje.
+    ///
+    /// Ide poslednje, i njegov neuspeh ne sme da obori operaciju koja ga je pokrenula.
+    /// Generator odbija šablon kome neka vežba više ne postoji (obrisana lična vežba,
+    /// promenjen seed), a kako se sve dešava u istoj transakciji, izuzetak bi poništio i
+    /// status sesije i e1RM zapise — pa vežbač svoj trening ne bi mogao da završi nikada,
+    /// zbog usputne pogodnosti. Blok ostaje negenerisan i biće preuzet pri sledećem čitanju
+    /// plana.
+    ///
+    /// Povratak na savepoint, a ne samo hvatanje izuzetka: da je pukla neka SQL naredba,
+    /// cela transakcija bi u PostgreSQL-u bila u prekinutom stanju i commit bi svejedno pao.
+    /// </summary>
+    private async Task<MacrocycleAdvance?> AdvanceBlockIfFinishedAsync(
+        Guid userId,
+        Guid mesocycleId,
+        DateTime now,
+        IDbContextTransaction transaction,
+        CancellationToken cancellationToken)
+    {
+        const string advanceSavepoint = "before_block_advance";
+        await transaction.CreateSavepointAsync(advanceSavepoint, cancellationToken);
+
+        try
+        {
+            var advance = await _macrocycles.AdvanceIfFinishedAsync(
+                userId,
+                mesocycleId,
+                now,
+                cancellationToken);
+
+            await _db.SaveChangesAsync(cancellationToken);
+            await transaction.ReleaseSavepointAsync(advanceSavepoint, cancellationToken);
+
+            return advance;
+        }
+        catch (MesocycleGenerationException)
+        {
+            await transaction.RollbackToSavepointAsync(advanceSavepoint, cancellationToken);
+            return null;
+        }
+    }
+
+    private async Task<WorkoutSession> LoadForLifecycleChangeAsync(
+        Guid userId,
+        Guid sessionId,
+        CancellationToken cancellationToken)
+    {
+        var session = await _db.WorkoutSessions
+            .AsNoTracking()
+            .Include(workoutSession => workoutSession.TrainingWeek)
+            .FirstOrDefaultAsync(
+                workoutSession => workoutSession.Id == sessionId
+                                  && workoutSession.TrainingWeek.Mesocycle.UserId == userId,
+                cancellationToken);
+
+        if (session is null)
+        {
+            throw new TrainingLogException(TrainingLogErrorType.NotFound, "Workout session was not found.");
+        }
+
+        return session;
+    }
+
+    private async Task<WorkoutSessionDto> ReadBackAsync(
+        Guid userId,
+        Guid sessionId,
+        CancellationToken cancellationToken)
+    {
+        var session = await BuildSessionDetailsQuery(userId)
+            .FirstAsync(workoutSession => workoutSession.Id == sessionId, cancellationToken);
+
+        var weightStepOverrides = await WeightStepResolver.LoadOverridesAsync(_db, userId, cancellationToken);
+
+        return ToDto(
+            session,
+            weightStepOverrides,
+            await ResolvePortionsAsync(userId, session, cancellationToken));
     }
 
     public async Task<CompleteSessionResultDto> CompleteAsync(
@@ -407,29 +580,12 @@ public class SessionService : ISessionService
         // ovo dešava u istoj transakciji, izuzetak bi poništio i status sesije i e1RM
         // zapise — pa korisnik svoj trening ne bi mogao da završi nikada, zbog usputne
         // pogodnosti. Blok ostaje negenerisan i biće preuzet pri sledećem pokušaju.
-        MacrocycleAdvance? nextBlock = null;
-        const string advanceSavepoint = "before_block_advance";
-        await transaction.CreateSavepointAsync(advanceSavepoint, cancellationToken);
-
-        try
-        {
-            nextBlock = await _macrocycles.AdvanceIfFinishedAsync(
-                userId,
-                session.TrainingWeek.MesocycleId,
-                now,
-                cancellationToken);
-
-            await _db.SaveChangesAsync(cancellationToken);
-            await transaction.ReleaseSavepointAsync(advanceSavepoint, cancellationToken);
-        }
-        catch (MesocycleGenerationException)
-        {
-            // Povratak na savepoint, a ne samo hvatanje izuzetka: da je pukla neka SQL
-            // naredba, cela transakcija bi u PostgreSQL-u bila u prekinutom stanju i
-            // commit ispod bi svejedno pao.
-            await transaction.RollbackToSavepointAsync(advanceSavepoint, cancellationToken);
-            nextBlock = null;
-        }
+        var nextBlock = await AdvanceBlockIfFinishedAsync(
+            userId,
+            session.TrainingWeek.MesocycleId,
+            now,
+            transaction,
+            cancellationToken);
 
         await transaction.CommitAsync(cancellationToken);
 

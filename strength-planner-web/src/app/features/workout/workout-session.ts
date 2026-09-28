@@ -51,6 +51,7 @@ export class WorkoutSession {
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
   protected readonly starting = signal(false);
+  protected readonly skipping = signal(false);
   protected readonly completing = signal(false);
   protected readonly actionError = signal<string | null>(null);
   protected readonly toast = signal<string | null>(null);
@@ -66,6 +67,7 @@ export class WorkoutSession {
   protected readonly isPlanned = computed(() => this.status() === 'Planned');
   protected readonly isInProgress = computed(() => this.status() === 'InProgress');
   protected readonly isCompleted = computed(() => this.status() === 'Completed');
+  protected readonly isSkipped = computed(() => this.status() === 'Skipped');
 
   protected readonly loggedSetCount = computed(() =>
     (this.session()?.exercisePlans ?? []).reduce((total, plan) => total + plan.setLogs.length, 0),
@@ -219,6 +221,56 @@ export class WorkoutSession {
   }
 
   // --- start / complete -----------------------------------------------------
+
+  /**
+   * Trening koji se neće odraditi. Ništa se ne briše — propis ostaje, a „Vrati na plan"
+   * ga vraća. Postoji zato što je nedelja sa rupom inače ostajala otvorena zauvek: nije
+   * se ocenjivala, granice iz nje nisu učile, a sledeći blok plana se nije generisao.
+   */
+  protected skip(): void {
+    if (this.skipping()) {
+      return;
+    }
+    this.skipping.set(true);
+    this.actionError.set(null);
+
+    this.sessionService.skip(this.sessionId).subscribe({
+      next: (session) => {
+        this.session.set(session);
+        this.skipping.set(false);
+        this.toast.set('Trening je preskočen.');
+      },
+      error: (err: unknown) => {
+        this.skipping.set(false);
+        this.actionError.set(
+          extractErrorMessage(err, 'Ne mogu da preskočim trening. Pokušaj ponovo.'),
+        );
+      },
+    });
+  }
+
+  protected unskip(): void {
+    if (this.skipping()) {
+      return;
+    }
+    this.skipping.set(true);
+    this.actionError.set(null);
+
+    this.sessionService.unskip(this.sessionId).subscribe({
+      next: (session) => {
+        this.session.set(session);
+        this.initDrafts(session);
+        this.skipping.set(false);
+        this.toast.set('Trening je vraćen na plan.');
+      },
+      error: (err: unknown) => {
+        this.skipping.set(false);
+        this.actionError.set(
+          extractErrorMessage(err, 'Ne mogu da vratim trening na plan. Pokušaj ponovo.'),
+        );
+      },
+    });
+  }
 
   protected start(): void {
     if (this.starting()) {
