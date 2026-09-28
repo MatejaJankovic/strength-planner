@@ -182,9 +182,14 @@ sami sastave šablon pre toga.
 
 ### A) Plan od jednog bloka (preporučeno za početak)
 
-Kartica **„Plan"** → **„Napravi plan"**. Za svaki blok biraš četiri stvari:
+Kartica **„Plan"** → **„Napravi plan"**.
 
-**1. Šablon.** Sedam ugrađenih, plus tvoji lični ako si ih napravio (vidi **C**). Svaki
+> Čarobnjak se otvara sa **dva** predložena bloka (hipertrofija pa snaga), jer se ciljevi
+> smenjuju. Za plan od jednog bloka obriši drugi kantom pored njegovog naslova.
+
+Za svaki blok biraš četiri stvari:
+
+**1. Šablon.** Devet ugrađenih, plus tvoji lični ako si ih napravio (vidi **C**). Svaki
 šablon pokazuje dane i vežbe koje nosi.
 
 | Šablon | Dana nedeljno |
@@ -195,7 +200,9 @@ Kartica **„Plan"** → **„Napravi plan"**. Za svaki blok biraš četiri stva
 | Upper/Lower | 4 |
 | Full Body (4 dana) | 4 |
 | Upper/Lower + Push/Pull/Legs | 5 |
+| Legs Specialization (5 dana) | 5 |
 | Push/Pull/Legs x2 | 6 |
+| Upper/Lower x3 (6 dana) | 6 |
 
 Ako šablon nosi upozorenje (npr. dvodnevni: *„za većinu mišića ostaju ispod minimalnog
 volumena za rast"*), ono se prikazuje odmah ispod naziva. Pročitaj ga pre izbora.
@@ -512,9 +519,17 @@ osećaj serija (RIR), ali to je iskaz o **težini tegova**, a nju već ispravlja
 lagana nedelja je značila i teže tegove i više serija, iz istog podatka.
 
 **Nedeljna tonaža.** Zbir `težina × ponavljanja` po nedeljama, sa označenim deload
-nedeljama. Korisno da se vidi da li blok stvarno raste. Vežbe koje diže sopstvena masa
-ulaze sa **ukupnim** opterećenjem (telo + dodato), ne samo sa onim što je dodato — inače bi
-trening od četrdeset zgibova sabirao nulu.
+nedeljama. Vežbe koje diže sopstvena masa ulaze sa **ukupnim** opterećenjem (telo + dodato),
+ne samo sa onim što je dodato — inače bi trening od četrdeset zgibova sabirao nulu.
+
+> **Pad tonaže kroz blok nije loš znak — kod periodizovanog bloka je plan.** Faza intenziteta
+> namerno nosi manje posla: u linearnom hipertrofijskom bloku propis ide sa **60 ponavljanja
+> rada** u drugoj nedelji na **24** u petoj, dakle 60% naniže, dok opterećenje u istom
+> razmaku poraste za korak-dva. Tonaža zato pada iako sve ide po planu.
+>
+> Tonaža se poredi **sa istom fazom prethodnog bloka**, ne sa prethodnom nedeljom. Jedino u
+> **ravnom** bloku, gde je propis svake nedelje isti, rast iz nedelje u nedelju zaista znači
+> da si jači.
 
 **Lični rekordi.** Po vežbi: najbolji e1RM i najveća podignuta težina, sa datumom. Za vežbe
 sa sopstvenom masom su oba broja ukupno opterećenje, i tako i piše ispod njih.
