@@ -2,7 +2,11 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { API_BASE_URL } from './api-base';
-import { CreateOneRepMaxRequest, OneRepMaxDto } from '../models/analytics.models';
+import {
+  CreateOneRepMaxFromSetRequest,
+  CreateOneRepMaxRequest,
+  OneRepMaxDto,
+} from '../models/analytics.models';
 
 @Injectable({ providedIn: 'root' })
 export class OneRepMaxService {
@@ -31,6 +35,25 @@ export class OneRepMaxService {
     return this.http
       .post<OneRepMaxDto>(`${this.apiUrl}/onerepmax`, request)
       .pipe(tap((saved) => this.upsertLocal(saved)));
+  }
+
+  /**
+   * Procena iz test-serije se NE upisuje u keš kao tekuća vrednost.
+   *
+   * Ekran prikazuje vrednost od koje plan zaista polazi, a nju bira pravilo (najbolja u
+   * prozoru od 56 dana) — pa nova procena ne mora da bude ona. Upisati je lokalno znači
+   * prikazati broj koji plan ne koristi: tačno nesklad zbog kog je ovaj nalaz i postojao.
+   * Izmereno pre ispravke: ekran je pokazivao 66 kg dok je plan polazio od 121.
+   *
+   * Pozivalac zato ponovo učita spisak.
+   */
+  saveFromSet(request: CreateOneRepMaxFromSetRequest): Observable<OneRepMaxDto> {
+    return this.http.post<OneRepMaxDto>(`${this.apiUrl}/onerepmax/from-set`, request);
+  }
+
+  /** Iz istog razloga i brisanje: iza obrisanog zapisa može da stoji stariji. */
+  remove(recordId: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/onerepmax/${recordId}`);
   }
 
   // History of manual + estimated 1RM records for one exercise.
