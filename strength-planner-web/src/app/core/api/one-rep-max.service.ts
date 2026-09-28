@@ -2,7 +2,11 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { API_BASE_URL } from './api-base';
-import { CreateOneRepMaxRequest, OneRepMaxDto } from '../models/analytics.models';
+import {
+  CreateOneRepMaxFromSetRequest,
+  CreateOneRepMaxRequest,
+  OneRepMaxDto,
+} from '../models/analytics.models';
 
 @Injectable({ providedIn: 'root' })
 export class OneRepMaxService {
@@ -33,10 +37,26 @@ export class OneRepMaxService {
       .pipe(tap((saved) => this.upsertLocal(saved)));
   }
 
+  saveFromSet(request: CreateOneRepMaxFromSetRequest): Observable<OneRepMaxDto> {
+    return this.http
+      .post<OneRepMaxDto>(`${this.apiUrl}/onerepmax/from-set`, request)
+      .pipe(tap((saved) => this.upsertLocal(saved)));
+  }
+
+  remove(recordId: string, exerciseId: string): Observable<void> {
+    return this.http
+      .delete<void>(`${this.apiUrl}/onerepmax/${recordId}`)
+      .pipe(tap(() => this.removeLocal(exerciseId)));
+  }
+
   // History of manual + estimated 1RM records for one exercise.
   // Backend route param is the exerciseId (not a 1RM record id).
   history(exerciseId: string): Observable<OneRepMaxDto[]> {
     return this.http.get<OneRepMaxDto[]>(`${this.apiUrl}/onerepmax/${exerciseId}/history`);
+  }
+
+  private removeLocal(exerciseId: string): void {
+    this.oneRepMaxesSignal.update((list) => list.filter((item) => item.exerciseId !== exerciseId));
   }
 
   private upsertLocal(saved: OneRepMaxDto): void {

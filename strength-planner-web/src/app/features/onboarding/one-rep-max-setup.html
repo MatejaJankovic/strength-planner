@@ -59,7 +59,7 @@
                     Još nema procene
                   }
                 </span>
-                <span class="lift__note">Procenjuje se iz odrađenih serija</span>
+                <span class="lift__note">Procenjuje se iz serija - svojih ili odrađenih</span>
               </div>
             } @else {
             <div class="lift__control">
@@ -113,6 +113,93 @@
                 }
               </button>
             </div>
+            }
+
+            <div class="lift__actions">
+              <button class="lift__link" type="button" (click)="toggleSetForm(row)">
+                <mat-icon aria-hidden="true">fitness_center</mat-icon>
+                {{ isSetFormOpen(row) ? 'Zatvori unos serije' : 'Izračunaj iz test-serije' }}
+              </button>
+
+              @if (row.savedValueKg !== null && row.savedRecordId !== null) {
+                <button
+                  class="lift__link lift__link--danger"
+                  type="button"
+                  [disabled]="deletingId() === row.exerciseId"
+                  (click)="remove(row)"
+                >
+                  <mat-icon aria-hidden="true">delete_outline</mat-icon>
+                  {{ deletingId() === row.exerciseId ? 'Brišem…' : 'Obriši' }}
+                </button>
+              }
+            </div>
+
+            @if (isSetFormOpen(row)) {
+              @let draft = setDraftOf(row);
+              <div class="testset">
+                <p class="testset__note">
+                  Unesi seriju koju si stvarno odradio - sistem iz nje računa maksimum.
+                  Najviše 12 ponavljanja i najviše 3 ponavljanja rezerve; dalje od otkaza
+                  procena ne važi.
+                </p>
+
+                <div class="testset__fields">
+                  <label class="testset__field">
+                    <span class="testset__label">
+                      {{ row.isBodyweight ? 'Dodatno (kg)' : 'Težina (kg)' }}
+                    </span>
+                    <input
+                      class="testset__input numeric"
+                      type="number"
+                      inputmode="decimal"
+                      step="2.5"
+                      min="0"
+                      max="500"
+                      [value]="draft.weightKg || ''"
+                      placeholder="0"
+                      (change)="setTestWeight(row, $any($event.target).value)"
+                    />
+                  </label>
+
+                  <label class="testset__field">
+                    <span class="testset__label">Ponavljanja</span>
+                    <input
+                      class="testset__input numeric"
+                      type="number"
+                      inputmode="numeric"
+                      min="1"
+                      max="12"
+                      [value]="draft.reps"
+                      (change)="setTestReps(row, $any($event.target).value)"
+                    />
+                  </label>
+                </div>
+
+                <div class="testset__field">
+                  <span class="testset__label">RIR</span>
+                  <div class="testset__rir">
+                    @for (rir of [0, 1, 2, 3]; track rir) {
+                      <button
+                        class="testset__rir-btn"
+                        type="button"
+                        [class.is-active]="draft.rir === rir"
+                        (click)="setTestRir(row, rir)"
+                      >
+                        {{ rir }}
+                      </button>
+                    }
+                  </div>
+                </div>
+
+                <button
+                  class="testset__save"
+                  type="button"
+                  [disabled]="!canSaveSet(row)"
+                  (click)="saveSet(row)"
+                >
+                  {{ savingId() === row.exerciseId ? 'Računam…' : 'Izračunaj i sačuvaj' }}
+                </button>
+              </div>
             }
           </li>
         }

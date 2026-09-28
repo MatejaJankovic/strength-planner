@@ -348,3 +348,125 @@
     flex: 1 1 100%;
   }
 }
+
+// Dva puta do početnog maksimuma stoje jedan ispod drugog, a ne kao ravnopravna dugmad:
+// unos broja je češći, test-serija je izlaz za onoga ko svoj maksimum ne zna (i jedini
+// put za vežbu koju diže telo).
+.lift__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  grid-column: 1 / -1;
+}
+
+.lift__link {
+  align-items: center;
+  background: none;
+  border: 0;
+  color: var(--color-primary);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.82rem;
+  font-weight: 700;
+  gap: 0.25rem;
+  min-height: 44px;
+  padding: 0;
+}
+
+.lift__link--danger {
+  color: var(--color-above, #e4572e);
+}
+
+.lift__link:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.lift__link mat-icon {
+  font-size: 1.05rem;
+  height: 1.05rem;
+  width: 1.05rem;
+}
+
+.testset {
+  background: var(--color-elevated);
+  border-radius: 0.6rem;
+  display: grid;
+  gap: 0.7rem;
+  grid-column: 1 / -1;
+  padding: 0.8rem;
+}
+
+.testset__note {
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.testset__fields {
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.testset__field {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.testset__label {
+  color: var(--color-muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.testset__input {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  color: var(--color-ink);
+  min-height: 44px;
+  padding: 0 0.6rem;
+  width: 100%;
+}
+
+.testset__rir {
+  display: grid;
+  gap: 0.35rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.testset__rir-btn {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  color: var(--color-ink);
+  cursor: pointer;
+  font-weight: 700;
+  min-height: 44px;
+}
+
+.testset__rir-btn.is-active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.testset__save {
+  background: var(--color-primary);
+  border: 0;
+  border-radius: 0.55rem;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 800;
+  min-height: 46px;
+}
+
+.testset__save:disabled {
+  background: #d3d8de;
+  color: #7b8490;
+  cursor: not-allowed;
+}

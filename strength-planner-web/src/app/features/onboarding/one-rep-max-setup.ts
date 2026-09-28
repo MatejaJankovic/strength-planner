@@ -22,12 +22,21 @@ interface LiftRow {
   exerciseId: string;
   name: string;
   savedValueKg: number | null;
+  /** Zapis iza prikazane vrednosti — ono što brisanje uklanja. */
+  savedRecordId: string | null;
+  savedSource: string | null;
   /**
    * Vezba koju opterecuje telo. Njen maksimum je UKUPNO opterecenje (telo + dodato), pa
    * rucno uneto „100" ne znaci nista odredjeno — ni 100 kg na pojasu, ni 100 ukupno.
    * Server takav unos odbija; ovde se zato ni ne nudi, nego se prikazuje procena.
    */
   isBodyweight: boolean;
+}
+
+interface TestSetDraft {
+  weightKg: number;
+  reps: number;
+  rir: number;
 }
 
 @Component({
@@ -74,6 +83,17 @@ export class OneRepMaxSetup {
   private readonly drafts = signal<Record<string, number>>({});
   protected readonly exerciseToAdd = signal<string>('');
 
+  /**
+   * Redovi kod kojih je otvoren unos test-serije.
+   *
+   * Rad (slučaj korišćenja 3) nudi dva puta do početnog maksimuma: uneti poznat 1RM, ili
+   * prijaviti seriju iz koje ga sistem proceni. Drugi je do sada nedostajao — a za vežbu
+   * koju diže telo je jedini mogući, jer se njen maksimum ne može uneti jednoznačno.
+   */
+  private readonly openSetForms = signal<Record<string, boolean>>({});
+  private readonly setDrafts = signal<Record<string, TestSetDraft>>({});
+  protected readonly deletingId = signal<string | null>(null);
+
   private readonly exercises = this.exerciseService.exercises;
   private readonly oneRepMaxes = this.oneRepMaxService.oneRepMaxes;
 
@@ -114,6 +134,8 @@ export class OneRepMaxSetup {
       exerciseId: entry.id,
       name: entry.name,
       savedValueKg: ormByExercise.get(entry.id)?.valueKg ?? null,
+      savedRecordId: ormByExercise.get(entry.id)?.id ?? null,
+      savedSource: ormByExercise.get(entry.id)?.source ?? null,
       isBodyweight: byId.get(entry.id)?.isBodyweight ?? false,
     }));
   });
@@ -212,6 +234,124 @@ export class OneRepMaxSetup {
         );
       },
     });
+  }
+
+  // --- test set -------------------------------------------------------------
+
+  protected isSetFormOpen(row: LiftRow): boolean {
+    return this.openSetForms()[row.exerciseId] === true;
+  }
+
+  protected toggleSetForm(row: LiftRow): void {
+    this.saveError.set(null);
+    this.openSetForms.update((open) => ({
+      ...open,
+      [row.exerciseId]: !open[row.exerciseId],
+    }));
+  }
+
+  protected setDraftOf(row: LiftRow): TestSetDraft {
+    return this.setDrafts()[row.exerciseId] ?? { weightKg: 0, reps: 5, rir: 1 };
+  }
+
+  protected setTestWeight(row: LiftRow, raw: string): void {
+    const parsed = Number(raw);
+    if (Number.isNaN(parsed)) {
+      return;
+    }
+    this.patchSetDraft(row, { weightKg: clamp(roundToHalf(parsed), MIN, MAX) });
+  }
+
+  protected setTestReps(row: LiftRow, raw: string): void {
+    const parsed = Number(raw);
+    if (Number.isNaN(parsed)) {
+      return;
+    }
+    // Ista granica koju server primenjuje: iznad 12 ponavljanja Epley procena ne važi.
+    this.patchSetDraft(row, { reps: clamp(Math.round(parsed), 1, 12) });
+  }
+
+  protected setTestRir(row: LiftRow, rir: number): void {
+    this.patchSetDraft(row, { rir });
+  }
+
+  /**
+   * Serija sa 0 kg je legitimna samo kod vežbe koju diže telo — tamo je opterećenje
+   * vežbač. Kod ostalih nema šta da se skalira, pa server takav unos odbija.
+   */
+  protected canSaveSet(row: LiftRow): boolean {
+    const draft = this.setDraftOf(row);
+
+    return (
+      (row.isBodyweight || draft.weightKg > 0) &&
+      draft.reps >= 1 &&
+      this.savingId() !== row.exerciseId
+    );
+  }
+
+  protected saveSet(row: LiftRow): void {
+    if (!this.canSaveSet(row)) {
+      return;
+    }
+
+    const draft = this.setDraftOf(row);
+    this.savingId.set(row.exerciseId);
+    this.saveError.set(null);
+
+    this.oneRepMaxService
+      .saveFromSet({
+        exerciseId: row.exerciseId,
+        weightKg: draft.weightKg,
+        reps: draft.reps,
+        rir: draft.rir,
+      })
+      .subscribe({
+        next: () => {
+          this.savingId.set(null);
+          this.openSetForms.update((open) => ({ ...open, [row.exerciseId]: false }));
+        },
+        error: (err: unknown) => {
+          this.savingId.set(null);
+          this.saveError.set(
+            extractErrorMessage(err, `Procena za „${row.name}" nije sačuvana. Pokušaj ponovo.`),
+          );
+        },
+      });
+  }
+
+  // --- deleting a record ------------------------------------------------------
+
+  protected remove(row: LiftRow): void {
+    if (row.savedRecordId === null || this.deletingId() === row.exerciseId) {
+      return;
+    }
+
+    this.deletingId.set(row.exerciseId);
+    this.saveError.set(null);
+
+    this.oneRepMaxService.remove(row.savedRecordId, row.exerciseId).subscribe({
+      next: () => {
+        this.deletingId.set(null);
+        this.clearDraft(row.exerciseId);
+        // Brisanjem jednog zapisa na red može da dođe drugi (starija procena), pa se
+        // spisak čita ponovo umesto da se pogađa šta je sada tekuća vrednost.
+        this.oneRepMaxService.load().subscribe({ error: () => {} });
+      },
+      error: (err: unknown) => {
+        this.deletingId.set(null);
+        this.saveError.set(
+          extractErrorMessage(err, `„${row.name}" nije obrisan. Pokušaj ponovo.`),
+        );
+      },
+    });
+  }
+
+  private patchSetDraft(row: LiftRow, patch: Partial<TestSetDraft>): void {
+    const current = this.setDraftOf(row);
+    this.setDrafts.update((drafts) => ({
+      ...drafts,
+      [row.exerciseId]: { ...current, ...patch },
+    }));
   }
 
   protected addExercise(): void {

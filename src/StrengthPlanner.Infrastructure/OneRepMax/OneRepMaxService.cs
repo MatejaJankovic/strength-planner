@@ -5,6 +5,7 @@ using StrengthPlanner.Application.Interfaces;
 using StrengthPlanner.Domain.Algorithms;
 using StrengthPlanner.Domain.Entities;
 using StrengthPlanner.Domain.Enums;
+using StrengthPlanner.Infrastructure.Exercises;
 using StrengthPlanner.Infrastructure.Persistence;
 
 namespace StrengthPlanner.Infrastructure.OneRepMax;
@@ -12,6 +13,7 @@ namespace StrengthPlanner.Infrastructure.OneRepMax;
 public class OneRepMaxService : IOneRepMaxService
 {
     private readonly AppDbContext _db;
+    private readonly E1RmCalculator _calculator = new();
 
     public OneRepMaxService(AppDbContext db)
     {
@@ -66,6 +68,76 @@ public class OneRepMaxService : IOneRepMaxService
         await _db.SaveChangesAsync(cancellationToken);
 
         return ToDto(record, exercise.Name);
+    }
+
+    public async Task<OneRepMaxDto> AddFromSetAsync(
+        Guid userId,
+        CreateOneRepMaxFromSetRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var exercise = await _db.Exercises
+            .AsNoTracking()
+            .FirstOrDefaultAsync(
+                item => item.Id == request.ExerciseId
+                        && (!item.IsCustom || item.CreatedByUserId == userId),
+                cancellationToken);
+
+        if (exercise is null)
+        {
+            throw new TrainingLogException(TrainingLogErrorType.NotFound, "Exercise was not found.");
+        }
+
+        // Telo je opterećenje, pa test-serija zgiba sa 0 dodatih ima šta da kaže. Snimak
+        // mase se uzima SADA, isto kao kod upisane serije.
+        var bodyweightKg = exercise.BodyweightShare > 0
+            ? await BodyweightPortionResolver.LoadBodyweightAsync(_db, userId, cancellationToken)
+            : 0m;
+        var totalLoadKg = request.WeightKg + (bodyweightKg * exercise.BodyweightShare);
+
+        // Isti predikat koji odlučuje da li upisana serija sme da proizvede procenu. Bez
+        // njega bi ovaj ekran bio rupa kroz koju se vraća tačno ono što je deveta runda
+        // uklonila: 12 ponavljanja na RIR 5 „čita" 12% više nego ista serija do otkaza.
+        if (!E1RmCalculator.CanEstimateFrom(totalLoadKg, request.Reps, request.Rir))
+        {
+            throw new TrainingLogException(
+                TrainingLogErrorType.Validation,
+                "A test set can only be estimated from when it carried load, stayed within 12 reps and ended within 3 reps of failure.");
+        }
+
+        var record = new OneRepMaxRecord
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            ExerciseId = request.ExerciseId,
+            ValueKg = _calculator.EstimateOneRepMax(totalLoadKg, request.Reps, request.Rir),
+            // Procena, a ne ručni unos: vežbač je prijavio seriju, ne maksimum. Ručni unos
+            // poništava starije procene — test-serija nema razloga da to radi, jer je i
+            // sama procena iste vrste kao one iz odrađenih treninga.
+            Source = OneRepMaxSource.Estimated,
+            RecordedAt = DateTime.UtcNow
+        };
+
+        _db.OneRepMaxRecords.Add(record);
+        await _db.SaveChangesAsync(cancellationToken);
+
+        return ToDto(record, exercise.Name);
+    }
+
+    public async Task DeleteAsync(
+        Guid userId,
+        Guid recordId,
+        CancellationToken cancellationToken = default)
+    {
+        var removed = await _db.OneRepMaxRecords
+            .Where(record => record.Id == recordId && record.UserId == userId)
+            .ExecuteDeleteAsync(cancellationToken);
+
+        if (removed == 0)
+        {
+            throw new TrainingLogException(TrainingLogErrorType.NotFound, "One-rep max record was not found.");
+        }
     }
 
     public async Task<IReadOnlyList<OneRepMaxDto>> GetCurrentAsync(

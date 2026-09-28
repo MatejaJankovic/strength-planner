@@ -46,6 +46,17 @@ export interface OneRepMaxDto {
   recordedAt: string;
 }
 
+/**
+ * Test-serija iz koje sistem procenjuje maksimum. Epley ostaje na serveru - formula je
+ * trenažno pravilo i ne sme da ima drugu kopiju u komponenti.
+ */
+export interface CreateOneRepMaxFromSetRequest {
+  exerciseId: string;
+  weightKg: number;
+  reps: number;
+  rir: number;
+}
+
 export interface CreateOneRepMaxRequest {
   exerciseId: string;
   valueKg: number;
