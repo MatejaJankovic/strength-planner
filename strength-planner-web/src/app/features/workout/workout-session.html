@@ -232,10 +232,20 @@
           <p class="card__hint">Nema 1RM za ovu vežbu - unesi težinu po osećaju.</p>
         }
 
+        @if (plan.targetWeightIsEstimate) {
+          <p class="card__hint card__hint--estimate">
+            <mat-icon aria-hidden="true">calculate</mat-icon>
+            <span>
+              Predlog je izveden iz tvog maksimuma - isti dan prethodne nedelje još nije
+              odradjen. Kad bude, cilj dolazi iz onoga sto si stvarno digao.
+            </span>
+          </p>
+        }
+
         @if (isInProgress()) {
           <div class="entry">
             <div class="entry__field">
-              <span class="entry__label">Ponavljanja</span>
+              <span class="entry__label">Ponavljanja &middot; cilj {{ repTarget(plan) }}</span>
               <div class="reps">
                 <button
                   class="reps__btn"

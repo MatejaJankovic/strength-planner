@@ -106,19 +106,27 @@ public class FixedRepTargetTests
     }
 
     /// <summary>
-    /// Sledeći propis ponavljanja je i dalje dno opsega, što je kod fiksnog broja isti
-    /// broj — dakle nema "vrati se na dno" koraka koji bi program pretvorio u nešto drugo.
+    /// Kod fiksnog broja ponavljanja nema „vrati se na dno" koraka koji bi program
+    /// pretvorio u nešto drugo: dno i vrh su isti broj, pa je i uslov za podizanje
+    /// opterećenja samo „uradi tih pet".
+    ///
+    /// Ovaj test je ranije tvrdio <c>NextTargetReps == 5</c>. To polje je obrisano, jer je
+    /// na sva tri mesta gde je nastajalo bilo doslovno <c>repRangeMin</c> — ulaz vraćen kao
+    /// da je rezultat. Tvrdnja je zato prepisana na ono što se zaista računa.
     /// </summary>
     [Fact]
-    public void AFixedRepTarget_PrescribesTheSameRepsNextTime()
+    public void AFixedRepTarget_RaisesTheLoadAsSoonAsTheRepsAreMade()
     {
-        var result = new ProgressionEngine().ComputeNext(
+        var engine = new ProgressionEngine();
+
+        var onPlan = engine.ComputeNext(
             usedWeightKg: 100m,
-            workingSets: [new WorkingSet(5, 2)],
+            workingSets: [new WorkingSet(5, 2), new WorkingSet(5, 2), new WorkingSet(5, 2)],
             targetRir: 2,
             repRangeMin: 5,
             repRangeMax: 5);
 
-        Assert.Equal(5, result.NextTargetReps);
+        Assert.Equal(102.5m, onPlan.NextWeightKg);
+        Assert.True(onPlan.WeightIncreased);
     }
 }

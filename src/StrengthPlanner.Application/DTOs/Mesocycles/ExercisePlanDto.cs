@@ -23,6 +23,15 @@ public class ExercisePlanDto
     public int TargetRir { get; set; }
     public decimal? TargetWeightKg { get; set; }
 
+    /// <summary>
+    /// Cilj nije došao iz odrađenih serija nego je izveden iz poznatog maksimuma.
+    ///
+    /// Tako stoji dok isti dan prethodne nedelje nije završen — a od te nedelje nadalje ga
+    /// progresija prepisuje brojem koji je vežbač zaista zaradio. Razlika se prikazuje, jer
+    /// predlog iz procene i predlog iz odrađenog nisu isto jaka tvrdnja.
+    /// </summary>
+    public bool TargetWeightIsEstimate { get; set; }
+
     /// <summary>Korak kojim klijent pomera opterećenje za ovu vežbu (kg).</summary>
     public decimal WeightStepKg { get; set; }
 
