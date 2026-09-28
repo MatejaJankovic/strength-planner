@@ -138,19 +138,36 @@ postoji, njenu vrednost — inače „Još nema procene". U brojač „Sačuvano
 
 **Ako ne znaš svoj 1RM**, imaš tri opcije, sve tri legitimne:
 
-- Proceni iz najbolje serije koju pamtiš. Približna Epley formula:
-  `1RM ≈ težina × (1 + ponavljanja / 30)`. Primer: 100 kg × 5 → `100 × (1 + 5/30) ≈ 117 kg`.
+- **Prijavi test-seriju.** Dugme *„Izračunaj iz test-serije"* u redu vežbe otvara tri polja:
+  težina, ponavljanja i RIR. Uneseš seriju koju si stvarno odradio, a sistem iz nje računa
+  maksimum — istom formulom kojom to radi i za serije iz treninga. Primer: 100 kg × 5 uz
+  RIR 1 daje 120 kg.
 - Preskoči vežbu. Trening će za nju pisati *„Nema 1RM za ovu vežbu — unesi težinu po
   osećaju"*, ti prvi put uneseš šta si stvarno radio, i od tog trenutka sistem računa
   dalje sam.
 - Unesi konzervativno. Prenizak start se popravi za nedelju-dve, previsok znači promašene
   serije od prvog dana.
 
+**Ograničenje test-serije:** najviše **12 ponavljanja** i najviše **RIR 3**. Dalje od otkaza
+Epley procena ne važi — ista serija prijavljena sa rezervom od pet „čita" oko 12% više nego
+do otkaza, i takva naduvana vrednost bi ostala startna vrednost narednog bloka. Zato se
+takav unos odbija, a ne prihvata uz napomenu.
+
+**Vežbe koje diže sopstvena masa** (zgib, sklek) nemaju polje za broj: ne bi se znalo da li
+je uneto sa telom ili bez njega. Ali **test-serija radi i za njih** — uneseš samo ono što si
+dodao (0 ako ništa), a telesnu masu sistem pridoda sam iz profila. To je jedini način da
+zgib dobije startno opterećenje pre prvog treninga.
+
+**Brisanje.** Dugme *„Obriši"* uklanja zapis iza prikazane vrednosti. Pošto ekran prikazuje
+baš onu vrednost od koje plan polazi, brisanje je način da pogrešno unet broj prestane da
+bude ta vrednost. Ako iza njega stoji stariji zapis, on dolazi na njegovo mesto.
+
 > **Kasnija izmena:** ovaj ekran nema stavku u navigaciji. Ako hoćeš da ga ponovo otvoriš
 > (npr. posle pauze, da resetuješ startna opterećenja), idi ručno na adresu `/onboarding`.
 > Novi unos ne briše stari, ali **ono što ručno upišeš poništava starije procene** — tako se
-> naduvana procena može ispraviti naniže. Ekran prikazuje upravo vrednost od koje plan
-> polazi.
+> naduvana procena može ispraviti naniže. Test-serija to **ne** radi: ona je i sama procena,
+> iste vrste kao one iz odrađenih treninga, pa se sa njima nadmeće po istom pravilu (najbolja
+> u prozoru od 56 dana). Ekran prikazuje upravo vrednost od koje plan polazi.
 
 ---
 

@@ -28,7 +28,11 @@ interface LiftRow {
   /**
    * Vezba koju opterecuje telo. Njen maksimum je UKUPNO opterecenje (telo + dodato), pa
    * rucno uneto „100" ne znaci nista odredjeno — ni 100 kg na pojasu, ni 100 ukupno.
-   * Server takav unos odbija; ovde se zato ni ne nudi, nego se prikazuje procena.
+   * Server takav unos odbija, pa se polje za broj ne nudi.
+   *
+   * Unos test-serije se nudi i ovde, i tu dvosmislenosti nema: kilogrami su ono sto je
+   * dodato, a telo server sam pridoda iz profila. Za ovakvu vezbu je to jedini nacin da
+   * dobije startno opterecenje bez odradjenog treninga.
    */
   isBodyweight: boolean;
 }

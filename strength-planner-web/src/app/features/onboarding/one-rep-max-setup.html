@@ -37,7 +37,7 @@
             <div class="lift__info">
               <span class="lift__name">{{ row.name }}</span>
               @if (row.isBodyweight) {
-                <span class="lift__current">Ne unosi se</span>
+                <span class="lift__current">Samo iz serije</span>
               } @else if (row.savedValueKg !== null && !isDirty(row)) {
                 <span class="lift__saved">
                   <mat-icon aria-hidden="true">check_circle</mat-icon>
@@ -59,7 +59,10 @@
                     Još nema procene
                   }
                 </span>
-                <span class="lift__note">Procenjuje se iz serija - svojih ili odrađenih</span>
+                <span class="lift__note">
+                  Maksimum se ne unosi kao broj - ne bi se znalo da li je sa telom ili bez
+                  njega. Prijavi seriju ispod, ili ga pusti da nastane iz treninga.
+                </span>
               </div>
             } @else {
             <div class="lift__control">
