@@ -94,6 +94,7 @@ tvrdi drugo, a rad obećava treće.
 | [Ciljevi na kartici vežbe](workout-card-targets.md) | „Nema 1RM za ovu vežbu" je pisalo i kad maksimum postoji — 3 068 planova u razvojnoj bazi; ciljni broj ponavljanja se računao i nigde nije prikazivan | #76 |
 | [Test-serija i brisanje maksimuma](one-rep-max-entry.md) | Rad nudi unos test-serije iz koje sistem procenjuje maksimum — ekran ga nije imao; zapis se nije mogao obrisati | #77 |
 | [Uslovi pri pravljenju plana](plan-creation-preconditions.md) | Nov plan je bez reči gasio tekući, a vežba bez maksimuma je tiho čekala da je vežbač unese po osećaju — rad traži da se oba kažu | #78 |
+| [Uputstvo koje je ostalo iza koda](guide-accuracy.md) | „Sedam ugrađenih" šablona kojih ima devet, tonaža koja „pokazuje da blok raste" a u periodizovanom bloku pada po planu, i dva značenja reči „podrazumevan" | #79 |
 
 ## Ako čitaš samo jedno
 

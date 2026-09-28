@@ -24,7 +24,12 @@ public sealed record WeekPrescription(
 /// <list type="bullet">
 /// <item><b>Flat</b> — the same prescription every week over four weeks. Progress comes
 /// from double progression, not from the schedule. This is what the system did before
-/// models existed, so it stays the default.</item>
+/// models existed, so it is the <i>stored</i> default: <c>Mesocycle.PeriodizationModel</c>
+/// falls back to it, which is what keeps blocks created before models existed reading
+/// correctly. It is <b>not</b> what a new plan gets — the wizard proposes linear for a
+/// strength block and inverse for a hypertrophy one, and flat only when the lifter picks
+/// it. Two different meanings of "default", and the comment used to state only the one
+/// that is invisible from the screen.</item>
 /// <item><b>Linear</b> — volume first (more reps, easier sets), intensity last (fewer
 /// reps, closer to failure). The classic shape for a block leading to strength.</item>
 /// <item><b>Inverse</b> — the same two ends in the opposite order: heavy while fresh,
