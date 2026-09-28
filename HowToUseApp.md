@@ -557,6 +557,9 @@ Kad je sve podešeno, korišćenje je kratko i uvek isto:
 **Posle treninga** — „Završi trening", pogledaj rezime: da li je nešto PR, koliko je
 predloženo za sledeći put.
 
+**Trening koji preskačeš** — otvori ga i klikni „Preskoči ovaj trening", da nedelja ne bi
+ostala da ga čeka. Vraća se dugmetom „Vrati na plan".
+
 **Na kraju nedelje** — otvori „Analitika" i proveri volumen: da li su mišićne grupe u zoni
 oko MAV-a. Ako je nešto stalno ispod MEV-a, u sledećem bloku uzmi šablon sa više dana ili
 dodaj vežbu za tu grupu.
@@ -669,8 +672,25 @@ Dok trening traje — olovka za izmenu, kanta za brisanje. Kad je trening završ
 menja; jedina opcija je brisanje celog plana, što gubi sve.
 
 **Preskočio sam trening iz sredine nedelje.**
-Nije problem. Treninzi se ne moraju raditi redom i sistem ne prepisuje ciljeve već
-odrađenim treninzima. Datum je predlog, ne rok.
+Treninzi se ne moraju raditi redom i sistem ne prepisuje ciljeve već odrađenim treninzima;
+datum je predlog, ne rok. Ali ako trening **nećeš** odraditi, reci to: otvori ga i klikni
+**„Preskoči ovaj trening"**.
+
+Razlog je što nedelja čeka svaki svoj trening. Dok ga čeka, ne ocenjuje se za umor (pa nema
+ni auto-deload-a), njen volumen ne uči granice, i — ako je to poslednji nedovršen trening
+bloka — **sledeći blok plana se ne generiše**. Preskakanje je odgovor: nedelja se zatvara i
+plan ide dalje.
+
+Ništa se ne briše. Propis, opseg i opterećenja ostaju zapisani, a **„Vrati na plan"** vraća
+trening među planirane. Preskočiti se može samo trening koji nije započet.
+
+Dve posledice koje treba da znaš:
+
+- Nedelja sa preskočenim danom **ne uči granice volumena**. Uradila je manje nego što je
+  propisala, pa o tome koliko ti volumena treba ne govori ništa.
+- Kada posle toga završiš neki trening iz iste nedelje, balansiranje volumena deo
+  preskočenog rada prebaci na dane koji ostaju. Izmereno: dan sa 24 serije je posle
+  preskočenog drugog dana za noge dobio 30. Ako to ne želiš, smanji serije ručno.
 
 **Promenio sam nivo iskustva usred bloka.**
 Tekući blok ostaje nepromenjen — namerno, da se plan u toku ne bi prekrajao ispod ruku.

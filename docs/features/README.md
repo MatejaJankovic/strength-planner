@@ -90,6 +90,7 @@ tvrdi drugo, a rad obećava treće.
 | Grana | O čemu je | PR |
 |---|---|---|
 | [Nivo pripada bloku](level-locked-to-block.md) | Promena nivoa iskustva usred bloka je pomerala nedeljni cilj za grudi sa 16 na 19 serija i prag deload-a sa 0.60 na 0.50 — u planu koji je već propisan | #74 |
+| [Preskočen trening](skip-workout.md) | Jedan trening koji vežbač nikada neće odraditi držao je nedelju otvorenom zauvek: bez ocene umora, bez učenja granica, i bez sledećeg bloka plana | #75 |
 
 ## Ako čitaš samo jedno
 
