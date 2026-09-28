@@ -40,6 +40,16 @@ public class ExercisePlanDto
     public decimal WeightStepKg { get; set; }
 
     /// <summary>
+    /// Sprava na kojoj se vežba izvodi ("Barbell", "Dumbbell", "Machine", "Cable",
+    /// "Bodyweight").
+    ///
+    /// Ekran je čita da bi znao dve stvari koje iz samog broja ne slede: da se kod bučica
+    /// unosi težina JEDNE, i da nula kilograma kod vežbe koja se opterećuje spolja nije
+    /// mogućnost nego greška u kucanju.
+    /// </summary>
+    public string Equipment { get; set; } = string.Empty;
+
+    /// <summary>
     /// Vežba nosi deo telesne mase, pa je <see cref="TargetWeightKg"/> ono što se DODAJE
     /// (pojas, traka), a 0 znači „sopstvenom masom". Netačno i za vežbu sa telesnom masom
     /// ako profil nema unetu masu: tada se ne zna šta bi se dodavalo.

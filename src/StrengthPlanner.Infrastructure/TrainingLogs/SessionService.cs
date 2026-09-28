@@ -918,6 +918,7 @@ public class SessionService : ISessionService
                         weightStepOverrides,
                         plan.ExerciseId,
                         plan.Exercise.WeightStepKg),
+                    Equipment = plan.Exercise.Equipment,
                     IsBodyweight = BodyweightPortionResolver.PortionFor(bodyweightPortions, plan.ExerciseId) > 0,
                     BodyweightLoadKg = BodyweightPortionResolver.PortionFor(bodyweightPortions, plan.ExerciseId),
                     SetLogs = plan.SetLogs

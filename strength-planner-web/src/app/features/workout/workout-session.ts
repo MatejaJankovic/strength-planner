@@ -19,6 +19,7 @@ import { EmptyState } from '../../shared/components/empty-state/empty-state';
 import { Loading } from '../../shared/components/loading/loading';
 import { SetFeedback, setFeedback } from './set-feedback';
 import { nextWeightLabel, nextWeightTone } from './next-weight-label';
+import { LoadInputNote, loadInputNote } from './load-input-note';
 import { loadLabel } from './load-label';
 import { repRangeLabel } from '../../shared/rep-range-label';
 import { LoadFloorNote, loadFloorNote } from './load-floor-note';
@@ -194,6 +195,11 @@ export class WorkoutSession {
    */
   protected setLoad(set: SetLogDto): string {
     return loadLabel(set.weightKg, set.bodyweightLoadKg > 0);
+  }
+
+  /** Napomena uz polje za težinu: jedna bučica, ili nula na vežbi koja se opterećuje. */
+  protected loadNote(plan: ExercisePlanDto, draft: SetDraft): LoadInputNote {
+    return loadInputNote(plan.equipment, draft.weightKg);
   }
 
   /** Propisana ponavljanja: `8–12`, ili samo `5` kada je propisan tačan broj. */

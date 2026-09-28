@@ -105,6 +105,7 @@ u šablonu, i šta ekran prećutkuje o unosu.
 |---|---|---|
 | [Doprinosi mišićima](muscle-contributions.md) | Potisak je punio budžet ramena a čučanj budžet zadnje lože, pa je balansiranje skidalo serije sa vežbi koje te mišiće jedine grade | #81 |
 | [Raspored vežbi u šablonu](template-placement.md) | Jedina izolacija za leđa u jednom šablonu stajala je na danu za noge; u drugom je vežba za gornje telo tamo nužna, i merenje to pokazuje | #82 |
+| [Napomene uz polje za težinu](load-input-notes.md) | Nigde nije pisalo da se kod bučica unosi jedna, iako je korak od 2 kg to i značio; a 0 kg na vežbi koja se opterećuje tiho je isključivalo vežbu iz svih računica | #83 |
 
 ## Ako čitaš samo jedno
 

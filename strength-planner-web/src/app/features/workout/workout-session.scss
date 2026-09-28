@@ -23,13 +23,6 @@
   padding: 0.7rem 0.8rem;
 }
 
-.panel__error mat-icon {
-  flex: none;
-  font-size: 1.2rem;
-  height: 1.2rem;
-  width: 1.2rem;
-}
-
 .retry {
   align-items: center;
   background: var(--color-primary);
@@ -45,10 +38,20 @@
   padding: 0 1.1rem;
 }
 
-.retry mat-icon {
-  font-size: 1.15rem;
-  height: 1.15rem;
-  width: 1.15rem;
+// Ikone u porukama i dugmadima imaju jednu veličinu. Bilo je četiri odvojena bloka koja
+// rade isto, i oni su ovaj fajl doveli preko tvrde granice `anyComponentStyle` od 8 kB.
+.panel__error mat-icon,
+.retry mat-icon,
+.iconbtn mat-icon,
+.toast mat-icon {
+  flex: none;
+  font-size: 1.2rem;
+  height: 1.2rem;
+  width: 1.2rem;
+}
+
+.toast mat-icon {
+  color: var(--color-accent);
 }
 
 // Header
@@ -239,9 +242,14 @@
 }
 
 // Zašto predlog serija odstupa od propisa — bez ikone se razlika čita kao greška u planu.
+.card__hint--warn {
+  color: var(--color-above, #e4572e);
+}
+
 .card__hint--volume,
 .card__hint--bodyweight,
-.card__hint--estimate {
+.card__hint--estimate,
+.card__hint--warn {
   align-items: flex-start;
   display: flex;
   gap: 0.35rem;
@@ -486,12 +494,6 @@
   width: 40px;
 }
 
-.iconbtn mat-icon {
-  font-size: 1.2rem;
-  height: 1.2rem;
-  width: 1.2rem;
-}
-
 .iconbtn--danger {
   color: var(--volume-above);
 }
@@ -511,13 +513,6 @@
   position: fixed;
   transform: translateX(-50%);
   z-index: 20;
-}
-
-.toast mat-icon {
-  color: var(--color-accent);
-  font-size: 1.2rem;
-  height: 1.2rem;
-  width: 1.2rem;
 }
 
 @keyframes wk-spin {
