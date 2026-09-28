@@ -26,6 +26,20 @@ public class Mesocycle
     /// </summary>
     public SetAllocation SetAllocation { get; set; } = SetAllocation.TargetVolume;
 
+    /// <summary>
+    /// Nivo iskustva kakav je bio kada je blok generisan.
+    ///
+    /// Stoji ovde iz istog razloga kao <see cref="SetAllocation"/>: prag umora i skalirane
+    /// granice volumena se čitaju posle svake završene nedelje, a tada se profil već mogao
+    /// promeniti. Dok se čitao profil, prelazak sa srednjeg na napredni nivo je usred bloka
+    /// pomerao nedeljni cilj za grudi sa 16 na 19 serija i spuštao prag auto-deload-a sa
+    /// 0.60 na 0.50 — u planu koji vežbač nije dirao.
+    ///
+    /// Zatečenim blokovima je upisan nivo iz profila, jer je to tačno ono od čega su do
+    /// sada računali.
+    /// </summary>
+    public ExperienceLevel ExperienceLevel { get; set; } = ExperienceLevel.Intermediate;
+
     public DateTime StartDate { get; set; }
     public int DurationWeeks { get; set; } = 4;
     public bool IsActive { get; set; }
