@@ -75,7 +75,7 @@ public class VolumeService : IVolumeService
         var muscleNames = await _db.MuscleGroups
             .AsNoTracking()
             .ToDictionaryAsync(group => group.Id, group => group.Name, cancellationToken);
-        var effective = await _landmarks.GetEffectiveAsync(userId, cancellationToken);
+        var effective = await _landmarks.GetEffectiveAsync(userId, mesocycleId, cancellationToken);
 
         // Isti izvor iz koga balansiranje gadja cilj, da ekran i plan ne govore razlicito.
         var weeklyTargets = await _weeklyTargets.ResolveAsync(

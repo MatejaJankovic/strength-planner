@@ -82,6 +82,15 @@ granice volumena.
 | [Pad snage poredivim sa poredivim](comparable-strength-change.md) | Nedelja odrađena na vrhu opsega pa nedelja na dnu — obe po propisu — čitala se kao pad snage od 7.2% u ravnom bloku | #71 |
 | [Granice uče iz snage](volume-limits-learn-from-strength.md) | MEV i MAV su se pomerali po osećaju serija (RIR), što progresija već ispravlja opterećenjem — jedan uzrok je dizao i cilj i težinu; pravilo za MEV je bilo obrnuto | #72 |
 
+## Dvanaesti krug — kod, uputstvo i rad da govore isto
+
+Isti pregled logike treninga, odeljak D: mesta na kojima aplikacija radi jedno, uputstvo
+tvrdi drugo, a rad obećava treće.
+
+| Grana | O čemu je | PR |
+|---|---|---|
+| [Nivo pripada bloku](level-locked-to-block.md) | Promena nivoa iskustva usred bloka je pomerala nedeljni cilj za grudi sa 16 na 19 serija i prag deload-a sa 0.60 na 0.50 — u planu koji je već propisan | #74 |
+
 ## Ako čitaš samo jedno
 
 [Periodizacija po nedeljama](periodization-models.md) — to je bio najveći raskorak između

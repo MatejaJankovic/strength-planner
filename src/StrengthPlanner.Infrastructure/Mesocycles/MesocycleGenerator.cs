@@ -210,6 +210,10 @@ public class MesocycleGenerator : IMesocycleGenerator
             Goal = goal,
             PeriodizationModel = periodizationModel,
             SetAllocation = setAllocation,
+            // Nivo se pamti, ne čita se kasnije iz profila: prag umora i granice volumena
+            // se traže posle svake završene nedelje, a blok koji je već propisan ne sme da
+            // se prekraja zato što je vežbač u međuvremenu promenio nivo.
+            ExperienceLevel = experienceLevel,
             StartDate = startDate,
             DurationWeeks = prescriptions.Count,
             IsActive = true
