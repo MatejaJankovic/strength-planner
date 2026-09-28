@@ -117,7 +117,7 @@ prose — no need for academic style.
 
 ## Scope note
 
-Eleven rounds of work, all merged to `main`. Every branch got its own PR, an agent code
+Twelve rounds of work, all merged to `main`. Every branch got its own PR, an agent code
 review, fixes for what the review turned up, and a plain-language write-up in
 `docs/features/`. (This line said "two rounds" until round 9 — a count in prose goes stale
 the moment it is written, which is why the rounds below are a list and not a number.)
@@ -596,8 +596,118 @@ one, measured over the development database. If that proves too slow, the levers
 0.60 threshold, the one-percent strength threshold and `MaxWeeklyStep`; the thing not to do
 is put RIR back into a question about stimulus.
 
-Still unbuilt from the same audit: **section D** (code against guide against thesis) and
-section E (the exercise model), plus the suggestions list.
+Still unbuilt at the time: **section D** (code against guide against thesis) — built in
+round 12 — and section E (the exercise model), plus the suggestions list.
+
+**Round 12 — the same audit, section D: where the code, the guide and the thesis say
+different things.** Six findings, six branches, all merged.
+
+| Branch | What it fixed | PR |
+|---|---|---|
+| `fix/level-locked-to-block` | Changing the experience level mid-block rewrote a block that was already prescribed: the chest target moved from 16 sets to 19 and the deload threshold from 0.60 to 0.50 | #74 |
+| `feature/skip-workout` | One workout the lifter would never do held the week open forever — never scored, never teaching the limits, and blocking the plan's next block | #75 |
+| `fix/workout-card-targets` | "Nema 1RM za ovu vežbu" was shown for exercises whose maximum was on file; the rep target was computed and never displayed | #76 |
+| `feature/one-rep-max-entry` | The thesis offers a test set the system estimates from — it did not exist; and a record could not be deleted | #77 |
+| `fix/plan-creation-preconditions` | A new plan silently retired the current one, and an exercise with no maximum silently waited to be typed by feel | #78 |
+| `docs/guide-accuracy` | Four claims in the guide and one code comment that had fallen behind | #79 |
+
+Sequential, each merged before the next branched. 578 → 613 tests on the server, 139 → 144
+on the client.
+
+The finding that shaped the round: **section D is where the test suite cannot reach, and
+that is why these six were still here after sections A, B and C were done.** Reverting the
+experience-level fix — restoring the very defect that moves a running block's volume target
+— leaves the whole suite green, **0 of 613**. (Re-measured on the merged round rather than
+carried over: the branch measured 0 of 581, which is a count no commit on `main` carries.)
+The rule lives in a service query, and the project has no service-level harness; the domain
+tests check that scaling a landmark band works, never who was asked for the level. Section A was arithmetic and section C was signal weighting, both
+of which live in the domain and fail loudly; section D lives between layers — in a query, in
+a screen's copy, in a markdown file — where nothing was watching. Every branch in this round
+therefore leans on a live measurement taken in both directions, with a rebuild and an API
+restart between them.
+
+The one exception is the guide, and it was worth building: `GuideTemplateTableTests` reads
+`HowToUseApp.md`, demands every catalogue template appear in it, and demands that no number
+other than the right one stands next to "ugrađenih" — otherwise the guide could contradict
+itself and stay green. It fails 2 of 2 on the old text.
+
+Decisions worth keeping:
+
+- **A decision that is read back belongs on the row it describes.** `Mesocycle` already
+  stored `PeriodizationModel` and `SetAllocation` for exactly that reason, and the
+  experience level — read after every completed week by the landmarks and the deload
+  threshold — was missing from the same list.
+- **A skipped workout is an answer, not a debt.** A week is over when nothing is pending;
+  it teaches the volume limits only when every session was actually completed. A week with
+  a hole did less than it prescribed, so it says nothing about how much volume the lifter
+  needs — the same rule the strength signal follows.
+- **A load suggestion is computed on read, not written.** It then always starts from the
+  freshest maximum, and no speculative number lands in a week the lifter has not reached.
+  The screen says which of the two a target is, because a number derived from a maximum is
+  not the same claim as one derived from sets that were lifted.
+- **A field that returns its own input is not a result.** `NextTargetReps` was `repRangeMin`
+  at all three sites that produced it, and three tests asserted exactly that.
+- **A test set is an estimate, not a statement.** It is stored as `Estimated`, so it
+  competes with the app's own estimates instead of overruling them the way a typed maximum
+  does — and it passes the same `CanEstimateFrom` guard, or this screen would be the way
+  back in for what round 9 removed.
+- **Where the app differs from the thesis on purpose, it must say so.** A new plan retires
+  the current one (round 7's decision, and it stays), but it now names the plan and asks.
+  That is the sentence in the thesis to bring in line with the app, not the other way round.
+
+Seven measurements from this round contradicted the expectation behind the change:
+
+1. The 0-of-613 revert above.
+2. **The migration's zero would have relabelled most of the database.** `Mesocycle` gained
+   `ExperienceLevel`, and EF's generated `defaultValue: 0` is `Beginner`. Measured before
+   writing it: 151 of the 160 blocks in the development database would have become a
+   beginner's — 19 advanced ones losing the 1.2 band, and 132 intermediate ones left with
+   **no deload threshold at all**, since a beginner has none. Backfilled from the profile
+   instead, which is exactly what every existing block had been computed from; after the
+   migration the distribution is 9 / 132 / 19 and no row disagrees with its own profile.
+3. **A model test cannot see whether a column has a database default.** EF's
+   `GetDefaultValue()` returns the CLR zero for a value-typed property either way —
+   `SetAllocation` and `PeriodizationModel` report the same and have none. The assertion
+   claiming the column has no default was testing something the model does not express.
+4. **Skipping does not move sets, but the next completed session does.** Measured in one
+   week: skipping the leg day changed nothing (27/30/30/24 held), and completing the next
+   session raised the other leg day from **24 to 30** sets. Not a new rule — the existing
+   allocator aiming the week at its target, with the skipped day no longer a destination.
+   Written into the guide rather than quietly allowed.
+5. **The missing-maximum notice listed exercises that have one.** Its first version read
+   `targetWeightKg == null` and named **eighteen** exercises, two of them with a maximum on
+   file — because a stored target is empty whenever the block has not picked the maximum up,
+   for instance when it was entered after generation. The question is whether an answer
+   exists, and that lives in the records: sixteen.
+6. **The screen and the plan disagreed again, this time because of my own change.** Saving
+   a test set wrote the new estimate into the client cache as the current value. Which
+   record is current is decided over all records, so after a 60 kg x 3 set the screen showed
+   **66 kg** while the plan started from **121** — finding D19 reintroduced on the client.
+   Both mutations now reload, and a vitest spec pins it.
+7. **A skipped session still accepted sets, and `start` on one returned 200 and did
+   nothing.** Two holes the skip feature itself opened: `EnsureSessionIsEditable` refused
+   only completed sessions, and `StartAsync` checked for completed while changing the status
+   only when planned, so `Skipped` fell between them. Both answer 409 now.
+
+One process slip, recorded because the rule broken was already written down:
+`git checkout -- HowToUseApp.md` during a revert experiment discarded that branch's
+uncommitted guide edits. The workflow is commit first, then experiment — the same lesson as
+round 10, on a different file.
+
+Two things this round names rather than fixes:
+
+- **Three component stylesheets now sit over the 6 kB `anyComponentStyle` warning.**
+  Measured by building round 11's stylesheets against this tree: **one** was over then,
+  `workout-session.scss` at 7.73 kB. This round pushed it to 7.98 against a hard 8 kB, and
+  added two more just past the line (`one-rep-max-setup.scss` 6.01, `plan-home.scss` 6.29).
+  The next change to the workout screen has to start by thinning that file, or raise the
+  budget deliberately.
+- **The thesis's use case 4 still requires the current mesocycle to be finished or deleted.**
+  The app does not and will not: requiring history to be deleted before starting a block is
+  not a good rule, and is not the one that was chosen.
+
+Still unbuilt from the same audit: **section E** (the exercise model), plus the suggestions
+list. Sections A through D are done.
 
 Deliberately **out of scope**: i18n, full-history analytics, undulating periodization,
 PWA/offline, changing an already-generated block's periodization model, email delivery (so no
