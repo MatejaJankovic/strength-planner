@@ -100,6 +100,39 @@ describe('PlanHome - brisanje plana', () => {
     http.expectNone((item) => item.url.includes('/macrocycles/plan-1'));
   });
 
+  /**
+   * Nov plan gasi tekući — odluka iz sedme runde, koju uputstvo i opisuje. Ono što je
+   * nedostajalo je da se to **kaže**: dugme je bez reči završavalo plan koji vežbač prati.
+   * Rad (slučaj korišćenja 4) traži da sistem tu stane i pita.
+   */
+  it('pita pre nego što nov plan ugasi tekući', () => {
+    component().setPlanName('Nov plan');
+
+    expect(component().confirmingTakeover()).toBe(false);
+
+    component().submit();
+
+    // Prvi klik ne šalje ništa — samo postavlja pitanje.
+    expect(component().confirmingTakeover()).toBe(true);
+    http.expectNone((item) => item.method === 'POST');
+
+    component().submit();
+
+    const request = http.expectOne((item) => item.url.endsWith('/macrocycles'));
+    expect(request.request.method).toBe('POST');
+    request.flush({ ...plan, id: 'plan-2', name: 'Nov plan' });
+  });
+
+  it('odustajanje od potvrde ne šalje zahtev i ne briše unos', () => {
+    component().setPlanName('Nov plan');
+    component().submit();
+    component().cancelTakeover();
+
+    expect(component().confirmingTakeover()).toBe(false);
+    expect(component().planName()).toBe('Nov plan');
+    http.expectNone((item) => item.url.endsWith('/macrocycles'));
+  });
+
   it('zadržava plan na ekranu kada brisanje ne uspe', async () => {
     component().requestDelete();
     component().confirmDelete();

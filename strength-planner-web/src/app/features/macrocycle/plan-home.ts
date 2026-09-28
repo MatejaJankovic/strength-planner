@@ -129,6 +129,16 @@ export class PlanHome {
 
   protected readonly creating = signal(false);
   protected readonly showWizard = signal(false);
+
+  /**
+   * Potvrda pre nego što nov plan ugasi tekući.
+   *
+   * Rad (slučaj korišćenja 4) kaže da sistem traži da se tekući mezociklus završi ili
+   * obriše. Aplikacija je odlučila drugačije — prethodni plan se gasi, ne briše — i to je
+   * namerno, ali je do sada bilo **nevidljivo**: dugme „Napravi plan" je bez reči gasilo
+   * plan koji je vežbač pratio. Razlika je sada u pitanju, a ne u prećutanoj posledici.
+   */
+  protected readonly confirmingTakeover = signal(false);
   protected readonly createError = signal<string | null>(null);
 
   protected readonly deleting = signal(false);
@@ -243,6 +253,7 @@ export class PlanHome {
 
   protected closeWizard(): void {
     this.showWizard.set(false);
+    this.confirmingTakeover.set(false);
   }
 
   protected setPlanName(value: string): void {
@@ -331,11 +342,32 @@ export class PlanHome {
     return this.modelOptions.find((option) => option.value === model)?.label ?? 'Ravan';
   }
 
+  /**
+   * „Napravi plan" pita kada plan već postoji, a pravi odmah kada ne postoji.
+   */
+  protected submit(): void {
+    if (!this.canSubmit()) {
+      return;
+    }
+
+    if (this.plan() && !this.confirmingTakeover()) {
+      this.confirmingTakeover.set(true);
+      return;
+    }
+
+    this.create();
+  }
+
+  protected cancelTakeover(): void {
+    this.confirmingTakeover.set(false);
+  }
+
   protected create(): void {
     if (!this.canSubmit()) {
       return;
     }
 
+    this.confirmingTakeover.set(false);
     this.creating.set(true);
     this.createError.set(null);
 

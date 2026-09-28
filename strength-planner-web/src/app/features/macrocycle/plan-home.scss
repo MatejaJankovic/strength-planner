@@ -172,6 +172,28 @@
   margin: 0;
 }
 
+// Posledica koja se do sada dešavala prećutno: nov plan gasi tekući.
+.wizard__warning {
+  align-items: flex-start;
+  background: color-mix(in srgb, var(--color-above, #e4572e) 10%, white);
+  border-radius: 0.55rem;
+  color: var(--color-ink);
+  display: flex;
+  font-size: 0.85rem;
+  gap: 0.45rem;
+  line-height: 1.4;
+  margin: 0 0 0.8rem;
+  padding: 0.7rem 0.8rem;
+}
+
+.wizard__warning mat-icon {
+  color: var(--color-above, #e4572e);
+  flex-shrink: 0;
+  font-size: 1.15rem;
+  height: 1.15rem;
+  width: 1.15rem;
+}
+
 .card__hint {
   color: var(--color-muted);
   font-size: 0.82rem;

@@ -5,6 +5,7 @@ import { Router, RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { extractErrorMessage } from '../../core/api/http-error';
 import { MesocycleService } from '../../core/api/mesocycle.service';
+import { OneRepMaxService } from '../../core/api/one-rep-max.service';
 import { Goal, WorkoutSessionDto } from '../../core/models/training.models';
 import { StatChip, StatChipTone } from '../../shared/components/stat-chip/stat-chip';
 import { EmptyState } from '../../shared/components/empty-state/empty-state';
@@ -15,6 +16,9 @@ interface StatusMeta {
   tone: StatChipTone;
 }
 
+/** Koliko imena vežbi bez maksimuma se ispisuje pre nego što spisak pređe u broj. */
+const MISSING_NAMES_SHOWN = 3;
+
 @Component({
   selector: 'app-workout-dashboard',
   imports: [RouterLink, DatePipe, DecimalPipe, MatIconModule, StatChip, EmptyState, Loading],
@@ -23,12 +27,68 @@ interface StatusMeta {
 })
 export class WorkoutDashboard {
   private readonly mesocycleService = inject(MesocycleService);
+  private readonly oneRepMaxService = inject(OneRepMaxService);
   private readonly router = inject(Router);
 
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
 
   protected readonly mesocycle = this.mesocycleService.active;
+
+  /**
+   * Vežbe iz ovog bloka za koje ne postoji nijedan zapis maksimuma.
+   *
+   * Rad (slučaj korišćenja 4) kaže da sistem traži dopunu unosa kada za neku vežbu nema
+   * procene 1RM. Do sada to nije tražio nigde — svaka takva vežba je tiho čekala da je
+   * vežbač prvi put unese „po osećaju". To je legitiman put, ali je bio i jedini, i to
+   * neizrečen.
+   *
+   * Pita se **spisak maksimuma**, a ne upisan cilj u planu. Cilj je prazan i kad maksimum
+   * postoji ali ga blok još nije pokupio (npr. unet je posle generisanja), pa bi po njemu
+   * ovde stajale i vežbe koje odgovor imaju. Prva verzija ovog spiska je baš tako izlistala
+   * osamnaest vežbi, među njima i dve sa upisanim maksimumom.
+   *
+   * Vežbe koje diže sopstvena masa se ne broje — njima je nula dodatih tačan prvi propis,
+   * a ne nepoznanica.
+   */
+  protected readonly exercisesWithoutMax = computed<string[]>(() => {
+    const plan = this.mesocycle();
+    if (!plan) {
+      return [];
+    }
+
+    const known = new Set(this.oneRepMaxService.oneRepMaxes().map((item) => item.exerciseId));
+    const names = new Map<string, string>();
+
+    for (const week of plan.weeks) {
+      for (const session of week.sessions) {
+        for (const item of session.exercisePlans) {
+          if (!item.isBodyweight && !known.has(item.exerciseId)) {
+            names.set(item.exerciseId, item.exerciseName);
+          }
+        }
+      }
+    }
+
+    return [...names.values()].sort((a, b) => a.localeCompare(b));
+  });
+
+  /**
+   * Spisak se skraćuje. Nalog bez ijednog unetog maksimuma bi inače nabrojao ceo blok, a
+   * zid od osamnaest imena ne govori više od broja.
+   */
+  protected readonly missingMaxSummary = computed<string>(() => {
+    const names = this.exercisesWithoutMax();
+    if (names.length <= MISSING_NAMES_SHOWN) {
+      return names.join(', ');
+    }
+
+    return `${names.slice(0, MISSING_NAMES_SHOWN).join(', ')} i još ${names.length - MISSING_NAMES_SHOWN}`;
+  });
+
+  protected openOneRepMaxSetup(): void {
+    void this.router.navigateByUrl('/onboarding');
+  }
 
   // First not-yet-finished session across the whole plan (weeks then sessions in order).
   protected readonly nextSessionId = computed<string | null>(() => {
@@ -53,6 +113,11 @@ export class WorkoutDashboard {
   protected load(): void {
     this.loading.set(true);
     this.error.set(null);
+
+    // Maksimumi se učitavaju uz plan: bez njih se ne zna za koju vežbu odgovor postoji, a
+    // neuspeh tog čitanja ne sme da obori ekran — tada spisak ostaje prazan, što je tiše
+    // nego lažna tvrdnja da maksimuma nema.
+    this.oneRepMaxService.load().subscribe({ error: () => undefined });
 
     this.mesocycleService.loadActive().subscribe({
       next: () => this.loading.set(false),
