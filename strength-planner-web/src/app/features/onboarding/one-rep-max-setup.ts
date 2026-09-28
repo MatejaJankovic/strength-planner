@@ -311,8 +311,10 @@ export class OneRepMaxSetup {
       })
       .subscribe({
         next: () => {
-          this.savingId.set(null);
           this.openSetForms.update((open) => ({ ...open, [row.exerciseId]: false }));
+          // Nova procena ne mora da bude ona od koje plan polazi — to bira pravilo nad
+          // svim zapisima. Spisak se zato čita ponovo umesto da se pogađa.
+          this.reload(row, `Procena za „${row.name}" je sačuvana, ali spisak nije osvežen.`);
         },
         error: (err: unknown) => {
           this.savingId.set(null);
@@ -333,19 +335,38 @@ export class OneRepMaxSetup {
     this.deletingId.set(row.exerciseId);
     this.saveError.set(null);
 
-    this.oneRepMaxService.remove(row.savedRecordId, row.exerciseId).subscribe({
+    this.oneRepMaxService.remove(row.savedRecordId).subscribe({
       next: () => {
-        this.deletingId.set(null);
         this.clearDraft(row.exerciseId);
         // Brisanjem jednog zapisa na red može da dođe drugi (starija procena), pa se
         // spisak čita ponovo umesto da se pogađa šta je sada tekuća vrednost.
-        this.oneRepMaxService.load().subscribe({ error: () => {} });
+        this.reload(row, `„${row.name}" je obrisan, ali spisak nije osvežen.`);
       },
       error: (err: unknown) => {
         this.deletingId.set(null);
         this.saveError.set(
           extractErrorMessage(err, `„${row.name}" nije obrisan. Pokušaj ponovo.`),
         );
+      },
+    });
+  }
+
+  /**
+   * Ponovo čita maksimume posle izmene koja može da promeni koji je zapis tekući.
+   *
+   * Neuspeh osvežavanja se prijavljuje, a ne guta: izmena je prošla na serveru, pa bi tiho
+   * zadržan stari spisak prikazivao broj koji plan više ne koristi.
+   */
+  private reload(row: LiftRow, failureMessage: string): void {
+    this.oneRepMaxService.load().subscribe({
+      next: () => {
+        this.savingId.set(null);
+        this.deletingId.set(null);
+      },
+      error: () => {
+        this.savingId.set(null);
+        this.deletingId.set(null);
+        this.saveError.set(failureMessage);
       },
     });
   }

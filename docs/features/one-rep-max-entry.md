@@ -65,6 +65,20 @@ Uživo:
 | brisanje procene od 136.7 | prošlo; na njeno mesto došla procena od **120.0** |
 | brisanje **tuđeg** zapisa | 404, red ostaje u bazi |
 
+## Šta je pregled uhvatio
+
+Tri stvari koje je uvela **ova** grana:
+
+1. **Red za zgib je i dalje pisao „Ne unosi se"**, tik uz dugme koje ga sada unosi. Sada
+   piše „Samo iz serije" i objašnjava zašto se broj ne kuca.
+2. **Procena iz test-serije se upisivala u keš kao tekuća vrednost** — a tekuću vrednost
+   bira pravilo nad svim zapisima. Nova procena ne mora da bude ona. Izmereno pre ispravke:
+   posle serije od 60 kg × 3 ekran je pokazivao **66 kg**, dok je plan polazio od **121**.
+   To je tačno nesklad između ekrana i generatora zbog kog nalaz D19 i postoji — vraćen
+   mojom izmenom, na klijentu. Sada se spisak čita ponovo, isto kao posle brisanja.
+3. **Neuspeh tog osvežavanja se gutao** (`error: () => {}`). Izmena je prošla na serveru, pa
+   bi tiho zadržan stari spisak prikazivao broj koji plan više ne koristi. Sada se prijavljuje.
+
 ## Testovi
 
 `TestSetEntryTests` (8 tvrdnji): da se granice na zahtevu poklapaju sa domenskim
@@ -72,7 +86,11 @@ konstantama (`EpleyRepCap`, `E1RmMaxRir`) — test protiv razlaženja, jer su to
 napisana dva puta; da je nula kilograma dozvoljena na zahtevu a da domen nad ukupnim
 opterećenjem odlučuje da li znači nešto; i koliko ograda vredi u brojevima.
 
-Ukupno: 603 → 611 testova na serveru, 139 na klijentu (bez izmena).
+Na klijentu `one-rep-max.service.spec.ts` (3 tvrdnje) drži pravilo koje je pregled uhvatio:
+ni test-serija ni brisanje ne smeju da pogađaju koja je vrednost sada tekuća, a ručni unos
+ostaje jedini koji to sme — jer on poništava starije procene.
+
+Ukupno: 603 → 611 testova na serveru, 139 → 142 na klijentu.
 
 ## Poznato ograničenje
 

@@ -37,26 +37,29 @@ export class OneRepMaxService {
       .pipe(tap((saved) => this.upsertLocal(saved)));
   }
 
+  /**
+   * Procena iz test-serije se NE upisuje u keš kao tekuća vrednost.
+   *
+   * Ekran prikazuje vrednost od koje plan zaista polazi, a nju bira pravilo (najbolja u
+   * prozoru od 56 dana) — pa nova procena ne mora da bude ona. Upisati je lokalno znači
+   * prikazati broj koji plan ne koristi: tačno nesklad zbog kog je ovaj nalaz i postojao.
+   * Izmereno pre ispravke: ekran je pokazivao 66 kg dok je plan polazio od 121.
+   *
+   * Pozivalac zato ponovo učita spisak.
+   */
   saveFromSet(request: CreateOneRepMaxFromSetRequest): Observable<OneRepMaxDto> {
-    return this.http
-      .post<OneRepMaxDto>(`${this.apiUrl}/onerepmax/from-set`, request)
-      .pipe(tap((saved) => this.upsertLocal(saved)));
+    return this.http.post<OneRepMaxDto>(`${this.apiUrl}/onerepmax/from-set`, request);
   }
 
-  remove(recordId: string, exerciseId: string): Observable<void> {
-    return this.http
-      .delete<void>(`${this.apiUrl}/onerepmax/${recordId}`)
-      .pipe(tap(() => this.removeLocal(exerciseId)));
+  /** Iz istog razloga i brisanje: iza obrisanog zapisa može da stoji stariji. */
+  remove(recordId: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/onerepmax/${recordId}`);
   }
 
   // History of manual + estimated 1RM records for one exercise.
   // Backend route param is the exerciseId (not a 1RM record id).
   history(exerciseId: string): Observable<OneRepMaxDto[]> {
     return this.http.get<OneRepMaxDto[]>(`${this.apiUrl}/onerepmax/${exerciseId}/history`);
-  }
-
-  private removeLocal(exerciseId: string): void {
-    this.oneRepMaxesSignal.update((list) => list.filter((item) => item.exerciseId !== exerciseId));
   }
 
   private upsertLocal(saved: OneRepMaxDto): void {
