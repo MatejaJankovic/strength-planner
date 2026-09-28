@@ -373,10 +373,30 @@
         <p class="card__hint numeric">Ukupno {{ totalWeeks() }} {{ weekLabel(totalWeeks()) }}</p>
       </div>
 
+      @if (confirmingTakeover() && plan(); as current) {
+        <p class="wizard__warning" role="alert">
+          <mat-icon aria-hidden="true">warning_amber</mat-icon>
+          <span>
+            Plan <strong>„{{ current.name }}"</strong> prestaje da bude aktivan. Ne briše se -
+            odrađeni treninzi i procene maksimuma ostaju - ali se na njega više ne vraćaš kroz
+            ekran „Trening". Nastaviti?
+          </span>
+        </p>
+      }
+
       <div class="wizard__actions">
-        <button class="btn btn--primary" type="button" [disabled]="!canSubmit()" (click)="create()">
-          {{ creating() ? 'Pravim…' : 'Napravi plan' }}
+        <button class="btn btn--primary" type="button" [disabled]="!canSubmit()" (click)="submit()">
+          @if (creating()) {
+            Pravim…
+          } @else if (confirmingTakeover()) {
+            Da, napravi novi plan
+          } @else {
+            Napravi plan
+          }
         </button>
+        @if (confirmingTakeover()) {
+          <button class="btn btn--ghost" type="button" (click)="cancelTakeover()">Odustani</button>
+        }
         <button class="btn btn--ghost" type="button" [disabled]="creating()" (click)="closeWizard()">
           Odustani
         </button>

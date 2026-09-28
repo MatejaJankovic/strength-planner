@@ -25,6 +25,26 @@
     </div>
   </div>
 
+  @if (exercisesWithoutLoad(); as missing) {
+    @if (missing.length > 0) {
+      <section class="missing" role="note">
+        <p class="missing__text">
+          <mat-icon aria-hidden="true">help_outline</mat-icon>
+          <span>
+            Za {{ missing.length === 1 ? 'ovu vežbu nema' : 'ove vežbe nema' }} poznat
+            maksimum, pa plan za njih ne predlaže opterećenje:
+            <strong>{{ missing.join(', ') }}</strong>. Možeš ih uneti, ili prvi put upisati
+            težinu po osećaju - od tada sistem računa sam.
+          </span>
+        </p>
+        <button class="missing__action" type="button" (click)="openOneRepMaxSetup()">
+          <mat-icon aria-hidden="true">tune</mat-icon>
+          Unesi maksimume
+        </button>
+      </section>
+    }
+  }
+
   <div class="weeks">
     @for (week of plan.weeks; track week.id) {
       <section class="week" [class.week--deload]="week.isDeload">

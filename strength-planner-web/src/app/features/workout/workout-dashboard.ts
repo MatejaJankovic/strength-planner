@@ -30,6 +30,42 @@ export class WorkoutDashboard {
 
   protected readonly mesocycle = this.mesocycleService.active;
 
+  /**
+   * Vežbe u ovom bloku koje nemaju od čega da izvedu opterećenje.
+   *
+   * Rad (slučaj korišćenja 4) kaže da sistem traži dopunu unosa kada za neku vežbu nema
+   * procene 1RM. Do sada to nije tražio nigde — svaka takva vežba je tiho čekala da je
+   * vežbač prvi put unese „po osećaju", što je legitiman put, ali je bio i jedini, i to
+   * neizrečen.
+   *
+   * Gleda se generisan blok, a ne šablon: tek blok zna koje su vežbe zaista ušle i koja od
+   * njih je ostala bez cilja. Vežbe koje diže sopstvena masa se ne broje — njima je nula
+   * dodatih tačan prvi propis, a ne nepoznanica.
+   */
+  protected readonly exercisesWithoutLoad = computed<string[]>(() => {
+    const plan = this.mesocycle();
+    if (!plan) {
+      return [];
+    }
+
+    const names = new Set<string>();
+    for (const week of plan.weeks) {
+      for (const session of week.sessions) {
+        for (const item of session.exercisePlans) {
+          if (item.targetWeightKg == null && !item.isBodyweight) {
+            names.add(item.exerciseName);
+          }
+        }
+      }
+    }
+
+    return [...names].sort((a, b) => a.localeCompare(b));
+  });
+
+  protected openOneRepMaxSetup(): void {
+    void this.router.navigateByUrl('/onboarding');
+  }
+
   // First not-yet-finished session across the whole plan (weeks then sessions in order).
   protected readonly nextSessionId = computed<string | null>(() => {
     const plan = this.mesocycle();
