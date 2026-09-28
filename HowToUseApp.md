@@ -358,6 +358,21 @@ Svaka vežba je jedna kartica i na njoj piše šta se traži:
 - **Težina serije** — predlog sistema; dugmad `−` i `+` menjaju je za **korak te vežbe**
   (šipka 2.5 kg, bučice 2 kg, mašina 5 kg — podesivo na ekranu „Vežbe").
 
+Iznad polja za ponavljanja piše **„Ponavljanja · cilj N"**: N je vrh opsega, broj ka kome
+dupla progresija radi. Kad ga sve serije dostignu, težina ide gore (detalji niže, u
+„Pravila koja sistem primenjuje").
+
+Predlog težine dolazi iz dva izvora, i aplikacija kaže iz kog:
+
+| Šta piše | Odakle predlog |
+|---|---|
+| ništa posebno | iz onoga što si **stvarno digao** isti dan prethodne nedelje |
+| *„Predlog je izveden iz tvog maksimuma…"* | iz **poznatog 1RM-a**, jer taj dan prethodne nedelje još nije odrađen |
+| *„Nema 1RM za ovu vežbu"* | **nema ga** — unesi težinu po osećaju, dalje sistem računa sam |
+
+Druga vrsta se pojavljuje i kad tek uneseš maksimum za vežbu koja ga nije imala: plan je već
+napravljen, ali predlog se računa pri otvaranju treninga, pa nov broj važi odmah.
+
 Kod vežbi koje diže sopstvena masa polje se zove **„Dodatno opterećenje"** i u njega ide
 samo ono što si stavio na sebe (pojas, traka) — **0 znači sopstvenom masom**. Ispod polja
 piše koliko je to kilograma za tebe: zgib nosi celu telesnu masu, sklek oko dve trećine,
