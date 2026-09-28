@@ -39,7 +39,10 @@ public sealed class DeloadService
                            && week.Mesocycle.UserId == userId
                            && !week.IsDeload
                            && week.FatigueScore == null
-                           && week.Sessions.All(session => session.Status == SessionStatus.Completed))
+                           // Nedelja se sudi kada od nje više ništa ne preostaje. Preskočen
+                           // trening je odgovor, a ne dug: bez toga jedan trening koji vežbač
+                           // nikada neće odraditi drži nedelju otvorenom zauvek.
+                           && week.Sessions.All(session => SessionLifecycle.Settled.Contains(session.Status)))
             .OrderBy(week => week.WeekNumber)
             .Select(week => new { week.Id, week.WeekNumber })
             .ToListAsync(cancellationToken);

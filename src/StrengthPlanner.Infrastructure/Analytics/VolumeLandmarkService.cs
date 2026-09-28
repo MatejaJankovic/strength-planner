@@ -88,6 +88,11 @@ public sealed class VolumeLandmarkService
                            && week.Mesocycle.UserId == userId
                            && !week.IsDeload
                            && week.VolumeAdaptedAt == null
+                           // Strože od „nedelja je gotova": traži se da je svaki trening
+                           // zaista odrađen. Nedelja sa preskočenim danom je uradila manje
+                           // nego što je propisala, a koliko volumena vežbaču treba ne može
+                           // da se pročita iz nedelje koja se nije desila. Isto pravilo kao
+                           // kod signala snage: ćutanje nije merenje.
                            && week.Sessions.All(session => session.Status == SessionStatus.Completed))
             .OrderBy(week => week.WeekNumber)
             .Select(week => week.Id)

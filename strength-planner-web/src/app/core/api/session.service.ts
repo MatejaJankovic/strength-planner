@@ -26,6 +26,14 @@ export class SessionService {
     return this.http.post<CompleteSessionResultDto>(`${this.apiUrl}/sessions/${id}/complete`, {});
   }
 
+  skip(id: string): Observable<WorkoutSessionDto> {
+    return this.http.post<WorkoutSessionDto>(`${this.apiUrl}/sessions/${id}/skip`, {});
+  }
+
+  unskip(id: string): Observable<WorkoutSessionDto> {
+    return this.http.post<WorkoutSessionDto>(`${this.apiUrl}/sessions/${id}/unskip`, {});
+  }
+
   addSet(planId: string, request: AddSetLogRequest): Observable<SetLogDto> {
     return this.http.post<SetLogDto>(`${this.apiUrl}/exercise-plans/${planId}/sets`, request);
   }

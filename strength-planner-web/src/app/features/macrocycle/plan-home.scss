@@ -139,6 +139,12 @@
   margin: 0;
 }
 
+// Preskočeni se broje odvojeno od odrađenih: traka pokazuje šta je urađeno, a ovo objašnjava
+// zašto je blok gotov iako traka nije puna.
+.tblock__skipped {
+  opacity: 0.85;
+}
+
 .progress {
   background: color-mix(in srgb, var(--color-border) 60%, transparent);
   border-radius: 999px;

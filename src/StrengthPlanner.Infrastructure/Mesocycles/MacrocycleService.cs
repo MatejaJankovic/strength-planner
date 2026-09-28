@@ -226,7 +226,7 @@ public class MacrocycleService : IMacrocycleService
         var isFinished = !await _db.WorkoutSessions.AnyAsync(
             session => session.TrainingWeek.MesocycleId == lastLive.MesocycleId!.Value
                        && session.TrainingWeek.Mesocycle.UserId == userId
-                       && session.Status != SessionStatus.Completed,
+                       && !SessionLifecycle.Settled.Contains(session.Status),
             cancellationToken);
 
         if (!isFinished)
@@ -379,7 +379,7 @@ public class MacrocycleService : IMacrocycleService
         var isFinished = !await _db.WorkoutSessions.AnyAsync(
             session => session.TrainingWeek.MesocycleId == mesocycleId
                        && session.TrainingWeek.Mesocycle.UserId == userId
-                       && session.Status != SessionStatus.Completed,
+                       && !SessionLifecycle.Settled.Contains(session.Status),
             cancellationToken);
 
         if (!isFinished)
@@ -554,7 +554,11 @@ public class MacrocycleService : IMacrocycleService
             {
                 MesocycleId = group.Key,
                 Total = group.Count(),
-                Completed = group.Count(session => session.Status == SessionStatus.Completed)
+                Completed = group.Count(session => session.Status == SessionStatus.Completed),
+                // Preskočeni se broje odvojeno: traka pokazuje šta je odrađeno, a status
+                // bloka mora da zna i da preostalog posla nema. Bez toga bi blok sa jednim
+                // preskočenim treningom zauvek pisao „U toku" iako je gotov.
+                Skipped = group.Count(session => session.Status == SessionStatus.Skipped)
             })
             .ToDictionaryAsync(item => item.MesocycleId, cancellationToken);
 
@@ -592,12 +596,14 @@ public class MacrocycleService : IMacrocycleService
                 {
                     var total = 0;
                     var completed = 0;
+                    var skipped = 0;
 
                     if (block.MesocycleId.HasValue
                         && progress.TryGetValue(block.MesocycleId.Value, out var counts))
                     {
                         total = counts.Total;
                         completed = counts.Completed;
+                        skipped = counts.Skipped;
                     }
 
                     return new MacrocycleBlockDto
@@ -614,15 +620,21 @@ public class MacrocycleService : IMacrocycleService
                         TemplateName = TemplateNameFor(block.TemplateKey, customTemplateNames),
                         MesocycleId = block.MesocycleId,
                         CompletedSessions = completed,
+                        SkippedSessions = skipped,
                         TotalSessions = total,
-                        Status = GetStatus(block, total, completed)
+                        Status = GetStatus(block, total, completed + skipped)
                     };
                 })
                 .ToList()
         };
     }
 
-    private static string GetStatus(MacrocycleBlock block, int total, int completed)
+    /// <summary>
+    /// Status bloka. <paramref name="settled"/> su treninzi od kojih više ništa ne
+    /// preostaje — odrađeni i preskočeni zajedno — jer blok je gotov kada nema šta da čeka,
+    /// a ne tek kada je sve odrađeno. Traka napretka i dalje broji samo odrađene.
+    /// </summary>
+    private static string GetStatus(MacrocycleBlock block, int total, int settled)
     {
         if (block.MesocycleId is null)
         {
@@ -632,6 +644,6 @@ public class MacrocycleService : IMacrocycleService
             return block.GeneratedAt is null ? "planned" : "cancelled";
         }
 
-        return total > 0 && completed >= total ? "completed" : "active";
+        return total > 0 && settled >= total ? "completed" : "active";
     }
 }

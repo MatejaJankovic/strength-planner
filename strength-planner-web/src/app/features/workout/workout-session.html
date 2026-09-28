@@ -152,6 +152,29 @@
         Započni trening
       }
     </button>
+
+    <button class="cta cta--quiet" type="button" [disabled]="skipping()" (click)="skip()">
+      <mat-icon aria-hidden="true">event_busy</mat-icon>
+      {{ skipping() ? 'Preskačem…' : 'Preskoči ovaj trening' }}
+    </button>
+  }
+
+  @if (isSkipped()) {
+    <p class="done-note done-note--skipped" role="status">
+      <mat-icon aria-hidden="true">event_busy</mat-icon>
+      Ovaj trening je preskočen. Nedelja ga više ne čeka, pa plan može dalje - a serije i
+      opterećenja su ostala zapisana, netaknuta.
+    </p>
+
+    <button class="cta" type="button" [disabled]="skipping()" (click)="unskip()">
+      @if (skipping()) {
+        <span class="cta__spinner" aria-hidden="true"></span>
+        Vraćam…
+      } @else {
+        <mat-icon aria-hidden="true">undo</mat-icon>
+        Vrati na plan
+      }
+    </button>
   }
 
   @if (actionError(); as message) {
