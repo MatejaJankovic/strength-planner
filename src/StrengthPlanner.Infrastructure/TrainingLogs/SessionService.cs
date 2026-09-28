@@ -52,8 +52,7 @@ public class SessionService : ISessionService
             throw new TrainingLogException(TrainingLogErrorType.NotFound, "Workout session was not found.");
         }
 
-        var weightStepOverrides = await WeightStepResolver.LoadOverridesAsync(_db, userId, cancellationToken);
-        return ToDto(session, weightStepOverrides, await ResolvePortionsAsync(userId, session, cancellationToken));
+        return await ToDtoAsync(userId, session, cancellationToken);
     }
 
     public async Task<WorkoutSessionDto> StartAsync(
@@ -98,11 +97,7 @@ public class SessionService : ISessionService
         var detailedSession = await BuildSessionDetailsQuery(userId)
             .FirstAsync(workoutSession => workoutSession.Id == sessionId, cancellationToken);
 
-        var weightStepOverrides = await WeightStepResolver.LoadOverridesAsync(_db, userId, cancellationToken);
-        return ToDto(
-            detailedSession,
-            weightStepOverrides,
-            await ResolvePortionsAsync(userId, detailedSession, cancellationToken));
+        return await ToDtoAsync(userId, detailedSession, cancellationToken);
     }
 
     public async Task<WorkoutSessionDto> SkipAsync(
@@ -259,12 +254,7 @@ public class SessionService : ISessionService
         var session = await BuildSessionDetailsQuery(userId)
             .FirstAsync(workoutSession => workoutSession.Id == sessionId, cancellationToken);
 
-        var weightStepOverrides = await WeightStepResolver.LoadOverridesAsync(_db, userId, cancellationToken);
-
-        return ToDto(
-            session,
-            weightStepOverrides,
-            await ResolvePortionsAsync(userId, session, cancellationToken));
+        return await ToDtoAsync(userId, session, cancellationToken);
     }
 
     public async Task<CompleteSessionResultDto> CompleteAsync(
@@ -741,6 +731,114 @@ public class SessionService : ISessionService
         decimal ProgressionWeightKg);
 
     /// <summary>Body mass the exercises of this session carry for the lifter right now.</summary>
+    /// <summary>
+    /// Jedini put od sesije do njenog DTO-a.
+    ///
+    /// Tri čitanja su ranije sama sastavljala isti poziv, i to je tačno oblik greške iz
+    /// devete runde (<c>SetLogDto</c>, građen na tri mesta, gde je nova kolona stigla do
+    /// dva): ručno sastavljanje ne mora da bude potpuno, pa se prevodi i tipizira i kad
+    /// jedno mesto zaostane.
+    /// </summary>
+    private async Task<WorkoutSessionDto> ToDtoAsync(
+        Guid userId,
+        WorkoutSession session,
+        CancellationToken cancellationToken)
+    {
+        var weightStepOverrides = await WeightStepResolver.LoadOverridesAsync(_db, userId, cancellationToken);
+        var portions = await ResolvePortionsAsync(userId, session, cancellationToken);
+
+        return ToDto(
+            session,
+            weightStepOverrides,
+            portions,
+            await ResolveEstimatedTargetsAsync(userId, session, portions, weightStepOverrides, cancellationToken));
+    }
+
+    /// <summary>
+    /// Predlog opterećenja za plan koji svoj cilj još nema upisan.
+    ///
+    /// Generator puni samo prvu nedelju; kasnije puni progresija, kada se isti dan
+    /// prethodne nedelje završi. Do tada je <c>TargetWeightKg</c> prazan — pa je ekran
+    /// pisao „Nema 1RM za ovu vežbu" i za vežbu čiji maksimum stoji zapisan. Isto se
+    /// dešavalo i unutar jedne nedelje: sveža procena sa ponedeljka nije dolazila do
+    /// četvrtka, jer se propis prenosi samo sa istog dana prethodne nedelje.
+    ///
+    /// Odgovor se računa pri čitanju, a ne upisuje: tako uvek polazi od najsvežijeg
+    /// maksimuma, a u nedelje do kojih vežbač nije stigao se ne upisuju brojevi koje bi
+    /// progresija ionako prepisala.
+    /// </summary>
+    private async Task<Dictionary<Guid, decimal>> ResolveEstimatedTargetsAsync(
+        Guid userId,
+        WorkoutSession session,
+        IReadOnlyDictionary<Guid, decimal> bodyweightPortions,
+        IReadOnlyDictionary<Guid, decimal> weightStepOverrides,
+        CancellationToken cancellationToken)
+    {
+        // Samo za trening koji tek predstoji. Završen ili preskočen nosi istoriju: predlog
+        // za nešto što se već desilo (ili neće) nije predlog nego šum — a i upit ispod bi se
+        // plaćao pri svakom listanju istorije.
+        if (!SessionLifecycle.IsPending(session.Status))
+        {
+            return [];
+        }
+
+        var missing = session.ExercisePlans
+            .Where(plan => plan.TargetWeightKg is null)
+            .ToList();
+
+        if (missing.Count == 0)
+        {
+            return [];
+        }
+
+        var exerciseIds = missing.Select(plan => plan.ExerciseId).Distinct().ToList();
+
+        var records = await _db.OneRepMaxRecords
+            .AsNoTracking()
+            .Where(record => record.UserId == userId && exerciseIds.Contains(record.ExerciseId))
+            .Select(record => new { record.ExerciseId, record.ValueKg, record.Source, record.RecordedAt })
+            .ToListAsync(cancellationToken);
+
+        // Isti izbor osnovne vrednosti koji koristi generator: najbolja u prozoru, ručni
+        // unos poništava starije procene, prazan prozor pada na najnoviji zapis ikada.
+        var now = DateTime.UtcNow;
+        var oneRepMaxByExerciseId = records
+            .GroupBy(record => record.ExerciseId)
+            .Select(group => new
+            {
+                ExerciseId = group.Key,
+                ValueKg = OneRepMaxBaseline.Select(
+                    group
+                        .Select(record => new OneRepMaxSample(record.ValueKg, record.Source, record.RecordedAt))
+                        .ToList(),
+                    now,
+                    TrainingConstants.OneRepMaxLookbackDays,
+                    allowStaleFallback: true)
+            })
+            .Where(entry => entry.ValueKg is not null)
+            .ToDictionary(entry => entry.ExerciseId, entry => entry.ValueKg!.Value);
+
+        var estimates = new Dictionary<Guid, decimal>();
+
+        foreach (var plan in missing)
+        {
+            var estimate = StartingLoad.FromOneRepMax(
+                _e1RmCalculator,
+                oneRepMaxByExerciseId.TryGetValue(plan.ExerciseId, out var oneRepMax) ? oneRepMax : null,
+                plan.RepRangeMin,
+                plan.TargetRir,
+                BodyweightPortionResolver.PortionFor(bodyweightPortions, plan.ExerciseId),
+                WeightStepResolver.Effective(weightStepOverrides, plan.ExerciseId, plan.Exercise.WeightStepKg));
+
+            if (estimate is not null)
+            {
+                estimates[plan.Id] = estimate.Value;
+            }
+        }
+
+        return estimates;
+    }
+
     private Task<IReadOnlyDictionary<Guid, decimal>> ResolvePortionsAsync(
         Guid userId,
         WorkoutSession session,
@@ -783,7 +881,8 @@ public class SessionService : ISessionService
     private static WorkoutSessionDto ToDto(
         WorkoutSession session,
         IReadOnlyDictionary<Guid, decimal> weightStepOverrides,
-        IReadOnlyDictionary<Guid, decimal> bodyweightPortions)
+        IReadOnlyDictionary<Guid, decimal> bodyweightPortions,
+        IReadOnlyDictionary<Guid, decimal> estimatedTargets)
     {
         return new WorkoutSessionDto
         {
@@ -807,7 +906,14 @@ public class SessionService : ISessionService
                     RepRangeMin = plan.RepRangeMin,
                     RepRangeMax = plan.RepRangeMax,
                     TargetRir = plan.TargetRir,
-                    TargetWeightKg = plan.TargetWeightKg,
+                    TargetWeightKg = plan.TargetWeightKg
+                                     ?? (estimatedTargets.TryGetValue(plan.Id, out var estimate)
+                                         ? estimate
+                                         : null),
+                    // Razlika koju vežbač treba da vidi: cilj izveden iz maksimuma nije isto
+                    // što i cilj koji je progresija izvela iz odrađenih serija.
+                    TargetWeightIsEstimate = plan.TargetWeightKg is null
+                                             && estimatedTargets.ContainsKey(plan.Id),
                     WeightStepKg = WeightStepResolver.Effective(
                         weightStepOverrides,
                         plan.ExerciseId,

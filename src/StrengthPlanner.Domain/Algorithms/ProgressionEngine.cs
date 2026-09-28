@@ -46,7 +46,7 @@ public sealed class ProgressionEngine
 
         if (workingSets.Count == 0)
         {
-            return new ProgressionResult(usedWeightKg, repRangeMin, WeightIncreased: false);
+            return new ProgressionResult(usedWeightKg, WeightIncreased: false);
         }
 
         var stepKg = weightStepKg ?? TrainingConstants.WeightStepKg;
@@ -61,7 +61,7 @@ public sealed class ProgressionEngine
         // ide kroz ponavljanja, a ne kroz "+1 kg" na vežbi koja se ne opterećuje.
         if (usedTotalKg <= 0)
         {
-            return new ProgressionResult(0m, repRangeMin, WeightIncreased: false, LoadFloorReached: true);
+            return new ProgressionResult(0m, WeightIncreased: false, LoadFloorReached: true);
         }
 
         var averageRir = workingSets.Average(set => (decimal)set.EffectiveRir(repRangeMin));
@@ -102,7 +102,6 @@ public sealed class ProgressionEngine
 
         return new ProgressionResult(
             nextWeight,
-            repRangeMin,
             WeightIncreased: nextWeight > usedWeightKg,
             LoadFloorReached: atBodyweightFloor);
     }

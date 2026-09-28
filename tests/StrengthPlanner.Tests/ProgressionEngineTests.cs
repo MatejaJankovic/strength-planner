@@ -42,7 +42,6 @@ public class ProgressionEngineTests
             repRangeMax);
 
         Assert.Equal((decimal)expectedNextWeightKg, result.NextWeightKg);
-        Assert.Equal(repRangeMin, result.NextTargetReps);
         Assert.Equal(expectedWeightIncreased, result.WeightIncreased);
     }
 
@@ -112,7 +111,6 @@ public class ProgressionEngineTests
             repRangeMax: 12);
 
         Assert.Equal(83.1m, result.NextWeightKg);
-        Assert.Equal(8, result.NextTargetReps);
         Assert.False(result.WeightIncreased);
     }
 }

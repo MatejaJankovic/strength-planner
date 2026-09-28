@@ -310,9 +310,9 @@ public class MesocycleGenerator : IMesocycleGenerator
     /// Kasnije nedelje puni progresija kada se prethodna završi — tek tada se zna šta je
     /// korisnik zaista uradio.
     ///
-    /// Kod vežbe sa telesnom masom se bez ijednog poznatog maksimuma ne vraća „nepoznato"
-    /// nego 0 dodatnih kilograma: opterećenje je već tu, na vežbaču, pa je „sopstvenom
-    /// masom" tačan prvi propis, a prazno polje bi bilo netačno.
+    /// Samo pravilo živi u domenu (<see cref="StartingLoad"/>), jer isto pitanje postavlja
+    /// i ekran za trening: nedelja čiji prethodni isti dan još nije odrađen nema upisan
+    /// cilj, a maksimum je poznat.
     /// </summary>
     private decimal? GetInitialTargetWeight(
         int weekNumber,
@@ -327,16 +327,11 @@ public class MesocycleGenerator : IMesocycleGenerator
             return null;
         }
 
-        if (!oneRepMaxByExerciseId.TryGetValue(exerciseId, out var oneRepMax))
-        {
-            return bodyweightLoadKg > 0 ? 0m : null;
-        }
-
-        return BodyweightLoad.AddedTarget(
-            _e1RmCalculator.WorkingLoadFor(
-                oneRepMax,
-                prescription.RepRangeMin,
-                prescription.TargetRir),
+        return StartingLoad.FromOneRepMax(
+            _e1RmCalculator,
+            oneRepMaxByExerciseId.TryGetValue(exerciseId, out var oneRepMax) ? oneRepMax : null,
+            prescription.RepRangeMin,
+            prescription.TargetRir,
             bodyweightLoadKg,
             weightStepKg);
     }

@@ -240,7 +240,8 @@
 
 // Zašto predlog serija odstupa od propisa — bez ikone se razlika čita kao greška u planu.
 .card__hint--volume,
-.card__hint--bodyweight {
+.card__hint--bodyweight,
+.card__hint--estimate {
   align-items: flex-start;
   display: flex;
   gap: 0.35rem;

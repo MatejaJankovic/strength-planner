@@ -201,6 +201,18 @@ export class WorkoutSession {
     return repRangeLabel(plan.repRangeMin, plan.repRangeMax);
   }
 
+  /**
+   * Ciljni broj ponavljanja za seriju: vrh opsega.
+   *
+   * Dupla progresija radi tako da se unutar istog opterećenja ide ka vrhu opsega, a kada
+   * ga sve serije dostignu, sledeći put ide teže. Taj broj je ekran do sada imao samo kao
+   * gornju granicu u čipu „Opseg", pa se nije videlo šta se zapravo gađa. Kod propisa sa
+   * tačnim brojem ponavljanja (5x5) dno i vrh su isti broj, pa je i cilj taj broj.
+   */
+  protected repTarget(plan: ExercisePlanDto): number {
+    return plan.repRangeMax;
+  }
+
   /** Napomena ispod unosa: šta ova serija znači za sledeći trening (vidi set-feedback.ts). */
   protected feedbackFor(plan: ExercisePlanDto, draft: SetDraft): SetFeedback | null {
     return setFeedback(plan, draft);

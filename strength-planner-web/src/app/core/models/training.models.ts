@@ -167,6 +167,8 @@ export interface ExercisePlanDto {
   repRangeMax: number;
   targetRir: number;
   targetWeightKg?: number | null;
+  /** Cilj je izveden iz poznatog maksimuma, a ne iz odrađenih serija prethodne nedelje. */
+  targetWeightIsEstimate?: boolean;
   weightStepKg: number;
   /**
    * Vezba nosi deo telesne mase, pa je `targetWeightKg` ono sto se DODAJE, a 0 znaci
