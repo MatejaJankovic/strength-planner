@@ -252,6 +252,13 @@ public static class WorkoutTemplateCatalog
                     // Ovaj dan nema izolaciju za noge: Leg Curl i Leg Extension su svaki
                     // jednom potrošeni na Lower A/B, a treći put bi gurnuo kvadriceps ili
                     // zadnju ložu preko MRV na tri treninga za noge nedeljno (izmereno).
+                    //
+                    // Face Pull tu stoji jer dan ima mesta u trajanju a nema ga u volumenu za
+                    // noge — i to je provereno, ne pretpostavljeno. Izbaciti ga spušta
+                    // trening naprednog vežbača na četiri vežbe (traži se najmanje pet), a
+                    // zameniti ga vežbom za noge gura kvadriceps preko MRV (16.5 uz MRV 16,
+                    // na skali početnika). Dan je „za noge" po tome šta ga određuje, ne po
+                    // tome da nijedna druga vežba ne sme da uđe.
                     "Face Pull", "Calf Raise", "Machine Crunch", "Cable Crunch"
                 ])
             ],
@@ -282,13 +289,21 @@ public static class WorkoutTemplateCatalog
                     "Step-Up", "Hip Thrust",
                     // Leg Curl i Leg Extension su svaki jednom potrošeni na Legs A/B; treći
                     // put bi na tri treninga za noge nedeljno gurnuo kvadriceps ili zadnju
-                    // ložu preko MRV (izmereno).
-                    "Straight-Arm Pulldown", "Calf Raise", "Machine Crunch", "Cable Crunch"
+                    // ložu preko MRV (izmereno). Kao i kod Upper/Lower x3, mesto mora da
+                    // popuni vežba za gornje telo.
+                    //
+                    // Ovde je to bio Straight-Arm Pulldown — jedina izolacija za leđa u celom
+                    // šablonu, na danu za noge. Preseljena je na Upper A, a mesto je uzela
+                    // vežba za biceps: ruke na danu za noge su uobičajen način da se iskoristi
+                    // vreme koje nogama više ne treba.
+                    "Dumbbell Curl", "Calf Raise", "Machine Crunch", "Cable Crunch"
                 ]),
                 new("Upper A",
                 [
                     "Bench Press", "Barbell Row",
-                    "Cable Fly", "Lateral Raise", "Triceps Pushdown", "Barbell Curl"
+                    // Izolacija za leđa stoji ispred ruku: sastav treninga uzima izolacije
+                    // redom, pa bi sa poslednjeg mesta do srednjeg nivoa nikada ne bi stigla.
+                    "Straight-Arm Pulldown", "Cable Fly", "Lateral Raise", "Triceps Pushdown", "Barbell Curl"
                 ]),
                 new("Upper B",
                 [
