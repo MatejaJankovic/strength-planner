@@ -79,6 +79,16 @@ public class SessionService : ISessionService
             throw new TrainingLogException(TrainingLogErrorType.Conflict, "Completed workout sessions cannot be started again.");
         }
 
+        // Preskočen trening se ne pokreće prećutno. Nedelja je na osnovu njega već
+        // zatvorena, pa je „predomislio sam se" odluka koja ima svoje dugme — inače bi
+        // start na preskočenom treningu vratio 200 i ne bi promenio ništa.
+        if (session.Status == SessionStatus.Skipped)
+        {
+            throw new TrainingLogException(
+                TrainingLogErrorType.Conflict,
+                "A skipped workout must be put back on the plan before it can be started.");
+        }
+
         if (session.Status == SessionStatus.Planned)
         {
             session.Status = SessionStatus.InProgress;

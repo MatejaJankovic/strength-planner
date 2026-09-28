@@ -84,6 +84,20 @@ serija. To nije novo pravilo — to je zatečeni alokator koji nedelju gađa u c
 preskočen dan mu više nije odredište. Ograničeno je zatečenim klamovima (najviše 6 serija po
 vežbi, lutanje ±2). Zapisano je i u uputstvu, da vežbača ne iznenadi.
 
+## Šta je pregled uhvatio
+
+Dve rupe koje je otvorila **ova** izmena, obe na nivou API-ja:
+
+1. **Preskočena sesija je i dalje primala serije.** `EnsureSessionIsEditable` je odbijao
+   samo završene. Serija upisana u preskočen trening bi bila rad koji nijedan obračun nije
+   video — nedelja je već ocenjena, a možda je i sledeći blok generisan. Sada odbija svaku
+   sesiju od koje ništa ne preostaje, sa porukom koja razdvaja dva slučaja.
+2. **`start` na preskočenoj sesiji je vraćao 200 i nije menjao ništa.** `StartAsync` je
+   proveravao samo „završena", a menjao status samo ako je „planirana" — preskočena je
+   padala između. Sada je izričito odbijena: „predomislio sam se" ima svoje dugme.
+
+Obe provereno uživo: `409` sa jasnom porukom.
+
 ## Poznato ograničenje
 
 Stilski fajl ekrana za trening (`workout-session.scss`) je posle ove izmene na **7.96 kB**,

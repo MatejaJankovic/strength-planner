@@ -149,17 +149,25 @@ public class SetLogService : ISetLogService
     }
 
     /// <summary>
-    /// Serije se ne mogu menjati kad je sesija završena — progresija je već
-    /// izračunata i naknadne izmene bi narušile istoriju.
+    /// Serije se ne mogu menjati kad od sesije više ništa ne preostaje.
+    ///
+    /// Završena: progresija je već izračunata i naknadne izmene bi narušile istoriju.
+    /// Preskočena: nedelja je na osnovu nje već zatvorena — ocenjena za umor, a možda je i
+    /// sledeći blok plana generisan. Serija upisana posle toga bi bila rad koji nijedan
+    /// obračun nije video. Trening se prvo vraća na plan, pa se loguje.
     /// </summary>
     private static void EnsureSessionIsEditable(SessionStatus status)
     {
-        if (status == SessionStatus.Completed)
+        if (!SessionLifecycle.IsSettled(status))
         {
-            throw new TrainingLogException(
-                TrainingLogErrorType.Conflict,
-                "Completed workout sessions cannot be modified.");
+            return;
         }
+
+        throw new TrainingLogException(
+            TrainingLogErrorType.Conflict,
+            status == SessionStatus.Skipped
+                ? "A skipped workout must be put back on the plan before sets can be logged."
+                : "Completed workout sessions cannot be modified.");
     }
 
     private static void ValidateSetInput(decimal weightKg, int reps, int rir, bool isFailure)
