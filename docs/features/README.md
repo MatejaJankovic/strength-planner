@@ -96,6 +96,15 @@ tvrdi drugo, a rad obećava treće.
 | [Uslovi pri pravljenju plana](plan-creation-preconditions.md) | Nov plan je bez reči gasio tekući, a vežba bez maksimuma je tiho čekala da je vežbač unese po osećaju — rad traži da se oba kažu | #78 |
 | [Uputstvo koje je ostalo iza koda](guide-accuracy.md) | „Sedam ugrađenih" šablona kojih ima devet, tonaža koja „pokazuje da blok raste" a u periodizovanom bloku pada po planu, i dva značenja reči „podrazumevan" | #79 |
 
+## Trinaesti krug — model vežbi
+
+Isti pregled logike treninga, odeljak E: koji mišić koja vežba zaista radi, gde vežba stoji
+u šablonu, i šta ekran prećutkuje o unosu.
+
+| Grana | O čemu je | PR |
+|---|---|---|
+| [Doprinosi mišićima](muscle-contributions.md) | Potisak je punio budžet ramena a čučanj budžet zadnje lože, pa je balansiranje skidalo serije sa vežbi koje te mišiće jedine grade | #81 |
+
 ## Ako čitaš samo jedno
 
 [Periodizacija po nedeljama](periodization-models.md) — to je bio najveći raskorak između
