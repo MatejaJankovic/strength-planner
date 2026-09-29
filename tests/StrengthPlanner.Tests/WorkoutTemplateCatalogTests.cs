@@ -178,22 +178,29 @@ public class WorkoutTemplateCatalogTests
     }
 
     /// <summary>
-    /// Priručnik (str. 3): između benča i potiska za ramena, između mrtvog dizanja i čučnja -
-    /// „kao i bilo koje kombinacije složenih vežbi koje angažuju slične mišiće" - treba bar
-    /// jedan dan pauze. Legs Specialization je stavljao tri dana za noge jedan za drugim, a
-    /// Full Body (4 dana) je dvaput nedeljno stavljao dve vežbe za noge u uzastopne dane.
+    /// Priručnik (str. 3) traži bar jedan dan pauze između benča i potiska za ramena, između
+    /// mrtvog dizanja i čučnja, „kao i bilo koju kombinaciju složenih vežbi koje angažuju
+    /// slične mišiće". Legs Specialization je stavljao tri dana za noge jedan za drugim, a
+    /// Full Body (4 dana) je početniku i srednjem nivou dvaput nedeljno stavljao dve vežbe za
+    /// noge u uzastopne dane.
     ///
     /// Sličnost se meri porodicom pokreta izvedenom iz doprinosa mišićima, a ne zajedničkim
     /// mišićem: grupa „Back" sabira i lat (veslanje) i kičmene mišiće (mrtvo dizanje), pa bi
-    /// „deli mišić" proglasio sukobom svaki Upper/Lower i Push/Pull/Legs raspored - pull dan
-    /// pa dan sa RDL-om - što priručnik ne traži i što nijedan takav program ne izbegava.
+    /// „deli mišić" proglasio sukobom Upper/Lower, Upper/Lower x3, Upper/Lower + PPL i
+    /// Push/Pull/Legs x2 - dan sa veslanjem ili zgibom pa dan sa RDL-om - što priručnik ne
+    /// navodi i što nijedan takav program ne izbegava.
     /// </summary>
     [Fact]
     public void NoTwoConsecutiveDays_TrainTheSameMovementFamily()
     {
         // Četiri full-body treninga u sedam dana uvek imaju par uzastopnih dana, a svaki dan
-        // tog šablona ima vežbu za noge. Dozvoljen je tačno taj jedan par, i imenuje se.
-        var allowed = new Dictionary<string, int> { [WorkoutTemplateCatalog.FullBodyFourDayKey] = 1 };
+        // tog šablona nosi vežbu za noge. Dozvoljen je tačno jedan par - RDL pa leg press - i
+        // imenuje se: raspored koji bi sukob pomerio na čučanj pa RDL, ili front squat pa
+        // čučanj, pada.
+        var allowed = new HashSet<(string Template, string From, string To)>
+        {
+            (WorkoutTemplateCatalog.FullBodyFourDayKey, "Day B", "Day C")
+        };
         var failures = new List<string>();
 
         foreach (var template in WorkoutTemplateCatalog.GetAll())
@@ -225,13 +232,14 @@ public class WorkoutTemplateCatalogTests
                         .Intersect(compounds[next].Select(Family))
                         .ToList();
 
-                    if (shared.Count > 0)
+                    if (shared.Count > 0
+                        && !allowed.Contains((template.Key, template.Days[index].Name, template.Days[next].Name)))
                     {
                         clashes.Add($"{template.Days[index].Name} -> {template.Days[next].Name} ({string.Join(", ", shared)})");
                     }
                 }
 
-                if (clashes.Count > allowed.GetValueOrDefault(template.Key))
+                if (clashes.Count > 0)
                 {
                     failures.Add($"{level} {template.Key}: {string.Join("; ", clashes)}");
                 }
@@ -254,8 +262,8 @@ public class WorkoutTemplateCatalogTests
 
     /// <summary>
     /// Porodica pokreta složene vežbe, izvedena iz njenih mišića: sve što radi kvadriceps,
-    /// zadnju ložu ili gluteus je „noge" (čučanj, iskorak, zgibni pokret); inače odlučuje
-    /// primarni mišić - grudi i ramena su guranje, leđa povlačenje.
+    /// zadnju ložu ili gluteus je „noge" (čučanj, iskorak, pregib u kuku - hinge); inače
+    /// odlučuje primarni mišić - grudi i ramena su guranje, leđa povlačenje.
     /// </summary>
     private static string Family(string exerciseName)
     {

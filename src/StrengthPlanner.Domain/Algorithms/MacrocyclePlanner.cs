@@ -45,4 +45,31 @@ public static class MacrocyclePlanner
     {
         return blockCount is >= MinBlocks and <= MaxBlocks;
     }
+
+    /// <summary>
+    /// The day the next block of a plan starts on.
+    ///
+    /// It used to be the day after the last session of the previous block. That kept a plan
+    /// from starting in the past, but it also moved every block's week off the grid its own
+    /// week shape assumes, so the spacing a template keeps inside a week was lost at the
+    /// seam: Legs Specialization ends on Legs C (Saturday) and starts on Legs A, which then
+    /// fell on Sunday - legs on two days in a row, at every level. Found in review.
+    ///
+    /// So the block starts where the previous one's weeks end - its start plus its weeks -
+    /// and only later if that would be on or before the last session, or in the past: a
+    /// block stretched past its planned end must not get a plan that is already late.
+    /// </summary>
+    public static DateTime NextBlockStart(
+        DateTime previousStart,
+        int previousDurationWeeks,
+        DateTime? lastSessionDate,
+        DateTime today)
+    {
+        var plannedEnd = previousStart.Date.AddDays(previousDurationWeeks * 7);
+        var afterLastSession = (lastSessionDate ?? today).Date.AddDays(1);
+
+        var start = plannedEnd > afterLastSession ? plannedEnd : afterLastSession;
+
+        return start > today.Date ? start : today.Date;
+    }
 }

@@ -69,8 +69,8 @@ public static class TrainingWeekSchedule
     ///
     /// The shapes above are chosen by the number of days alone, and for most templates that
     /// is enough: an upper/lower split on Monday, Tuesday, Thursday and Friday never puts the
-    /// same movements on two days in a row. A full-body template does - every one of its days
-    /// opens with a squat or a hinge - and the handbook asks for at least a day between
+    /// same movements on two days in a row. A full-body template can - every day of Full Body
+    /// (4 dana) carries a leg compound - and the handbook asks for at least a day between
     /// "mrtvo dizanje i čučanj". Such a template names its own days; an invalid list is
     /// ignored in favour of the default rather than scheduling two sessions on one date.
     /// </summary>

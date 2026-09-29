@@ -238,8 +238,12 @@ U svakom modelu je **poslednja nedelja deload** (rasterećenje).
 **4. Naziv i datum početka.** Naziv se predlaže iz šablona; datum je danas, ali ga možeš
 pomeriti. Datumi treninga se iz njega razmeštaju kroz nedelju, tako da slične složene vežbe
 (čučanj i mrtvo dizanje, benč i potisak za ramena) ne padnu u uzastopne dane: Legs
-Specialization smenjuje dane za noge i gornji deo, a Full Body (4 dana) ide pon, sre, čet, sub.
-Datumi su predlog — trening sme da se pomeri.
+Specialization smenjuje dane za noge i gornji deo, a Full Body (4 dana) ide prvog, trećeg,
+četvrtog i šestog dana od početka (pon, sre, čet, sub kad počneš u ponedeljak). Tu jedan par
+ipak ostaje — RDL pa leg press — jer četiri full-body treninga u sedam dana ne mogu bez njega.
+Lični šablon zadržava redosled dana koji si mu dao. Sledeći blok plana kreće tamo gde se
+završavaju nedelje prethodnog, da raspored važi i na prelazu. Datumi su predlog — trening sme
+da se pomeri.
 
 Klik na **„Napravi plan"** generiše ceo blok odjednom — sve nedelje, svi treninzi, sve
 vežbe sa serijama, opsegom ponavljanja i ciljnim RIR-om. Aplikacija te vodi na ekran

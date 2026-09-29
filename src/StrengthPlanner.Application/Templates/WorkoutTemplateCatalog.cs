@@ -152,12 +152,15 @@ public static class WorkoutTemplateCatalog
                     "Leg Extension", "Lateral Raise", "Hammer Curl", "Overhead Triceps Extension", "Calf Raise"
                 ])
             ],
-            // Svaki dan ovog šablona počinje čučnjem ili zgibnim pokretom, pa ih podrazumevani
-            // raspored za četiri dana (pon, uto, čet, pet) stavlja u uzastopne dane dvaput:
-            // čučanj pa RDL, leg press pa front squat. Priručnik traži bar dan između. Četiri
-            // treninga u sedam dana uvek imaju bar jedan par uzastopnih dana; ovde je to
-            // sreda-četvrtak (RDL pa leg press, veslanje pa potisak iznad glave), a ne vikend
-            // sa front squatom pa čučnjem.
+            // Svaki dan ovog šablona nosi vežbu za noge kao drugu složenu (čučanj, RDL, leg
+            // press, front squat), a početnik i srednji nivo je zadržavaju. Podrazumevani
+            // raspored za četiri dana (pon, uto, čet, pet) ih je dvaput stavljao u uzastopne
+            // dane: čučanj pa RDL, leg press pa front squat. Priručnik traži bar dan između.
+            // Četiri treninga u sedam dana uvek imaju bar jedan par uzastopnih dana; ovde je to
+            // treći i četvrti dan (RDL pa leg press) - i to je i dalje par iz pravila (mrtvo pa
+            // čučanj), izabran kao najblaži: čučanj na mašini posle pregiba u kuku, a ne čučanj
+            // pa pregib, niti front squat pa čučanj. Napredni vežbač zadržava samo prvu složenu
+            // vežbu dana (čučanj, veslanje, potisak, zgib) i nije imao sukob.
             DayOffsets: [0, 2, 3, 5]),
         new(
             UpperLowerPushPullLegsKey,
@@ -282,8 +285,9 @@ public static class WorkoutTemplateCatalog
             "Legs Specialization (5 dana)",
             [
                 // Dani idu naizmenično: noge, gore, noge, gore, noge. Ranije su tri dana za noge
-                // stajala jedan za drugim (pon, uto, sre), pa je kvadriceps radio tri dana zaredom
-                // na svakom nivou. Sada noge padaju pon, sre, sub, a gornji deo uto i pet.
+                // stajala jedan za drugim (prvi, drugi i treći dan), pa su noge radile tri dana
+                // zaredom na svakom nivou. Sada noge padaju prvog, trećeg i šestog dana, a gornji
+                // deo drugog i petog (pon, sre, sub i uto, pet kad blok počne u ponedeljak).
                 new("Legs A",
                 [
                     "Bulgarian Split Squat", "Leg Press",
