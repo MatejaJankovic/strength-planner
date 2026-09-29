@@ -1,4 +1,5 @@
 using StrengthPlanner.Application.DTOs.SetLogs;
+using StrengthPlanner.Domain.Algorithms;
 
 namespace StrengthPlanner.Application.DTOs.Mesocycles;
 
@@ -58,5 +59,26 @@ public class ExercisePlanDto
 
     /// <summary>Koliko kilograma telesne mase ova vežba nosi; 0 za spoljno opterećenje.</summary>
     public decimal BodyweightLoadKg { get; set; }
+
+    /// <summary>
+    /// Ponavljanja koja sve serije treba da dostignu da bi sledeći put došao korak težine:
+    /// vrh opsega, osim kad je korak prevelik da ga opseg upije (bučica od 8 kg, korak
+    /// 2 kg = +25%), pa je cilj viši (17). Isto pravilo kojim server odlučuje o koraku
+    /// (<see cref="StepAbsorption.RepsToEarnStep"/>), pa ekran obećava ono što progresija
+    /// zaista radi.
+    ///
+    /// Izračunava se iz ostalih polja umesto da se puni pri mapiranju: DTO se pravi na tri
+    /// mesta, a polje koje stigne samo do dva od njih je u rundi 9 jednu seriju prikazivalo
+    /// kao 0 kg.
+    /// </summary>
+    public int RepsToEarnStep => TargetWeightKg is null
+        ? RepRangeMax
+        : StepAbsorption.RepsToEarnStep(
+            TargetWeightKg.Value + BodyweightLoadKg,
+            WeightStepKg,
+            RepRangeMin,
+            RepRangeMax,
+            TargetRir);
+
     public List<SetLogDto> SetLogs { get; set; } = new();
 }

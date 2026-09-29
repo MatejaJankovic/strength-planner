@@ -36,6 +36,28 @@ describe('setFeedback', () => {
     );
   });
 
+  it('ne obećava korak kad je korak prevelik da ga opseg upije', () => {
+    // Bučica od 8 kg, korak 2 kg: server težinu drži do 17 ponavljanja. Vrh opsega tada
+    // nije vrh koji donosi korak, bez obzira na otkaz.
+    const lightDumbbell = { ...hypertrophy, repsToEarnStep: 17 };
+
+    expect(setFeedback(lightDumbbell, { reps: 12, rir: 1, isFailure: false })).toBe(
+      'at-top-step-not-earned',
+    );
+    expect(setFeedback(lightDumbbell, { reps: 12, rir: 0, isFailure: true })).toBe(
+      'at-top-step-not-earned',
+    );
+    expect(setFeedback(lightDumbbell, { reps: 17, rir: 0, isFailure: true })).toBe('failure-at-top');
+    // Ispod vrha opsega se ništa ne menja.
+    expect(setFeedback(lightDumbbell, { reps: 10, rir: 0, isFailure: true })).toBe('failure-in-range');
+  });
+
+  it('bez cilja sa servera važi vrh opsega', () => {
+    expect(setFeedback({ ...hypertrophy, repsToEarnStep: 12 }, { reps: 12, rir: 0, isFailure: true })).toBe(
+      'failure-at-top',
+    );
+  });
+
   it('prepoznaje otkaz ispod i unutar opsega', () => {
     expect(setFeedback(hypertrophy, { reps: 6, rir: 0, isFailure: true })).toBe('failure-below-range');
     expect(setFeedback(hypertrophy, { reps: 10, rir: 0, isFailure: true })).toBe('failure-in-range');

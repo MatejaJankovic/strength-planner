@@ -1,3 +1,4 @@
+using StrengthPlanner.Application.DTOs.Mesocycles;
 using StrengthPlanner.Domain.Algorithms;
 
 namespace StrengthPlanner.Tests;
@@ -216,6 +217,38 @@ public class StepAbsorptionTests
 
         Assert.Equal(NextWeekLoad.DeloadLoad(10m, 0m, 2m), nextWeek);
         Assert.Equal(8m, nextWeek);
+    }
+
+    [Fact]
+    public void ThePlanDto_CarriesTheSameTarget_TheEngineDecidesBy()
+    {
+        // Ekran treninga čita cilj iz DTO-a; progresija odlučuje po StepAbsorption. Da bi
+        // obećanje na ekranu bilo tačno, oba moraju da daju isti broj - i bez obzira na to
+        // koje od tri mesta mapiranja je napravilo DTO, jer je polje izračunato.
+        var lateralRaise = new ExercisePlanDto
+        {
+            RepRangeMin = 8,
+            RepRangeMax = 12,
+            TargetRir = 1,
+            TargetWeightKg = 8m,
+            WeightStepKg = 2m
+        };
+        var pullUp = new ExercisePlanDto
+        {
+            RepRangeMin = 8,
+            RepRangeMax = 12,
+            TargetRir = 1,
+            TargetWeightKg = 0m,
+            WeightStepKg = 1m,
+            BodyweightLoadKg = 80m
+        };
+        var noTarget = new ExercisePlanDto { RepRangeMin = 8, RepRangeMax = 12, TargetRir = 1, WeightStepKg = 2m };
+
+        Assert.Equal(17, lateralRaise.RepsToEarnStep);
+        Assert.Equal(StepAbsorption.RepsToEarnStep(8m, 2m, 8, 12, 1), lateralRaise.RepsToEarnStep);
+        // Telo je deo tereta: 1 kg na 80 kg zgiba staje u opseg.
+        Assert.Equal(12, pullUp.RepsToEarnStep);
+        Assert.Equal(12, noTarget.RepsToEarnStep);
     }
 
     [Theory]

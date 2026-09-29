@@ -16,6 +16,7 @@ export type SetFeedback =
   | 'failure-at-top-narrow'
   | 'failure-in-range'
   | 'at-top-narrow'
+  | 'at-top-step-not-earned'
   | 'below-range-no-reserve'
   | 'below-range-with-reserve';
 
@@ -25,9 +26,21 @@ export interface SetFeedbackDraft {
   isFailure: boolean;
 }
 
-export type SetFeedbackPlan = Pick<ExercisePlanDto, 'repRangeMin' | 'repRangeMax' | 'targetRir'>;
+/**
+ * `repsToEarnStep` je opciono samo zato što ga stariji delovi ekrana i testovi ne nose;
+ * bez njega važi vrh opsega, što je i vrednost koju server šalje kad korak staje u opseg.
+ */
+export type SetFeedbackPlan = Pick<ExercisePlanDto, 'repRangeMin' | 'repRangeMax' | 'targetRir'> &
+  Partial<Pick<ExercisePlanDto, 'repsToEarnStep'>>;
 
 export function setFeedback(plan: SetFeedbackPlan, draft: SetFeedbackDraft): SetFeedback | null {
+  // Vrh opsega, ali korak je prevelik da ga opseg upije (laka bučica): server težinu drži
+  // dok ponavljanja ne stignu do cilja, pa „ide korak više" ovde ne bi bilo tačno.
+  const repsToEarnStep = plan.repsToEarnStep ?? plan.repRangeMax;
+  if (draft.reps >= plan.repRangeMax && draft.reps < repsToEarnStep) {
+    return 'at-top-step-not-earned';
+  }
+
   if (draft.isFailure) {
     if (draft.reps < plan.repRangeMin) {
       return 'failure-below-range';

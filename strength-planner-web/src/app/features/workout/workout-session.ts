@@ -215,13 +215,27 @@ export class WorkoutSession {
    * gornju granicu u čipu „Opseg", pa se nije videlo šta se zapravo gađa. Kod propisa sa
    * tačnim brojem ponavljanja (5x5) dno i vrh su isti broj, pa je i cilj taj broj.
    */
+  /**
+   * Broj ponavljanja ka kome se radi. U deload nedelji je to vrh opsega: posle deload-a se
+   * nastavlja od težine zarađene pre njega, pa produžen cilj (korak koji opseg ne upija)
+   * tamo ne bi ništa doneo - samo bi terao ponavljanja naviše u nedelji odmora.
+   */
   protected repTarget(plan: ExercisePlanDto): number {
-    return plan.repRangeMax;
+    return this.session()?.isDeload ? plan.repRangeMax : (plan.repsToEarnStep ?? plan.repRangeMax);
+  }
+
+  /**
+   * Koliki je korak tega u odnosu na težinu, u procentima. Prikazuje se samo kad je cilj
+   * ponavljanja iznad vrha opsega: tada je razlog upravo to što je korak prevelik.
+   */
+  protected stepSharePercent(plan: ExercisePlanDto): number {
+    const totalKg = (plan.targetWeightKg ?? 0) + plan.bodyweightLoadKg;
+    return totalKg > 0 ? Math.round((plan.weightStepKg / totalKg) * 100) : 0;
   }
 
   /** Napomena ispod unosa: šta ova serija znači za sledeći trening (vidi set-feedback.ts). */
   protected feedbackFor(plan: ExercisePlanDto, draft: SetDraft): SetFeedback | null {
-    return setFeedback(plan, draft);
+    return setFeedback({ ...plan, repsToEarnStep: this.repTarget(plan) }, draft);
   }
 
   /** Otkaz i RIR se isključuju — serija do otkaza po definiciji nema rezervu. */
