@@ -48,8 +48,9 @@ public class ProgressionEngineTests
     [Theory]
     // Dumbbell (2 kg): 20 kg + korak, jer su sve serije stigle do vrha opsega.
     [InlineData(20.0, 2.0, 22.0)]
-    // Machine (5 kg): isti unos skače za ceo stack korak i zaokružuje se na njega.
-    [InlineData(20.0, 5.0, 25.0)]
+    // Machine (5 kg): skače za ceo stack korak i zaokružuje se na njega. Na 40 kg, jer je
+    // 20 -> 25 kg skok od 25% koji opseg 8-12 ne upija (vidi StepAbsorptionTests).
+    [InlineData(40.0, 5.0, 45.0)]
     // Barbell (2.5 kg): referentno ponašanje pre uvođenja koraka po vežbi.
     [InlineData(20.0, 2.5, 22.5)]
     public void ComputeNext_UsesExerciseWeightStepForIncrementAndRounding(

@@ -16,6 +16,13 @@ public static class TrainingConstants
     public const int EpleyRepCap = 12;
 
     /// <summary>
+    /// The divisor of the Epley formula, 1RM = w * (1 + reps / 30). Every rule that trades
+    /// reps for load reads it from here, so the estimate, the working weight and the
+    /// question of whether a load step fits in a rep range all use the same curve.
+    /// </summary>
+    public const decimal EpleyRepDivisor = 30m;
+
+    /// <summary>
     /// Furthest from failure a set may be and still produce an e1RM estimate.
     ///
     /// Defined as <see cref="StimulativeVolume.FullCreditRir"/> on purpose: a set that does

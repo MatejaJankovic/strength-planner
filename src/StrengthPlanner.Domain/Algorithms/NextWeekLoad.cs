@@ -78,10 +78,7 @@ public static class NextWeekLoad
 
             return baseTotalKg is null
                 ? null
-                : BodyweightLoad.AddedTarget(
-                    baseTotalKg.Value * TrainingConstants.DeloadWeightFactor,
-                    bodyweightLoadKg,
-                    weightStepKg);
+                : DeloadLoad(baseTotalKg.Value, bodyweightLoadKg, weightStepKg);
         }
 
         if (next.Matches(current))
@@ -118,6 +115,42 @@ public static class NextWeekLoad
             calculator.WorkingLoadFor(impliedOneRepMax, next.RepRangeMin, next.TargetRir),
             bodyweightLoadKg,
             weightStepKg);
+    }
+
+    /// <summary>
+    /// The added load a deload week gets from the full load it lightens: 90% of the total,
+    /// rounded to the step, and always strictly lighter than the full load.
+    ///
+    /// The last clause is new. On a light load 90% rounds straight back onto the load it
+    /// came from - 10 kg on a 2 kg step: 9 rounds to 10 - so a deload of a lateral raise was
+    /// a deload in sets only, at 100% of the weight. Measured on the unchanged code for
+    /// 8, 10 and 12.5 kg (on 2 and 2.5 kg steps) and 25 kg on a 5 kg step. The deload now
+    /// takes the step below instead: 8 and 10 are equally far from 9, and a deload leans to
+    /// the lighter side.
+    ///
+    /// One rule for both callers - the week after this one and the auto-deload that turns a
+    /// planned week into a deload - because the same 90% used to be written twice, and two
+    /// copies of a rule are how round 9 lost a column in one of three mappings.
+    /// </summary>
+    /// <param name="fullTotalKg">The load being lightened, body portion included.</param>
+    /// <param name="bodyweightLoadKg">Body mass the exercise carries; zero for external load.</param>
+    /// <param name="weightStepKg">Smallest load increment of the exercise.</param>
+    public static decimal DeloadLoad(decimal fullTotalKg, decimal bodyweightLoadKg, decimal weightStepKg)
+    {
+        var deloadKg = BodyweightLoad.AddedTarget(
+            fullTotalKg * TrainingConstants.DeloadWeightFactor,
+            bodyweightLoadKg,
+            weightStepKg);
+
+        // Puna težina u dodatim kilogramima: ono što je podignuto (može da bude van mreže
+        // koraka), ali ne više od onoga što bi zaokruživanje ponudilo kao radnu težinu.
+        var fullKg = Math.Min(
+            fullTotalKg - bodyweightLoadKg,
+            BodyweightLoad.AddedTarget(fullTotalKg, bodyweightLoadKg, weightStepKg));
+
+        return fullKg > 0 && deloadKg >= fullKg
+            ? WeightMath.StepBelow(fullKg, weightStepKg)
+            : deloadKg;
     }
 
     /// <summary>

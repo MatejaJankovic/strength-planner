@@ -32,6 +32,10 @@ public class ProgressionPropertyTests
                 {
                     for (var targetRir = 1; targetRir <= 4; targetRir++)
                     {
+                        // Vrh koji donosi korak: gornja granica opsega, osim kad je korak
+                        // prevelik da ga opseg upije (0.5 kg na koraku od 0.5 je +100%).
+                        var repsToEarnStep = StepAbsorption.RepsToEarnStep(used, step, min, max, targetRir);
+
                         foreach (var set in TopOfRangeSets(max))
                         {
                             var sets = new[] { set, set, set };
@@ -43,9 +47,20 @@ public class ProgressionPropertyTests
                                 failures.Add($"lowered {used} -> {result.NextWeightKg} ({Describe(set, min, max, targetRir, step)})");
                             }
 
-                            if (deviation + (max - min) >= 0 && result.NextWeightKg < used + (step / 2))
+                            if (set.Reps >= repsToEarnStep
+                                && deviation + (repsToEarnStep - min) >= 0
+                                && result.NextWeightKg < used + (step / 2))
                             {
                                 failures.Add($"no step {used} -> {result.NextWeightKg} ({Describe(set, min, max, targetRir, step)})");
+                            }
+
+                            // Korak koji ne staje ne sme da dođe ni kroz vrh opsega: bez rezerve
+                            // iznad cilja nema ni pozitivne korekcije, pa se težina drži tačno.
+                            if (set.Reps < repsToEarnStep && deviation <= 0 && result.NextWeightKg != used)
+                            {
+                                failures.Add(
+                                    $"unabsorbable step taken {used} -> {result.NextWeightKg} " +
+                                    $"(needs {repsToEarnStep}; {Describe(set, min, max, targetRir, step)})");
                             }
                         }
                     }
@@ -138,7 +153,19 @@ public class ProgressionPropertyTests
                                     ? expected != used
                                     : legacyDeviation < 0 ? expected > used : expected < used);
 
+                            // Četvrti i peti namerno promenjen slučaj (runda 14): korak koji
+                            // opseg ne upija čeka produžen cilj ponavljanja, a korekcija na
+                            // granici od -10% koju je zaokruživanje obrisalo spušta težinu za
+                            // jedan korak umesto da je ostavi.
+                            var stepDoesNotFitYet = allHitTop
+                                && set.Reps < StepAbsorption.RepsToEarnStep(used, step, min, max, targetRir);
+                            var cappedCorrectionErased = !allHitTop
+                                && legacyDeviation * TrainingConstants.RpeCorrectionPerPoint <= -TrainingConstants.MaxCorrection
+                                && expected >= used;
+
                             var unchangedCase = !roundingReversedTheCorrection
+                                                && !stepDoesNotFitYet
+                                                && !cappedCorrectionErased
                                                 && (allHitTop
                                                     ? legacyDeviation >= 0
                                                     : !belowFloorWithReserve);
