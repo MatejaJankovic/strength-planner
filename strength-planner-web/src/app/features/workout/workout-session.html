@@ -248,6 +248,16 @@
           }
         }
 
+        @if (repTarget(plan) > plan.repRangeMax) {
+          <p class="card__hint">
+            Korak od {{ plan.weightStepKg | number: '1.0-2' }} kg je
+            {{ stepSharePercent(plan) }}% ove težine - više nego što opseg
+            {{ repRange(plan) }} može da upije. Težina ostaje dok sve serije ne stignu do
+            {{ repTarget(plan) }} ponavljanja uz RIR {{ plan.targetRir }} (ili manje, uz više
+            rezerve), pa onda ide korak.
+          </p>
+        }
+
         @if (plan.targetWeightIsEstimate) {
           <p class="card__hint card__hint--estimate">
             <mat-icon aria-hidden="true">calculate</mat-icon>
@@ -342,6 +352,11 @@
                     @case ('failure-at-top') {
                       Otkaz na vrhu opsega - ako sve serije stignu do vrha, sledeći put ide
                       korak više.
+                    }
+                    @case ('at-top-step-not-earned') {
+                      Vrh opsega, ali korak težine je ovde prevelik - težina ostaje dok sve
+                      serije ne stignu do {{ repTarget(plan) }} ponavljanja uz RIR
+                      {{ plan.targetRir }}.
                     }
                     @case ('at-top-narrow') {
                       Vrh propisanih ponavljanja - ovde korak ide samo ako ostane rezerve, pa

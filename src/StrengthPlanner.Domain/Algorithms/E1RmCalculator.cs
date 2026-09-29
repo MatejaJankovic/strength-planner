@@ -26,7 +26,7 @@ public sealed class E1RmCalculator
         }
 
         var effectiveReps = reps + rir;
-        return weight * (1 + effectiveReps / 30m);
+        return weight * (1 + effectiveReps / TrainingConstants.EpleyRepDivisor);
     }
 
     /// <summary>
@@ -100,6 +100,6 @@ public sealed class E1RmCalculator
     {
         var effectiveReps = targetReps + targetRir;
 
-        return oneRepMax / (1 + effectiveReps / 30m);
+        return oneRepMax / (1 + effectiveReps / TrainingConstants.EpleyRepDivisor);
     }
 }

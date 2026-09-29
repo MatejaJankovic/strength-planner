@@ -107,6 +107,16 @@ u šablonu, i šta ekran prećutkuje o unosu.
 | [Raspored vežbi u šablonu](template-placement.md) | Jedina izolacija za leđa u jednom šablonu stajala je na danu za noge; u drugom je vežba za gornje telo tamo nužna, i merenje to pokazuje | #82 |
 | [Napomene uz polje za težinu](load-input-notes.md) | Nigde nije pisalo da se kod bučica unosi jedna, iako je korak od 2 kg to i značio; a 0 kg na vežbi koja se opterećuje tiho je isključivalo vežbu iz svih računica | #83 |
 
+## Četrnaesti krug — nauka o treningu
+
+Revizija periodizacije, vežbi i napretka naspram priručnika, teze i novije literature
+(odeljak F). Prve tvrdnje o progresiji su testirane samo na težinama šipke; ovaj krug gleda i
+ono što je ispod 20 kg, ono što blok radi kroz nedelje i ono što se tvrdi o volumenu.
+
+| Grana | O čemu je | PR |
+|---|---|---|
+| [Korak mora da stane u opseg](load-step-absorption.md) | Bučica 8 → 10 kg (+25%) posle 3 × 12 ostavljala je 3–4 ponavljanja u opsegu 8–12; korekcija i deload lakih tegova su se zaokruživali nazad na istu težinu | #85 |
+
 ## Ako čitaš samo jedno
 
 [Periodizacija po nedeljama](periodization-models.md) — to je bio najveći raskorak između

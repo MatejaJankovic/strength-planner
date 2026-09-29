@@ -31,4 +31,27 @@ public static class WeightMath
 
         return Math.Floor(value / step) * step;
     }
+
+    /// <summary>
+    /// The largest multiple of the step strictly below the value, never below zero: 10 kg
+    /// on a 2 kg step gives 8, and 9 kg gives 8 as well. Used where rounding to the nearest
+    /// step would land back on the load a rule is meant to move away from.
+    /// </summary>
+    public static decimal StepBelow(decimal value, decimal step)
+    {
+        var floored = FloorToStep(value, step);
+        var below = floored < value ? floored : floored - step;
+
+        return Math.Max(0m, below);
+    }
+
+    /// <summary>
+    /// The smallest multiple of the step strictly above the value: 10 kg on a 2 kg step gives
+    /// 12, and 15 kg gives 16 - the next load the rack actually has, never more than one
+    /// step away. Rounding 15 + 2 to the nearest step would give 18.
+    /// </summary>
+    public static decimal StepAbove(decimal value, decimal step)
+    {
+        return FloorToStep(value, step) + step;
+    }
 }

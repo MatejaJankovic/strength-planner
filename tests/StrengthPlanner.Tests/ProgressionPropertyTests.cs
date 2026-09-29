@@ -13,9 +13,11 @@ public class ProgressionPropertyTests
 {
     private static readonly decimal[] Steps = [0.5m, 1m, 2m, 2.5m, 5m, 10m];
 
-    private static readonly (int Min, int Max)[] Ranges = [(3, 6), (8, 12), (11, 12), (3, 4), (6, 9)];
+    private static readonly (int Min, int Max)[] Ranges = [(3, 6), (8, 12), (11, 12), (3, 4), (6, 9), (5, 5)];
 
-    private static readonly decimal[] OffGridWeights = [41.5m, 83.1m, 101m, 126.3m];
+    // Van mreže koraka: težina dolazi iz onoga što je vežbač upisao. Lake (9, 13, 15, 22.5)
+    // su dodate u rundi 14 - bez njih nijedna težina van mreže nije bila u režimu lakog tega.
+    private static readonly decimal[] OffGridWeights = [41.5m, 83.1m, 101m, 126.3m, 9m, 13m, 15m, 22.5m];
 
     private readonly ProgressionEngine _engine = new();
 
@@ -32,20 +34,60 @@ public class ProgressionPropertyTests
                 {
                     for (var targetRir = 1; targetRir <= 4; targetRir++)
                     {
+                        // Dva režima (runda 14): gde korak staje u propis, ili je propis uzak,
+                        // važi staro pravilo; ispod toga korak daje samo kapacitet serija
+                        // (ponavljanja + rezerva), i to do sledeće težine na mreži.
+                        var oldRule = StepAbsorption.IsNarrow(min, max, targetRir)
+                                      || StepAbsorption.FitsAtTarget(used, step, min, max, targetRir);
+                        var nextOnGrid = WeightMath.StepAbove(used, step);
+
                         foreach (var set in TopOfRangeSets(max))
                         {
                             var sets = new[] { set, set, set };
                             var result = _engine.ComputeNext(used, sets, targetRir, min, max, step);
                             var deviation = set.EffectiveRir(min) - targetRir;
+                            var described = Describe(set, min, max, targetRir, step);
 
                             if (result.NextWeightKg < used)
                             {
-                                failures.Add($"lowered {used} -> {result.NextWeightKg} ({Describe(set, min, max, targetRir, step)})");
+                                failures.Add($"lowered {used} -> {result.NextWeightKg} ({described})");
                             }
 
-                            if (deviation + (max - min) >= 0 && result.NextWeightKg < used + (step / 2))
+                            if (oldRule)
                             {
-                                failures.Add($"no step {used} -> {result.NextWeightKg} ({Describe(set, min, max, targetRir, step)})");
+                                var covered = deviation + (max - min) >= 0;
+
+                                if (covered && result.NextWeightKg < used + (step / 2))
+                                {
+                                    failures.Add($"no step {used} -> {result.NextWeightKg} ({described})");
+                                }
+
+                                // Uska nedelja izvučena preko cilja drži tačno ono što je podignuto.
+                                if (!covered && result.NextWeightKg != used)
+                                {
+                                    failures.Add($"no hold {used} -> {result.NextWeightKg} ({described})");
+                                }
+
+                                continue;
+                            }
+
+                            var increase = result.NextWeightKg - used;
+
+                            if (StepAbsorption.Absorbs(used, nextOnGrid - used, min, set.Reps, set.EffectiveRir(min)))
+                            {
+                                // Sledeća težina na mreži, ili koliko sama korekcija traži
+                                // (najviše +10%) - nikad korak i korekcija povrh njega.
+                                var correctionAlone = WeightMath.RoundToStep(used * 1.10m, step);
+
+                                if (result.NextWeightKg < nextOnGrid
+                                    || result.NextWeightKg > Math.Max(nextOnGrid, correctionAlone))
+                                {
+                                    failures.Add($"not one step {used} -> {result.NextWeightKg} ({described})");
+                                }
+                            }
+                            else if (deviation <= 0 && increase != 0)
+                            {
+                                failures.Add($"unabsorbed step taken {used} -> {result.NextWeightKg} ({described})");
                             }
                         }
                     }
@@ -69,7 +111,8 @@ public class ProgressionPropertyTests
             // I težine van mreže koraka: upotrebljena težina dolazi iz onoga što je vežbač
             // upisao, pa ne mora da bude umnožak koraka. Tu je nemonotonost i bila moguća,
             // dok zaokruživanje nije prestalo da obrće smer korekcije.
-            foreach (var used in Enumerable.Range(1, 12).Select(k => k * 7 * step).Concat(OffGridWeights))
+            // Uključene su i težine od jednog i dva koraka: tu korak naniže nema kuda.
+            foreach (var used in Enumerable.Range(1, 12).Select(k => k * 7 * step).Concat([step, 2 * step]).Concat(OffGridWeights))
             {
                 foreach (var (min, max) in Ranges)
                 {
@@ -138,7 +181,21 @@ public class ProgressionPropertyTests
                                     ? expected != used
                                     : legacyDeviation < 0 ? expected > used : expected < used);
 
+                            // Četvrti i peti namerno promenjen slučaj (runda 14): na vrhu opsega
+                            // lakog tereta, gde korak ne staje u propis, korak daje kapacitet
+                            // serija; a korekcija na granici od -10% koju je zaokruživanje
+                            // obrisalo spušta težinu za jedan korak umesto da je ostavi. Gde
+                            // korak staje u propis, rezultat mora da bude tačno stari.
+                            var stepDoesNotFitYet = allHitTop
+                                && !StepAbsorption.IsNarrow(min, max, targetRir)
+                                && !StepAbsorption.FitsAtTarget(used, step, min, max, targetRir);
+                            var cappedCorrectionErased = !allHitTop
+                                && legacyDeviation * TrainingConstants.RpeCorrectionPerPoint <= -TrainingConstants.MaxCorrection
+                                && expected >= used;
+
                             var unchangedCase = !roundingReversedTheCorrection
+                                                && !stepDoesNotFitYet
+                                                && !cappedCorrectionErased
                                                 && (allHitTop
                                                     ? legacyDeviation >= 0
                                                     : !belowFloorWithReserve);

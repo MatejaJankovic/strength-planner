@@ -443,8 +443,8 @@ public sealed class DeloadService
                 continue;
             }
 
-            plan.TargetWeightKg = BodyweightLoad.AddedTarget(
-                baseTotalKg.Value * TrainingConstants.DeloadWeightFactor,
+            plan.TargetWeightKg = NextWeekLoad.DeloadLoad(
+                baseTotalKg.Value,
                 bodyweightLoadKg,
                 WeightStepResolver.StepFor(weightStepByExerciseId, plan.ExerciseId));
         }
