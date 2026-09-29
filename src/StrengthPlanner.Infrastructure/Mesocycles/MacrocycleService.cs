@@ -416,16 +416,23 @@ public class MacrocycleService : IMacrocycleService
                 item => item.Id == block.MacrocycleId && item.UserId == userId,
                 cancellationToken);
 
-        // Novi blok kreće od dana posle poslednjeg treninga prethodnog.
         var lastSessionDate = await _db.WorkoutSessions
             .Where(session => session.TrainingWeek.MesocycleId == mesocycleId
                               && session.TrainingWeek.Mesocycle.UserId == userId)
             .MaxAsync(session => (DateTime?)session.Date, cancellationToken);
 
-        // Blok krece dan posle prethodnog, ali nikad u proslosti: ko je cetvoronedeljni
-        // blok razvukao na sedam nedelja ne sme da dobije plan koji je vec zakasnio.
-        var previousEnd = (lastSessionDate ?? now).Date.AddDays(1);
-        var startDate = previousEnd > now.Date ? previousEnd : now.Date;
+        var previous = await _db.Mesocycles
+            .Where(item => item.Id == mesocycleId && item.UserId == userId)
+            .Select(item => new { item.StartDate, item.DurationWeeks })
+            .FirstAsync(cancellationToken);
+
+        // Blok kreće tamo gde se završavaju nedelje prethodnog, da raspored dana iz šablona
+        // važi i na prelazu - ali nikad pre dana posle poslednjeg treninga ni u prošlosti.
+        var startDate = MacrocyclePlanner.NextBlockStart(
+            previous.StartDate,
+            previous.DurationWeeks,
+            lastSessionDate,
+            now);
 
         var blockCount = await CountBlocksAsync(userId, macrocycle.Id, cancellationToken);
         var mesocycle = await GenerateForBlockAsync(

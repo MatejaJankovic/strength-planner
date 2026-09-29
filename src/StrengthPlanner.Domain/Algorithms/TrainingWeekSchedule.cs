@@ -63,4 +63,49 @@ public static class TrainingWeekSchedule
 
         return Offsets[daysPerWeek][dayIndex];
     }
+
+    /// <summary>
+    /// The same, for a template that carries its own week shape.
+    ///
+    /// The shapes above are chosen by the number of days alone, and for most templates that
+    /// is enough: an upper/lower split on Monday, Tuesday, Thursday and Friday never puts the
+    /// same movements on two days in a row. A full-body template can - every day of Full Body
+    /// (4 dana) carries a leg compound - and the handbook asks for at least a day between
+    /// "mrtvo dizanje i čučanj". Such a template names its own days; an invalid list is
+    /// ignored in favour of the default rather than scheduling two sessions on one date.
+    /// </summary>
+    public static int OffsetFor(int daysPerWeek, int dayIndex, IReadOnlyList<int>? templateOffsets)
+    {
+        // Podrazumevani raspored proverava i indeks dana, pa se računa uvek.
+        var defaultOffset = OffsetFor(daysPerWeek, dayIndex);
+
+        return templateOffsets is not null && IsValidWeek(templateOffsets, daysPerWeek)
+            ? templateOffsets[dayIndex]
+            : defaultOffset;
+    }
+
+    /// <summary>
+    /// A week shape a template may carry: one offset per training day, strictly ascending,
+    /// inside a single week.
+    /// </summary>
+    public static bool IsValidWeek(IReadOnlyList<int> offsets, int daysPerWeek)
+    {
+        ArgumentNullException.ThrowIfNull(offsets);
+
+        if (offsets.Count != daysPerWeek || daysPerWeek == 0)
+        {
+            return false;
+        }
+
+        for (var index = 0; index < offsets.Count; index++)
+        {
+            if (offsets[index] < 0 || offsets[index] >= MaxDaysPerWeek
+                || (index > 0 && offsets[index] <= offsets[index - 1]))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }

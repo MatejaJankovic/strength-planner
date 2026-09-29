@@ -15,7 +15,8 @@ public sealed record ResolvedTemplate(
     string Key,
     string Name,
     bool IsCustom,
-    IReadOnlyList<ResolvedTemplateDay> Days);
+    IReadOnlyList<ResolvedTemplateDay> Days,
+    IReadOnlyList<int>? DayOffsets = null);
 
 public sealed record ResolvedTemplateDay(
     string Name,

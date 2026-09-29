@@ -5,6 +5,33 @@ namespace StrengthPlanner.Tests;
 
 public class MacrocyclePlannerTests
 {
+    private static readonly DateTime Monday = new(2026, 10, 5);
+
+    [Fact]
+    public void NextBlockStart_KeepsTheWeekGridOfThePreviousBlock()
+    {
+        // Četiri nedelje od ponedeljka, poslednji trening u subotu: sledeći blok počinje u
+        // ponedeljak, a ne u nedelju - inače Legs Specialization (noge u subotu) stavlja noge
+        // i u nedelju.
+        var start = MacrocyclePlanner.NextBlockStart(Monday, 4, Monday.AddDays(26), Monday.AddDays(26));
+
+        Assert.Equal(Monday.AddDays(28), start);
+    }
+
+    [Fact]
+    public void NextBlockStart_IsNeverOnOrBeforeTheLastSession_NorInThePast()
+    {
+        // Blok razvučen preko plana: dan posle poslednjeg treninga.
+        Assert.Equal(
+            Monday.AddDays(41),
+            MacrocyclePlanner.NextBlockStart(Monday, 4, Monday.AddDays(40), Monday.AddDays(40)));
+
+        // Plan kasni za kalendarom: danas.
+        Assert.Equal(
+            Monday.AddDays(60),
+            MacrocyclePlanner.NextBlockStart(Monday, 4, Monday.AddDays(26), Monday.AddDays(60)));
+    }
+
     [Fact]
     public void AlternatingGoals_StartsFromTheChosenGoal()
     {
