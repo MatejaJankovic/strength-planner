@@ -1,5 +1,5 @@
 import { ExercisePlanDto } from '../../core/models/training.models';
-import { absorbsStep, isNarrowRange as narrowPrescription, stepFitsAtTarget } from './step-absorption';
+import { absorbsStep, isNarrowRange as narrowPrescription, stepAbove, stepFitsAtTarget } from './step-absorption';
 
 /**
  * Šta serija koja se upravo unosi znači za sledeći trening.
@@ -35,15 +35,20 @@ export type SetFeedbackPlan = Pick<
 >;
 
 /**
- * @param isDeload U deload nedelji se ne gleda da li korak staje: posle nje se nastavlja od
- * težine zarađene pre nje, pa ova serija o koraku ne odlučuje.
+ * @param isDeload U deload nedelji napomene ćute: posle nje se nastavlja od težine zarađene
+ * pre nje, pa ništa što se u njoj upiše ne menja sledeće opterećenje - a svaka napomena
+ * ispod je obećanje o sledećem treningu.
  */
 export function setFeedback(
   plan: SetFeedbackPlan,
   draft: SetFeedbackDraft,
   isDeload = false,
 ): SetFeedback | null {
-  const stepNote = stepTooLargeFeedback(plan, draft, isDeload);
+  if (isDeload) {
+    return null;
+  }
+
+  const stepNote = stepTooLargeFeedback(plan, draft);
   if (stepNote !== undefined) {
     return stepNote;
   }
@@ -87,17 +92,13 @@ export function setFeedback(
  * korak 2 kg = +25%). Server tu daje korak samo kad kapacitet serije - ponavljanja plus
  * rezerva koja je zaista ostala - upija korak; inače težina čeka.
  *
- * Vraća `undefined` kad ovo pravilo ne važi (ispod vrha, uzak opseg, deload, korak staje),
+ * Vraća `undefined` kad ovo pravilo ne važi (ispod vrha, uzak opseg, korak staje),
  * pa odlučuju obične napomene. `null` kad pravilo važi, a nema šta da se kaže: kapacitet
  * upija korak bez otkaza, ili ima rezerve iznad cilja pa korekcija naviše i dalje može da
  * podigne težinu - to se ne obećava ni u jednom smeru.
  */
-function stepTooLargeFeedback(
-  plan: SetFeedbackPlan,
-  draft: SetFeedbackDraft,
-  isDeload: boolean,
-): SetFeedback | null | undefined {
-  if (isDeload || draft.reps < plan.repRangeMax || isNarrowRange(plan)) {
+function stepTooLargeFeedback(plan: SetFeedbackPlan, draft: SetFeedbackDraft): SetFeedback | null | undefined {
+  if (draft.reps < plan.repRangeMax || isNarrowRange(plan)) {
     return undefined;
   }
 
@@ -106,8 +107,10 @@ function stepTooLargeFeedback(
     return undefined;
   }
 
+  // Server korača do sledeće težine na mreži, pa se upija baš to povećanje.
+  const increaseKg = stepAbove(draft.weightKg, plan.weightStepKg) - draft.weightKg;
   const rir = draft.isFailure ? 0 : draft.rir;
-  if (absorbsStep(totalKg, plan.weightStepKg, plan.repRangeMin, draft.reps, rir)) {
+  if (absorbsStep(totalKg, increaseKg, plan.repRangeMin, draft.reps, rir)) {
     return draft.isFailure ? 'failure-at-top' : null;
   }
 

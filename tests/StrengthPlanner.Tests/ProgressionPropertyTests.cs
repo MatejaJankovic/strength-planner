@@ -15,7 +15,9 @@ public class ProgressionPropertyTests
 
     private static readonly (int Min, int Max)[] Ranges = [(3, 6), (8, 12), (11, 12), (3, 4), (6, 9), (5, 5)];
 
-    private static readonly decimal[] OffGridWeights = [41.5m, 83.1m, 101m, 126.3m];
+    // Van mreže koraka: težina dolazi iz onoga što je vežbač upisao. Lake (9, 13, 15, 22.5)
+    // su dodate u rundi 14 - bez njih nijedna težina van mreže nije bila u režimu lakog tega.
+    private static readonly decimal[] OffGridWeights = [41.5m, 83.1m, 101m, 126.3m, 9m, 13m, 15m, 22.5m];
 
     private readonly ProgressionEngine _engine = new();
 
@@ -32,9 +34,12 @@ public class ProgressionPropertyTests
                 {
                     for (var targetRir = 1; targetRir <= 4; targetRir++)
                     {
-                        // Dva režima (runda 14): gde korak staje u propis važi staro pravilo,
-                        // a ispod toga korak daje samo kapacitet serija (ponavljanja + rezerva).
-                        var fits = StepAbsorption.FitsAtTarget(used, step, min, max, targetRir);
+                        // Dva režima (runda 14): gde korak staje u propis, ili je propis uzak,
+                        // važi staro pravilo; ispod toga korak daje samo kapacitet serija
+                        // (ponavljanja + rezerva), i to do sledeće težine na mreži.
+                        var oldRule = StepAbsorption.IsNarrow(min, max, targetRir)
+                                      || StepAbsorption.FitsAtTarget(used, step, min, max, targetRir);
+                        var nextOnGrid = WeightMath.StepAbove(used, step);
 
                         foreach (var set in TopOfRangeSets(max))
                         {
@@ -48,11 +53,19 @@ public class ProgressionPropertyTests
                                 failures.Add($"lowered {used} -> {result.NextWeightKg} ({described})");
                             }
 
-                            if (fits)
+                            if (oldRule)
                             {
-                                if (deviation + (max - min) >= 0 && result.NextWeightKg < used + (step / 2))
+                                var covered = deviation + (max - min) >= 0;
+
+                                if (covered && result.NextWeightKg < used + (step / 2))
                                 {
                                     failures.Add($"no step {used} -> {result.NextWeightKg} ({described})");
+                                }
+
+                                // Uska nedelja izvučena preko cilja drži tačno ono što je podignuto.
+                                if (!covered && result.NextWeightKg != used)
+                                {
+                                    failures.Add($"no hold {used} -> {result.NextWeightKg} ({described})");
                                 }
 
                                 continue;
@@ -60,15 +73,14 @@ public class ProgressionPropertyTests
 
                             var increase = result.NextWeightKg - used;
 
-                            if (StepAbsorption.Absorbs(used, step, min, set.Reps, set.EffectiveRir(min)))
+                            if (StepAbsorption.Absorbs(used, nextOnGrid - used, min, set.Reps, set.EffectiveRir(min)))
                             {
-                                // Jedan korak, ili koliko sama korekcija traži (najviše +10%) -
-                                // nikad korak i korekcija povrh njega.
-                                var oneStep = WeightMath.RoundToStep(used + step, step);
+                                // Sledeća težina na mreži, ili koliko sama korekcija traži
+                                // (najviše +10%) - nikad korak i korekcija povrh njega.
                                 var correctionAlone = WeightMath.RoundToStep(used * 1.10m, step);
 
-                                if (result.NextWeightKg < oneStep
-                                    || result.NextWeightKg > Math.Max(oneStep, correctionAlone))
+                                if (result.NextWeightKg < nextOnGrid
+                                    || result.NextWeightKg > Math.Max(nextOnGrid, correctionAlone))
                                 {
                                     failures.Add($"not one step {used} -> {result.NextWeightKg} ({described})");
                                 }
@@ -99,7 +111,8 @@ public class ProgressionPropertyTests
             // I težine van mreže koraka: upotrebljena težina dolazi iz onoga što je vežbač
             // upisao, pa ne mora da bude umnožak koraka. Tu je nemonotonost i bila moguća,
             // dok zaokruživanje nije prestalo da obrće smer korekcije.
-            foreach (var used in Enumerable.Range(1, 12).Select(k => k * 7 * step).Concat(OffGridWeights))
+            // Uključene su i težine od jednog i dva koraka: tu korak naniže nema kuda.
+            foreach (var used in Enumerable.Range(1, 12).Select(k => k * 7 * step).Concat([step, 2 * step]).Concat(OffGridWeights))
             {
                 foreach (var (min, max) in Ranges)
                 {
@@ -174,6 +187,7 @@ public class ProgressionPropertyTests
                             // obrisalo spušta težinu za jedan korak umesto da je ostavi. Gde
                             // korak staje u propis, rezultat mora da bude tačno stari.
                             var stepDoesNotFitYet = allHitTop
+                                && !StepAbsorption.IsNarrow(min, max, targetRir)
                                 && !StepAbsorption.FitsAtTarget(used, step, min, max, targetRir);
                             var cappedCorrectionErased = !allHitTop
                                 && legacyDeviation * TrainingConstants.RpeCorrectionPerPoint <= -TrainingConstants.MaxCorrection

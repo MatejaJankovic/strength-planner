@@ -37,6 +37,14 @@ export function absorbsStep(
   );
 }
 
+/**
+ * Sledeca tezina koju stalak ima, strogo iznad date: 10 kg na koraku od 2 kg daje 12, a 15
+ * kg daje 16 (ne 18, koliko bi dalo zaokruzivanje 15 + 2). Isto kao `WeightMath.StepAbove`.
+ */
+export function stepAbove(weightKg: number, stepKg: number): number {
+  return Math.floor(weightKg / stepKg + EPSILON) * stepKg + stepKg;
+}
+
 /** Korak staje u propis: vezbac na vrhu opsega sa ciljnom rezervom bi ga podneo. */
 export function stepFitsAtTarget(
   totalKg: number,

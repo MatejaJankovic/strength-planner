@@ -140,31 +140,46 @@ public class StepAbsorptionTests
         // 8 kg, 3 x 12 @RIR3: korekcija +6% je 8.48, zaokruženo 8 - čeka.
         Assert.Equal(8m, Next(8m, 12, 3, 8, 12, 1, 2m));
 
-        // 15 kg, uska nedelja 11-12 @RIR2, 3 x 12 @RIR5: kapacitet ne upija ceo korak, pa
-        // ide sama korekcija (+9% -> 17.5), kao i za istu seriju unutar opsega. Kod pre ove
-        // izmene je ovde dodavao i korak i korekciju: 20 kg.
-        Assert.Equal(17.5m, Next(15m, 12, 5, 11, 12, 2, 2.5m));
-        Assert.Equal(17.5m, Next(15m, 11, 5, 11, 12, 2, 2.5m));
+        // 28 kg u 11-12 @RIR1, korak 2 (7%, ne staje): dve lake serije i jedna na cilju.
+        // Kapacitet serije na cilju ne upija korak, pa ide sama korekcija (+8% -> 30) -
+        // isto koliko i ista vežba jedno ponavljanje ispod vrha.
+        var atTop = new List<WorkingSet> { new(12, 5), new(12, 5), new(12, 1) };
+        var belowTop = new List<WorkingSet> { new(11, 5), new(12, 5), new(12, 1) };
+
+        Assert.Equal(30m, _engine.ComputeNext(28m, atTop, 1, 11, 12, 2m).NextWeightKg);
+        Assert.Equal(30m, _engine.ComputeNext(28m, belowTop, 1, 11, 12, 2m).NextWeightKg);
     }
 
     [Fact]
     public void TheTopOfTheRange_NeverGivesLessThanTheSameSetOneRepBelowIt()
     {
-        // Fiksnih 5 @RIR1 na 60 kg: 4 ponavljanja uz RIR 5 su ispod opsega i korekcija
-        // (+9%) daje 65. Pet uz RIR 5 upija korak, a davalo je samo jedan korak (62.5) dok
-        // korak nije dobio i korekciju kao donju granicu. Uhvaćeno testom monotonosti kad je
-        // u mrežu dodat opseg 5-5.
-        Assert.Equal(65m, Next(60m, 4, 5, 5, 5, 1, 2.5m));
-        Assert.Equal(65m, Next(60m, 5, 5, 5, 5, 1, 2.5m));
+        // 40 kg u 11-12 @RIR1 (korak od 6% ne staje u opseg od jednog ponavljanja). 11 uz
+        // RIR 5 je ispod vrha, i korekcija (+10%) daje 45. 12 uz RIR 5 upija korak, a
+        // davalo bi samo jedan korak (42.5) da korak nije dobio korekciju kao donju granicu.
+        // Uhvaćeno testom monotonosti (prvi put na fiksnom 5-5, koji je posle vraćen na
+        // staro pravilo).
+        Assert.Equal(45m, Next(40m, 11, 5, 11, 12, 1, 2.5m));
+        Assert.Equal(45m, Next(40m, 12, 5, 11, 12, 1, 2.5m));
+    }
+
+    [Fact]
+    public void AnOffGridLoad_StepsToTheNextLoadTheRackHas()
+    {
+        // Bučica od 15 kg na koraku od 2 kg, 3 x 12 @RIR2 u 8-12 @RIR1. Kapacitet je
+        // proveravan za 17, a zaokruživanje 17 je davalo 18 kg (6.7 ponavljanja do otkaza,
+        // dno je 8). Sledeća težina na mreži je 16.
+        Assert.Equal(16m, Next(15m, 12, 2, 8, 12, 1, 2m));
     }
 
     [Theory]
     // Uska nedelja na laganoj šipci, sve do otkaza na 13: prva verzija ove izmene je
     // ponavljanja iznad opsega brojala dvaput i davala 32.5 kg, gde ostaje 9.7 ponavljanja.
+    // Uzak propis ide na staro pravilo, a ono tu drži težinu.
     [InlineData(30, 0, 13, 0, true, 11, 12, 2, 2.5, 30)]
-    // Fiksnih 5 @RIR1 na 60 kg, 6 do otkaza: kapacitet 36 ne upija 2.5 kg (4.6 ponavljanja).
+    // Fiksnih 5 @RIR1 na 60 kg, 6 do otkaza: manjak rezerve, staro pravilo drži.
     [InlineData(60, 0, 6, 0, true, 5, 5, 1, 2.5, 60)]
-    // Propadanja sa 40 kg na 51.2 kg tela, 13 do otkaza u 11-12 @RIR1, korak 5.
+    // Propadanja sa 40 kg na 51.2 kg tela, 13 do otkaza u 11-12 @RIR1, korak 5: širok
+    // opseg, kapacitet (43) ne upija korak.
     [InlineData(40, 51.2, 13, 0, true, 11, 12, 1, 5, 40)]
     [InlineData(40, 51.2, 12, 0, true, 11, 12, 1, 5, 40)]
     public void ASessionWhoseCapacityDoesNotAbsorbTheStep_NeverSteps_AndIsNeverLowered(
@@ -191,13 +206,35 @@ public class StepAbsorptionTests
         Assert.Equal((decimal)expectedKg, result.NextWeightKg);
     }
 
-    [Fact]
-    public void InANarrowPrescription_TheReserveCarriesTheStep()
+    [Theory]
+    // 5 x 5 @RIR1 na 80 kg, tačno po propisu: druga verzija ove izmene je uske propise
+    // sudila po kapacitetu (2880 naspram 2887.5) i čučanj više nikada nije napredovao.
+    [InlineData(80, 5, 1, false, 5, 5, 1, 2.5, 82.5)]
+    [InlineData(40, 5, 2, false, 5, 5, 2, 2.5, 42.5)]
+    [InlineData(40, 5, 0, true, 5, 5, 2, 2.5, 40)]
+    // Fiksnih 12 na bučici od 8 kg: po kapacitetu ni RIR 5 nije dovoljan, pa je stajalo
+    // zauvek. Staro pravilo korača - grub korak za takav propis ostaje ograničenje propisa.
+    [InlineData(8, 12, 1, false, 12, 12, 1, 2, 10)]
+    public void ANarrowPrescription_KeepsTheOldRule_AtEveryLoad(
+        double usedKg,
+        int reps,
+        int rir,
+        bool isFailure,
+        int repRangeMin,
+        int repRangeMax,
+        int targetRir,
+        double stepKg,
+        double expectedKg)
     {
-        // 5 x 5 @RIR2 na 40 kg: 2.5 kg je 6%, a pet ponavljanja uz RIR 2 to ne upija.
-        // Uz RIR 3 upija - korak dolazi iz rezerve, a cilj ostaje pet.
-        Assert.Equal(40m, Next(40m, 5, 2, 5, 5, 2, 2.5m));
-        Assert.Equal(42.5m, Next(40m, 5, 3, 5, 5, 2, 2.5m));
+        var result = _engine.ComputeNext(
+            (decimal)usedKg,
+            Sets(reps, rir, isFailure),
+            targetRir,
+            repRangeMin,
+            repRangeMax,
+            (decimal)stepKg);
+
+        Assert.Equal((decimal)expectedKg, result.NextWeightKg);
     }
 
     [Theory]
@@ -233,6 +270,11 @@ public class StepAbsorptionTests
     // Iznad granice zaokruživanje korekciju već izražava: nepromenjeno ponašanje.
     [InlineData(30, 5, 25)]
     [InlineData(100, 2.5, 90)]
+    // Težina od jednog koraka nema lakše: korak ispod bi bio prazna ruka, koju ekran
+    // prijavljuje kao grešku. Revizija je našla predlog od 0 kg.
+    [InlineData(2, 2, 2)]
+    [InlineData(5, 5, 5)]
+    [InlineData(2.5, 2.5, 2.5)]
     public void ACappedCorrectionThatRoundingErased_MovesTheLoadDownOneStep(
         double loadKg,
         double stepKg,
@@ -274,6 +316,9 @@ public class StepAbsorptionTests
     [InlineData(2.5, 0, 2.5, 2.5)]
     // Nikad teže od podignutog: 9 kg na koraku od 10 se zaokruživalo na 10.
     [InlineData(9, 0, 10, 9)]
+    // Lakše od koraka: 90% se zaokružuje na nulu, a spolja opterećena vežba ne ostaje prazna.
+    [InlineData(1, 0, 2, 1)]
+    [InlineData(2.5, 0, 5, 2.5)]
     // Samo telo, ništa dodato: nula dodatih je i puna težina i deload.
     [InlineData(80, 80, 1, 0)]
     public void DeloadLoad_IsLighterWheneverTheStepAllows_AndNeverHeavier(
@@ -294,7 +339,7 @@ public class StepAbsorptionTests
 
         foreach (var step in Steps)
         {
-            foreach (var load in Enumerable.Range(1, 160).Select(k => k * step).Concat([9m, 11m, 41.5m, 83.1m]))
+            foreach (var load in Enumerable.Range(1, 160).Select(k => k * step).Concat([1m, 9m, 11m, 41.5m, 83.1m]))
             {
                 var deload = NextWeekLoad.DeloadLoad(load, 0m, step);
 
@@ -308,7 +353,7 @@ public class StepAbsorptionTests
                     failures.Add($"{load}/{step}: deload {deload} not lighter");
                 }
 
-                if (load >= step && deload <= 0)
+                if (deload <= 0)
                 {
                     failures.Add($"{load}/{step}: deload empties a loaded lift");
                 }
@@ -382,6 +427,17 @@ public class StepAbsorptionTests
     public void StepBelow_IsTheGridPointStrictlyBelow(double value, double step, double expected)
     {
         Assert.Equal((decimal)expected, WeightMath.StepBelow((decimal)value, (decimal)step));
+    }
+
+    [Theory]
+    [InlineData(10, 2, 12)]
+    [InlineData(9, 2, 10)]
+    [InlineData(15, 2, 16)]
+    [InlineData(22.5, 5, 25)]
+    [InlineData(100, 2.5, 102.5)]
+    public void StepAbove_IsTheNextGridPoint_NeverMoreThanOneStepAway(double value, double step, double expected)
+    {
+        Assert.Equal((decimal)expected, WeightMath.StepAbove((decimal)value, (decimal)step));
     }
 
     private decimal Next(

@@ -18,12 +18,12 @@ namespace StrengthPlanner.Domain.Algorithms;
 /// week (11-12 at RIR 2) absorbs only about 2% at the target RIR, so even 100 kg on a
 /// 2.5 kg bar would have stopped stepping, and a fixed 5 x 5 absorbs nothing at all.
 ///
-/// Two regimes, and the line between them is <see cref="FitsAtTarget"/>:
+/// Two regimes, and the line between them is <see cref="FitsAtTarget"/>, drawn only for
+/// ranges at least as wide as their target reserve:
 ///
 /// <list type="bullet">
 /// <item>Where a lifter at the top of the range with the target reserve could take the
-/// step, nothing changes: the step rule of rounds 9 and 10 decides, including the narrow
-/// week that holds after a set to failure.</item>
+/// step, nothing changes: the step rule of rounds 9 and 10 decides.</item>
 /// <item>Where they could not, the step is given only when every set's own capacity - reps
 /// plus the reserve actually left - absorbs it (<see cref="Absorbs"/>). A first version of
 /// this change counted the reps above the range twice instead, once to absorb the step and
@@ -31,10 +31,15 @@ namespace StrengthPlanner.Domain.Algorithms;
 /// 32.5 kg after sets of 13 to failure, where Epley leaves 9.7 reps. Found in review.</item>
 /// </list>
 ///
+/// A narrow or fixed prescription (<see cref="IsNarrow"/>) stays with the rule of rounds 9
+/// and 10 at every load. It absorbs little by construction, and a second version of this
+/// change that judged it by capacity stopped an 80 kg squat done 5 x 5 at RIR 1, exactly as
+/// prescribed, from ever stepping. The reps are the prescription there, and the reserve
+/// carries the step.
+///
 /// The screen needs a number to aim at, and that is <see cref="RepsToEarnStep"/>: the reps
 /// that absorb the step at the target reserve. A narrow or fixed prescription gets no such
-/// number - 5 x 5 is a program, not a range to be stretched to six - and there the reserve
-/// alone carries the step.
+/// number - 5 x 5 is a program, not a range to be stretched to six.
 /// </summary>
 public static class StepAbsorption
 {

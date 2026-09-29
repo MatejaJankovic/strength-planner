@@ -1,4 +1,4 @@
-import { absorbsStep, repTargetFor, repsToEarnStep } from './step-absorption';
+import { absorbsStep, repTargetFor, repsToEarnStep, stepAbove } from './step-absorption';
 
 /**
  * Ekran prikazuje cilj ponavljanja, a o koraku odlučuje server. Tabela ispod je ista kao u
@@ -34,6 +34,14 @@ describe('step-absorption', () => {
     expect(absorbsStep(8, 2, 8, 17, 1)).toBe(true);
     expect(absorbsStep(8, 2, 8, 17, 0)).toBe(false);
     expect(absorbsStep(8, 2, 8, 15, 3)).toBe(true);
+  });
+
+  it('sledeća težina na mreži je ista kao WeightMath.StepAbove', () => {
+    expect(stepAbove(10, 2)).toBe(12);
+    expect(stepAbove(9, 2)).toBe(10);
+    expect(stepAbove(15, 2)).toBe(16);
+    expect(stepAbove(22.5, 5)).toBe(25);
+    expect(stepAbove(100, 2.5)).toBe(102.5);
   });
 
   describe('repTargetFor', () => {

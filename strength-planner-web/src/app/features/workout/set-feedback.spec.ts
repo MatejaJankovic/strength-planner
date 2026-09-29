@@ -69,10 +69,33 @@ describe('setFeedback', () => {
       expect(setFeedback(lightDumbbell, at(12, 1, false, 20))).toBeNull();
     });
 
-    it('ispod vrha opsega i u deload nedelji važe obične napomene', () => {
+    it('ispod vrha opsega važe obične napomene', () => {
       expect(setFeedback(lightDumbbell, at(10, 0, true))).toBe('failure-in-range');
-      expect(setFeedback(lightDumbbell, at(12, 1), true)).toBeNull();
     });
+
+    it('otkaz se računa kao RIR 0 i kad je u nacrtu ostao zapamćen RIR', () => {
+      // Kvačica otkaza ne briše izabrani RIR (vraća se kad se skine), a server otkaz upisuje
+      // kao RIR 0: 17 do otkaza ne upija korak, iako bi 17 uz RIR 1 upijalo.
+      expect(setFeedback(lightDumbbell, at(17, 1, true))).toBe('at-top-step-not-earned');
+    });
+
+    it('težina van mreže koraka upija samo korak do sledeće težine na stalku', () => {
+      // 15 kg na koraku od 2 kg: server ide na 16, a 12 uz RIR 2 to upija.
+      expect(setFeedback(lightDumbbell, at(12, 2, false, 15))).toBeNull();
+    });
+  });
+
+  it('telo je deo tereta', () => {
+    // Zgib +5 kg uz 80 kg tela, korak 1 kg: 85 kg ukupno, korak staje, obične napomene.
+    const pullUp = { repRangeMin: 8, repRangeMax: 12, targetRir: 1, weightStepKg: 1, bodyweightLoadKg: 80 };
+    expect(setFeedback(pullUp, { weightKg: 5, reps: 12, rir: 0, isFailure: true })).toBe('failure-at-top');
+    expect(setFeedback(pullUp, { weightKg: 5, reps: 12, rir: 1, isFailure: false })).toBeNull();
+  });
+
+  it('u deload nedelji ćuti, jer se posle nje nastavlja od težine zarađene pre nje', () => {
+    const deloadWeek = { ...hypertrophy, targetRir: 3 };
+    expect(setFeedback(deloadWeek, { weightKg: 90, reps: 6, rir: 0, isFailure: true }, true)).toBeNull();
+    expect(setFeedback(deloadWeek, { weightKg: 90, reps: 12, rir: 0, isFailure: true }, true)).toBeNull();
   });
 
   it('uzak i fiksan propis se ne produžavaju ni na laganoj šipci - korak nosi rezerva', () => {

@@ -28,14 +28,25 @@ public sealed class ProgressionEngine
     ///
     /// The condition speaks about the used load, and the proposal is the used load plus a
     /// step. For a barbell that difference is a rounding error; for a light dumbbell it is
-    /// the whole story - 8 kg to 10 kg is 25%, where an 8-12 range absorbs about 13%. So the
-    /// rule above applies only where the step fits the prescription
-    /// (<see cref="StepAbsorption.FitsAtTarget"/>), which is every step a barbell makes on a
-    /// real load. Below that, the step is given only when every set's own capacity - its
-    /// reps plus the reserve it really left - absorbs it (<see cref="StepAbsorption.Absorbs"/>),
-    /// and it is one step, or what the correction alone asks for if that is more - never a
-    /// step and a correction on top of it, which rounding turns into a second step. Until then the load waits: it is never
-    /// lowered, and a positive correction applies exactly as it would inside the range.
+    /// the whole story - 8 kg to 10 kg is 25%, where an 8-12 range absorbs about 13%. So in a
+    /// wide range (one at least as wide as its target reserve) the rule above applies only
+    /// where the step fits the prescription (<see cref="StepAbsorption.FitsAtTarget"/>): for
+    /// 8-12 at RIR 1 that is a dumbbell from about 15 kg, a bar or cable from about 19 kg and
+    /// a machine from about 38 kg. Below that, the step is given only when every set's own
+    /// capacity - its reps plus the reserve it really left - absorbs it
+    /// (<see cref="StepAbsorption.Absorbs"/>), and it goes to the next load the rack has
+    /// (<see cref="WeightMath.StepAbove"/>), or as far as the correction alone asks if that is
+    /// more - never a step and a correction on top of it, which rounding turns into a second
+    /// step. Until then the load waits: it is never lowered, and a positive correction applies
+    /// exactly as it would inside the range.
+    ///
+    /// A narrow or fixed prescription (5 x 5, 11-12 at RIR 2) keeps the rule above at every
+    /// load. It absorbs little by construction - a fixed target absorbs nothing at the target
+    /// reserve - so judging it by capacity moved ordinary barbell work into the light-load
+    /// regime: a squat of 80 kg done 5 x 5 at RIR 1, exactly as prescribed, stopped stepping,
+    /// and a fixed 12 on an 8 kg dumbbell could not step even at RIR 5. Found in review. The
+    /// reps are the prescription there and the reserve carries the step, as round 10 decided;
+    /// on a light load the coarse step then remains a limitation of the prescription.
     ///
     /// The load increment used for the double-progression step and for rounding comes
     /// from the exercise (2.5 kg when none is supplied), so dumbbells and machines step
@@ -91,10 +102,11 @@ public sealed class ProgressionEngine
             nextWeight = ApplyCorrection(usedTotalKg, correction, stepKg, bodyweightLoadKg, usedWeightKg);
             atBodyweightFloor = BodyweightLoad.IsAtBodyweightFloor(usedTotalKg * (1 + correction), bodyweightLoadKg);
         }
-        else if (StepAbsorption.FitsAtTarget(usedTotalKg, stepKg, repRangeMin, repRangeMax, targetRir))
+        else if (StepAbsorption.IsNarrow(repRangeMin, repRangeMax, targetRir)
+                 || StepAbsorption.FitsAtTarget(usedTotalKg, stepKg, repRangeMin, repRangeMax, targetRir))
         {
-            // Korak staje u propis (svaka šipka na stvarnoj težini): pravilo iz runda 9 i 10,
-            // bez izmene.
+            // Korak staje u propis, ili je propis uzak (5 x 5, 11-12 sa RIR 2) pa korak nosi
+            // rezerva: pravilo iz runda 9 i 10, bez izmene.
             nextWeight = RangeResetCoversShortfall(deviation, repRangeMin, repRangeMax)
                 ? StepUp(usedTotalKg, correction, stepKg, bodyweightLoadKg)
                 // Uska nedelja (11-12 sa RIR 2, 3-4 sa RIR 3) izvučena preko cilja: po
@@ -102,7 +114,11 @@ public sealed class ProgressionEngine
                 // spušta opterećenje, pa se zadržava tačno ono što je podignuto.
                 : usedWeightKg;
         }
-        else if (EverySetAbsorbs(workingSets, usedTotalKg, stepKg, repRangeMin))
+        else if (EverySetAbsorbs(
+                     workingSets,
+                     usedTotalKg,
+                     WeightMath.StepAbove(usedWeightKg, stepKg) - usedWeightKg,
+                     repRangeMin))
         {
             // Korak je velik za ovu težinu (laka bučica, mala mašina), ali ga je svaka serija
             // svojim kapacitetom - ponavljanja plus rezerva koja je zaista ostala - upila.
@@ -111,8 +127,12 @@ public sealed class ProgressionEngine
             // je zaokruživanje pretvorilo u ceo drugi (12 kg uz 3 x 12 @RIR4 je davalo 16 kg,
             // gde po Epley-u ostaje 4.5 ponavljanja). Ni manje od same korekcije: ista serija
             // jedno ponavljanje ispod vrha je dobija, pa bi vrh inače davao manje.
+            //
+            // I to sledeća težina koju stalak ima, a ne zaokruženo "podignuto + korak": 15 kg
+            // na koraku od 2 kg je 16, a zaokruživanje 17 daje 18 - skok koji kapacitet nije
+            // ni proveravao.
             nextWeight = Math.Max(
-                BodyweightLoad.AddedTarget(usedTotalKg + stepKg, bodyweightLoadKg, stepKg),
+                WeightMath.StepAbove(usedWeightKg, stepKg),
                 ApplyCorrection(usedTotalKg, Math.Max(0m, correction), stepKg, bodyweightLoadKg, usedWeightKg));
         }
         else
@@ -142,17 +162,17 @@ public sealed class ProgressionEngine
 
     /// <summary>
     /// Whether every set's capacity - its reps plus the reserve it really left - keeps the
-    /// floor of the range reachable after one step more.
+    /// floor of the range reachable after <paramref name="increaseKg"/> more load.
     /// </summary>
     private static bool EverySetAbsorbs(
         IReadOnlyList<WorkingSet> workingSets,
         decimal usedTotalKg,
-        decimal stepKg,
+        decimal increaseKg,
         int repRangeMin)
     {
         return workingSets.All(set => StepAbsorption.Absorbs(
             usedTotalKg,
-            stepKg,
+            increaseKg,
             repRangeMin,
             set.Reps,
             Math.Max(0, set.EffectiveRir(repRangeMin))));
@@ -196,8 +216,9 @@ public sealed class ProgressionEngine
     /// for 9 kg and got 10, session after session - the lifter stayed below the range until
     /// the reps crept back up on their own. A correction that reached the cap is the
     /// strongest signal the rule knows, so when rounding erases it the load moves down by
-    /// one step instead. Upward the same erasure is left alone: holding the load there only
-    /// means the reps keep climbing toward the step.
+    /// one step instead - unless that would leave an externally loaded lift empty (a 2 kg
+    /// dumbbell has no lighter one), where the load stays. Upward the same erasure is left
+    /// alone: holding the load there only means the reps keep climbing toward the step.
     /// </summary>
     private static decimal ApplyCorrection(
         decimal usedTotalKg,
@@ -221,8 +242,16 @@ public sealed class ProgressionEngine
         var lowered = Math.Min(rounded, usedWeightKg);
         var erasedAtTheCap = lowered >= usedWeightKg && correction <= -TrainingConstants.MaxCorrection;
 
-        return erasedAtTheCap
-            ? WeightMath.StepBelow(usedWeightKg, stepKg)
-            : lowered;
+        if (!erasedAtTheCap)
+        {
+            return lowered;
+        }
+
+        // Korak ispod težine od jednog koraka je prazna ruka (bučica od 2 kg -> 0), koju
+        // ekran s pravom prijavljuje kao grešku - tu težina ostaje. Kod vežbe sa telesnom
+        // masom nula dodatih je stvarno opterećenje, pa tamo korak ispod postoji.
+        var stepBelowKg = WeightMath.StepBelow(usedWeightKg, stepKg);
+
+        return stepBelowKg > 0 || bodyweightLoadKg > 0 ? stepBelowKg : usedWeightKg;
     }
 }

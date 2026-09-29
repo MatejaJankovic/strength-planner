@@ -44,4 +44,14 @@ public static class WeightMath
 
         return Math.Max(0m, below);
     }
+
+    /// <summary>
+    /// The smallest multiple of the step strictly above the value: 10 kg on a 2 kg step gives
+    /// 12, and 15 kg gives 16 - the next load the rack actually has, never more than one
+    /// step away. Rounding 15 + 2 to the nearest step would give 18.
+    /// </summary>
+    public static decimal StepAbove(decimal value, decimal step)
+    {
+        return FloorToStep(value, step) + step;
+    }
 }

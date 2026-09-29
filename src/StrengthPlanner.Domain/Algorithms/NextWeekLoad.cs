@@ -158,6 +158,13 @@ public static class NextWeekLoad
             weightStepKg);
         var fullKg = fullTotalKg - bodyweightLoadKg;
 
+        // Teret lakši od koraka (1 kg na koraku od 2) se zaokružuje na nulu: spolja
+        // opterećena vežba ne ostaje prazna, nego zadržava ono što je podignuto.
+        if (fullKg > 0 && deloadKg <= 0 && bodyweightLoadKg <= 0)
+        {
+            return fullKg;
+        }
+
         if (fullKg <= 0 || deloadKg < fullKg)
         {
             return deloadKg;
