@@ -392,8 +392,9 @@ Iznad polja za ponavljanja piše **„Ponavljanja · cilj N"**: N je broj ka kom
 progresija radi. Kad ga sve serije dostignu, težina ide gore (detalji niže, u „Pravila koja
 sistem primenjuje"). Obično je N vrh opsega. Kod lakih tegova može da bude i više: bočno
 podizanje sa 8 kg na koraku bučica od 2 kg piše **cilj 17**, i ispod težine objašnjava
-zašto — skok na 10 kg je 25%, a posle njega ne bi stiglo ni do dna opsega. U deload nedelji
-cilj je uvek vrh opsega.
+zašto — skok na 10 kg je 25%, a posle njega ne bi stiglo ni do dna opsega. Cilj se računa iz
+težine koju upravo unosiš, pa se menja kad je promeniš. Uzak ili fiksan propis (5×5) se ne
+produžava — tamo korak nosi rezerva — a u deload nedelji cilj je uvek vrh opsega.
 
 Predlog težine dolazi iz dva izvora, i aplikacija kaže iz kog:
 
@@ -660,12 +661,14 @@ nedelja intenziteta snage (3–4 sa RIR 3) ili fiksan broj ponavljanja iz lično
 (5×5 sa RIR 2) — gde otkaz na vrhu zadržava težinu, a korak nosi samo rezerva. Vrh opsega
 nikad ne spušta opterećenje.
 
-**Korak mora da stane u opseg.** Povratak sa vrha na dno opsega plaća korak težine: iz 8–12
-sa RIR-om 1 može oko 13% više, pa svaki korak šipke na stvarnoj težini staje. Lak teg je
-drugačiji — bučica od 8 kg sa korakom od 2 kg je skok od 25%, posle koga bi po Epley-u
-ostalo tri-četiri ponavljanja, pet ispod dna opsega. Tada težina čeka, a cilj ponavljanja se
-podiže do broja na kome korak staje (za taj primer 17), i ekran to kaže. Između vrha opsega i
-tog cilja težina ne pada.
+**Korak mora da stane u ono što serija može.** Povratak sa vrha na dno opsega plaća korak
+težine: iz 8–12 sa RIR-om 1 može oko 13% više, pa svaki korak šipke na stvarnoj težini staje i
+pravila iznad važe bez izmene. Lak teg je drugačiji — bučica od 8 kg sa korakom od 2 kg je skok
+od 25%, posle koga bi po Epley-u ostalo tri-četiri ponavljanja, pet ispod dna opsega. Tada
+korak dolazi tek kad ga **kapacitet** svake serije upija: ponavljanja plus rezerva koja je
+zaista ostala (za taj primer 17 uz RIR 1, ili 15 uz RIR 3). Do tada težina čeka i ne pada, a
+ekran to kaže. Kad korak dođe, to je jedan korak — ne korak i korekcija povrh njega, jer bi je
+zaokruživanje na lakom tegu pretvorilo u drugi ceo korak.
 
 **Sopstvena masa je opterećenje.** Zgib, sklek i iskorak nose deo tvoje telesne mase: 100%,
 64% i 85% redom. Sve računice — korekcija, procena maksimuma, deload, tonaža — rade sa
@@ -682,7 +685,7 @@ donje granice opsega meri se kapacitetom: ponavljanja plus RIR, u odnosu na donj
 Zato korekcija naniže može da dosegne isti plafon kao naviše.
 
 Korak tega ograničava koliko fino korekcija može da se izrazi: do pet koraka težine (bučice
-do 10 kg, šipka i sajla do 12.5 kg, mašina do 25 kg) čak i punih 10% zaokruživanje vraća na
+do 10 kg, šipka i sajla do 12.5 kg, mašina do 25 kg) čak i punih −10% zaokruživanje vraća na
 istu težinu. Kad se to desi sa korekcijom naniže na punom plafonu — sesija daleko ispod
 opsega — težina se spušta za **jedan korak**. Manja korekcija naniže tu ostavlja težinu, pa
 se napreduje ponavljanjima.
@@ -713,8 +716,10 @@ se isti opseg na 90% odrađuje sa više u rezervi: sa maksimumom od 130 kg deloa
 RIR 1 se na toj težini dostiže tek na dvanaestom ponavljanju — po naporu skoro normalna
 radna serija. Opseg ponavljanja se ne dira, jer bi to promenilo i sam pokret.
 
-Deload je uvek lakši od težine iz koje je izveden. Kod lakog tega 90% se zaokruži nazad na
-istu težinu (10 kg na koraku od 2 kg: 9 → 10), pa tada deload ide **korak ispod** (8 kg).
+Deload je lakši od težine iz koje je izveden kad god korak to dozvoljava. Kod lakog tega 90%
+se zaokruži nazad na istu težinu (10 kg na koraku od 2 kg: 9 → 10), pa tada deload ide
+**korak ispod** (8 kg). Težina od jednog koraka (bučica od 2 kg) i sama telesna masa nemaju
+lakše — tu deload rasterećuje serijama i rezervom.
 
 **Sastav treninga.** Iz spiska vežbi u danu uzimaju se prvo složene (do broja koji tvoj nivo
 dozvoljava), pa izolacione dok se ne popune mesta. Trening nikad nema manje od tri vežbe.
