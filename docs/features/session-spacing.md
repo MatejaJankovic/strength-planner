@@ -62,7 +62,7 @@ takav program ga ne izbegava, pa bi test tražio nešto što nije pravilo.
 
 ## Provera
 
-- `dotnet test`: **691** (bilo 683), `npm run build` prolazi.
+- `dotnet test`: **693** (bilo 683), `npm run build` prolazi.
 - Nov test `NoTwoConsecutiveDays_TrainTheSameMovementFamily` prolazi kroz svaki šablon i nivo i
   dozvoljava tačno jedan imenovan par: Full Body (4 dana), Day B → Day C. Raspored koji bi sukob
   pomerio na drugi par pada. Vraćen stari katalog, test pada sa tačno sukobima iz tabele iznad.
@@ -77,6 +77,10 @@ takav program ga ne izbegava, pa bi test tražio nešto što nije pravilo.
   | Legs Specialization | pon Legs A · uto Upper A · sre Legs B · pet Upper B · sub Legs C |
   | Full Body (4 dana) | pon Day A · sre Day B · čet Day C · sub Day D |
   | Upper/Lower (kontrola) | pon Upper A · uto Lower A · čet Upper B · pet Lower B — nepromenjeno |
+
+  Prelaz između blokova, plan od dva bloka Full Body (2 dana) od ponedeljka 5. 10: poslednji
+  trening prvog bloka je u četvrtak 29. 10, a drugi blok počinje u **ponedeljak 2. 11** (ranije
+  bi počeo u petak 30. 10).
 
   Ekran „Trening" na 375 px prikazuje naizmenične dane; bez horizontalnog prelivanja (izmereno
   posle reload-a — snimak pre reload-a je izgledao odsečeno, kao u rundi 13).
