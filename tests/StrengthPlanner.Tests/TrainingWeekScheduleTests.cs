@@ -107,4 +107,39 @@ public class TrainingWeekScheduleTests
             .Range(0, daysPerWeek)
             .Select(dayIndex => TrainingWeekSchedule.OffsetFor(daysPerWeek, dayIndex))
             .ToArray();
+
+    [Fact]
+    public void ATemplateWeekShape_IsUsedWhenValid()
+    {
+        int[] fullBodyFourDays = [0, 2, 3, 5];
+
+        var actual = Enumerable.Range(0, 4)
+            .Select(dayIndex => TrainingWeekSchedule.OffsetFor(4, dayIndex, fullBodyFourDays))
+            .ToArray();
+
+        Assert.Equal(fullBodyFourDays, actual);
+    }
+
+    [Theory]
+    // Pogrešan broj dana, dva treninga istog dana, van nedelje, opadajuće.
+    [InlineData(new[] { 0, 2, 4 })]
+    [InlineData(new[] { 0, 2, 2, 5 })]
+    [InlineData(new[] { 0, 2, 4, 7 })]
+    [InlineData(new[] { 0, 3, 2, 5 })]
+    public void AnInvalidTemplateWeekShape_FallsBackToTheDefault(int[] offsets)
+    {
+        Assert.False(TrainingWeekSchedule.IsValidWeek(offsets, 4));
+
+        var actual = Enumerable.Range(0, 4)
+            .Select(dayIndex => TrainingWeekSchedule.OffsetFor(4, dayIndex, offsets))
+            .ToArray();
+
+        Assert.Equal(new[] { 0, 1, 3, 4 }, actual);
+    }
+
+    [Fact]
+    public void ATemplateWeekShape_StillRejectsADayOutsideTheWeek()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => TrainingWeekSchedule.OffsetFor(4, 4, [0, 2, 3, 5]));
+    }
 }

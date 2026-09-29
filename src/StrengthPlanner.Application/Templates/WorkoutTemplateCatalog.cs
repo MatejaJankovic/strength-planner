@@ -151,7 +151,14 @@ public static class WorkoutTemplateCatalog
                     "Pull-up", "Front Squat",
                     "Leg Extension", "Lateral Raise", "Hammer Curl", "Overhead Triceps Extension", "Calf Raise"
                 ])
-            ]),
+            ],
+            // Svaki dan ovog šablona počinje čučnjem ili zgibnim pokretom, pa ih podrazumevani
+            // raspored za četiri dana (pon, uto, čet, pet) stavlja u uzastopne dane dvaput:
+            // čučanj pa RDL, leg press pa front squat. Priručnik traži bar dan između. Četiri
+            // treninga u sedam dana uvek imaju bar jedan par uzastopnih dana; ovde je to
+            // sreda-četvrtak (RDL pa leg press, veslanje pa potisak iznad glave), a ne vikend
+            // sa front squatom pa čučnjem.
+            DayOffsets: [0, 2, 3, 5]),
         new(
             UpperLowerPushPullLegsKey,
             "Upper/Lower + Push/Pull/Legs",
@@ -274,15 +281,30 @@ public static class WorkoutTemplateCatalog
             LegsSpecializationKey,
             "Legs Specialization (5 dana)",
             [
+                // Dani idu naizmenično: noge, gore, noge, gore, noge. Ranije su tri dana za noge
+                // stajala jedan za drugim (pon, uto, sre), pa je kvadriceps radio tri dana zaredom
+                // na svakom nivou. Sada noge padaju pon, sre, sub, a gornji deo uto i pet.
                 new("Legs A",
                 [
                     "Bulgarian Split Squat", "Leg Press",
                     "Leg Extension", "Calf Raise", "Machine Crunch", "Cable Crunch"
                 ]),
+                new("Upper A",
+                [
+                    "Bench Press", "Barbell Row",
+                    // Izolacija za leđa stoji ispred ruku: sastav treninga uzima izolacije
+                    // redom, pa bi sa poslednjeg mesta do srednjeg nivoa nikada ne bi stigla.
+                    "Straight-Arm Pulldown", "Cable Fly", "Lateral Raise", "Triceps Pushdown", "Barbell Curl"
+                ]),
                 new("Legs B",
                 [
                     "Single-Leg Romanian Deadlift", "Front Squat",
                     "Leg Curl", "Calf Raise", "Machine Crunch", "Cable Crunch"
+                ]),
+                new("Upper B",
+                [
+                    "Pull-up", "Incline Bench Press",
+                    "Dumbbell Fly", "Overhead Triceps Extension", "Hammer Curl", "Rear Delt Fly"
                 ]),
                 new("Legs C",
                 [
@@ -297,18 +319,6 @@ public static class WorkoutTemplateCatalog
                     // vežba za biceps: ruke na danu za noge su uobičajen način da se iskoristi
                     // vreme koje nogama više ne treba.
                     "Dumbbell Curl", "Calf Raise", "Machine Crunch", "Cable Crunch"
-                ]),
-                new("Upper A",
-                [
-                    "Bench Press", "Barbell Row",
-                    // Izolacija za leđa stoji ispred ruku: sastav treninga uzima izolacije
-                    // redom, pa bi sa poslednjeg mesta do srednjeg nivoa nikada ne bi stigla.
-                    "Straight-Arm Pulldown", "Cable Fly", "Lateral Raise", "Triceps Pushdown", "Barbell Curl"
-                ]),
-                new("Upper B",
-                [
-                    "Pull-up", "Incline Bench Press",
-                    "Dumbbell Fly", "Overhead Triceps Extension", "Hammer Curl", "Rear Delt Fly"
                 ])
             ],
             // Blok specijalizacije, ne stalan plan — vidi docs/features za obrazloženje i

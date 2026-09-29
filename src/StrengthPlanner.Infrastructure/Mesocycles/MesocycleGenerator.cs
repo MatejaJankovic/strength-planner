@@ -236,7 +236,7 @@ public class MesocycleGenerator : IMesocycleGenerator
                 {
                     Id = Guid.NewGuid(),
                     DayLabel = templateDay.Name,
-                    Date = GetSessionDate(startDate, weekNumber, dayIndex, template.Days.Count),
+                    Date = GetSessionDate(startDate, weekNumber, dayIndex, template.Days.Count, template.DayOffsets),
                     Status = SessionStatus.Planned
                 };
 
@@ -336,11 +336,16 @@ public class MesocycleGenerator : IMesocycleGenerator
             weightStepKg);
     }
 
-    private static DateTime GetSessionDate(DateTime startDate, int weekNumber, int dayIndex, int daysPerWeek)
+    private static DateTime GetSessionDate(
+        DateTime startDate,
+        int weekNumber,
+        int dayIndex,
+        int daysPerWeek,
+        IReadOnlyList<int>? templateOffsets)
     {
         var weekStartDate = startDate.AddDays((weekNumber - 1) * 7);
 
-        return weekStartDate.AddDays(TrainingWeekSchedule.OffsetFor(daysPerWeek, dayIndex));
+        return weekStartDate.AddDays(TrainingWeekSchedule.OffsetFor(daysPerWeek, dayIndex, templateOffsets));
     }
 
     private static MesocycleDto ToDto(

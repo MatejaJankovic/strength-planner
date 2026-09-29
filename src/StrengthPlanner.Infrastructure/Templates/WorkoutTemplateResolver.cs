@@ -156,7 +156,7 @@ public class WorkoutTemplateResolver : IWorkoutTemplateResolver
                     .ToList()))
             .ToList();
 
-        return new ResolvedTemplate(template.Key, template.Name, IsCustom: false, days);
+        return new ResolvedTemplate(template.Key, template.Name, IsCustom: false, days, template.DayOffsets);
     }
 }
 
