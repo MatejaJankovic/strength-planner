@@ -662,13 +662,18 @@ nedelja intenziteta snage (3–4 sa RIR 3) ili fiksan broj ponavljanja iz lično
 nikad ne spušta opterećenje.
 
 **Korak mora da stane u ono što serija može.** Povratak sa vrha na dno opsega plaća korak
-težine: iz 8–12 sa RIR-om 1 može oko 13% više, pa svaki korak šipke na stvarnoj težini staje i
-pravila iznad važe bez izmene. Lak teg je drugačiji — bučica od 8 kg sa korakom od 2 kg je skok
-od 25%, posle koga bi po Epley-u ostalo tri-četiri ponavljanja, pet ispod dna opsega. Tada
-korak dolazi tek kad ga **kapacitet** svake serije upija: ponavljanja plus rezerva koja je
-zaista ostala (za taj primer 17 uz RIR 1, ili 15 uz RIR 3). Do tada težina čeka i ne pada, a
-ekran to kaže. Kad korak dođe, to je jedan korak — ne korak i korekcija povrh njega, jer bi je
+težine: iz 8–12 sa RIR-om 1 može oko 13% više, pa korak šipke od ~19 kg naviše staje i pravila
+iznad važe bez izmene. Lak teg je drugačiji — bučica od 8 kg sa korakom od 2 kg je skok od 25%,
+posle koga bi po Epley-u ostalo tri-četiri ponavljanja, pet ispod dna opsega. Tada korak dolazi
+tek kad ga **kapacitet** svake serije upija: ponavljanja plus rezerva koja je zaista ostala (za
+taj primer 17 uz RIR 1, ili 15 uz RIR 3). Do tada težina čeka i ne pada, a ekran to kaže. Kad
+korak dođe, ide na sledeću težinu koju stalak ima — ne korak i korekcija povrh njega, jer bi je
 zaokruživanje na lakom tegu pretvorilo u drugi ceo korak.
+
+Ovo važi za opseg bar onoliko širok koliko je ciljni RIR. Uzak ili fiksan propis (5×5, 11–12 sa
+RIR 2) zadržava pravilo iznad na svakoj težini: tamo su ponavljanja propis, a korak nosi
+rezerva. Na lakom tegu takav propis i dalje uzima grub korak (fiksnih 12 na 8 kg → 10) — tu je
+lek finiji korak na ekranu „Vežbe" ili opseg umesto fiksnog broja.
 
 **Sopstvena masa je opterećenje.** Zgib, sklek i iskorak nose deo tvoje telesne mase: 100%,
 64% i 85% redom. Sve računice — korekcija, procena maksimuma, deload, tonaža — rade sa
@@ -687,8 +692,8 @@ Zato korekcija naniže može da dosegne isti plafon kao naviše.
 Korak tega ograničava koliko fino korekcija može da se izrazi: do pet koraka težine (bučice
 do 10 kg, šipka i sajla do 12.5 kg, mašina do 25 kg) čak i punih −10% zaokruživanje vraća na
 istu težinu. Kad se to desi sa korekcijom naniže na punom plafonu — sesija daleko ispod
-opsega — težina se spušta za **jedan korak**. Manja korekcija naniže tu ostavlja težinu, pa
-se napreduje ponavljanjima.
+opsega — težina se spušta za **jedan korak**, osim kad bi tako ostala prazna ruka (bučica od
+2 kg nema lakšu). Manja korekcija naniže tu ostavlja težinu, pa se napreduje ponavljanjima.
 
 **Procena maksimuma (e1RM).** Epley formula preko efektivnih ponavljanja
 (`ponavljanja + RIR`), samo za serije do 12 ponavljanja **i sa RIR-om do 3**. Serija sa
@@ -718,8 +723,9 @@ radna serija. Opseg ponavljanja se ne dira, jer bi to promenilo i sam pokret.
 
 Deload je lakši od težine iz koje je izveden kad god korak to dozvoljava. Kod lakog tega 90%
 se zaokruži nazad na istu težinu (10 kg na koraku od 2 kg: 9 → 10), pa tada deload ide
-**korak ispod** (8 kg). Težina od jednog koraka (bučica od 2 kg) i sama telesna masa nemaju
-lakše — tu deload rasterećuje serijama i rezervom.
+**korak ispod** (8 kg). Težina od jednog koraka (bučica od 2 kg), teret lakši od koraka i sama
+telesna masa nemaju lakše — tu deload rasterećuje serijama i rezervom. Napomene ispod unosa u
+deload nedelji ćute: posle nje se nastavlja od težine zarađene pre nje.
 
 **Sastav treninga.** Iz spiska vežbi u danu uzimaju se prvo složene (do broja koji tvoj nivo
 dozvoljava), pa izolacione dok se ne popune mesta. Trening nikad nema manje od tri vežbe.
