@@ -159,7 +159,7 @@ export interface ExercisePlanDto {
   exerciseId: string;
   exerciseName: string;
   order: number;
-  /** Predlozeni broj radnih serija — propis pomeren ka ciljnoj zoni volumena. */
+  /** Predlozeni broj radnih serija — propis pomeren ka ciljnoj zoni volumena, uz granicu po treningu. */
   targetSets: number;
   /** Broj serija koji propisuju nivo iskustva i periodizacija, pre balansiranja volumena. */
   prescribedSets: number;
