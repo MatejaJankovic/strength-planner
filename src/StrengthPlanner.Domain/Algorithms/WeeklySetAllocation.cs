@@ -9,6 +9,10 @@ public sealed record MuscleLoad(Guid MuscleGroupId, decimal Contribution);
 /// One planned exercise whose set count the allocator is allowed to move.
 /// </summary>
 /// <param name="Id">Opaque identity of the plan; the allocator only hands it back.</param>
+/// <param name="SessionId">
+/// The workout the plan belongs to. Weekly volume is the target, but it is performed one
+/// session at a time, and how much of it lands in one session is a limit of its own.
+/// </param>
 /// <param name="PrescribedSets">
 /// What experience level and periodization prescribe for this exercise this week. It is
 /// the anchor the result may drift around, never a value the allocator recomputes.
@@ -16,6 +20,7 @@ public sealed record MuscleLoad(Guid MuscleGroupId, decimal Contribution);
 /// <param name="Muscles">Muscle groups this exercise loads, with their contributions.</param>
 public sealed record ExerciseSetSlot(
     Guid Id,
+    Guid SessionId,
     int PrescribedSets,
     IReadOnlyList<MuscleLoad> Muscles);
 
@@ -54,6 +59,13 @@ public sealed record MuscleVolumeTarget(Guid MuscleGroupId, decimal TargetSets, 
 /// the window allows instead of failing or inflating one exercise.</item>
 /// <item>A correction is spread over the exercises that can take it rather than emptied
 /// into the first ones the search happens to reach — see <see cref="DriftPenalty"/>.</item>
+/// <item>No session carries more of one muscle than
+/// <see cref="TrainingConstants.MaxSetsPerMusclePerSession"/>. The week is the target, but
+/// it is performed one session at a time: before this bound the Push day of Push/Pull/Legs
+/// carried 16 to 18 sets of chest, because the week trains chest nowhere else. Where
+/// another session trains the muscle the excess moves there; where none does, it is cut,
+/// and the week stays below its target rather than spend recovery on sets whose return
+/// can no longer be measured.</item>
 /// </list>
 /// </summary>
 public static class WeeklySetAllocation
@@ -79,7 +91,9 @@ public static class WeeklySetAllocation
     public const int MaxSetsPerExercise = 6;
 
     /// <summary>
-    /// How much heavier a set past MRV weighs than a set short of MAV.
+    /// How much heavier a set past a ceiling weighs than a set short of MAV. Both ceilings
+    /// are priced the same: MRV for the week, and
+    /// <see cref="TrainingConstants.MaxSetsPerMusclePerSession"/> for one session.
     ///
     /// Missing the target costs progress; outrunning recovery costs the following weeks.
     /// The allocator will therefore leave a muscle well under its MAV rather than push any
@@ -167,6 +181,7 @@ public static class WeeklySetAllocation
         // koja mu pripada — otuda dve projekcije nad istim planom.
         var stimulative = Project(slots, sets, completedStimulativeSets);
         var raw = Project(slots, sets, completedRawSets);
+        var perSession = ProjectPerSession(slots, sets);
 
         for (var step = 0; step < MaxSteps; step++)
         {
@@ -195,6 +210,7 @@ public static class WeeklySetAllocation
                         direction,
                         stimulative,
                         raw,
+                        perSession,
                         targetByMuscleGroupId);
                     if (delta < bestDelta)
                     {
@@ -217,6 +233,9 @@ public static class WeeklySetAllocation
                 var moved = muscle.Contribution * bestDirection;
                 stimulative[muscle.MuscleGroupId] = stimulative.GetValueOrDefault(muscle.MuscleGroupId) + moved;
                 raw[muscle.MuscleGroupId] = raw.GetValueOrDefault(muscle.MuscleGroupId) + moved;
+
+                var sessionKey = (bestSlot.SessionId, muscle.MuscleGroupId);
+                perSession[sessionKey] = perSession.GetValueOrDefault(sessionKey) + moved;
             }
         }
 
@@ -256,6 +275,36 @@ public static class WeeklySetAllocation
     }
 
     /// <summary>
+    /// Planned volume per muscle group inside each session. Only what is still planned: a
+    /// session that has been logged into is not a slot, so its sets never reach here.
+    /// </summary>
+    public static Dictionary<(Guid SessionId, Guid MuscleGroupId), decimal> ProjectPerSession(
+        IReadOnlyList<ExerciseSetSlot> slots,
+        IReadOnlyDictionary<Guid, int> setsBySlotId)
+    {
+        ArgumentNullException.ThrowIfNull(slots);
+        ArgumentNullException.ThrowIfNull(setsBySlotId);
+
+        var projected = new Dictionary<(Guid SessionId, Guid MuscleGroupId), decimal>();
+
+        foreach (var slot in slots)
+        {
+            if (!setsBySlotId.TryGetValue(slot.Id, out var planned))
+            {
+                continue;
+            }
+
+            foreach (var muscle in slot.Muscles)
+            {
+                var key = (slot.SessionId, muscle.MuscleGroupId);
+                projected[key] = projected.GetValueOrDefault(key) + (muscle.Contribution * planned);
+            }
+        }
+
+        return projected;
+    }
+
+    /// <summary>
     /// The window one exercise may move inside.
     ///
     /// The prescription is always inside its own window, even when it already sits outside
@@ -285,6 +334,7 @@ public static class WeeklySetAllocation
         int direction,
         IReadOnlyDictionary<Guid, decimal> stimulative,
         IReadOnlyDictionary<Guid, decimal> raw,
+        IReadOnlyDictionary<(Guid SessionId, Guid MuscleGroupId), decimal> perSession,
         IReadOnlyDictionary<Guid, MuscleVolumeTarget> targetByMuscleGroupId)
     {
         var driftBefore = currentSets - slot.PrescribedSets;
@@ -308,6 +358,13 @@ public static class WeeklySetAllocation
             delta += CeilingPenalty
                      * (Math.Max(0m, currentRaw + moved - target.CeilingSets)
                         - Math.Max(0m, currentRaw - target.CeilingSets));
+
+            // Isto pravilo za jedan trening: serija preko granice troši oporavak, a rast od
+            // nje više nije merljiv. Planirane serije ovog treninga, ne cele nedelje.
+            var currentSession = perSession.GetValueOrDefault((slot.SessionId, muscle.MuscleGroupId));
+            delta += CeilingPenalty
+                     * (Math.Max(0m, currentSession + moved - TrainingConstants.MaxSetsPerMusclePerSession)
+                        - Math.Max(0m, currentSession - TrainingConstants.MaxSetsPerMusclePerSession));
         }
 
         return delta;

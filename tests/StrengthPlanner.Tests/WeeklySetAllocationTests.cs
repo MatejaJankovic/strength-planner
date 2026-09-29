@@ -99,9 +99,10 @@ public class WeeklySetAllocationTests
         // serija raspona to ne radi, pa je ona tačan izbor.
         var bench = new ExerciseSetSlot(
             SlotId(1),
+            SessionId(1),
             3,
             [new MuscleLoad(Chest, 1.0m), new MuscleLoad(Triceps, 0.5m), new MuscleLoad(Shoulders, 0.5m)]);
-        var fly = new ExerciseSetSlot(SlotId(2), 3, [new MuscleLoad(Chest, 1.0m)]);
+        var fly = new ExerciseSetSlot(SlotId(2), SessionId(2), 3, [new MuscleLoad(Chest, 1.0m)]);
 
         var sets = WeeklySetAllocation.Allocate(
             [bench, fly],
@@ -241,11 +242,90 @@ public class WeeklySetAllocationTests
         Assert.Equal(6, TotalFor(quadWork, sets, Quads));
     }
 
+    [Fact]
+    public void Allocate_KeepsOneSessionUnderTheCeiling_EvenBelowTheWeeklyTarget()
+    {
+        // Tri vežbe za grudi u istom treningu, po četiri serije: dvanaest, a nedelja traži
+        // baš dvanaest. Preko jedanaest serija u jednom treningu rast više nije merljiv, pa
+        // se dvanaesta ne isplati ni kada je nedelji potrebna.
+        var slots = InOneSession(3, prescribedSets: 4, Chest);
+        var targets = new[] { Target(Chest, mav: 12, mrv: 22) };
+
+        var sets = WeeklySetAllocation.Allocate(slots, targets);
+
+        Assert.Equal(TrainingConstants.MaxSetsPerMusclePerSession, TotalFor(slots, sets, Chest));
+    }
+
+    [Fact]
+    public void Allocate_MovesTheExcessToAnotherSessionOfTheSameMuscle()
+    {
+        // Isti pretrpan trening, ali nedelja ima i drugi dan za grudi. Tada se višak ne
+        // gubi nego seli: nedelja ostaje na cilju, a nijedan trening ne prelazi granicu.
+        var crowded = InOneSession(3, prescribedSets: 4, Chest);
+        var otherDay = Isolations(1, prescribedSets: 4, Chest, startIndex: 9);
+        var slots = crowded.Concat(otherDay).ToList();
+        var targets = new[] { Target(Chest, mav: 16, mrv: 22) };
+
+        var sets = WeeklySetAllocation.Allocate(slots, targets);
+
+        Assert.Equal(TrainingConstants.MaxSetsPerMusclePerSession, TotalFor(crowded, sets, Chest));
+        Assert.Equal(5, sets[otherDay[0].Id]);
+        Assert.Equal(16, TotalFor(slots, sets, Chest));
+    }
+
+    [Fact]
+    public void Allocate_CountsASecondaryMuscleAsHalfASetInTheSession_AndCutsWhereItIsCheapest()
+    {
+        // Dva potiska daju tricepsu po pola serije, dve ekstenzije po celu: 4 + 8 = 12 u
+        // jednom treningu. Višak se skida sa ekstenzije — serija potiska bi odnela i grudi
+        // ispod njihovog cilja.
+        var session = SessionId(1);
+        var benchPress = new ExerciseSetSlot(
+            SlotId(1), session, 4, [new MuscleLoad(Chest, 1.0m), new MuscleLoad(Triceps, 0.5m)]);
+        var inclinePress = new ExerciseSetSlot(
+            SlotId(2), session, 4, [new MuscleLoad(Chest, 1.0m), new MuscleLoad(Triceps, 0.5m)]);
+        var pushdown = new ExerciseSetSlot(SlotId(3), session, 4, [new MuscleLoad(Triceps, 1.0m)]);
+        var extension = new ExerciseSetSlot(SlotId(4), session, 4, [new MuscleLoad(Triceps, 1.0m)]);
+        ExerciseSetSlot[] slots = [benchPress, inclinePress, pushdown, extension];
+
+        var sets = WeeklySetAllocation.Allocate(
+            slots,
+            [Target(Chest, mav: 8, mrv: 22), Target(Triceps, mav: 12, mrv: 18)]);
+
+        Assert.Equal(TrainingConstants.MaxSetsPerMusclePerSession, TotalFor(slots, sets, Triceps));
+        Assert.Equal(8, TotalFor(slots, sets, Chest));
+        Assert.Equal(4, sets[benchPress.Id]);
+        Assert.Equal(4, sets[inclinePress.Id]);
+    }
+
+    [Fact]
+    public void Allocate_LeavesTheExcess_WhenThePrescriptionWindowIsSpent()
+    {
+        // Pet vežbi po šest serija u jednom treningu: trideset. Balansiranje sme da spusti
+        // svaku za najviše dve, pa trening ostaje na dvadeset - granica je razlog da se
+        // spusti koliko god može, a ne ovlašćenje da pregazi propis.
+        var slots = InOneSession(5, prescribedSets: 6, Chest);
+        var targets = new[] { Target(Chest, mav: 30, mrv: 40) };
+
+        var sets = WeeklySetAllocation.Allocate(slots, targets);
+
+        Assert.All(
+            slots,
+            slot => Assert.Equal(6 - WeeklySetAllocation.MaxDriftFromPrescription, sets[slot.Id]));
+    }
+
     // --- helpers --------------------------------------------------------------
 
     private static Guid SlotId(int index)
     {
         return new Guid($"00000000-0000-0000-0000-{index:D12}");
+    }
+
+    // Svaka vežba u svom treningu, osim kada test kaže drugačije: pravila o nedeljnom
+    // volumenu se tako proveravaju bez granice po treningu.
+    private static Guid SessionId(int index)
+    {
+        return new Guid($"00000000-0000-0000-0001-{index:D12}");
     }
 
     private static List<ExerciseSetSlot> Isolations(
@@ -258,6 +338,22 @@ public class WeeklySetAllocationTests
             .Range(startIndex, count)
             .Select(index => new ExerciseSetSlot(
                 SlotId(index),
+                SessionId(index),
+                prescribedSets,
+                [new MuscleLoad(muscleGroupId, 1.0m)]))
+            .ToList();
+    }
+
+    private static List<ExerciseSetSlot> InOneSession(
+        int count,
+        int prescribedSets,
+        Guid muscleGroupId)
+    {
+        return Enumerable
+            .Range(1, count)
+            .Select(index => new ExerciseSetSlot(
+                SlotId(index),
+                SessionId(1),
                 prescribedSets,
                 [new MuscleLoad(muscleGroupId, 1.0m)]))
             .ToList();

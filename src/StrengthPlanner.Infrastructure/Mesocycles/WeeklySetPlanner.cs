@@ -127,6 +127,7 @@ public sealed class WeeklySetPlanner
         var slots = plans
             .Select(plan => new ExerciseSetSlot(
                 plan.Id,
+                plan.WorkoutSessionId,
                 plan.PrescribedSets,
                 musclesByExerciseId.GetValueOrDefault(plan.ExerciseId, [])))
             .ToList();

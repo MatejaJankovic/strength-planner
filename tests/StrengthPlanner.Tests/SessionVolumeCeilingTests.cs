@@ -1,0 +1,156 @@
+using StrengthPlanner.Application.Templates;
+using StrengthPlanner.Domain.Algorithms;
+using StrengthPlanner.Domain.Enums;
+
+namespace StrengthPlanner.Tests;
+
+/// <summary>
+/// Granica serija po mišiću u jednom treningu, merena na predlogu koji korisnik zaista dobija:
+/// svaki ugrađen šablon, na svakom nivou, cilju i modelu periodizacije, posle balansiranja.
+///
+/// Pre granice je Push dan šablona Push/Pull/Legs nosio 16 do 18 serija za grudi, a u 473
+/// kombinacije trening-mišić predlog je stajao preko jedanaest.
+/// </summary>
+public class SessionVolumeCeilingTests
+{
+    /// <summary>
+    /// Trening sme da ostane preko granice samo ako je balansiranje potrošilo ceo prozor:
+    /// svaka vežba kojoj je taj mišić glavni već stoji na najnižem što propis dozvoljava.
+    /// Merilo nije "nikad preko jedanaest", jer propis od osamnaest serija sa dozvoljenim
+    /// pomakom od dve po vežbi ne može da stigne ispod dvanaest.
+    /// </summary>
+    [Fact]
+    public void EveryBuiltInWeek_StaysUnderTheSessionCeiling_WhereverThePrescriptionAllows()
+    {
+        var breaches = new List<string>();
+
+        foreach (var week in TemplateWeekSimulation.EveryTrainingWeek())
+        {
+            var perSession = WeeklySetAllocation.ProjectPerSession(week.Slots, week.Allocated);
+
+            foreach (var ((sessionId, muscleGroupId), sets) in perSession)
+            {
+                if (sets <= TrainingConstants.MaxSetsPerMusclePerSession
+                    || week.TargetFor(MuscleName(muscleGroupId)) is null)
+                {
+                    continue;
+                }
+
+                var stillMovable = week.Slots
+                    .Where(slot => slot.SessionId == sessionId
+                                   && slot.Muscles.Any(muscle => muscle.MuscleGroupId == muscleGroupId
+                                                                 && muscle.Contribution >= 1m))
+                    .Where(slot => week.Allocated[slot.Id] > LowestAllowed(slot))
+                    .ToList();
+
+                if (stillMovable.Count > 0)
+                {
+                    breaches.Add($"{week.Name} {MuscleName(muscleGroupId)}: {sets} serija u treningu, "
+                                 + $"a {stillMovable.Count} vežbi još može niže.");
+                }
+            }
+        }
+
+        Assert.True(breaches.Count == 0, string.Join(Environment.NewLine, breaches.Take(20)));
+    }
+
+    /// <summary>
+    /// Gornja granica pojedinačnog treninga, u brojevima: najviše jedna serija preko, i to
+    /// samo tamo gde je propis sam bio daleko iznad.
+    /// </summary>
+    [Fact]
+    public void NoBuiltInSession_GoesMoreThanOneSetPastTheCeiling()
+    {
+        var worst = TemplateWeekSimulation.EveryTrainingWeek()
+            .SelectMany(week => WeeklySetAllocation.ProjectPerSession(week.Slots, week.Allocated).Values)
+            .Max();
+
+        Assert.True(
+            worst <= TrainingConstants.MaxSetsPerMusclePerSession + 1,
+            $"Najveći trening nosi {worst} serija za jedan mišić.");
+    }
+
+    /// <summary>
+    /// Push/Pull/Legs trenira svaki mišić jednom nedeljno, pa ceo nedeljni volumen grudi pada
+    /// u jedan trening. Uz granicu nedelja ostaje ispod MAV-a — to nije greška šablona nego
+    /// njegova frekvencija, i zato šablon nosi upozorenje, kao i dvodnevni.
+    /// </summary>
+    [Fact]
+    public void PushPullLegs_StaysBelowMav_BecauseEachMuscleIsTrainedOnce()
+    {
+        var template = WorkoutTemplateCatalog.GetByKey(WorkoutTemplateCatalog.PushPullLegsKey)!;
+        var week = TemplateWeekSimulation.Build(
+            template,
+            ExperienceLevel.Intermediate,
+            Goal.Hypertrophy,
+            PeriodizationModel.Flat,
+            weekNumber: 1);
+
+        Assert.False(string.IsNullOrWhiteSpace(template.Note));
+
+        var chest = week.Weekly("Chest");
+        Assert.Equal(TrainingConstants.MaxSetsPerMusclePerSession, chest);
+        Assert.True(chest < week.TargetFor("Chest")!.TargetSets);
+    }
+
+    /// <summary>
+    /// Šablon koji mišić trenira dva puta nedeljno granicu na referentnom nivou ne oseća:
+    /// njegova nedelja staje u dva treninga ispod granice, pa je predlog serija isti kao pre
+    /// nje, vežba po vežba.
+    /// </summary>
+    [Theory]
+    [InlineData(WorkoutTemplateCatalog.FullBodyKey)]
+    [InlineData(WorkoutTemplateCatalog.UpperLowerKey)]
+    [InlineData(WorkoutTemplateCatalog.UpperLowerThreeXKey)]
+    public void TemplatesThatSplitTheWeek_AreNotTouchedAtTheReferenceLevel(string templateKey)
+    {
+        var week = TemplateWeekSimulation.Build(
+            WorkoutTemplateCatalog.GetByKey(templateKey)!,
+            ExperienceLevel.Intermediate,
+            Goal.Hypertrophy,
+            PeriodizationModel.Flat,
+            weekNumber: 1);
+
+        Assert.Equal(week.AllocatedWithoutSessionCeiling(), week.Allocated);
+    }
+
+    /// <summary>
+    /// Granica menja samo nedelje u kojima bi neki trening bez nje prešao granicu. Svaka
+    /// druga nedelja svakog šablona dobija isti predlog kao pre.
+    /// </summary>
+    [Fact]
+    public void TheCeiling_ChangesOnlyWeeksThatWouldBreachIt()
+    {
+        var changedWithoutCause = new List<string>();
+
+        foreach (var week in TemplateWeekSimulation.EveryTrainingWeek())
+        {
+            var before = week.AllocatedWithoutSessionCeiling();
+            var wouldBreach = WeeklySetAllocation
+                .ProjectPerSession(week.Slots, before)
+                .Any(entry => entry.Value > TrainingConstants.MaxSetsPerMusclePerSession
+                              && week.TargetFor(MuscleName(entry.Key.MuscleGroupId)) is not null);
+
+            if (!wouldBreach && !before.SequenceEqual(week.Allocated))
+            {
+                changedWithoutCause.Add(week.Name);
+            }
+        }
+
+        Assert.True(changedWithoutCause.Count == 0, string.Join(Environment.NewLine, changedWithoutCause.Take(20)));
+    }
+
+    private static int LowestAllowed(ExerciseSetSlot slot)
+    {
+        return Math.Min(
+            slot.PrescribedSets,
+            Math.Max(
+                WeeklySetAllocation.MinSetsPerExercise,
+                slot.PrescribedSets - WeeklySetAllocation.MaxDriftFromPrescription));
+    }
+
+    private static string MuscleName(Guid muscleGroupId)
+    {
+        return ExerciseCatalog.MuscleGroupNames.First(name => TemplateWeekSimulation.MuscleId(name) == muscleGroupId);
+    }
+}
