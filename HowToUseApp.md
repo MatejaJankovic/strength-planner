@@ -740,6 +740,14 @@ dozvoljava), pa izolacione dok se ne popune mesta. Trening nikad nema manje od t
 Ovo važi **samo za ugrađene šablone**. Lični šablon se ne prekraja: u trening ulaze tačno
 tvoje vežbe, pa i dan sa jednom vežbom ostaje dan sa jednom vežbom.
 
+**Granica po treningu.** Predlog serija cilja nedelju, ali se nedelja odrađuje trening po
+trening: jedan mišić u jednom treningu dobija najviše oko **11 serija** (sekundarni mišić broji
+pola serije, kao i u nedeljnom volumenu). Preko toga dalje serije u istom treningu više ne
+donose merljiv rast, a oporavak troše. Ako isti mišić trenira i neki drugi dan, višak se seli
+tamo; ako ne trenira, nedelja ostaje ispod cilja. Granica se drži u istom prozoru kao i ostalo
+balansiranje — najviše dve serije od propisa po vežbi — pa trening čiji je propis mnogo veći
+može da ostane na 12. Kod izbora „Prati moj šablon" ništa se ne pomera, pa ni ovo.
+
 **Periodizovane nedelje.** Kad se propis menja iz nedelje u nedelju (linearan i obrnut
 model), opterećenje se ne prenosi kroz „+ jedan korak" nego se ponovo izvodi iz najsvežije
 procene 1RM-a i propisa te nedelje. Nedelja koja pada sa 10 na 5 ponavljanja mora da bude
@@ -791,6 +799,13 @@ Dve posledice koje treba da znaš:
 - Kada posle toga završiš neki trening iz iste nedelje, balansiranje volumena deo
   preskočenog rada prebaci na dane koji ostaju. Izmereno: dan sa 24 serije je posle
   preskočenog drugog dana za noge dobio 30. Ako to ne želiš, smanji serije ručno.
+
+**Na Push/Pull/Legs grudi i leđa stoje ispod cilja.**
+Tako i treba da izgleda. Taj šablon svaki mišić trenira jednom nedeljno, pa ceo nedeljni
+volumen grudi pada u Push dan, a u jednom treningu korisno staje oko 11 serija (vidi „Granica
+po treningu"). Izmereno na srednjem nivou: grudi 11 umesto 16, leđa 14 umesto 18. Za više
+volumena uzmi šablon koji mišić trenira dva puta nedeljno (Upper/Lower, Full Body,
+Push/Pull/Legs x2).
 
 **Promenio sam nivo iskustva usred bloka.**
 Tekući blok ostaje nepromenjen — namerno, da se plan u toku ne bi prekrajao ispod ruku.
