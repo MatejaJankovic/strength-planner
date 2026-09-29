@@ -179,12 +179,6 @@ export interface ExercisePlanDto {
   isBodyweight: boolean;
   /** Koliko kilograma telesne mase vezba nosi; 0 za spoljno opterecenje. */
   bodyweightLoadKg: number;
-  /**
-   * Ponavljanja koja sve serije treba da dostignu da bi sledeci put dosao korak tezine.
-   * Vrh opsega, osim kad je korak prevelik da ga opseg upije (8 kg bucica, korak 2 kg):
-   * tada je cilj visi. Racuna ga server, istim pravilom po kome odlucuje o koraku.
-   */
-  repsToEarnStep: number;
   setLogs: SetLogDto[];
 }
 

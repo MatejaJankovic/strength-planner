@@ -18,6 +18,7 @@ import { StatChip, StatChipTone } from '../../shared/components/stat-chip/stat-c
 import { EmptyState } from '../../shared/components/empty-state/empty-state';
 import { Loading } from '../../shared/components/loading/loading';
 import { SetFeedback, setFeedback } from './set-feedback';
+import { repTargetFor } from './step-absorption';
 import { nextWeightLabel, nextWeightTone } from './next-weight-label';
 import { LoadInputNote, loadInputNote } from './load-input-note';
 import { loadLabel } from './load-label';
@@ -208,34 +209,31 @@ export class WorkoutSession {
   }
 
   /**
-   * Ciljni broj ponavljanja za seriju: vrh opsega.
+   * Broj ponavljanja ka kome se radi.
    *
-   * Dupla progresija radi tako da se unutar istog opterećenja ide ka vrhu opsega, a kada
-   * ga sve serije dostignu, sledeći put ide teže. Taj broj je ekran do sada imao samo kao
-   * gornju granicu u čipu „Opseg", pa se nije videlo šta se zapravo gađa. Kod propisa sa
-   * tačnim brojem ponavljanja (5x5) dno i vrh su isti broj, pa je i cilj taj broj.
-   */
-  /**
-   * Broj ponavljanja ka kome se radi. U deload nedelji je to vrh opsega: posle deload-a se
-   * nastavlja od težine zarađene pre njega, pa produžen cilj (korak koji opseg ne upija)
-   * tamo ne bi ništa doneo - samo bi terao ponavljanja naviše u nedelji odmora.
+   * Dupla progresija ide ka vrhu opsega, a kada ga sve serije dostignu, sledeći put ide
+   * teže; kod propisa sa tačnim brojem ponavljanja (5x5) cilj je taj broj. Kod lakog tega,
+   * gde je korak veliki u odnosu na težinu (bučica od 8 kg, korak 2 kg), cilj je viši - broj
+   * ponavljanja na kome korak staje (vidi step-absorption.ts). Računa se iz težine koja se
+   * unosi, jer server sudi o onome što je zaista podignuto. U deload nedelji je to vrh
+   * opsega: posle deload-a se nastavlja od težine zarađene pre njega.
    */
   protected repTarget(plan: ExercisePlanDto): number {
-    return this.session()?.isDeload ? plan.repRangeMax : (plan.repsToEarnStep ?? plan.repRangeMax);
+    return repTargetFor(plan, this.draftOf(plan.id).weightKg, this.session()?.isDeload ?? false);
   }
 
   /**
-   * Koliki je korak tega u odnosu na težinu, u procentima. Prikazuje se samo kad je cilj
-   * ponavljanja iznad vrha opsega: tada je razlog upravo to što je korak prevelik.
+   * Koliki je korak tega u odnosu na težinu koja se unosi, u procentima. Prikazuje se samo
+   * kad je cilj ponavljanja iznad vrha opsega: tada je razlog upravo to što je korak velik.
    */
   protected stepSharePercent(plan: ExercisePlanDto): number {
-    const totalKg = (plan.targetWeightKg ?? 0) + plan.bodyweightLoadKg;
+    const totalKg = this.draftOf(plan.id).weightKg + plan.bodyweightLoadKg;
     return totalKg > 0 ? Math.round((plan.weightStepKg / totalKg) * 100) : 0;
   }
 
   /** Napomena ispod unosa: šta ova serija znači za sledeći trening (vidi set-feedback.ts). */
   protected feedbackFor(plan: ExercisePlanDto, draft: SetDraft): SetFeedback | null {
-    return setFeedback({ ...plan, repsToEarnStep: this.repTarget(plan) }, draft);
+    return setFeedback(plan, draft, this.session()?.isDeload ?? false);
   }
 
   /** Otkaz i RIR se isključuju — serija do otkaza po definiciji nema rezervu. */

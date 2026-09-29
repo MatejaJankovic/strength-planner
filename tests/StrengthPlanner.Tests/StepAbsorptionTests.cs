@@ -1,4 +1,3 @@
-using StrengthPlanner.Application.DTOs.Mesocycles;
 using StrengthPlanner.Domain.Algorithms;
 
 namespace StrengthPlanner.Tests;
@@ -6,8 +5,11 @@ namespace StrengthPlanner.Tests;
 /// <summary>
 /// Korak koji opseg ne može da upije, korekcija koju korak ne može da izrazi, i deload koji
 /// se zaokruživao nazad na punu težinu. Sva tri su isti koren: korak tega veliki u odnosu na
-/// težinu, što je kod bučica i malih mašina uobičajeno, a nijedan test nije proveravao
-/// težine ispod 20 kg.
+/// težinu, što je kod bučica i malih mašina uobičajeno.
+///
+/// Mreža težina u <see cref="ProgressionPropertyTests"/> je te težine pokrivala i ranije, ali
+/// je tvrdila staro pravilo - korak na vrhu opsega na svakoj težini, pa i 8 -> 10 kg - pa je
+/// grešku zaključavala umesto da je hvata.
 /// </summary>
 public class StepAbsorptionTests
 {
@@ -17,19 +19,26 @@ public class StepAbsorptionTests
 
     private readonly ProgressionEngine _engine = new();
 
+    // --- cilj ponavljanja koji ekran prikazuje ---
+
     [Theory]
     // Šipka na stvarnim težinama: korak uvek staje, cilj ostaje vrh opsega.
     [InlineData(100, 2.5, 8, 12, 1, 12)]
     [InlineData(60, 2.5, 3, 6, 2, 6)]
-    [InlineData(100, 2.5, 11, 12, 2, 12)]
-    [InlineData(100, 2.5, 5, 5, 2, 5)]
     // Bučica 20 -> 22 kg je 10% i staje; 8 -> 10 kg je 25% i ne staje.
     [InlineData(20, 2, 8, 12, 1, 12)]
     [InlineData(8, 2, 8, 12, 1, 17)]
-    // Mašina 20 -> 25 kg (25%), sajla 12.5 -> 15 kg (20%).
+    // Mašina 20 -> 25 kg (25%), sajla 12.5 -> 15 kg (20%), šipka od 30 kg u 11-12 @RIR1.
     [InlineData(20, 5, 8, 12, 1, 17)]
     [InlineData(12.5, 2.5, 8, 12, 1, 15)]
-    public void RepsToEarnStep_IsTheTopOfTheRange_UnlessTheStepDoesNotFit(
+    [InlineData(30, 2.5, 11, 12, 1, 14)]
+    // Uzak ili fiksan propis se ne produžava: 5 x 5 je program, a ne opseg do šest.
+    [InlineData(100, 2.5, 11, 12, 2, 12)]
+    [InlineData(30, 2.5, 11, 12, 2, 12)]
+    [InlineData(100, 2.5, 5, 5, 2, 5)]
+    [InlineData(40, 2.5, 5, 5, 2, 5)]
+    [InlineData(60, 2.5, 5, 5, 1, 5)]
+    public void RepsToEarnStep_IsTheTopOfTheRange_UnlessTheStepDoesNotFitAWideRange(
         double loadKg,
         double stepKg,
         int repRangeMin,
@@ -56,20 +65,31 @@ public class StepAbsorptionTests
                     for (var targetRir = 1; targetRir <= 4; targetRir++)
                     {
                         var reps = StepAbsorption.RepsToEarnStep(load, step, min, max, targetRir);
+                        var described = $"{load}/{step} {min}-{max}@{targetRir}: {reps}";
+
+                        if (StepAbsorption.IsNarrow(min, max, targetRir))
+                        {
+                            if (reps != max)
+                            {
+                                failures.Add($"{described} stretches a narrow prescription");
+                            }
+
+                            continue;
+                        }
 
                         if (reps < max)
                         {
-                            failures.Add($"{load}/{step} {min}-{max}@{targetRir}: {reps} below the top");
+                            failures.Add($"{described} below the top");
                         }
 
-                        if (!FloorReachable(reps, load, step, min, targetRir))
+                        if (!FloorReachable(reps, targetRir, load, step, min))
                         {
-                            failures.Add($"{load}/{step} {min}-{max}@{targetRir}: {reps} leaves the floor beyond failure");
+                            failures.Add($"{described} leaves the floor beyond failure");
                         }
 
-                        if (reps > max && FloorReachable(reps - 1, load, step, min, targetRir))
+                        if (reps > max && FloorReachable(reps - 1, targetRir, load, step, min))
                         {
-                            failures.Add($"{load}/{step} {min}-{max}@{targetRir}: {reps} is not the smallest");
+                            failures.Add($"{described} is not the smallest");
                         }
                     }
                 }
@@ -79,47 +99,129 @@ public class StepAbsorptionTests
         Assert.True(failures.Count == 0, string.Join(Environment.NewLine, failures.Take(10)));
     }
 
-    [Fact]
-    public void ALightDumbbell_WaitsForTheRepsThatPayForTheStep_InsteadOfJumping25Percent()
-    {
-        // Izmereno na nepromenjenom kodu: 8 kg, 3 x 12 @RIR1 -> 10 kg, gde Epley ostavlja
-        // oko 3.4 ponavljanja uz RIR 1 u opsegu koji počinje od 8.
-        var atTheTop = _engine.ComputeNext(8m, Sets(12, 1), targetRir: 1, repRangeMin: 8, repRangeMax: 12, weightStepKg: 2m);
-        var belowTheTarget = _engine.ComputeNext(8m, Sets(16, 1), targetRir: 1, repRangeMin: 8, repRangeMax: 12, weightStepKg: 2m);
-        var atTheTarget = _engine.ComputeNext(8m, Sets(17, 1), targetRir: 1, repRangeMin: 8, repRangeMax: 12, weightStepKg: 2m);
+    // --- progresija na lakim težinama ---
 
-        Assert.Equal(8m, atTheTop.NextWeightKg);
-        Assert.False(atTheTop.WeightIncreased);
-        Assert.Equal(8m, belowTheTarget.NextWeightKg);
-        Assert.Equal(10m, atTheTarget.NextWeightKg);
-        Assert.True(atTheTarget.WeightIncreased);
+    [Fact]
+    public void ALightDumbbell_WaitsForTheCapacityThatPaysForTheStep_InsteadOfJumping25Percent()
+    {
+        // Izmereno na kodu pre ove izmene: 8 kg, 3 x 12 @RIR1 -> 10 kg, gde Epley ostavlja
+        // oko 3.4 ponavljanja uz RIR 1 u opsegu koji počinje od 8.
+        Assert.Equal(8m, Next(8m, 12, 1, 8, 12, 1, 2m));
+        Assert.Equal(8m, Next(8m, 16, 1, 8, 12, 1, 2m));
+        Assert.Equal(10m, Next(8m, 17, 1, 8, 12, 1, 2m));
+    }
+
+    [Fact]
+    public void TheCapacityCounts_NotTheRepsAlone()
+    {
+        // Kapacitet je ponavljanja plus rezerva koja je zaista ostala. 17 do otkaza je
+        // kapacitet 17, a korak traži 17.5: težina čeka. 15 uz RIR 3 je 18: korak.
+        Assert.Equal(8m, Next(8m, 17, 0, 8, 12, 1, 2m, isFailure: true));
+        Assert.Equal(10m, Next(8m, 15, 3, 8, 12, 1, 2m));
+    }
+
+    [Fact]
+    public void ALightLoad_GetsExactlyOneStep_NotAStepAndACorrection()
+    {
+        // 12 kg, 3 x 12 @RIR4: kapacitet upija jedan korak (14 kg), a korekcija +9% povrh
+        // njega bi zaokruživanjem dala 16 kg, gde po Epley-u ostaje 4.5 ponavljanja.
+        Assert.Equal(14m, Next(12m, 12, 4, 8, 12, 1, 2m));
     }
 
     [Fact]
     public void AMachineStepThatDoesNotFit_HoldsTheLoad()
     {
-        var result = _engine.ComputeNext(20m, Sets(12, 1), targetRir: 1, repRangeMin: 8, repRangeMax: 12, weightStepKg: 5m);
-
-        Assert.Equal(20m, result.NextWeightKg);
+        Assert.Equal(20m, Next(20m, 12, 1, 8, 12, 1, 5m));
     }
 
     [Fact]
-    public void BetweenTheTopAndTheExtendedTarget_TheLoadIsNeverLowered()
+    public void WhileTheLoadWaits_ReserveAboveTarget_AppliesAsItWouldInsideTheRange()
     {
-        // Zgib 12 @RIR0 u 11-12 @RIR1, 40 kg na pojasu uz 51.2 kg tela, korak 5 kg: korak od
-        // 5.5% ne staje u opseg od jednog ponavljanja, a prva verzija ove izmene je sesiju
-        // tada sudila kao sesiju usred opsega - korekcija od -3% je davala 35 kg.
-        var result = _engine.ComputeNext(
-            40m,
-            Sets(12, 0),
-            targetRir: 1,
-            repRangeMin: 11,
-            repRangeMax: 12,
-            weightStepKg: 5m,
-            bodyweightLoadKg: 51.2m);
+        // 8 kg, 3 x 12 @RIR3: korekcija +6% je 8.48, zaokruženo 8 - čeka.
+        Assert.Equal(8m, Next(8m, 12, 3, 8, 12, 1, 2m));
 
-        Assert.Equal(40m, result.NextWeightKg);
+        // 15 kg, uska nedelja 11-12 @RIR2, 3 x 12 @RIR5: kapacitet ne upija ceo korak, pa
+        // ide sama korekcija (+9% -> 17.5), kao i za istu seriju unutar opsega. Kod pre ove
+        // izmene je ovde dodavao i korak i korekciju: 20 kg.
+        Assert.Equal(17.5m, Next(15m, 12, 5, 11, 12, 2, 2.5m));
+        Assert.Equal(17.5m, Next(15m, 11, 5, 11, 12, 2, 2.5m));
     }
+
+    [Fact]
+    public void TheTopOfTheRange_NeverGivesLessThanTheSameSetOneRepBelowIt()
+    {
+        // Fiksnih 5 @RIR1 na 60 kg: 4 ponavljanja uz RIR 5 su ispod opsega i korekcija
+        // (+9%) daje 65. Pet uz RIR 5 upija korak, a davalo je samo jedan korak (62.5) dok
+        // korak nije dobio i korekciju kao donju granicu. Uhvaćeno testom monotonosti kad je
+        // u mrežu dodat opseg 5-5.
+        Assert.Equal(65m, Next(60m, 4, 5, 5, 5, 1, 2.5m));
+        Assert.Equal(65m, Next(60m, 5, 5, 5, 5, 1, 2.5m));
+    }
+
+    [Theory]
+    // Uska nedelja na laganoj šipci, sve do otkaza na 13: prva verzija ove izmene je
+    // ponavljanja iznad opsega brojala dvaput i davala 32.5 kg, gde ostaje 9.7 ponavljanja.
+    [InlineData(30, 0, 13, 0, true, 11, 12, 2, 2.5, 30)]
+    // Fiksnih 5 @RIR1 na 60 kg, 6 do otkaza: kapacitet 36 ne upija 2.5 kg (4.6 ponavljanja).
+    [InlineData(60, 0, 6, 0, true, 5, 5, 1, 2.5, 60)]
+    // Propadanja sa 40 kg na 51.2 kg tela, 13 do otkaza u 11-12 @RIR1, korak 5.
+    [InlineData(40, 51.2, 13, 0, true, 11, 12, 1, 5, 40)]
+    [InlineData(40, 51.2, 12, 0, true, 11, 12, 1, 5, 40)]
+    public void ASessionWhoseCapacityDoesNotAbsorbTheStep_NeverSteps_AndIsNeverLowered(
+        double usedKg,
+        double bodyKg,
+        int reps,
+        int rir,
+        bool isFailure,
+        int repRangeMin,
+        int repRangeMax,
+        int targetRir,
+        double stepKg,
+        double expectedKg)
+    {
+        var result = _engine.ComputeNext(
+            (decimal)usedKg,
+            Sets(reps, rir, isFailure),
+            targetRir,
+            repRangeMin,
+            repRangeMax,
+            (decimal)stepKg,
+            (decimal)bodyKg);
+
+        Assert.Equal((decimal)expectedKg, result.NextWeightKg);
+    }
+
+    [Fact]
+    public void InANarrowPrescription_TheReserveCarriesTheStep()
+    {
+        // 5 x 5 @RIR2 na 40 kg: 2.5 kg je 6%, a pet ponavljanja uz RIR 2 to ne upija.
+        // Uz RIR 3 upija - korak dolazi iz rezerve, a cilj ostaje pet.
+        Assert.Equal(40m, Next(40m, 5, 2, 5, 5, 2, 2.5m));
+        Assert.Equal(42.5m, Next(40m, 5, 3, 5, 5, 2, 2.5m));
+    }
+
+    [Theory]
+    // Gde korak staje u propis, pravilo iz runda 9 i 10 važi nepromenjeno.
+    [InlineData(100, 12, 0, true, 11, 12, 1, 102.5)]
+    [InlineData(100, 12, 0, true, 11, 12, 2, 100)]
+    [InlineData(100, 12, 0, true, 8, 12, 1, 102.5)]
+    [InlineData(100, 5, 2, false, 5, 5, 2, 102.5)]
+    public void WhereTheStepFitsThePrescription_TheOldRuleDecides(
+        double usedKg,
+        int reps,
+        int rir,
+        bool isFailure,
+        int repRangeMin,
+        int repRangeMax,
+        int targetRir,
+        double expectedKg)
+    {
+        var result = _engine.ComputeNext((decimal)usedKg, Sets(reps, rir, isFailure), targetRir, repRangeMin, repRangeMax, 2.5m);
+
+        Assert.Equal((decimal)expectedKg, result.NextWeightKg);
+    }
+
+    // --- korekcija koju korak ne može da izrazi ---
 
     [Theory]
     // Dumbbell 10 kg, 5/4/4 @RIR1 u 8-12: korekcija -10% daje 9, što se zaokruživalo na 10.
@@ -149,10 +251,10 @@ public class StepAbsorptionTests
         // 7 @RIR0 ispod dna je otkaz jedno ponavljanje ispod opsega: odstupanje -2, -6%,
         // 9.4 kg se zaokružuje na 10. Korak naniže se daje samo na granici korekcije;
         // ovde vežbač gradi ponavljanja na istoj težini.
-        var result = _engine.ComputeNext(10m, Sets(7, 0), targetRir: 1, repRangeMin: 8, repRangeMax: 12, weightStepKg: 2m);
-
-        Assert.Equal(10m, result.NextWeightKg);
+        Assert.Equal(10m, Next(10m, 7, 0, 8, 12, 1, 2m));
     }
+
+    // --- deload ---
 
     [Theory]
     [InlineData(10, 0, 2, 8)]
@@ -162,9 +264,19 @@ public class StepAbsorptionTests
     // Bez izmene gde 90% i dalje pada ispod pune težine.
     [InlineData(100, 0, 2.5, 90)]
     [InlineData(40, 0, 5, 35)]
-    // Telo nosi ceo teret, pa je deload nula dodatih - što je i ranije bio.
+    // Podignuto van mreže koraka: 90% od 11 je 9.9, zaokruženo 10 - lakše od 11, dovoljno.
+    [InlineData(11, 0, 2.5, 10)]
+    [InlineData(2.5, 0, 2, 2)]
+    // Težina od jednog koraka nema lakše: korak ispod je prazna ruka, koju ekran s pravom
+    // prijavljuje kao grešku. Deload tu ide kroz serije i rezervu. Revizija je našla 0 kg.
+    [InlineData(2, 0, 2, 2)]
+    [InlineData(5, 0, 5, 5)]
+    [InlineData(2.5, 0, 2.5, 2.5)]
+    // Nikad teže od podignutog: 9 kg na koraku od 10 se zaokruživalo na 10.
+    [InlineData(9, 0, 10, 9)]
+    // Samo telo, ništa dodato: nula dodatih je i puna težina i deload.
     [InlineData(80, 80, 1, 0)]
-    public void DeloadLoad_IsAlwaysLighterThanTheLoadItLightens(
+    public void DeloadLoad_IsLighterWheneverTheStepAllows_AndNeverHeavier(
         double fullTotalKg,
         double bodyweightKg,
         double stepKg,
@@ -176,7 +288,7 @@ public class StepAbsorptionTests
     }
 
     [Fact]
-    public void DeloadLoad_IsStrictlyLighter_OnEveryLoadAndStep()
+    public void DeloadLoad_OnEveryLoadAndStep_IsLighterWhenAStepBelowExists_AndNeverEmptiesALoadedLift()
     {
         var failures = new List<string>();
 
@@ -186,14 +298,19 @@ public class StepAbsorptionTests
             {
                 var deload = NextWeekLoad.DeloadLoad(load, 0m, step);
 
-                if (deload >= load)
+                if (deload > load)
                 {
-                    failures.Add($"{load}/{step}: deload {deload}");
+                    failures.Add($"{load}/{step}: deload {deload} heavier than the load");
                 }
 
-                if (deload % step != 0)
+                if (WeightMath.StepBelow(load, step) > 0 && deload >= load)
                 {
-                    failures.Add($"{load}/{step}: deload {deload} is off the step grid");
+                    failures.Add($"{load}/{step}: deload {deload} not lighter");
+                }
+
+                if (load >= step && deload <= 0)
+                {
+                    failures.Add($"{load}/{step}: deload empties a loaded lift");
                 }
             }
         }
@@ -202,11 +319,9 @@ public class StepAbsorptionTests
     }
 
     [Fact]
-    public void BothDeloadPaths_UseTheSameRule()
+    public void TheNextWeekPath_UsesDeloadLoad_AlsoWhenTheLoadComesFromTheMaximum()
     {
-        // Nedelja posle završenog treninga i auto-deload su nekad nosili svaki svoju kopiju
-        // 90%; sada obe idu kroz DeloadLoad.
-        var nextWeek = NextWeekLoad.For(
+        var fromReference = NextWeekLoad.For(
             referenceWeightKg: 10m,
             progressionWeightKg: null,
             current: new LoadPrescription(8, 12, 1),
@@ -215,40 +330,47 @@ public class StepAbsorptionTests
             oneRepMaxKg: null,
             weightStepKg: 2m);
 
-        Assert.Equal(NextWeekLoad.DeloadLoad(10m, 0m, 2m), nextWeek);
-        Assert.Equal(8m, nextWeek);
+        // Maksimum 13 kg: radna težina za 8 @RIR1 je 10 kg (13 / 1.3). Deload se meri od te
+        // propisane težine, ne od nezaokruženog broja iz formule.
+        var fromMaximum = NextWeekLoad.For(
+            referenceWeightKg: null,
+            progressionWeightKg: null,
+            current: new LoadPrescription(8, 12, 1),
+            next: new LoadPrescription(8, 12, 3),
+            nextIsDeload: true,
+            oneRepMaxKg: 13m,
+            weightStepKg: 2m);
+
+        Assert.Equal(NextWeekLoad.DeloadLoad(10m, 0m, 2m), fromReference);
+        Assert.Equal(8m, fromReference);
+        Assert.Equal(8m, fromMaximum);
     }
 
     [Fact]
-    public void ThePlanDto_CarriesTheSameTarget_TheEngineDecidesBy()
+    public void TheDeloadFactor_IsAppliedInOnePlace()
     {
-        // Ekran treninga čita cilj iz DTO-a; progresija odlučuje po StepAbsorption. Da bi
-        // obećanje na ekranu bilo tačno, oba moraju da daju isti broj - i bez obzira na to
-        // koje od tri mesta mapiranja je napravilo DTO, jer je polje izračunato.
-        var lateralRaise = new ExercisePlanDto
+        // Nedelja posle završenog treninga i auto-deload (DeloadService) su nosili svaki svoju
+        // kopiju 90%. Servis nema testni harness, pa se jedno pravilo čuva ovde: faktor sme da
+        // se pomene samo u definiciji i u NextWeekLoad. Kada izvorni kod nije dostupan
+        // (spakovan izlaz), test ćuti.
+        var root = FindRepositoryRoot();
+        if (root is null)
         {
-            RepRangeMin = 8,
-            RepRangeMax = 12,
-            TargetRir = 1,
-            TargetWeightKg = 8m,
-            WeightStepKg = 2m
-        };
-        var pullUp = new ExercisePlanDto
-        {
-            RepRangeMin = 8,
-            RepRangeMax = 12,
-            TargetRir = 1,
-            TargetWeightKg = 0m,
-            WeightStepKg = 1m,
-            BodyweightLoadKg = 80m
-        };
-        var noTarget = new ExercisePlanDto { RepRangeMin = 8, RepRangeMax = 12, TargetRir = 1, WeightStepKg = 2m };
+            return;
+        }
 
-        Assert.Equal(17, lateralRaise.RepsToEarnStep);
-        Assert.Equal(StepAbsorption.RepsToEarnStep(8m, 2m, 8, 12, 1), lateralRaise.RepsToEarnStep);
-        // Telo je deo tereta: 1 kg na 80 kg zgiba staje u opseg.
-        Assert.Equal(12, pullUp.RepsToEarnStep);
-        Assert.Equal(12, noTarget.RepsToEarnStep);
+        var offenders = Directory
+            .EnumerateFiles(Path.Combine(root, "src"), "*.cs", SearchOption.AllDirectories)
+            .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}"))
+            .Where(path => File.ReadAllText(path).Contains("DeloadWeightFactor", StringComparison.Ordinal))
+            .Select(Path.GetFileName)
+            .Where(name => name is not ("TrainingConstants.cs" or "NextWeekLoad.cs"))
+            .ToList();
+
+        Assert.True(
+            offenders.Count == 0,
+            $"Faktor deload-a se primenjuje van NextWeekLoad: {string.Join(", ", offenders)}. " +
+            "Koristi NextWeekLoad.DeloadLoad.");
     }
 
     [Theory]
@@ -262,13 +384,45 @@ public class StepAbsorptionTests
         Assert.Equal((decimal)expected, WeightMath.StepBelow((decimal)value, (decimal)step));
     }
 
-    private static List<WorkingSet> Sets(int reps, int rir)
+    private decimal Next(
+        decimal usedKg,
+        int reps,
+        int rir,
+        int repRangeMin,
+        int repRangeMax,
+        int targetRir,
+        decimal stepKg,
+        bool isFailure = false)
     {
-        return [new WorkingSet(reps, rir), new WorkingSet(reps, rir), new WorkingSet(reps, rir)];
+        return _engine
+            .ComputeNext(usedKg, Sets(reps, rir, isFailure), targetRir, repRangeMin, repRangeMax, stepKg)
+            .NextWeightKg;
     }
 
-    private static bool FloorReachable(int reps, decimal load, decimal step, int min, int targetRir)
+    private static List<WorkingSet> Sets(int reps, int rir, bool isFailure = false)
     {
-        return (30m + reps + targetRir) * load >= (load + step) * (30m + min);
+        return [new WorkingSet(reps, rir, isFailure), new WorkingSet(reps, rir, isFailure), new WorkingSet(reps, rir, isFailure)];
+    }
+
+    private static bool FloorReachable(int reps, int rir, decimal load, decimal step, int min)
+    {
+        return (30m + reps + rir) * load >= (load + step) * (30m + min);
+    }
+
+    private static string? FindRepositoryRoot()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+
+        while (directory is not null)
+        {
+            if (File.Exists(Path.Combine(directory.FullName, "StrengthPlanner.sln")))
+            {
+                return directory.FullName;
+            }
+
+            directory = directory.Parent;
+        }
+
+        return null;
     }
 }

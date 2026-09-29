@@ -28,10 +28,14 @@ public sealed class ProgressionEngine
     ///
     /// The condition speaks about the used load, and the proposal is the used load plus a
     /// step. For a barbell that difference is a rounding error; for a light dumbbell it is
-    /// the whole story - 8 kg to 10 kg is 25%, where an 8-12 range absorbs about 10%. So
-    /// "the top" is <see cref="StepAbsorption.RepsToEarnStep"/>: the top of the range when
-    /// the step fits it, and otherwise the rep count at which it does. Between the two the
-    /// session is judged like any other within the range, and the load waits.
+    /// the whole story - 8 kg to 10 kg is 25%, where an 8-12 range absorbs about 13%. So the
+    /// rule above applies only where the step fits the prescription
+    /// (<see cref="StepAbsorption.FitsAtTarget"/>), which is every step a barbell makes on a
+    /// real load. Below that, the step is given only when every set's own capacity - its
+    /// reps plus the reserve it really left - absorbs it (<see cref="StepAbsorption.Absorbs"/>),
+    /// and it is one step, or what the correction alone asks for if that is more - never a
+    /// step and a correction on top of it, which rounding turns into a second step. Until then the load waits: it is never
+    /// lowered, and a positive correction applies exactly as it would inside the range.
     ///
     /// The load increment used for the double-progression step and for rounding comes
     /// from the exercise (2.5 kg when none is supplied), so dumbbells and machines step
@@ -77,52 +81,47 @@ public sealed class ProgressionEngine
             deviation * TrainingConstants.RpeCorrectionPerPoint,
             -TrainingConstants.MaxCorrection,
             TrainingConstants.MaxCorrection);
-        // Vrh koji donosi korak: gornja granica opsega, osim kad je korak prevelik da bi ga
-        // povratak na dno opsega upio (laka bučica, mala mašina) - tada tek broj ponavljanja
-        // na kome ga upija. Ekran treninga računa isti broj i prikazuje ga kao cilj.
-        var repsToEarnStep = StepAbsorption.RepsToEarnStep(
-            usedTotalKg,
-            stepKg,
-            repRangeMin,
-            repRangeMax,
-            targetRir);
-        var allReachedRangeTop = workingSets.All(set => set.Reps >= repRangeMax);
-        var allHitTop = workingSets.All(set => set.Reps >= repsToEarnStep);
+        var allHitTop = workingSets.All(set => set.Reps >= repRangeMax);
 
         decimal nextWeight;
         var atBodyweightFloor = false;
 
-        if (!allReachedRangeTop)
+        if (!allHitTop)
         {
             nextWeight = ApplyCorrection(usedTotalKg, correction, stepKg, bodyweightLoadKg, usedWeightKg);
             atBodyweightFloor = BodyweightLoad.IsAtBodyweightFloor(usedTotalKg * (1 + correction), bodyweightLoadKg);
         }
-        else if (!allHitTop)
+        else if (StepAbsorption.FitsAtTarget(usedTotalKg, stepKg, repRangeMin, repRangeMax, targetRir))
         {
-            // Vrh opsega je dostignut, ali korak još ne staje u opseg. Težina čeka dok
-            // ponavljanja ne stignu do cilja koji ga upija. Vrh opsega ni ovde ne spušta
-            // opterećenje - korekcija naniže bi 40 kg na vrhu opsega pretvorila u 35 -
-            // a korekcija naviše sme da prođe, jer je izvedena iz stvarne rezerve.
-            nextWeight = ApplyCorrection(usedTotalKg, Math.Max(0m, correction), stepKg, bodyweightLoadKg, usedWeightKg);
+            // Korak staje u propis (svaka šipka na stvarnoj težini): pravilo iz runda 9 i 10,
+            // bez izmene.
+            nextWeight = RangeResetCoversShortfall(deviation, repRangeMin, repRangeMax)
+                ? StepUp(usedTotalKg, correction, stepKg, bodyweightLoadKg)
+                // Uska nedelja (11-12 sa RIR 2, 3-4 sa RIR 3) izvučena preko cilja: po
+                // Epley-u sledeći propis ne ide na većoj težini. Vrh opsega ipak nikad ne
+                // spušta opterećenje, pa se zadržava tačno ono što je podignuto.
+                : usedWeightKg;
         }
-        else if (RangeResetCoversShortfall(deviation, repRangeMin, repsToEarnStep))
+        else if (EverySetAbsorbs(workingSets, usedTotalKg, stepKg, repRangeMin))
         {
-            // Vrh opsega: sledeći trening kreće od dna, a to vredi (max - min) ponavljanja
-            // rezerve. Manjak RIR-a do te granice je već plaćen tim povratkom; negativna
-            // korekcija bi ga platila drugi put. Tako je i bilo: 0.97u + 2.5 je poništavalo
-            // korak između ~42 i 125 kg, a iznad 125 kg obaralo opterećenje (160 -> 140 kg
-            // za osam treninga, uz strelicu naviše).
-            nextWeight = BodyweightLoad.AddedTarget(
-                (usedTotalKg * (1 + Math.Max(0m, correction))) + stepKg,
-                bodyweightLoadKg,
-                stepKg);
+            // Korak je velik za ovu težinu (laka bučica, mala mašina), ali ga je svaka serija
+            // svojim kapacitetom - ponavljanja plus rezerva koja je zaista ostala - upila.
+            // Jedan korak, ili koliko sama korekcija traži ako je to više - ali ne korak PLUS
+            // korekcija: kod teške šipke korekcija povrh koraka dodaje deo koraka, a ovde bi
+            // je zaokruživanje pretvorilo u ceo drugi (12 kg uz 3 x 12 @RIR4 je davalo 16 kg,
+            // gde po Epley-u ostaje 4.5 ponavljanja). Ni manje od same korekcije: ista serija
+            // jedno ponavljanje ispod vrha je dobija, pa bi vrh inače davao manje.
+            nextWeight = Math.Max(
+                BodyweightLoad.AddedTarget(usedTotalKg + stepKg, bodyweightLoadKg, stepKg),
+                ApplyCorrection(usedTotalKg, Math.Max(0m, correction), stepKg, bodyweightLoadKg, usedWeightKg));
         }
         else
         {
-            // Uska nedelja (11-12 sa RIR 2, 3-4 sa RIR 3) izvučena preko cilja: po Epley-u
-            // sledeći propis ne ide na većoj težini. Vrh opsega ipak nikad ne spušta
-            // opterećenje, pa se zadržava tačno ono što je podignuto.
-            nextWeight = usedWeightKg;
+            // Vrh opsega je dostignut, ali korak još ne staje: težina čeka. Ne pada - vrh
+            // opsega nikad ne spušta opterećenje - a korekcija naviše prolazi isto kao unutar
+            // opsega. Da je ovde strožija, serija na vrhu bi dobijala manje od iste serije
+            // jedno ponavljanje ispod njega (izmereno: 28 -> 30 kg ispod vrha, 28 na vrhu).
+            nextWeight = ApplyCorrection(usedTotalKg, Math.Max(0m, correction), stepKg, bodyweightLoadKg, usedWeightKg);
         }
 
         return new ProgressionResult(
@@ -132,14 +131,47 @@ public sealed class ProgressionEngine
     }
 
     /// <summary>
-    /// Whether resetting the target from the top that earned the step to the floor of the
-    /// range covers the RIR shortfall of that session. By Epley the next prescription then
-    /// loads at least the used weight. <paramref name="topReps"/> is the top of the range
-    /// unless the step is too coarse for it — see <see cref="StepAbsorption"/>.
+    /// Whether resetting the target from the top of the range to its floor covers the RIR
+    /// shortfall of a top-of-range session. By Epley the next prescription then loads at
+    /// least the used weight.
     /// </summary>
-    private static bool RangeResetCoversShortfall(decimal deviation, int repRangeMin, int topReps)
+    private static bool RangeResetCoversShortfall(decimal deviation, int repRangeMin, int repRangeMax)
     {
-        return deviation + (topReps - repRangeMin) >= 0;
+        return deviation + (repRangeMax - repRangeMin) >= 0;
+    }
+
+    /// <summary>
+    /// Whether every set's capacity - its reps plus the reserve it really left - keeps the
+    /// floor of the range reachable after one step more.
+    /// </summary>
+    private static bool EverySetAbsorbs(
+        IReadOnlyList<WorkingSet> workingSets,
+        decimal usedTotalKg,
+        decimal stepKg,
+        int repRangeMin)
+    {
+        return workingSets.All(set => StepAbsorption.Absorbs(
+            usedTotalKg,
+            stepKg,
+            repRangeMin,
+            set.Reps,
+            Math.Max(0, set.EffectiveRir(repRangeMin))));
+    }
+
+    /// <summary>
+    /// One step up from the used load, with only a positive correction stacked on it.
+    ///
+    /// The reset to the floor of the range already pays for a RIR shortfall, and a negative
+    /// correction would pay for it a second time. So it was: 0.97u + 2.5 cancelled the step
+    /// between ~42 and 125 kg and lowered the load above 125 kg (160 -> 140 kg over eight
+    /// sessions, under an upward arrow).
+    /// </summary>
+    private static decimal StepUp(decimal usedTotalKg, decimal correction, decimal stepKg, decimal bodyweightLoadKg)
+    {
+        return BodyweightLoad.AddedTarget(
+            (usedTotalKg * (1 + Math.Max(0m, correction))) + stepKg,
+            bodyweightLoadKg,
+            stepKg);
     }
 
     /// <summary>
@@ -155,10 +187,12 @@ public sealed class ProgressionEngine
     /// The sign of the correction is the decision; the step is only how fine the result can
     /// be expressed. With no correction at all the used weight is kept as it is.
     ///
-    /// The step can also be too coarse to express the correction at all: whenever 10% of
-    /// the load is no more than half a step (dumbbells up to 10 kg, cables and bars up to
-    /// 12.5 kg, machines up to 25 kg), even the largest correction rounds back onto the
-    /// used load. A lateral raise at 10 kg done for 5, 4 and 4 reps of an 8-12 range asked
+    /// The step can also be too coarse to express the correction at all. Downward, whenever
+    /// 10% of the load is no more than half a step - up to and including five steps:
+    /// dumbbells up to 10 kg, cables and bars up to 12.5 kg, machines up to 25 kg - even the
+    /// largest correction rounds back onto the used load. (Upward the same holds only below
+    /// five steps: rounding away from zero lifts exactly half a step up, so +10% on 10 kg
+    /// becomes 12.) A lateral raise at 10 kg done for 5, 4 and 4 reps of an 8-12 range asked
     /// for 9 kg and got 10, session after session - the lifter stayed below the range until
     /// the reps crept back up on their own. A correction that reached the cap is the
     /// strongest signal the rule knows, so when rounding erases it the load moves down by

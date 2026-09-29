@@ -253,7 +253,8 @@
             Korak od {{ plan.weightStepKg | number: '1.0-2' }} kg je
             {{ stepSharePercent(plan) }}% ove težine - više nego što opseg
             {{ repRange(plan) }} može da upije. Težina ostaje dok sve serije ne stignu do
-            {{ repTarget(plan) }} ponavljanja, pa onda ide korak.
+            {{ repTarget(plan) }} ponavljanja uz RIR {{ plan.targetRir }} (ili manje, uz više
+            rezerve), pa onda ide korak.
           </p>
         }
 
@@ -354,7 +355,8 @@
                     }
                     @case ('at-top-step-not-earned') {
                       Vrh opsega, ali korak težine je ovde prevelik - težina ostaje dok sve
-                      serije ne stignu do {{ repTarget(plan) }} ponavljanja.
+                      serije ne stignu do {{ repTarget(plan) }} ponavljanja uz RIR
+                      {{ plan.targetRir }}.
                     }
                     @case ('at-top-narrow') {
                       Vrh propisanih ponavljanja - ovde korak ide samo ako ostane rezerve, pa

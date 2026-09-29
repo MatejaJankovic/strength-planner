@@ -13,7 +13,7 @@ public class ProgressionPropertyTests
 {
     private static readonly decimal[] Steps = [0.5m, 1m, 2m, 2.5m, 5m, 10m];
 
-    private static readonly (int Min, int Max)[] Ranges = [(3, 6), (8, 12), (11, 12), (3, 4), (6, 9)];
+    private static readonly (int Min, int Max)[] Ranges = [(3, 6), (8, 12), (11, 12), (3, 4), (6, 9), (5, 5)];
 
     private static readonly decimal[] OffGridWeights = [41.5m, 83.1m, 101m, 126.3m];
 
@@ -32,35 +32,50 @@ public class ProgressionPropertyTests
                 {
                     for (var targetRir = 1; targetRir <= 4; targetRir++)
                     {
-                        // Vrh koji donosi korak: gornja granica opsega, osim kad je korak
-                        // prevelik da ga opseg upije (0.5 kg na koraku od 0.5 je +100%).
-                        var repsToEarnStep = StepAbsorption.RepsToEarnStep(used, step, min, max, targetRir);
+                        // Dva režima (runda 14): gde korak staje u propis važi staro pravilo,
+                        // a ispod toga korak daje samo kapacitet serija (ponavljanja + rezerva).
+                        var fits = StepAbsorption.FitsAtTarget(used, step, min, max, targetRir);
 
                         foreach (var set in TopOfRangeSets(max))
                         {
                             var sets = new[] { set, set, set };
                             var result = _engine.ComputeNext(used, sets, targetRir, min, max, step);
                             var deviation = set.EffectiveRir(min) - targetRir;
+                            var described = Describe(set, min, max, targetRir, step);
 
                             if (result.NextWeightKg < used)
                             {
-                                failures.Add($"lowered {used} -> {result.NextWeightKg} ({Describe(set, min, max, targetRir, step)})");
+                                failures.Add($"lowered {used} -> {result.NextWeightKg} ({described})");
                             }
 
-                            if (set.Reps >= repsToEarnStep
-                                && deviation + (repsToEarnStep - min) >= 0
-                                && result.NextWeightKg < used + (step / 2))
+                            if (fits)
                             {
-                                failures.Add($"no step {used} -> {result.NextWeightKg} ({Describe(set, min, max, targetRir, step)})");
+                                if (deviation + (max - min) >= 0 && result.NextWeightKg < used + (step / 2))
+                                {
+                                    failures.Add($"no step {used} -> {result.NextWeightKg} ({described})");
+                                }
+
+                                continue;
                             }
 
-                            // Korak koji ne staje ne sme da dođe ni kroz vrh opsega: bez rezerve
-                            // iznad cilja nema ni pozitivne korekcije, pa se težina drži tačno.
-                            if (set.Reps < repsToEarnStep && deviation <= 0 && result.NextWeightKg != used)
+                            var increase = result.NextWeightKg - used;
+
+                            if (StepAbsorption.Absorbs(used, step, min, set.Reps, set.EffectiveRir(min)))
                             {
-                                failures.Add(
-                                    $"unabsorbable step taken {used} -> {result.NextWeightKg} " +
-                                    $"(needs {repsToEarnStep}; {Describe(set, min, max, targetRir, step)})");
+                                // Jedan korak, ili koliko sama korekcija traži (najviše +10%) -
+                                // nikad korak i korekcija povrh njega.
+                                var oneStep = WeightMath.RoundToStep(used + step, step);
+                                var correctionAlone = WeightMath.RoundToStep(used * 1.10m, step);
+
+                                if (result.NextWeightKg < oneStep
+                                    || result.NextWeightKg > Math.Max(oneStep, correctionAlone))
+                                {
+                                    failures.Add($"not one step {used} -> {result.NextWeightKg} ({described})");
+                                }
+                            }
+                            else if (deviation <= 0 && increase != 0)
+                            {
+                                failures.Add($"unabsorbed step taken {used} -> {result.NextWeightKg} ({described})");
                             }
                         }
                     }
@@ -153,12 +168,13 @@ public class ProgressionPropertyTests
                                     ? expected != used
                                     : legacyDeviation < 0 ? expected > used : expected < used);
 
-                            // Četvrti i peti namerno promenjen slučaj (runda 14): korak koji
-                            // opseg ne upija čeka produžen cilj ponavljanja, a korekcija na
-                            // granici od -10% koju je zaokruživanje obrisalo spušta težinu za
-                            // jedan korak umesto da je ostavi.
+                            // Četvrti i peti namerno promenjen slučaj (runda 14): na vrhu opsega
+                            // lakog tereta, gde korak ne staje u propis, korak daje kapacitet
+                            // serija; a korekcija na granici od -10% koju je zaokruživanje
+                            // obrisalo spušta težinu za jedan korak umesto da je ostavi. Gde
+                            // korak staje u propis, rezultat mora da bude tačno stari.
                             var stepDoesNotFitYet = allHitTop
-                                && set.Reps < StepAbsorption.RepsToEarnStep(used, step, min, max, targetRir);
+                                && !StepAbsorption.FitsAtTarget(used, step, min, max, targetRir);
                             var cappedCorrectionErased = !allHitTop
                                 && legacyDeviation * TrainingConstants.RpeCorrectionPerPoint <= -TrainingConstants.MaxCorrection
                                 && expected >= used;

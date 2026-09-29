@@ -1,4 +1,5 @@
 import { ExercisePlanDto } from '../../core/models/training.models';
+import { absorbsStep, isNarrowRange as narrowPrescription, stepFitsAtTarget } from './step-absorption';
 
 /**
  * Šta serija koja se upravo unosi znači za sledeći trening.
@@ -21,24 +22,30 @@ export type SetFeedback =
   | 'below-range-with-reserve';
 
 export interface SetFeedbackDraft {
+  /** Težina koja se unosi (dodata, kod vežbi sa telesnom masom). */
+  weightKg: number;
   reps: number;
   rir: number;
   isFailure: boolean;
 }
 
-/**
- * `repsToEarnStep` je opciono samo zato što ga stariji delovi ekrana i testovi ne nose;
- * bez njega važi vrh opsega, što je i vrednost koju server šalje kad korak staje u opseg.
- */
-export type SetFeedbackPlan = Pick<ExercisePlanDto, 'repRangeMin' | 'repRangeMax' | 'targetRir'> &
-  Partial<Pick<ExercisePlanDto, 'repsToEarnStep'>>;
+export type SetFeedbackPlan = Pick<
+  ExercisePlanDto,
+  'repRangeMin' | 'repRangeMax' | 'targetRir' | 'weightStepKg' | 'bodyweightLoadKg'
+>;
 
-export function setFeedback(plan: SetFeedbackPlan, draft: SetFeedbackDraft): SetFeedback | null {
-  // Vrh opsega, ali korak je prevelik da ga opseg upije (laka bučica): server težinu drži
-  // dok ponavljanja ne stignu do cilja, pa „ide korak više" ovde ne bi bilo tačno.
-  const repsToEarnStep = plan.repsToEarnStep ?? plan.repRangeMax;
-  if (draft.reps >= plan.repRangeMax && draft.reps < repsToEarnStep) {
-    return 'at-top-step-not-earned';
+/**
+ * @param isDeload U deload nedelji se ne gleda da li korak staje: posle nje se nastavlja od
+ * težine zarađene pre nje, pa ova serija o koraku ne odlučuje.
+ */
+export function setFeedback(
+  plan: SetFeedbackPlan,
+  draft: SetFeedbackDraft,
+  isDeload = false,
+): SetFeedback | null {
+  const stepNote = stepTooLargeFeedback(plan, draft, isDeload);
+  if (stepNote !== undefined) {
+    return stepNote;
   }
 
   if (draft.isFailure) {
@@ -76,6 +83,38 @@ export function setFeedback(plan: SetFeedbackPlan, draft: SetFeedbackDraft): Set
 }
 
 /**
+ * Serija na vrhu širokog opsega kod lakog tega, gde korak ne staje u propis (bučica od 8 kg,
+ * korak 2 kg = +25%). Server tu daje korak samo kad kapacitet serije - ponavljanja plus
+ * rezerva koja je zaista ostala - upija korak; inače težina čeka.
+ *
+ * Vraća `undefined` kad ovo pravilo ne važi (ispod vrha, uzak opseg, deload, korak staje),
+ * pa odlučuju obične napomene. `null` kad pravilo važi, a nema šta da se kaže: kapacitet
+ * upija korak bez otkaza, ili ima rezerve iznad cilja pa korekcija naviše i dalje može da
+ * podigne težinu - to se ne obećava ni u jednom smeru.
+ */
+function stepTooLargeFeedback(
+  plan: SetFeedbackPlan,
+  draft: SetFeedbackDraft,
+  isDeload: boolean,
+): SetFeedback | null | undefined {
+  if (isDeload || draft.reps < plan.repRangeMax || isNarrowRange(plan)) {
+    return undefined;
+  }
+
+  const totalKg = draft.weightKg + plan.bodyweightLoadKg;
+  if (stepFitsAtTarget(totalKg, plan.weightStepKg, plan.repRangeMin, plan.repRangeMax, plan.targetRir)) {
+    return undefined;
+  }
+
+  const rir = draft.isFailure ? 0 : draft.rir;
+  if (absorbsStep(totalKg, plan.weightStepKg, plan.repRangeMin, draft.reps, rir)) {
+    return draft.isFailure ? 'failure-at-top' : null;
+  }
+
+  return rir <= plan.targetRir ? 'at-top-step-not-earned' : null;
+}
+
+/**
  * Opseg uži od ciljnog RIR-a (3-4 @RIR3, fiksnih 5 ponavljanja @RIR2): povratak na dno
  * opsega ne pokriva manjak RIR-a na vrhu, pa server tu težinu zadržava umesto da doda
  * korak.
@@ -84,5 +123,5 @@ export function setFeedback(plan: SetFeedbackPlan, draft: SetFeedbackDraft): Set
  * ponavljanja (5×5), i tada ceo teret pada na sam RIR.
  */
 function isNarrowRange(plan: SetFeedbackPlan): boolean {
-  return plan.targetRir > plan.repRangeMax - plan.repRangeMin;
+  return narrowPrescription(plan.repRangeMin, plan.repRangeMax, plan.targetRir);
 }
