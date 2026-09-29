@@ -116,6 +116,7 @@ ono što je ispod 20 kg, ono što blok radi kroz nedelje i ono što se tvrdi o v
 | Grana | O čemu je | PR |
 |---|---|---|
 | [Korak mora da stane u opseg](load-step-absorption.md) | Bučica 8 → 10 kg (+25%) posle 3 × 12 ostavljala je 3–4 ponavljanja u opsegu 8–12; korekcija i deload lakih tegova su se zaokruživali nazad na istu težinu | #85 |
+| [Slične vežbe ne idu u uzastopne dane](session-spacing.md) | Legs Specialization je stavljao noge tri dana zaredom, a Full Body (4 dana) čučanj pa RDL i leg press pa front squat u uzastopne dane | #86 |
 
 ## Ako čitaš samo jedno
 
