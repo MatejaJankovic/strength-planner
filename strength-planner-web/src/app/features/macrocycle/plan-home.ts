@@ -26,9 +26,13 @@ import { templateDaysFor } from './template-days';
  */
 const FALLBACK_TEMPLATE_KEY = 'upper-lower';
 
-/** Blok snage gradi intenzitet, blok hipertrofije volumen — model prati cilj. */
-function modelForGoal(goal: Goal): PeriodizationModel {
-  return goal === Goal.Strength ? PeriodizationModel.Linear : PeriodizationModel.Inverse;
+/**
+ * Rezervni predlog modela, samo ako predlog sa servera ne stigne. Pravi predlog zavisi i od
+ * nivoa (početnik uvek dobija linearan) i živi u domenu (Periodization.SuggestedModel); ovo
+ * je njegov slučaj za srednji i napredni nivo.
+ */
+function fallbackModelForGoal(goal: Goal): PeriodizationModel {
+  return goal === Goal.Strength ? PeriodizationModel.Inverse : PeriodizationModel.LinearRising;
 }
 
 const MIN_BLOCKS = 1;
@@ -77,8 +81,9 @@ export class PlanHome {
    * Raspored nedelja, sa objasnjenjem sta radi unetim brojevima.
    *
    * Objasnjenje nije ukras. Tvoj opseg ponavljanja nije propis za prvu nedelju nego
-   * sidro, a nedelje su pomaci od njega: kod linearnog sidro pada na trecu nedelju, prva
-   * je faza volumena (+3 ponavljanja), poslednje su faza intenziteta. To je definicija
+   * sidro, a nedelje su pomaci od njega: kod linearnog sidro pada na trecu nedelju, prve
+   * dve nose seriju manje ili vise rezerve, poslednje dve seriju vise i manje ponavljanja.
+   * To je definicija
    * periodizacije, ali nigde nije pisalo — pa je prijavljeno kao greska: "uneo sam 8-12,
    * a prva nedelja kaze 11-12".
    */
@@ -90,11 +95,11 @@ export class PlanHome {
       effect: 'Tvoj opseg ponavljanja svake nedelje. Četvrta je deload.',
     },
     {
-      value: PeriodizationModel.Linear,
+      value: PeriodizationModel.LinearRising,
       label: 'Linearan',
       weeks: 6,
       effect:
-        'Kreće sa više ponavljanja nego što si uneo, pa se spušta ka težim serijama. Tvoj opseg dolazi u 3. nedelji.',
+        'Serije rastu kroz blok, a ponavljanja i rezerva padaju: najteže su dve nedelje pred deload. Tvoj opseg dolazi u 3. nedelji.',
     },
     {
       value: PeriodizationModel.Inverse,
@@ -104,6 +109,30 @@ export class PlanHome {
         'Kreće sa manje ponavljanja nego što si uneo, pa raste ka volumenu. Tvoj opseg dolazi u 3. nedelji.',
     },
   ];
+
+  /**
+   * Modeli koje čarobnjak više ne nudi, ali ih nose ranije napravljeni blokovi - da bi plan
+   * i dalje pokazao šta blok radi.
+   */
+  private readonly legacyModelOptions = [
+    {
+      value: PeriodizationModel.Linear,
+      label: 'Linearan (stari)',
+      weeks: 6,
+      effect: 'Više serija i ponavljanja na početku, teže i manje serija pred kraj.',
+    },
+  ];
+
+  private modelOption(model: PeriodizationModel) {
+    return [...this.modelOptions, ...this.legacyModelOptions].find((option) => option.value === model);
+  }
+
+  /** Predlog modela po cilju, kako ga je server izračunao za ovog korisnika. */
+  private readonly suggestedModels = signal<Partial<Record<Goal, PeriodizationModel>>>({});
+
+  private modelForGoal(goal: Goal): PeriodizationModel {
+    return this.suggestedModels()[goal] ?? fallbackModelForGoal(goal);
+  }
 
   /**
    * Ko odlucuje o broju serija.
@@ -233,19 +262,26 @@ export class PlanHome {
     const key = templateKey ?? FALLBACK_TEMPLATE_KEY;
 
     this.macrocycleService.suggestedBlocks(2, Goal.Hypertrophy, key).subscribe({
-      next: (blocks) => this.blocks.set(blocks),
+      next: (blocks) => {
+        this.blocks.set(blocks);
+        // Dva bloka smenjuju oba cilja, pa predlog pokriva oba - i vredi i kad korisnik
+        // doda blok ili promeni cilj.
+        this.suggestedModels.set(
+          Object.fromEntries(blocks.map((block) => [block.goal, block.periodizationModel])),
+        );
+      },
       error: () =>
         this.blocks.set([
           {
             goal: Goal.Hypertrophy,
             templateKey: key,
-            periodizationModel: PeriodizationModel.Inverse,
+            periodizationModel: fallbackModelForGoal(Goal.Hypertrophy),
             setAllocation: SetAllocation.TargetVolume,
           },
           {
             goal: Goal.Strength,
             templateKey: key,
-            periodizationModel: PeriodizationModel.Linear,
+            periodizationModel: fallbackModelForGoal(Goal.Strength),
             setAllocation: SetAllocation.TargetVolume,
           },
         ]),
@@ -280,7 +316,7 @@ export class PlanHome {
         {
           goal,
           templateKey: last.templateKey,
-          periodizationModel: modelForGoal(goal),
+          periodizationModel: this.modelForGoal(goal),
           setAllocation: last.setAllocation,
         },
       ];
@@ -301,7 +337,7 @@ export class PlanHome {
       // Model prati cilj, isto kao pri dodavanju bloka i u predlogu sa servera; korisnik
       // ga i dalje može promeniti posle.
       blocks.map((block, i) =>
-        i === index ? { ...block, goal, periodizationModel: modelForGoal(goal) } : block,
+        i === index ? { ...block, goal, periodizationModel: this.modelForGoal(goal) } : block,
       ),
     );
   }
@@ -328,7 +364,7 @@ export class PlanHome {
   }
 
   protected modelEffect(model: PeriodizationModel): string {
-    return this.modelOptions.find((option) => option.value === model)?.effect ?? '';
+    return this.modelOption(model)?.effect ?? '';
   }
 
   protected allocationEffect(allocation: SetAllocation): string {
@@ -336,11 +372,11 @@ export class PlanHome {
   }
 
   protected modelWeeks(model: PeriodizationModel): number {
-    return this.modelOptions.find((option) => option.value === model)?.weeks ?? 4;
+    return this.modelOption(model)?.weeks ?? 4;
   }
 
   protected modelLabel(model: PeriodizationModel): string {
-    return this.modelOptions.find((option) => option.value === model)?.label ?? 'Ravan';
+    return this.modelOption(model)?.label ?? 'Ravan';
   }
 
   /**

@@ -17,8 +17,11 @@ export enum SetAllocation {
 
 export enum PeriodizationModel {
   Flat = 0,
+  /** Klasičan linearan raspored (serije padaju); ostaje za blokove napravljene ranije. */
   Linear = 1,
   Inverse = 2,
+  /** Linearan raspored iz priručnika: serije rastu, ponavljanja i rezerva padaju. */
+  LinearRising = 3,
 }
 
 export interface MuscleContributionDto {
