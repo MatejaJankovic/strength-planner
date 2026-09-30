@@ -218,7 +218,7 @@ export interface CompleteSessionResultDto {
   nextBlock?: MacrocycleAdvanceDto | null;
 }
 
-/** Jedan predlog serija koji je pomeren da bi nedelja ostala u ciljnoj zoni volumena. */
+/** Jedan predlog serija koji je balansiranje pomerilo: ka ciljnoj zoni nedelje, ili ispod granice po treningu. */
 export interface SetAdjustmentDto {
   sessionId: string;
   /** Oznaka dana ciji je predlog promenjen, npr. "Push". */
@@ -228,8 +228,10 @@ export interface SetAdjustmentDto {
   fromSets: number;
   /** Predlog koji sada vazi. */
   toSets: number;
-  /** Misicna grupa ciji nedeljni volumen najbolje objasnjava izmenu. */
+  /** Misicna grupa ciji volumen najbolje objasnjava izmenu. */
   muscle?: string | null;
+  /** Sta je trazilo izmenu: nedeljni cilj, ili jedan trening sa previse serija tog misica. */
+  reason?: 'WeeklyTarget' | 'SessionCeiling' | null;
 }
 
 export interface MacrocycleAdvanceDto {

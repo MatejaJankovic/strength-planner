@@ -24,6 +24,7 @@ import { LoadInputNote, loadInputNote } from './load-input-note';
 import { loadLabel } from './load-label';
 import { repRangeLabel } from '../../shared/rep-range-label';
 import { LoadFloorNote, loadFloorNote } from './load-floor-note';
+import { adjustmentCause } from './adjustment-cause';
 
 interface SetDraft {
   weightKg: number;
@@ -199,6 +200,8 @@ export class WorkoutSession {
   }
 
   /** Napomena uz polje za težinu: jedna bučica, ili nula na vežbi koja se opterećuje. */
+  protected readonly adjustmentCause = adjustmentCause;
+
   protected loadNote(plan: ExercisePlanDto, draft: SetDraft): LoadInputNote {
     return loadInputNote(plan.equipment, draft.weightKg);
   }
