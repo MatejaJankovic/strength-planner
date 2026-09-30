@@ -121,3 +121,10 @@ podizanje sa maksimumom od 40 kg u bloku snage startuje sa **30 kg** (8–12 pri
 sa 35 (3–6 pri RIR 2).
 
 Ukupno: 522 → 537 testova na serveru, 139 na klijentu (bez izmena).
+
+## Kasnije (runda 14)
+
+Izolacija više ne nosi 8–12, nego svoj opseg **10–20**, u oba bloka. Pravilo iz ove beleške
+(opseg prati vežbu, a RIR blok) ostaje isto; promenio se samo broj. Brojevi u testovima
+iznad (30 kg za bočno podizanje u bloku snage) važe za pravilo kakvo je bilo tada; danas je to
+27.5 kg. Vidi [rep-ranges-by-role.md](rep-ranges-by-role.md).
