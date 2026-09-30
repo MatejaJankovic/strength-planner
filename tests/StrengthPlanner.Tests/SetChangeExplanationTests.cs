@@ -61,6 +61,27 @@ public class SetChangeExplanationTests
     }
 
     [Fact]
+    public void ACutTheWeekAskedFor_InASessionTheCeilingTrimmedElsewhere_IsExplainedByTheWeek()
+    {
+        // Trening bi bez granice nosio 13 serija grudi, pa ga granica seče - ali ne ovu
+        // vežbu: i bez granice bi pala sa 6 na 4, jer je nedelja grudi dve serije iznad
+        // cilja. Pun trening je istina o treningu, a ne razlog za ovaj rez.
+        var fly = Slot(Chest, prescribed: 4);
+
+        var cause = SetChangeExplanation.Explain(
+            fly,
+            previousSets: 6,
+            allocatedSets: 4,
+            Week(
+                withoutCeiling: (fly, 4),
+                stimulative: [(Chest, 16m)],
+                perSessionWithoutCeiling: [(Chest, 13m)],
+                targets: [(Chest, 16m, 22m)]));
+
+        Assert.Equal(new SetChangeCause(Chest, SetChangeReason.WeeklyTarget), cause);
+    }
+
+    [Fact]
     public void ACut_IsReadFromWhatTheLifterSaw_NotFromThePrescription()
     {
         // Veslanje je propisano sa 4, lifter ga je video na 6, a sada je 5. Prema propisu to
