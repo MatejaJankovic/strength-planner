@@ -183,7 +183,8 @@ public sealed class WeeklySetPlanner
             WeeklySetAllocation.Project(slots, allocated, completedRaw),
             withoutCeiling,
             WeeklySetAllocation.ProjectPerSession(slots, withoutCeiling),
-            targets.ToDictionary(target => target.MuscleGroupId));
+            targets.ToDictionary(target => target.MuscleGroupId),
+            WeeklySetAllocation.ProjectPerSession(slots, allocated));
         var slotById = slots.ToDictionary(slot => slot.Id);
 
         var adjustments = new List<SetAdjustment>();
