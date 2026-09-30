@@ -491,10 +491,11 @@ public class PeriodizationTests
     [Fact]
     public void LinearRising_GivesTheHandbooksWave_ToAnIntermediateLifter()
     {
-        // Priručnik (str. 13): serije 3 -> 4 -> 4 -> 5 -> 5. Srednji nivo kreće od 4 serije.
+        // Priručnik (str. 13): serije 3 -> 4 -> 4 -> 5 -> 5, od osnove srednjeg nivoa.
         var strength = GoalPrescriptions.ForGoal(Goal.Strength);
+        var baseSets = ExperienceProgramming.StartingSetsPerExercise(ExperienceLevel.Intermediate);
         var sets = Periodization
-            .ForBlock(PeriodizationModel.LinearRising, strength.RepRangeMin, strength.RepRangeMax, strength.TargetRir, 4)
+            .ForBlock(PeriodizationModel.LinearRising, strength.RepRangeMin, strength.RepRangeMax, strength.TargetRir, baseSets)
             .Where(week => !week.IsDeload)
             .Select(week => week.Sets);
 
@@ -521,27 +522,45 @@ public class PeriodizationTests
         Assert.Equal(new[] { 12m, 16m, 16m, 20m, 20m }, targets);
     }
 
-    [Theory]
-    [InlineData(ExperienceLevel.Beginner, Goal.Hypertrophy, PeriodizationModel.LinearRising)]
-    [InlineData(ExperienceLevel.Beginner, Goal.Strength, PeriodizationModel.LinearRising)]
-    [InlineData(ExperienceLevel.Intermediate, Goal.Hypertrophy, PeriodizationModel.LinearRising)]
-    [InlineData(ExperienceLevel.Intermediate, Goal.Strength, PeriodizationModel.Inverse)]
-    [InlineData(ExperienceLevel.Advanced, Goal.Hypertrophy, PeriodizationModel.LinearRising)]
-    [InlineData(ExperienceLevel.Advanced, Goal.Strength, PeriodizationModel.Inverse)]
-    public void SuggestedModel_FollowsTheHandbook(ExperienceLevel level, Goal goal, PeriodizationModel expected)
+    /// <summary>
+    /// Predlog je linearan model za svaki blok. Priručnik obrnut model vezuje za snagu, ali
+    /// ga literatura ne podržava: linearan je dao veću snagu od obrnutog (Prestes i sar. 2009),
+    /// a pregled zaključuje da obrnut nije efikasniji ni za snagu (González-Ravé i sar. 2022).
+    /// </summary>
+    [Fact]
+    public void SuggestedModel_IsTheRisingLinearModel()
     {
-        // Priručnik: linearan je "idealan za početnike", obrnut je za snagu. Za hipertrofiju
-        // nijedan model nije bolji kad je volumen isti, pa ona dobija akumulaciju ka MRV-u.
-        Assert.Equal(expected, Periodization.SuggestedModel(level, goal));
+        Assert.Equal(PeriodizationModel.LinearRising, Periodization.SuggestedModel);
     }
 
     [Fact]
-    public void SuggestedModel_NeverOffersTheOldLinearModel()
+    public void SuggestedModel_IsNeverTheOldLinearModel()
     {
-        foreach (var level in Enum.GetValues<ExperienceLevel>())
-        foreach (var goal in Enum.GetValues<Goal>())
+        Assert.NotEqual(PeriodizationModel.Linear, Periodization.SuggestedModel);
+    }
+
+    /// <summary>
+    /// Pravilo iz runde 10 - svaka trenažna nedelja ima svoj propis - za podrazumevane opsege
+    /// i osnove od 3 serije naviše. Osnova 2 i opseg sa vrhom do 4 su izuzeci i zapisani su u
+    /// ograničenjima (<c>periodization-shapes.md</c>): tamo se nedelje 1 i 2, odnosno 4 i 5,
+    /// poklapaju jer serija ne ide ispod 2 i ponavljanje ispod 3.
+    /// </summary>
+    [Theory]
+    [InlineData(Goal.Hypertrophy)]
+    [InlineData(Goal.Strength)]
+    public void LinearRising_GivesEveryTrainingWeekItsOwnPrescription_ForDefaultRanges(Goal goal)
+    {
+        var prescription = GoalPrescriptions.ForGoal(goal);
+
+        for (var baseSets = 3; baseSets <= 10; baseSets++)
         {
-            Assert.NotEqual(PeriodizationModel.Linear, Periodization.SuggestedModel(level, goal));
+            var weeks = Periodization
+                .ForBlock(PeriodizationModel.LinearRising, prescription.RepRangeMin, prescription.RepRangeMax, prescription.TargetRir, baseSets)
+                .Where(week => !week.IsDeload)
+                .Select(week => (week.Sets, week.RepRangeMin, week.RepRangeMax, week.TargetRir))
+                .ToList();
+
+            Assert.Equal(weeks.Count, weeks.Distinct().Count());
         }
     }
 }

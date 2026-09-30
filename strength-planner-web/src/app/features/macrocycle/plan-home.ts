@@ -27,13 +27,10 @@ import { templateDaysFor } from './template-days';
 const FALLBACK_TEMPLATE_KEY = 'upper-lower';
 
 /**
- * Rezervni predlog modela, samo ako predlog sa servera ne stigne. Pravi predlog zavisi i od
- * nivoa (početnik uvek dobija linearan) i živi u domenu (Periodization.SuggestedModel); ovo
- * je njegov slučaj za srednji i napredni nivo.
+ * Rezervni predlog modela, samo ako predlog sa servera ne stigne. Pravi predlog živi u domenu
+ * (Periodization.SuggestedModel) i isti je za svaki cilj i nivo.
  */
-function fallbackModelForGoal(goal: Goal): PeriodizationModel {
-  return goal === Goal.Strength ? PeriodizationModel.Inverse : PeriodizationModel.LinearRising;
-}
+const FALLBACK_MODEL = PeriodizationModel.LinearRising;
 
 const MIN_BLOCKS = 1;
 const MAX_BLOCKS = 6;
@@ -82,8 +79,8 @@ export class PlanHome {
    *
    * Objasnjenje nije ukras. Tvoj opseg ponavljanja nije propis za prvu nedelju nego
    * sidro, a nedelje su pomaci od njega: kod linearnog sidro pada na trecu nedelju, prve
-   * dve nose seriju manje ili vise rezerve, poslednje dve seriju vise i manje ponavljanja.
-   * To je definicija
+   * dve nose isti opseg uz rezervu vise (prva i seriju manje), poslednje dve seriju vise,
+   * manje ponavljanja i rezervu manje. To je definicija
    * periodizacije, ali nigde nije pisalo — pa je prijavljeno kao greska: "uneo sam 8-12,
    * a prva nedelja kaze 11-12".
    */
@@ -99,7 +96,7 @@ export class PlanHome {
       label: 'Linearan',
       weeks: 6,
       effect:
-        'Serije rastu kroz blok, a ponavljanja i rezerva padaju: najteže su dve nedelje pred deload. Tvoj opseg dolazi u 3. nedelji.',
+        'Serije rastu kroz blok, a ponavljanja i rezerva padaju: najteže su dve nedelje pred deload. Prve dve nedelje nose tvoj opseg sa rezervom više, a od 4. ponavljanja padaju.',
     },
     {
       value: PeriodizationModel.Inverse,
@@ -125,13 +122,6 @@ export class PlanHome {
 
   private modelOption(model: PeriodizationModel) {
     return [...this.modelOptions, ...this.legacyModelOptions].find((option) => option.value === model);
-  }
-
-  /** Predlog modela po cilju, kako ga je server izračunao za ovog korisnika. */
-  private readonly suggestedModels = signal<Partial<Record<Goal, PeriodizationModel>>>({});
-
-  private modelForGoal(goal: Goal): PeriodizationModel {
-    return this.suggestedModels()[goal] ?? fallbackModelForGoal(goal);
   }
 
   /**
@@ -262,26 +252,19 @@ export class PlanHome {
     const key = templateKey ?? FALLBACK_TEMPLATE_KEY;
 
     this.macrocycleService.suggestedBlocks(2, Goal.Hypertrophy, key).subscribe({
-      next: (blocks) => {
-        this.blocks.set(blocks);
-        // Dva bloka smenjuju oba cilja, pa predlog pokriva oba - i vredi i kad korisnik
-        // doda blok ili promeni cilj.
-        this.suggestedModels.set(
-          Object.fromEntries(blocks.map((block) => [block.goal, block.periodizationModel])),
-        );
-      },
+      next: (blocks) => this.blocks.set(blocks),
       error: () =>
         this.blocks.set([
           {
             goal: Goal.Hypertrophy,
             templateKey: key,
-            periodizationModel: fallbackModelForGoal(Goal.Hypertrophy),
+            periodizationModel: FALLBACK_MODEL,
             setAllocation: SetAllocation.TargetVolume,
           },
           {
             goal: Goal.Strength,
             templateKey: key,
-            periodizationModel: fallbackModelForGoal(Goal.Strength),
+            periodizationModel: FALLBACK_MODEL,
             setAllocation: SetAllocation.TargetVolume,
           },
         ]),
@@ -306,7 +289,7 @@ export class PlanHome {
       return;
     }
 
-    // Novi blok podrazumevano smenjuje cilj prethodnog i nasleđuje njegov šablon.
+    // Novi blok podrazumevano smenjuje cilj prethodnog i nasleđuje njegov šablon i model.
     this.blocks.update((blocks) => {
       const last = blocks[blocks.length - 1];
       const goal = last.goal === Goal.Hypertrophy ? Goal.Strength : Goal.Hypertrophy;
@@ -316,7 +299,7 @@ export class PlanHome {
         {
           goal,
           templateKey: last.templateKey,
-          periodizationModel: this.modelForGoal(goal),
+          periodizationModel: last.periodizationModel,
           setAllocation: last.setAllocation,
         },
       ];
@@ -333,12 +316,10 @@ export class PlanHome {
 
   protected setBlockGoal(index: number, raw: string): void {
     const goal = Number(raw) as Goal;
+    // Model ne prati cilj: predlog je isti za oba, pa bi promena cilja samo poništila model
+    // koji je korisnik možda već izabrao.
     this.blocks.update((blocks) =>
-      // Model prati cilj, isto kao pri dodavanju bloka i u predlogu sa servera; korisnik
-      // ga i dalje može promeniti posle.
-      blocks.map((block, i) =>
-        i === index ? { ...block, goal, periodizationModel: this.modelForGoal(goal) } : block,
-      ),
+      blocks.map((block, i) => (i === index ? { ...block, goal } : block)),
     );
   }
 

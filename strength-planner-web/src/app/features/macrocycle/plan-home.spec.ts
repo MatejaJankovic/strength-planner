@@ -234,6 +234,31 @@ describe('PlanHome - sadržaj šablona u čarobnjaku', () => {
 
     expect(component().templateDays('nepostojeci')).toBeNull();
   });
+
+  /**
+   * Predlog modela je isti za oba cilja, pa promena cilja ne sme da poništi model koji je
+   * korisnik izabrao; dok je predlog zavisio od cilja, promena cilja ga je menjala.
+   */
+  it('zadržava izabran model kad se promeni cilj bloka', async () => {
+    openWizard();
+    await fixture.whenStable();
+
+    component().setBlockModel(0, '3');
+    component().setBlockGoal(0, '0');
+
+    expect(component().blocks()[0]).toEqual(
+      expect.objectContaining({ goal: 0, periodizationModel: 3 }),
+    );
+  });
+
+  it('novi blok nasleđuje model prethodnog', async () => {
+    openWizard();
+    await fixture.whenStable();
+
+    component().addBlock();
+
+    expect(component().blocks().map((block: any) => block.periodizationModel)).toEqual([2, 2]);
+  });
 });
 
 /**

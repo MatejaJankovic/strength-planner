@@ -19,21 +19,22 @@ public sealed record WeekPrescription(
 /// nedelje i očekivati da napreduješ — telo se prilagodi. Zato se kroz blok menja odnos
 /// volumena i intenziteta."</i>
 ///
-/// Three models cover three ways of moving that balance:
+/// Four models cover the ways of moving that balance:
 ///
 /// <list type="bullet">
 /// <item><b>Flat</b> — the same prescription every week over four weeks. Progress comes
 /// from double progression, not from the schedule. This is what the system did before
 /// models existed, so it is the <i>stored</i> default: <c>Mesocycle.PeriodizationModel</c>
 /// falls back to it, which is what keeps blocks created before models existed reading
-/// correctly. It is <b>not</b> what a new plan gets — the wizard proposes linear for a
-/// strength block and inverse for a hypertrophy one, and flat only when the lifter picks
-/// it. Two different meanings of "default", and the comment used to state only the one
-/// that is invisible from the screen.</item>
-/// <item><b>Linear</b> — volume first (more reps, easier sets), intensity last (fewer
-/// reps, closer to failure). The classic shape for a block leading to strength.</item>
-/// <item><b>Inverse</b> — the same two ends in the opposite order: heavy while fresh,
-/// volume once load has already driven fatigue up.</item>
+/// correctly. It is <b>not</b> what a new plan gets - the wizard proposes
+/// <see cref="SuggestedModel"/>, and flat only when the lifter picks it.</item>
+/// <item><b>LinearRising</b> — the handbook's linear model: sets rise through the block
+/// while reps and reserve fall, so volume and intensity climb together toward the deload.
+/// What the wizard offers as "linear".</item>
+/// <item><b>Linear</b> — classical linear periodization, volume first (more reps and
+/// sets, easier) and intensity last. Kept for the blocks that carry it; no longer offered.</item>
+/// <item><b>Inverse</b> — heavy while fresh, volume once load has already driven fatigue
+/// up; reps rise through the block.</item>
 /// </list>
 ///
 /// A week is expressed as a <b>shift from the goal's base</b> rather than as absolute
@@ -178,30 +179,26 @@ public static class Periodization
     };
 
     /// <summary>
-    /// The model a new block of this goal is offered first; the lifter can still pick any.
+    /// The model a new block is offered first; the lifter can still pick any.
     ///
-    /// The handbook calls the linear model <i>"idealan za početnike"</i> and the inverse one
-    /// suited to <i>"snagu i izdržljivost"</i>. The literature does not rank models for
-    /// hypertrophy at all once volume is equated (Grgic et al. 2017; Moesgaard et al. 2022),
-    /// and gives periodization a small edge for strength (Williams et al. 2017). So:
-    /// <list type="bullet">
-    /// <item>a beginner gets <see cref="PeriodizationModel.LinearRising"/> for either goal;</item>
-    /// <item>otherwise a hypertrophy block gets <see cref="PeriodizationModel.LinearRising"/> -
-    /// the MEV-to-MRV accumulation the volume landmarks are built around - and a strength
-    /// block gets <see cref="PeriodizationModel.Inverse"/>, as the handbook suggests.</item>
-    /// </list>
-    /// The suggestion used to be the other way round for hypertrophy - inverse, with the claim
-    /// that it suited muscle growth - which neither source supports.
+    /// The linear model, whatever the goal and level. The handbook calls it <i>"idealan za
+    /// početnike"</i> and says the inverse model is <i>"idealna za izgradnju snage i
+    /// izdržljivosti"</i>, but the literature is clearly on the other side for strength: the
+    /// one direct trial found linear gave larger strength gains than reverse linear, and only
+    /// linear raised fat-free mass (Prestes et al. 2009), and a systematic review concludes
+    /// that reverse periodization is no more effective for maximal strength, and that the
+    /// traditional direction is the more effective one for strength and hypertrophy
+    /// (González-Ravé et al. 2022). What both compare is the direction of the reps - falling
+    /// through the block or rising - and <see cref="PeriodizationModel.LinearRising"/> lowers
+    /// them. For hypertrophy it is also the MEV-to-MRV accumulation the volume landmarks are
+    /// built around.
+    ///
+    /// The suggestion used to be linear for strength and inverse for hypertrophy, with the
+    /// claim that the inverse model suited muscle growth - which neither source supports.
+    /// The inverse model stays on offer; the handbook's mixed model for advanced lifters is
+    /// undulating periodization, which this application does not implement.
     /// </summary>
-    public static PeriodizationModel SuggestedModel(ExperienceLevel level, Goal goal)
-    {
-        if (level == ExperienceLevel.Beginner)
-        {
-            return PeriodizationModel.LinearRising;
-        }
-
-        return goal == Goal.Strength ? PeriodizationModel.Inverse : PeriodizationModel.LinearRising;
-    }
+    public static PeriodizationModel SuggestedModel => PeriodizationModel.LinearRising;
 
     /// <summary>How many weeks a block of this model runs.</summary>
     public static int DurationWeeks(PeriodizationModel model)
