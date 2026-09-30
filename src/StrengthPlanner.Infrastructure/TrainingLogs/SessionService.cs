@@ -468,6 +468,14 @@ public class SessionService : ISessionService
                         weightStepKg,
                         nextBodyweightLoadKg);
                     progressionWeightKg = null;
+
+                    // Vraćena težina je trenažna, pa ide uz RIR cilja, a ne uz RIR deload-a:
+                    // prevod preko deload RIR-a bi je naduvao za dve rezerve (kablovsko
+                    // letenje 30 kg bi dobilo 32.5 - korak koji niko nije zaradio).
+                    currentPrescription = currentPrescription with
+                    {
+                        TargetRir = GoalPrescriptions.ForGoal(session.TrainingWeek.Mesocycle.Goal).TargetRir
+                    };
                 }
             }
 
@@ -767,8 +775,13 @@ public class SessionService : ISessionService
     /// Odgovor se računa pri čitanju, a ne upisuje: tako uvek polazi od najsvežijeg
     /// maksimuma, a u nedelje do kojih vežbač nije stigao se ne upisuju brojevi koje bi
     /// progresija ionako prepisala.
+    ///
+    /// Izolacija u opsegu preko 12 ponavljanja je izuzetak: njene serije većinom ne upisuju
+    /// procenu, pa je maksimum na zapisu stariji od onoga što je već digla. Za nju se predlog
+    /// prenosi sa poslednje upisane težine iste vežbe u ovom bloku, istim pravilom kojim se
+    /// prenosi i posle završenog treninga (<see cref="NextWeekLoad"/>).
     /// </summary>
-    private async Task<Dictionary<Guid, decimal>> ResolveEstimatedTargetsAsync(
+    private async Task<Dictionary<Guid, EstimatedTarget>> ResolveEstimatedTargetsAsync(
         Guid userId,
         WorkoutSession session,
         IReadOnlyDictionary<Guid, decimal> bodyweightPortions,
@@ -819,26 +832,86 @@ public class SessionService : ISessionService
             .Where(entry => entry.ValueKg is not null)
             .ToDictionary(entry => entry.ExerciseId, entry => entry.ValueKg!.Value);
 
-        var estimates = new Dictionary<Guid, decimal>();
+        var carriedIds = missing
+            .Where(plan => plan.RepRangeMax > TrainingConstants.EpleyRepCap)
+            .Select(plan => plan.ExerciseId)
+            .Distinct()
+            .ToList();
+
+        var week = session.TrainingWeek;
+        var earlierTargets = carriedIds.Count == 0
+            ? []
+            : await _db.ExercisePlans
+                .AsNoTracking()
+                .Where(plan => carriedIds.Contains(plan.ExerciseId)
+                               && plan.TargetWeightKg != null
+                               && plan.WorkoutSession.TrainingWeek.MesocycleId == week.MesocycleId
+                               && plan.WorkoutSession.TrainingWeek.Mesocycle.UserId == userId
+                               && plan.WorkoutSession.TrainingWeek.WeekNumber <= week.WeekNumber
+                               && !plan.WorkoutSession.TrainingWeek.IsDeload)
+                .Select(plan => new
+                {
+                    plan.ExerciseId,
+                    plan.WorkoutSession.DayLabel,
+                    plan.WorkoutSession.TrainingWeek.WeekNumber,
+                    TargetWeightKg = plan.TargetWeightKg!.Value,
+                    Prescription = new LoadPrescription(plan.RepRangeMin, plan.RepRangeMax, plan.TargetRir)
+                })
+                .ToListAsync(cancellationToken);
+
+        var estimates = new Dictionary<Guid, EstimatedTarget>();
 
         foreach (var plan in missing)
         {
+            var oneRepMax = oneRepMaxByExerciseId.TryGetValue(plan.ExerciseId, out var value) ? value : (decimal?)null;
+            var bodyweightLoadKg = BodyweightPortionResolver.PortionFor(bodyweightPortions, plan.ExerciseId);
+            var weightStepKg = WeightStepResolver.Effective(weightStepOverrides, plan.ExerciseId, plan.Exercise.WeightStepKg);
+
+            // Najbliža ranija težina: najkasnija nedelja, a u njoj isti dan pre drugog.
+            var earlier = earlierTargets
+                .Where(target => target.ExerciseId == plan.ExerciseId)
+                .OrderByDescending(target => target.WeekNumber)
+                .ThenByDescending(target => target.DayLabel == session.DayLabel)
+                .FirstOrDefault();
+
+            if (plan.RepRangeMax > TrainingConstants.EpleyRepCap && earlier is not null)
+            {
+                var carried = NextWeekLoad.For(
+                    earlier.TargetWeightKg,
+                    progressionWeightKg: null,
+                    earlier.Prescription,
+                    PrescriptionOf(plan),
+                    week.IsDeload,
+                    oneRepMax,
+                    weightStepKg,
+                    bodyweightLoadKg);
+
+                if (carried is not null)
+                {
+                    estimates[plan.Id] = new EstimatedTarget(carried.Value, FromMaximum: false);
+                    continue;
+                }
+            }
+
             var estimate = StartingLoad.FromOneRepMax(
                 _e1RmCalculator,
-                oneRepMaxByExerciseId.TryGetValue(plan.ExerciseId, out var oneRepMax) ? oneRepMax : null,
+                oneRepMax,
                 plan.RepRangeMin,
                 plan.TargetRir,
-                BodyweightPortionResolver.PortionFor(bodyweightPortions, plan.ExerciseId),
-                WeightStepResolver.Effective(weightStepOverrides, plan.ExerciseId, plan.Exercise.WeightStepKg));
+                bodyweightLoadKg,
+                weightStepKg);
 
             if (estimate is not null)
             {
-                estimates[plan.Id] = estimate.Value;
+                estimates[plan.Id] = new EstimatedTarget(estimate.Value, FromMaximum: true);
             }
         }
 
         return estimates;
     }
+
+    /// <summary>A target computed on read, and whether it came from a maximum on file.</summary>
+    private sealed record EstimatedTarget(decimal WeightKg, bool FromMaximum);
 
     private Task<IReadOnlyDictionary<Guid, decimal>> ResolvePortionsAsync(
         Guid userId,
@@ -883,7 +956,7 @@ public class SessionService : ISessionService
         WorkoutSession session,
         IReadOnlyDictionary<Guid, decimal> weightStepOverrides,
         IReadOnlyDictionary<Guid, decimal> bodyweightPortions,
-        IReadOnlyDictionary<Guid, decimal> estimatedTargets)
+        IReadOnlyDictionary<Guid, EstimatedTarget> estimatedTargets)
     {
         return new WorkoutSessionDto
         {
@@ -909,12 +982,15 @@ public class SessionService : ISessionService
                     TargetRir = plan.TargetRir,
                     TargetWeightKg = plan.TargetWeightKg
                                      ?? (estimatedTargets.TryGetValue(plan.Id, out var estimate)
-                                         ? estimate
+                                         ? estimate.WeightKg
                                          : null),
                     // Razlika koju vežbač treba da vidi: cilj izveden iz maksimuma nije isto
                     // što i cilj koji je progresija izvela iz odrađenih serija.
                     TargetWeightIsEstimate = plan.TargetWeightKg is null
                                              && estimatedTargets.ContainsKey(plan.Id),
+                    TargetWeightIsCarried = plan.TargetWeightKg is null
+                                            && estimatedTargets.TryGetValue(plan.Id, out var carried)
+                                            && !carried.FromMaximum,
                     WeightStepKg = WeightStepResolver.Effective(
                         weightStepOverrides,
                         plan.ExerciseId,

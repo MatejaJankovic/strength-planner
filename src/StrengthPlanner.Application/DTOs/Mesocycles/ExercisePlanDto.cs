@@ -36,6 +36,14 @@ public class ExercisePlanDto
     /// </summary>
     public bool TargetWeightIsEstimate { get; set; }
 
+    /// <summary>
+    /// Predlog računat pri čitanju nije izveden iz maksimuma, nego prenet sa poslednje
+    /// upisane težine iste vežbe u ovom bloku. Tako se računa za izolaciju u opsegu preko 12
+    /// ponavljanja: njene serije većinom ne upisuju procenu, pa bi maksimum na zapisu bio
+    /// stariji od onoga što je vežbač već digao. Važi samo uz <see cref="TargetWeightIsEstimate"/>.
+    /// </summary>
+    public bool TargetWeightIsCarried { get; set; }
+
     /// <summary>Korak kojim klijent pomera opterećenje za ovu vežbu (kg).</summary>
     public decimal WeightStepKg { get; set; }
 

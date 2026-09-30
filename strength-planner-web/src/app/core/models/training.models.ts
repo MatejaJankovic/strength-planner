@@ -182,8 +182,10 @@ export interface ExercisePlanDto {
   repRangeMax: number;
   targetRir: number;
   targetWeightKg?: number | null;
-  /** Cilj je izveden iz poznatog maksimuma, a ne iz odrađenih serija prethodne nedelje. */
+  /** Cilj je izračunat pri čitanju, a ne iz odrađenih serija istog dana prethodne nedelje. */
   targetWeightIsEstimate?: boolean;
+  /** Uz `targetWeightIsEstimate`: prenet sa poslednje težine iste vežbe u bloku, ne iz maksimuma. */
+  targetWeightIsCarried?: boolean;
   weightStepKg: number;
   /** Sprava: "Barbell", "Dumbbell", "Machine", "Cable", "Bodyweight". */
   equipment?: string;

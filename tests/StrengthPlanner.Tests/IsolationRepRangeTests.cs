@@ -218,6 +218,26 @@ public class IsolationRepRangeTests
         Assert.Equal(12m, load);
     }
 
+    /// <summary>
+    /// Kad za izolaciju nije poznata ni odrađena ni planirana težina, maksimum ostaje
+    /// rezerva: bolje predlog iz starije procene nego nikakav.
+    /// </summary>
+    [Fact]
+    public void AnIsolationRange_FallsBackToTheMaximum_WhenNoLoadIsKnown()
+    {
+        var load = NextWeekLoad.For(
+            referenceWeightKg: null,
+            progressionWeightKg: null,
+            current: new LoadPrescription(10, 20, 2),
+            next: new LoadPrescription(10, 20, 1),
+            nextIsDeload: false,
+            oneRepMaxKg: 14m,
+            weightStepKg: 2m);
+
+        // 14 / (1 + 11 / 30) = 10.24, na koraku od 2 kg: 10.
+        Assert.Equal(10m, load);
+    }
+
     [Fact]
     public void ACompoundRange_StillReadsTheMaximum_WhenThePrescriptionChanges()
     {
