@@ -225,7 +225,10 @@ public static class WeeklySetAllocation
         var raw = Project(slots, sets, completedRawSets);
         var perSession = ProjectPerSession(slots, sets);
 
-        var mainLifts = slots.Where(slot => slot.IsMainLift).ToList();
+        // Obrnutim redom: šablon navodi glavno dizanje dana prvo, pa kad granica mora da seče,
+        // a dva glavna dizanja su podjednako dobar izbor, seče se kasnije. Uživo je početnikov
+        // Push dan inače završavao sa bench-om na 2 serije i incline-om na 3.
+        var mainLifts = slots.Where(slot => slot.IsMainLift).Reverse().ToList();
 
         // Dva prolaza se smenjuju dok nijedan ništa ne pomera:
         //  - pomoćni rad slaže nedelju, a glavna dizanja stoje tamo gde su sada (na početku

@@ -397,6 +397,26 @@ public class WeeklySetAllocationTests
     }
 
     [Fact]
+    public void Allocate_CutsTheLaterMainLiftFirst_WhenTheCeilingCouldTakeEither()
+    {
+        // Bench i incline po 5, razvlačenje već na dnu (2): 12 serija grudi, jedna preko
+        // granice. Oba glavna dizanja su podjednako dobar rez - i seče se incline, jer šablon
+        // glavno dizanje dana navodi prvo. Uživo je početnikov Push dan završavao sa bench-om
+        // na 2 i incline-om na 3.
+        var session = SessionId(1);
+        var bench = new ExerciseSetSlot(SlotId(1), session, 5, [new MuscleLoad(Chest, 1.0m)], IsMainLift: true);
+        var incline = new ExerciseSetSlot(SlotId(2), session, 5, [new MuscleLoad(Chest, 1.0m)], IsMainLift: true);
+        var fly = new ExerciseSetSlot(SlotId(3), session, 2, [new MuscleLoad(Chest, 1.0m)]);
+        ExerciseSetSlot[] slots = [bench, incline, fly];
+
+        var sets = WeeklySetAllocation.Allocate(slots, [Target(Chest, mav: 20, mrv: 30)]);
+
+        Assert.Equal(5, sets[bench.Id]);
+        Assert.Equal(4, sets[incline.Id]);
+        Assert.Equal(2, sets[fly.Id]);
+    }
+
+    [Fact]
     public void Allocate_NeverRaisesAMainLift_EvenWhenTheWeekIsShort()
     {
         // Nedelji fali mnogo, a pomoćnog rada nema. Glavno dizanje i dalje ostaje na propisu:
