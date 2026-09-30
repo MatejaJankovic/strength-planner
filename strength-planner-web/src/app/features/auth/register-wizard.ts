@@ -177,7 +177,7 @@ export class RegisterWizard {
   protected readonly subtitle = computed(() => {
     switch (this.step()) {
       case Step.Name:
-        return 'Korisnicko ime koje stoji na tvom profilu.';
+        return 'Korisničko ime koje stoji na tvom profilu.';
       case Step.Credentials:
         return null;
       case Step.Sex:

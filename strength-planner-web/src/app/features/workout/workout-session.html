@@ -240,19 +240,13 @@
           @case ('zero-on-barbell') {
             <p class="card__hint card__hint--warn">
               <mat-icon aria-hidden="true">warning_amber</mat-icon>
-              <span>
-                0 kg, a i prazna šipka ima težinu (olimpijska oko 20 kg). Serija upisana na
-                nuli ne daje ni procenu maksimuma ni tonažu, a ni predlog za sledeći put.
-              </span>
+              <span>{{ zeroLoadWarning('zero-on-barbell') }}</span>
             </p>
           }
           @case ('zero-on-loaded') {
             <p class="card__hint card__hint--warn">
               <mat-icon aria-hidden="true">warning_amber</mat-icon>
-              <span>
-                0 kg, a ova vežba se opterećuje spolja. Serija upisana na nuli ne daje ni
-                procenu maksimuma ni tonažu, a ni predlog za sledeći put.
-              </span>
+              <span>{{ zeroLoadWarning('zero-on-loaded') }}</span>
             </p>
           }
         }

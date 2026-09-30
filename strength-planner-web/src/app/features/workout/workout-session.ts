@@ -20,7 +20,7 @@ import { Loading } from '../../shared/components/loading/loading';
 import { SetFeedback, setFeedback } from './set-feedback';
 import { repTargetFor } from './step-absorption';
 import { nextWeightLabel, nextWeightTone } from './next-weight-label';
-import { LoadInputNote, loadInputNote } from './load-input-note';
+import { LoadInputNote, loadInputNote, zeroLoadWarning } from './load-input-note';
 import { loadLabel } from './load-label';
 import { repRangeLabel } from '../../shared/rep-range-label';
 import { LoadFloorNote, loadFloorNote } from './load-floor-note';
@@ -201,6 +201,9 @@ export class WorkoutSession {
 
   /** Oznaka uz pomeren predlog serija u rezimeu: mišić, i "pun trening" kad ga je spustila granica. */
   protected readonly adjustmentCause = adjustmentCause;
+
+  /** Tekst upozorenja na nulu, iz iste datoteke koja bira napomenu - da bi ga test video. */
+  protected readonly zeroLoadWarning = zeroLoadWarning;
 
   /** Napomena uz polje za težinu: jedna bučica, ili nula na vežbi koja se opterećuje. */
   protected loadNote(plan: ExercisePlanDto, draft: SetDraft): LoadInputNote {

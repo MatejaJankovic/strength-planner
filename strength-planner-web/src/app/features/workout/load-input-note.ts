@@ -18,19 +18,37 @@
  */
 export type LoadInputNote = 'single-dumbbell' | 'zero-on-barbell' | 'zero-on-loaded' | null;
 
-const BODYWEIGHT = 'Bodyweight';
-const DUMBBELL = 'Dumbbell';
-const BARBELL = 'Barbell';
+// Server spravu poredi bez obzira na velika i mala slova, a vežbu koju korisnik napravi
+// preko API-ja čuva onako kako je otkucana - pa i ovde.
+const BODYWEIGHT = 'bodyweight';
+const DUMBBELL = 'dumbbell';
+const BARBELL = 'barbell';
 
 export function loadInputNote(equipment: string | undefined, weightKg: number): LoadInputNote {
-  if (!equipment || equipment === BODYWEIGHT) {
+  const kind = equipment?.trim().toLowerCase();
+
+  if (!kind || kind === BODYWEIGHT) {
     return null;
   }
 
   // Nula je hitnija poruka od podsetnika na jednu bučicu, pa ide prva.
   if (weightKg <= 0) {
-    return equipment === BARBELL ? 'zero-on-barbell' : 'zero-on-loaded';
+    return kind === BARBELL ? 'zero-on-barbell' : 'zero-on-loaded';
   }
 
-  return equipment === DUMBBELL ? 'single-dumbbell' : null;
+  return kind === DUMBBELL ? 'single-dumbbell' : null;
+}
+
+/**
+ * Tekst upozorenja na nulu. Stoji ovde, a ne u šablonu ekrana, da bi ga test video: greška iz
+ * runde 13 nije bila u izboru napomene nego u rečenici, a test koji proverava samo izbor nju ne
+ * bi uhvatio.
+ */
+export function zeroLoadWarning(note: 'zero-on-barbell' | 'zero-on-loaded'): string {
+  const consequence =
+    'Serija upisana na nuli ne daje ni procenu maksimuma ni tonažu, a ni predlog za sledeći put.';
+
+  return note === 'zero-on-barbell'
+    ? `0 kg, a i prazna šipka ima težinu (olimpijska oko 20 kg). ${consequence}`
+    : `0 kg, a ova vežba se opterećuje spolja. ${consequence}`;
 }
