@@ -101,22 +101,36 @@ Zbog toga su dve stvari morale da se promene:
    i to je izmereno i uživo. Isti oblik greške kao runda 10 (pravilo tačno, aplikacija ne):
    test je proveravao opseg, a ne ono što sledeća nedelja dobija.
 3. **Poređenje na istoj težini je išlo šire nego što je pisalo.** Pokretalo se kad god par
-   procena nije uporediv, pa bi složena vežba sa neuporedivim procenama i serijama preko 12
-   na istoj težini čitala −6.4% bez ijednog pravog pada. Sada važi samo za nedelju bez
-   procene, kako je beleška i tvrdila.
-4. **Pad koji je čekao.** Izuzetak u `NextWeekLoad` nije otkrio nijedan test. Našao se tek
+   procena nije uporediv. Bench 100 × 9 pa 100 × 6 uz 80 × 16 pa 80 × 13 bi tako čitao −6.4%,
+   iako je procena taj par odbila po pravilu iz runde 11. Sada važi samo za nedelju bez
+   procene, kako je beleška i tvrdila. Cena: izolacija čije završne serije u obe nedelje
+   padnu na 12 ili manje, sa neuporedivim procenama, ne čita ništa, iako bi isti teret
+   rekao rast. Nije mereno koliko je to često.
+4. **Predlog pri čitanju je imao istu grešku.** Nedelja čiji prethodni trening istog dana
+   nije odrađen (preskočen, ili još nije stigao) nema upisan cilj, pa ga ekran računa pri
+   čitanju iz maksimuma na zapisu. Za izolaciju je to ponovo stara procena. Sada se prenosi
+   sa poslednje upisane težine iste vežbe u bloku, istim pravilom (`NextWeekLoad`). Kartica
+   tada kaže da je predlog prenet, a ne da je iz maksimuma. Izmereno uživo: nedelja 3
+   preskočena, a nedelja 4 dobija 12 kg umesto 8.
+5. **Povratak posle deload-a naduvavao je težinu.** Kad deload nema tačku nastavka (ceo
+   prethodni trening je preskočen), težina se vraća sa `UndoDeload`, ali je prevođena preko
+   propisa deload-a (RIR cilja + 2). Kablovsko letenje od 30 kg bi se vratilo na 32.5, što
+   je korak koji niko nije zaradio. Greška je postojala i ranije za vežbu bez maksimuma, a
+   ova grana ju je proširila na svaku izolaciju. Vraćena težina sada ide uz RIR cilja. Ovo
+   je provereno računom, ne uživo, jer taj put traži auto-deload i preskočen dan pre njega.
+6. **Pad koji je čekao.** Izuzetak u `NextWeekLoad` nije otkrio nijedan test. Našao se tek
    pregledom svakog mesta koje zove `EstimateOneRepMax` sa opsegom umesto sa odrađenom
    serijom.
-5. **Test je zadavao korak koji vežba nema.** Polazna težina bočnog podizanja je proveravana
+7. **Test je zadavao korak koji vežba nema.** Polazna težina bočnog podizanja je proveravana
    sa korakom od 2.5 kg, a bučica ima korak od 2 kg: aplikacija daje 28 kg, ne 27.5. Isti
    nalaz kao runda 9, tačka 7. Test sada čita korak iz sprave.
-6. **Opseg nije pomerio nijednu seriju.** Kad se novo pravilo vrati, padaju samo testovi
+8. **Opseg nije pomerio nijednu seriju.** Kad se novo pravilo vrati, padaju samo testovi
    opsega (5), a nijedan test MEV/MRV šablona. Pravilo o progutanom pomeraju na 20 daje iste
    serije kao na 12.
 
 ## Provera
 
-- `dotnet test`: **801** (bilo 773); `npm test` **192** (bilo 190); `npm run build` prolazi.
+- `dotnet test`: **802** (bilo 773); `npm test` **192** (bilo 190); `npm run build` prolazi.
 - Novi testovi (`IsolationRepRangeTests`):
   - granica prati opseg (12 / 20, a stari 8–12 ostaje na 12);
   - izolacija ostaje u opsegu i zadržava širinu u svakom modelu;
@@ -128,11 +142,13 @@ Zbog toga su dve stvari morale da se promene:
   - prenos težine 15–20 → 13–18 bez izuzetka;
   - scenario iz review-a: 10 kg × 20, progresija 12, stara procena 11.2 → 12 kg, a složena
     vežba i dalje iz maksimuma;
-  - kad obe nedelje imaju procenu, poređenje na istoj težini ne učestvuje.
+  - kad obe nedelje imaju procenu, poređenje na istoj težini ne učestvuje;
+  - izolacija bez ijedne poznate težine i dalje ima maksimum kao rezervu.
 - Mreže svojstava progresije i upijanja koraka sada sadrže i opsege 10–20, 9–19 i 8–18.
 - `GoalPrescriptionTests` prepisan za novo pravilo; `CustomTemplateTests` proverava granice po
   tipu; dve nove vitest provere editora (granice po tipu i vraćanje u polje).
-- Merenje vraćanjem (commit, vraćeno pravilo, rebuild), na 801 test:
+- Merenje vraćanjem (commit, vraćeno pravilo, rebuild), na 801 test (pre poslednjeg testa
+  za rezervu):
   - opseg izolacije vraćen na 8–12 obara 5;
   - granica uvek 12 obara 10;
   - bez poređenja na istoj težini obara 2;
@@ -151,13 +167,17 @@ Zbog toga su dve stvari morale da se promene:
     je složena vežba i ide najviše do 12 ponavljanja…"), a 12–21 odbija anotacija.
   - editor (375 px, bez prelivanja): Lateral Raise dobija 10–20 sa granicom 20, a Bench Press
     8–12 sa granicom 12. Upisanih 15 u bench vraća polje na 12.
+  - predlog pri čitanju: nedelja 3 preskočena, nedelja 4 (9–19 @RIR 1) nudi bočno podizanje
+    **12 kg** i Cable Fly 12.5 kg sa tekstom „Predlog je prenet sa poslednje težine ove vežbe
+    u bloku…". Bench u istom treningu i dalje nosi predlog iz maksimuma.
 
 ## Ograničenja
 
 - Grafik e1RM trenda za izolacije je većinom prazan, jer procenu daju samo serije do 12.
   Poruka na grafiku to već kaže.
 - Postojeći blokovi i ranije sačuvani lični šabloni zadržavaju opsege sa kojima su napravljeni.
-- Unutar bloka izolacija nosi svoju težinu kroz svaki propis. **Novi blok** je i dalje
+- Unutar bloka izolacija nosi svoju težinu kroz svaki propis, i kad je trening preskočen.
+  **Novi blok** je i dalje
   počinje iz procene na zapisu. Ta procena najčešće dolazi iz prvih treninga posle koraka,
   na težini na kojoj je vežbač i završio, pa blok kreće sa te težine na dnu opsega. Ako je
   procena iz ranije, lakše težine, novi blok kreće lakše i dupla progresija ga vraća za
