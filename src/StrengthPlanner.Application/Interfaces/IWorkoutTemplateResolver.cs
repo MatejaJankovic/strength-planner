@@ -1,4 +1,5 @@
 using StrengthPlanner.Application.Templates;
+using StrengthPlanner.Domain.Enums;
 
 namespace StrengthPlanner.Application.Interfaces;
 
@@ -14,11 +15,13 @@ public interface IWorkoutTemplateResolver
 {
     /// <summary>
     /// Sadržaj šablona za tog korisnika, ili <c>null</c> ako ključ ne postoji - odnosno ako
-    /// lični šablon pripada nekom drugom.
+    /// lični šablon pripada nekom drugom. Cilj bloka odlučuje koliko složenih vežbi ugrađen
+    /// šablon daje po treningu; lični šablon ostaje kakav je.
     /// </summary>
     Task<ResolvedTemplate?> ResolveAsync(
         Guid userId,
         string templateKey,
+        Goal goal,
         CancellationToken cancellationToken = default);
 
     /// <summary>Naziv šablona za prikaz, bez učitavanja vežbi.</summary>

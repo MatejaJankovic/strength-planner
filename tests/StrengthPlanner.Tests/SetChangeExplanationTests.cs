@@ -259,10 +259,14 @@ public class SetChangeExplanationTests
         // Put iz revizije: prvi dan odrađen kako je predložen, pa balansiranje ostatka
         // nedelje. Oznaka "pun trening" sme da stoji samo tamo gde bi bez granice vežba
         // ostala viša - u zamenama unutar punog treninga ranije je stajala i bez toga.
+        //
+        // Dva polazna predloga: blok generisan sa granicom, i blok generisan pre nje - onaj
+        // koji granicu dobija tek posle sledećeg završenog treninga, kao u proveri uživo.
         var falseLabels = new List<string>();
         var labels = 0;
 
-        foreach (var week in TemplateWeekSimulation.EveryTrainingWeek())
+        foreach (var generated in TemplateWeekSimulation.EveryTrainingWeek())
+        foreach (var week in new[] { generated, generated with { Allocated = generated.AllocatedWithoutSessionCeiling() } })
         {
             var firstDay = week.Slots[0].SessionId;
             var done = week.Slots.Where(slot => slot.SessionId == firstDay).ToList();

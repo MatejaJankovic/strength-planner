@@ -24,13 +24,15 @@ public static class SessionComposition
     public const int MinExercisesPerSession = 3;
 
     /// <summary>
-    /// Returns the exercises to program for <paramref name="level"/>, preserving the
-    /// template's order so compounds still come first.
+    /// Returns the exercises to program for <paramref name="level"/> in a block of
+    /// <paramref name="goal"/>, preserving the template's order so compounds still come
+    /// first.
     /// </summary>
     public static IReadOnlyList<T> ForLevel<T>(
         IReadOnlyList<T> ordered,
         Func<T, bool> isCompound,
-        ExperienceLevel level)
+        ExperienceLevel level,
+        Goal goal)
     {
         ArgumentNullException.ThrowIfNull(ordered);
         ArgumentNullException.ThrowIfNull(isCompound);
@@ -40,7 +42,7 @@ public static class SessionComposition
             return ordered;
         }
 
-        var compoundBudget = ExperienceProgramming.MaxCompoundsPerSession(level);
+        var compoundBudget = ExperienceProgramming.MaxCompoundsPerSession(level, goal);
         var isolationCount = ordered.Count(exercise => !isCompound(exercise));
 
         // Trening se ne popunjava do maksimuma po svaku cenu: ako dan nema dovoljno

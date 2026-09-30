@@ -24,6 +24,11 @@ public class Exercise
     // opterećenjem. Iz njega i mase iz profila izlazi opterećenje koje vežba zaista nosi.
     public decimal BodyweightShare { get; set; }
 
+    // Da li složena vežba podnosi opseg snage (3–6). Vežbe na jednoj nozi, sa nestabilnim
+    // uslovima ili bez načina da se doda opterećenje ostaju u bloku snage pomoćni rad na
+    // 8–12 (GoalPrescriptions.CarriesTheGoalRange). Korisnička vežba podrazumevano podnosi.
+    public bool SuitsLowReps { get; set; } = true;
+
     // Frakcioni doprinos mišićnim grupama (primarna 1.0, sekundarna 0.5).
     public ICollection<ExerciseMuscle> Muscles { get; set; } = new List<ExerciseMuscle>();
 

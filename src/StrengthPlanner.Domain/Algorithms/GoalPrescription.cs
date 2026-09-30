@@ -39,16 +39,20 @@ public static class GoalPrescriptions
     /// movement; keeping it from the goal is also what lets the deload restore a plan from
     /// one number per block. For a hypertrophy block nothing changes at all - isolation
     /// work was already prescribed in its range.
+    ///
+    /// The same holds for a compound that cannot carry a low range
+    /// (<paramref name="suitsLowReps"/> false) - see <see cref="CarriesTheGoalRange"/>.
     /// </summary>
-    public static GoalPrescription ForExercise(Goal goal, ExerciseType type)
+    public static GoalPrescription ForExercise(Goal goal, ExerciseType type, bool suitsLowReps)
     {
         var goalPrescription = ForGoal(goal);
 
-        if (type != ExerciseType.Isolation)
+        if (CarriesTheGoalRange(goal, type, suitsLowReps))
         {
             return goalPrescription;
         }
 
+        // Izolacija, ili složena vežba koja ne podnosi nizak opseg: pomoćni rad.
         var accessory = ForGoal(Goal.Hypertrophy);
 
         return goalPrescription with
@@ -56,5 +60,35 @@ public static class GoalPrescriptions
             RepRangeMin = accessory.RepRangeMin,
             RepRangeMax = accessory.RepRangeMax
         };
+    }
+
+    /// <summary>
+    /// Whether this exercise carries the block's own rep range: every exercise in a
+    /// hypertrophy block, and in a strength block only a compound that can be loaded for a
+    /// set of three to six.
+    ///
+    /// Not every compound can. The handbook says unilateral work is <i>"nije idealna za
+    /// razvoj apsolutne snage"</i> and that a low range <i>"može narušiti tehniku, naročito
+    /// kod vežbi sa nestabilnim uslovima"</i>; a goblet squat is limited by the heaviest
+    /// dumbbell a lifter can hold, and a push-up has no load to add. Measured before this
+    /// rule, an advanced lifter's Legs Specialization strength block put three of its five
+    /// compound slots - Bulgarian split squat, single-leg RDL, step-up - at 3-6 reps, and no
+    /// bilateral squat or hinge at all. Those exercises now keep the accessory range, and
+    /// set balancing is free to move them like any other accessory.
+    /// </summary>
+    public static bool CarriesTheGoalRange(Goal goal, ExerciseType type, bool suitsLowReps)
+    {
+        return goal != Goal.Strength || IsStrengthLift(goal, type, suitsLowReps);
+    }
+
+    /// <summary>
+    /// A lift that carries a strength block's own prescription: a compound that can be
+    /// loaded for three to six. Its sets are the block's work, so volume balancing leaves
+    /// them where periodization put them (<see cref="ExerciseSetSlot.IsMainLift"/>) and moves
+    /// the accessory work around them instead.
+    /// </summary>
+    public static bool IsStrengthLift(Goal goal, ExerciseType type, bool suitsLowReps)
+    {
+        return goal == Goal.Strength && type == ExerciseType.Compound && suitsLowReps;
     }
 }

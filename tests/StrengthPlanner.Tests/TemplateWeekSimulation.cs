@@ -76,6 +76,7 @@ internal static class TemplateWeekSimulation
             $"{template.Key} {level} {goal} {model} w{weekNumber}",
             template,
             level,
+            goal,
             slots,
             targets,
             WeeklySetAllocation.Allocate(slots, targets));
@@ -97,12 +98,13 @@ internal static class TemplateWeekSimulation
             var exerciseNames = SessionComposition.ForLevel(
                 template.Days[dayIndex].Exercises,
                 ExerciseCatalog.IsCompound,
-                level);
+                level,
+                goal);
 
             for (var exerciseIndex = 0; exerciseIndex < exerciseNames.Count; exerciseIndex++)
             {
                 var exercise = ExerciseCatalog.Find(exerciseNames[exerciseIndex])!;
-                var settings = GoalPrescriptions.ForExercise(goal, exercise.Type);
+                var settings = GoalPrescriptions.ForExercise(goal, exercise.Type, exercise.SuitsLowReps);
                 var week = Periodization.ForWeek(
                     model,
                     weekNumber,
@@ -117,7 +119,9 @@ internal static class TemplateWeekSimulation
                     week.Sets,
                     exercise.Muscles
                         .Select(muscle => new MuscleLoad(MuscleId(muscle.Muscle), muscle.Contribution))
-                        .ToList()));
+                        .ToList(),
+                    // Isto kao WeeklySetPlanner: u bloku snage glavna dizanja se ne pomeraju.
+                    IsMainLift: GoalPrescriptions.IsStrengthLift(goal, exercise.Type, exercise.SuitsLowReps)));
             }
         }
 
@@ -148,6 +152,7 @@ internal sealed record SimulatedWeek(
     string Name,
     WorkoutTemplate Template,
     ExperienceLevel Level,
+    Goal Goal,
     IReadOnlyList<ExerciseSetSlot> Slots,
     IReadOnlyList<MuscleVolumeTarget> Targets,
     IReadOnlyDictionary<Guid, int> Allocated)

@@ -76,6 +76,11 @@ public sealed class WeeklySetPlanner
         var muscleNames = await _db.MuscleGroups
             .AsNoTracking()
             .ToDictionaryAsync(group => group.Id, group => group.Name, cancellationToken);
+        var goal = await _db.Mesocycles
+            .AsNoTracking()
+            .Where(mesocycle => mesocycle.Id == mesocycleId && mesocycle.UserId == userId)
+            .Select(mesocycle => mesocycle.Goal)
+            .FirstAsync(cancellationToken);
 
         var adjustments = new List<SetAdjustment>();
 
@@ -85,6 +90,7 @@ public sealed class WeeklySetPlanner
                 userId,
                 week.Id,
                 week.WeekNumber,
+                goal,
                 landmarks,
                 muscleNames,
                 cancellationToken));
@@ -97,6 +103,7 @@ public sealed class WeeklySetPlanner
         Guid userId,
         Guid trainingWeekId,
         int weekNumber,
+        Goal goal,
         IReadOnlyDictionary<Guid, EffectiveLandmark> landmarks,
         IReadOnlyDictionary<Guid, string> muscleNames,
         CancellationToken cancellationToken)
@@ -129,7 +136,10 @@ public sealed class WeeklySetPlanner
                 plan.Id,
                 plan.WorkoutSessionId,
                 plan.PrescribedSets,
-                musclesByExerciseId.GetValueOrDefault(plan.ExerciseId, [])))
+                musclesByExerciseId.GetValueOrDefault(plan.ExerciseId, []),
+                // U bloku snage glavna dizanja nose propis bloka; volumen po mišiću se
+                // podešava pomoćnim radom oko njih.
+                IsMainLift: GoalPrescriptions.IsStrengthLift(goal, plan.Exercise.Type, plan.Exercise.SuitsLowReps)))
             .ToList();
 
         // Šta je nedelja već upisala. Dve mere, jer na dva pitanja odgovaraju: koliko

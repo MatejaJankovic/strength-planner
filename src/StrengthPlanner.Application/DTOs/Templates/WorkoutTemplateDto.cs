@@ -19,7 +19,15 @@ public sealed class WorkoutTemplateDto
     /// <summary>Upozorenje o poznatom ograničenju šablona, ako ga ima.</summary>
     public string? Note { get; set; }
 
+    /// <summary>Dani za blok hipertrofije.</summary>
     public IReadOnlyList<WorkoutTemplateDayDto> Days { get; set; } = [];
+
+    /// <summary>
+    /// Isti dani za blok snage. Blok snage dobija jednu složenu vežbu više po treningu
+    /// (ExperienceProgramming.MaxCompoundsPerSession), pa se ugrađen šablon za njega skraćuje
+    /// drugačije. Kod ličnog šablona je isto što i <see cref="Days"/>.
+    /// </summary>
+    public IReadOnlyList<WorkoutTemplateDayDto> StrengthDays { get; set; } = [];
 }
 
 public sealed class WorkoutTemplateDayDto

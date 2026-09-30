@@ -314,7 +314,85 @@ public class WeeklySetAllocationTests
             slot => Assert.Equal(6 - WeeklySetAllocation.MaxDriftFromPrescription, sets[slot.Id]));
     }
 
+    [Fact]
+    public void Allocate_NeverMovesAMainLiftForTheWeeklyTarget()
+    {
+        // Blok snage: bench je glavno dizanje, razvlačenje pomoćni rad. Nedelji fale dve
+        // serije grudi, pa ih dobija razvlačenje - bench ostaje na propisu.
+        var bench = MainLift(1, prescribedSets: 4, Chest);
+        var fly = new ExerciseSetSlot(SlotId(2), SessionId(2), 3, [new MuscleLoad(Chest, 1.0m)]);
+
+        var raised = WeeklySetAllocation.Allocate([bench, fly], [Target(Chest, mav: 9, mrv: 22)]);
+        Assert.Equal(4, raised[bench.Id]);
+        Assert.Equal(5, raised[fly.Id]);
+
+        // I u drugom smeru: dve serije viška skida razvlačenje, ne bench.
+        var lowered = WeeklySetAllocation.Allocate([bench, fly], [Target(Chest, mav: 5, mrv: 22)]);
+        Assert.Equal(4, lowered[bench.Id]);
+        Assert.Equal(WeeklySetAllocation.MinSetsPerExercise, lowered[fly.Id]);
+    }
+
+    [Fact]
+    public void Allocate_CutsAMainLiftForTheSessionCeiling_OnlyOnceTheAccessoriesAreSpent()
+    {
+        // U jednom treningu: dva glavna dizanja po 5 i razvlačenje po 4 - 14 serija grudi.
+        // Razvlačenje ide prvo, do dna prozora (2), pa ostaje 12; tek onda glavno dizanje
+        // gubi jednu seriju, tačno koliko granica traži.
+        var session = SessionId(1);
+        var bench = new ExerciseSetSlot(SlotId(1), session, 5, [new MuscleLoad(Chest, 1.0m)], IsMainLift: true);
+        var incline = new ExerciseSetSlot(SlotId(2), session, 5, [new MuscleLoad(Chest, 1.0m)], IsMainLift: true);
+        var fly = new ExerciseSetSlot(SlotId(3), session, 4, [new MuscleLoad(Chest, 1.0m)]);
+        ExerciseSetSlot[] slots = [bench, incline, fly];
+
+        var sets = WeeklySetAllocation.Allocate(slots, [Target(Chest, mav: 16, mrv: 30)]);
+
+        Assert.Equal(2, sets[fly.Id]);
+        Assert.Equal(TrainingConstants.MaxSetsPerMusclePerSession, TotalFor(slots, sets, Chest));
+        Assert.Equal(9, sets[bench.Id] + sets[incline.Id]);
+    }
+
+    [Fact]
+    public void Allocate_CutsAMainLiftForMrv_OnlyOnceTheAccessoriesAreSpent()
+    {
+        // Nedelja nosi 10 sirovih serija grudi iz lakih serija, MRV je 16: glavno dizanje od 5
+        // i razvlačenje od 4 bi ga probili za 3. Razvlačenje daje 2, glavno dizanje 1.
+        var bench = MainLift(1, prescribedSets: 5, Chest);
+        var fly = new ExerciseSetSlot(SlotId(2), SessionId(2), 4, [new MuscleLoad(Chest, 1.0m)]);
+        ExerciseSetSlot[] slots = [bench, fly];
+
+        var sets = WeeklySetAllocation.Allocate(
+            slots,
+            [Target(Chest, mav: 18, mrv: 16)],
+            Banked(Chest, 0m),
+            Banked(Chest, 10m));
+
+        Assert.Equal(2, sets[fly.Id]);
+        Assert.Equal(4, sets[bench.Id]);
+    }
+
+    [Fact]
+    public void Allocate_NeverRaisesAMainLift_EvenWhenTheWeekIsShort()
+    {
+        // Nedelji fali mnogo, a pomoćnog rada nema. Glavno dizanje i dalje ostaje na propisu:
+        // nedeljni cilj ga ne pomera ni naviše.
+        var bench = MainLift(1, prescribedSets: 4, Chest);
+
+        var sets = WeeklySetAllocation.Allocate([bench], [Target(Chest, mav: 20, mrv: 30)]);
+
+        Assert.Equal(4, sets[bench.Id]);
+    }
+
     // --- helpers --------------------------------------------------------------
+
+    private static ExerciseSetSlot MainLift(int index, int prescribedSets, Guid muscleGroupId)
+    {
+        return new ExerciseSetSlot(
+            SlotId(index),
+            SessionId(index),
+            prescribedSets,
+            [new MuscleLoad(muscleGroupId, 1.0m)],
+            IsMainLift: true);
+    }
 
     private static Guid SlotId(int index)
     {

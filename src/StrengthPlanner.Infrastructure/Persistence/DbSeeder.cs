@@ -62,6 +62,7 @@ public static class DbSeeder
                 CreatedByUserId = null,
                 WeightStepKg = EquipmentWeightStep.ForEquipment(seed.Equipment),
                 BodyweightShare = seed.BodyweightShare,
+                SuitsLowReps = seed.SuitsLowReps,
                 Muscles = seed.Muscles
                     .Select(m => new ExerciseMuscle
                     {
@@ -121,6 +122,12 @@ public static class DbSeeder
             if (exercise.BodyweightShare != seed.BodyweightShare)
             {
                 exercise.BodyweightShare = seed.BodyweightShare;
+                changed = true;
+            }
+
+            if (exercise.SuitsLowReps != seed.SuitsLowReps)
+            {
+                exercise.SuitsLowReps = seed.SuitsLowReps;
                 changed = true;
             }
 
