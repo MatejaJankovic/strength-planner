@@ -92,7 +92,8 @@ Kod ravnog bloka je uvek slučaj 3 ili 1, pa se ponašanje ne menja ni u jednom 
 
 Dugoročan plan i dobija smisao time što se raspored menja između blokova, pa je model
 pojedinačan po bloku, a ne po planu. Predlog sa servera sada smenjuje i cilj i model: blok
-hipertrofije dobija obrnuti raspored, blok snage linearni.
+hipertrofije dobija obrnuti raspored, blok snage linearni. (Od runde 14 predlog je linearan
+model po priručniku za svaki blok — vidi „Kasnije" na kraju.)
 
 ### Šta je još moralo da se pomeri
 
@@ -203,3 +204,13 @@ sme time da promeni oblik već napravljenog plana.
 - **Kod hipertrofije RIR ne opada kroz blok.** Osnovni RIR je 1, a niže se ne ide (vidi
   gore), pa intenzifikaciju nose ponavljanja i serije. Kod snage (osnovni RIR 2) pad
   postoji.
+
+## Kasnije (runda 14)
+
+Linearan model opisan ovde je klasičan: od volumena ka intenzitetu, sa serijama koje padaju.
+Priručnikov linearan model podiže serije kroz blok, a to traži i okvir MEV → MRV koji aplikacija
+koristi. Od runde 14 čarobnjak nudi taj oblik (`LinearRising`), a ovde opisan ostaje za blokove
+koji ga već nose, u planu kao „Linearan (stari)". Predlog po cilju opisan gore više ne važi:
+predlaže se linearan model za svaki blok, jer obrnut ni za snagu nema oslonac u literaturi.
+Vidi [periodization-shapes.md](periodization-shapes.md).
+

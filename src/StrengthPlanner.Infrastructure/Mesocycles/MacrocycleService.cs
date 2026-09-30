@@ -151,15 +151,13 @@ public class MacrocycleService : IMacrocycleService
 
         return MacrocyclePlanner
             .AlternatingGoals(blockCount, firstGoal)
-            // Prvi blok gradi volumen, naredni ga pretvara u snagu — pa se i model
-            // periodizacije smenjuje zajedno sa ciljem.
+            // Prvi blok gradi volumen, naredni ga pretvara u snagu; model periodizacije se
+            // predlaže isti za svaki blok (Periodization.SuggestedModel).
             .Select(goal => new CreateMacrocycleBlockDto
             {
                 Goal = goal,
                 TemplateKey = templateKey,
-                PeriodizationModel = goal == Goal.Strength
-                    ? PeriodizationModel.Linear
-                    : PeriodizationModel.Inverse
+                PeriodizationModel = Periodization.SuggestedModel
             })
             .ToList();
     }

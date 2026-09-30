@@ -106,19 +106,39 @@ public sealed class DeloadService
             return null;
         }
 
-        // Deload se sme staviti samo na nedelju koja još nije počela: prepisivanje
-        // ciljeva već odrađenog ili započetog treninga bi falsifikovalo istoriju, a
-        // korisniku koji je usred nedelje menjalo plan pod rukama.
+        // Deload se sme staviti samo na nedelju koja još nije počela (prepisivanje ciljeva
+        // već započetog treninga bi falsifikovalo istoriju, a korisniku koji je usred
+        // nedelje menjalo plan pod rukama), i samo jednom po bloku - AutoDeloadPlacement.
+        var weeks = await _db.TrainingWeeks
+            .AsNoTracking()
+            .Where(week => week.MesocycleId == mesocycleId && week.Mesocycle.UserId == userId)
+            .Select(week => new BlockWeekState(
+                week.WeekNumber,
+                week.IsDeload,
+                week.IsAutoDeload,
+                week.Sessions.Any(session => session.Status != SessionStatus.Planned)))
+            .ToListAsync(cancellationToken);
+
+        var nextWeekNumber = AutoDeloadPlacement.NextWeek(weeks, weekNumber);
+
+        // Nema sledeće nedelje, već je deload, počela je, ili je blok već povukao deload
+        // napred - ocena je upisana, ali nema šta da se menja.
+        if (nextWeekNumber is null)
+        {
+            return null;
+        }
+
+        // Isti uslovi još jednom, na redu koji se menja: između čitanja i upisa drugi zahtev
+        // je mogao da započne tu nedelju ili da povuče deload u istom bloku.
         var nextWeek = await _db.TrainingWeeks
             .Where(week => week.MesocycleId == mesocycleId
                            && week.Mesocycle.UserId == userId
-                           && week.WeekNumber == weekNumber + 1
+                           && week.WeekNumber == nextWeekNumber.Value
                            && !week.IsDeload
-                           && week.Sessions.All(session => session.Status == SessionStatus.Planned))
+                           && week.Sessions.All(session => session.Status == SessionStatus.Planned)
+                           && !week.Mesocycle.Weeks.Any(other => other.IsAutoDeload))
             .FirstOrDefaultAsync(cancellationToken);
 
-        // Nema sledeće nedelje, već je deload, ili je počela — ocena je upisana, ali
-        // nema šta da se menja.
         if (nextWeek is null)
         {
             return null;

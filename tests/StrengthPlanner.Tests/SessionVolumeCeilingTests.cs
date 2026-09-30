@@ -119,10 +119,21 @@ public class SessionVolumeCeilingTests
     /// <summary>
     /// Granica menja samo nedelje u kojima bi neki trening bez nje prešao granicu. Svaka
     /// druga nedelja svakog šablona dobija isti predlog kao pre.
+    ///
+    /// Dva izuzetka, imenom: u nedeljama 4 i 5 linearnog modela Full Body (4 dana) za
+    /// početnika u bloku snage propis već stavlja 12 serija jednog mišića u trening. Predlog
+    /// bez granice završi na 11, ali drugim putem - granica ceni već prvi korak pretrage.
+    /// Uzrok postoji, samo ga predlog bez granice ne pokazuje. Spisak mora da se poklopi
+    /// tačno: nedelja koja prestane da bude izuzetak mora i da se skine sa njega.
     /// </summary>
     [Fact]
     public void TheCeiling_ChangesOnlyWeeksThatWouldBreachIt()
     {
+        var breachedOnlyInThePrescription = new[]
+        {
+            "full-body-4 Beginner Strength LinearRising w4",
+            "full-body-4 Beginner Strength LinearRising w5",
+        };
         var changedWithoutCause = new List<string>();
 
         foreach (var week in TemplateWeekSimulation.EveryTrainingWeek())
@@ -139,7 +150,18 @@ public class SessionVolumeCeilingTests
             }
         }
 
-        Assert.True(changedWithoutCause.Count == 0, string.Join(Environment.NewLine, changedWithoutCause.Take(20)));
+        Assert.True(
+            changedWithoutCause.SequenceEqual(breachedOnlyInThePrescription),
+            string.Join(Environment.NewLine, changedWithoutCause.Take(20)));
+
+        foreach (var week in TemplateWeekSimulation.EveryTrainingWeek().Where(week => breachedOnlyInThePrescription.Contains(week.Name)))
+        {
+            var prescribed = week.Slots.ToDictionary(slot => slot.Id, slot => slot.PrescribedSets);
+            Assert.Contains(
+                WeeklySetAllocation.ProjectPerSession(week.Slots, prescribed),
+                entry => entry.Value > TrainingConstants.MaxSetsPerMusclePerSession
+                         && week.TargetFor(MuscleName(entry.Key.MuscleGroupId)) is not null);
+        }
     }
 
     private static int LowestAllowed(ExerciseSetSlot slot)
