@@ -91,6 +91,9 @@ export const TEMPLATE_LIMITS = {
   maxReps: 12,
   /** Izolacija ima svoj opseg, 10-20, pa sme i do 20. */
   maxIsolationReps: 20,
+  /** Dno opsega koji nova vežba dobija, kao u ugrađenom šablonu. */
+  isolationMinReps: 10,
+  compoundMinReps: 8,
 } as const;
 
 export interface CustomTemplateExerciseDto {

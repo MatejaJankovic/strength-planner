@@ -245,8 +245,8 @@ export class CustomTemplates {
     }
 
     const range = this.isIsolation(exerciseId)
-      ? { repRangeMin: 10, repRangeMax: this.limits.maxIsolationReps }
-      : { repRangeMin: 8, repRangeMax: this.limits.maxReps };
+      ? { repRangeMin: this.limits.isolationMinReps, repRangeMax: this.limits.maxIsolationReps }
+      : { repRangeMin: this.limits.compoundMinReps, repRangeMax: this.limits.maxReps };
 
     this.days.update((days) =>
       days.map((day, index) =>

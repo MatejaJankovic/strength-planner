@@ -256,9 +256,9 @@ public class MesocycleGenerator : IMesocycleGenerator
                     // ForWeek i inače prima "osnovu" kao parametar. RIR ostaje iz cilja.
                     //
                     // Kada šablon ne kaže opseg, on se izvodi iz cilja I iz tipa vežbe:
-                    // izolacija u bloku snage ostaje na 8-12, jer se snaga izražava u
-                    // složenim pokretima, a ne u trojci na bočnom podizanju. Isto važi i za
-                    // složenu vežbu koja nizak opseg ne podnosi (iskorak, step-up, sklek).
+                    // izolacija u oba bloka ide 10-20, jer se snaga izražava u složenim
+                    // pokretima, a ne u trojci na bočnom podizanju. Složena vežba koja nizak
+                    // opseg ne podnosi (iskorak, step-up, sklek) u bloku snage ostaje na 8-12.
                     var exerciseSettings = GoalPrescriptions.ForExercise(goal, exercise.Type, exercise.SuitsLowReps);
                     var baseRepRangeMin = planned.RepRangeMin ?? exerciseSettings.RepRangeMin;
                     var baseRepRangeMax = planned.RepRangeMax ?? exerciseSettings.RepRangeMax;

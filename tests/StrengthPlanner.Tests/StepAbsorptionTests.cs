@@ -15,7 +15,7 @@ public class StepAbsorptionTests
 {
     private static readonly decimal[] Steps = [0.5m, 1m, 2m, 2.5m, 5m, 10m];
 
-    private static readonly (int Min, int Max)[] Ranges = [(3, 6), (8, 12), (11, 12), (3, 4), (5, 5), (6, 9)];
+    private static readonly (int Min, int Max)[] Ranges = [(3, 6), (8, 12), (11, 12), (3, 4), (5, 5), (6, 9), (10, 20), (9, 19), (8, 18)];
 
     private readonly ProgressionEngine _engine = new();
 

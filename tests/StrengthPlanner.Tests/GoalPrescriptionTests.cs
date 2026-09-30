@@ -104,6 +104,8 @@ public class GoalPrescriptionTests
     /// Opseg odlučuje i o polaznom opterećenju, pa izolacija sa poznatim maksimumom u bloku
     /// snage startuje lakše — što je i smisao izmene. Za bočno podizanje sa maksimumom od
     /// 40 kg: propis 10–20 pri RIR 2 traži dvanaest efektivnih ponavljanja, a 3–6 samo pet.
+    /// Korak je onaj koji aplikacija daje bučici (2 kg), a ne ručno upisan: test koji sam
+    /// zada konstantu koju aplikacija izvodi opisuje aplikaciju koja ne postoji (runda 9).
     /// </summary>
     [Fact]
     public void TheRangeAlsoDecidesTheStartingLoad()
@@ -112,19 +114,22 @@ public class GoalPrescriptionTests
         var strength = GoalPrescriptions.ForExercise(Goal.Strength, ExerciseType.Compound, suitsLowReps: true);
         var isolation = GoalPrescriptions.ForExercise(Goal.Strength, ExerciseType.Isolation, suitsLowReps: true);
 
+        var dumbbellStep = EquipmentWeightStep.ForEquipment(ExerciseCatalog.Find("Lateral Raise")!.Equipment);
+
         var onStrengthRange = calculator.WorkingWeightFor(
             oneRepMax: 40m,
             targetReps: strength.RepRangeMin,
             targetRir: strength.TargetRir,
-            weightStepKg: 2.5m);
+            weightStepKg: dumbbellStep);
         var onIsolationRange = calculator.WorkingWeightFor(
             oneRepMax: 40m,
             targetReps: isolation.RepRangeMin,
             targetRir: isolation.TargetRir,
-            weightStepKg: 2.5m);
+            weightStepKg: dumbbellStep);
 
-        Assert.Equal(35m, onStrengthRange);
-        Assert.Equal(27.5m, onIsolationRange);
+        Assert.Equal(2m, dumbbellStep);
+        Assert.Equal(34m, onStrengthRange);
+        Assert.Equal(28m, onIsolationRange);
     }
 
     /// <summary>

@@ -37,8 +37,7 @@ public static class GoalPrescriptions
     /// So the rep range follows the exercise and the target RIR follows the block. Reserve
     /// is how hard the week is meant to be, and that is a property of the week, not of the
     /// movement; keeping it from the goal is also what lets the deload restore a plan from
-    /// one number per block. For a hypertrophy block nothing changes at all - isolation
-    /// work was already prescribed in its range.
+    /// one number per block.
     ///
     /// The same holds for a compound that cannot carry a low range
     /// (<paramref name="suitsLowReps"/> false) - see <see cref="CarriesTheGoalRange"/>.
@@ -122,7 +121,7 @@ public static class GoalPrescriptions
     /// (<see cref="ExerciseSetSlot.IsMainLift"/>) and moves the accessory work around them.
     ///
     /// Read from the plan's range rather than from the catalog, because a custom template
-    /// sets its own: a leg press the lifter entered at 12-15 is accessory work in their
+    /// sets its own: a leg press the lifter entered at 8-12 is accessory work in their
     /// strength block, and a split squat they entered at 3-5 is the lift they chose to load.
     /// For a block generated from a built-in template by this version the two readings agree -
     /// its range comes from <see cref="ForExercise"/>, which gives 3-6 exactly to

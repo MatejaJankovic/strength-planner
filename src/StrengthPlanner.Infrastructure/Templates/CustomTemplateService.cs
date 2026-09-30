@@ -238,7 +238,8 @@ public class CustomTemplateService : ICustomTemplateService
             var exercise = typeById[overTheCap.ExerciseId];
             throw new MesocycleGenerationException(
                 $"{exercise.Name} je složena vežba i ide najviše do {GoalPrescriptions.MaxTemplateReps(exercise.Type)} "
-                + "ponavljanja: iznad toga se iz serije ne može proceniti maksimum. Do 20 smeju samo izolacije.");
+                + "ponavljanja: iznad toga se iz serije ne može proceniti maksimum. "
+                + $"Do {TrainingConstants.IsolationMaxReps} smeju samo izolacije.");
         }
 
         return name;

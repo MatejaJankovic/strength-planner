@@ -47,9 +47,10 @@ public sealed record StrengthSample(Guid ExerciseId, int Reps, int Rir, decimal 
 /// A set above <see cref="TrainingConstants.EpleyRepCap"/> gives no estimate, and since
 /// isolations are prescribed 10-20 most of their sets are such sets. Without a second
 /// reading the side delts and the calves, which only isolations train, would have stopped
-/// telling the volume limits anything. So when an exercise offers no pair of estimates, its
-/// sets are compared at the <b>same load</b> (<see cref="SameLoadChange"/>): there, more
-/// effective reps is more strength, and no maximum has to be read to say so.
+/// telling the volume limits anything. So when one of the two weeks has no estimate for an
+/// exercise at all, its sets are compared at the <b>same load</b> (<see cref="SameLoadChange"/>):
+/// there, more effective reps is more strength, and no maximum has to be read to say so. When
+/// both weeks have estimates, the estimates decide, including when they decline to compare.
 /// </summary>
 public static class StrengthChange
 {
@@ -87,12 +88,12 @@ public static class StrengthChange
 
         foreach (var exerciseId in currentAtLoad.Keys.Where(previousAtLoad.ContainsKey))
         {
+            // Kad obe nedelje imaju procenu, odlučuje procena - i kad kaže "nije uporedivo".
+            // Poređenje na istoj težini popunjava samo nedelju koja procenu uopšte nema.
             var change = currentByExercise.TryGetValue(exerciseId, out var currentSets)
                          && previousByExercise.TryGetValue(exerciseId, out var previousSets)
                 ? BestComparableChange(currentSets, previousSets)
-                : null;
-
-            change ??= SameLoadChange(currentAtLoad[exerciseId], previousAtLoad[exerciseId]);
+                : SameLoadChange(currentAtLoad[exerciseId], previousAtLoad[exerciseId]);
 
             if (change is not null)
             {

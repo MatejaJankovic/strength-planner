@@ -98,7 +98,13 @@ public static class NextWeekLoad
         // Naredna nedelja traži drugačiji propis, pa nošenje iste težine nema smisla:
         // nedelja koja pada sa 12 na 5 ponavljanja mora da bude teža. Težina se izvodi iz
         // procene maksimuma i propisa te nedelje, isto kao pri generisanju prve nedelje.
-        if (oneRepMaxKg is not null)
+        //
+        // Osim kad opseg ide preko Epley granice (izolacija, 10-20): serije tamo većinom ne
+        // upisuju procenu, pa maksimum na zapisu potiče iz neke ranije, lakše serije do 12.
+        // Izmereno u review-u: 10 kg x 20 u linearnom bloku, pa sledeće nedelje 8 kg - iz
+        // procene od 11.2 kg, a progresija je tražila 12. Tada govori sama težina treninga.
+        var maximumSpeaksForThisRange = current.RepRangeMax <= TrainingConstants.EpleyRepCap;
+        if (oneRepMaxKg is not null && maximumSpeaksForThisRange)
         {
             return WorkingLoadOrNull(calculator, oneRepMaxKg, next, weightStepKg, bodyweightLoadKg);
         }
@@ -110,7 +116,7 @@ public static class NextWeekLoad
         var known = progressionWeightKg ?? referenceWeightKg;
         if (known is null)
         {
-            return null;
+            return WorkingLoadOrNull(calculator, oneRepMaxKg, next, weightStepKg, bodyweightLoadKg);
         }
 
         var impliedOneRepMax = calculator.ImpliedOneRepMax(

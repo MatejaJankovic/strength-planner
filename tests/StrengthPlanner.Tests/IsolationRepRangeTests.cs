@@ -195,6 +195,58 @@ public class IsolationRepRangeTests
         Assert.Equal(10m, load);
     }
 
+    /// <summary>
+    /// Nalaz review-a PR #91. Linearan blok, bočno podizanje: nedelja 2 odrađena 10 kg x 20
+    /// uz RIR 2, progresija traži 12 kg - a nedelja 3 ima drugi propis, pa se težina izvodila
+    /// iz procene u prozoru. Serije preko 12 procenu ne upisuju, pa je u prozoru stajalo
+    /// 11.2 kg iz ranije serije na 8 kg, i nedelja 3 je dobijala 8 kg. U opsegu preko Epley
+    /// granice sada govori sama težina treninga.
+    /// </summary>
+    [Fact]
+    public void AnIsolationRange_ScalesTheSessionsOwnLoad_NotAnOlderEstimate()
+    {
+        var load = NextWeekLoad.For(
+            referenceWeightKg: 10m,
+            progressionWeightKg: 12m,
+            current: new LoadPrescription(10, 20, 2),
+            next: new LoadPrescription(10, 20, 1),
+            nextIsDeload: false,
+            oneRepMaxKg: 11.2m,
+            weightStepKg: 2m);
+
+        // 12 x (30 + 12) / (30 + 11) = 12.29, na koraku od 2 kg: 12.
+        Assert.Equal(12m, load);
+    }
+
+    [Fact]
+    public void ACompoundRange_StillReadsTheMaximum_WhenThePrescriptionChanges()
+    {
+        var load = NextWeekLoad.For(
+            referenceWeightKg: 100m,
+            progressionWeightKg: 102.5m,
+            current: new LoadPrescription(8, 12, 2),
+            next: new LoadPrescription(6, 10, 1),
+            nextIsDeload: false,
+            oneRepMaxKg: 140m,
+            weightStepKg: 2.5m);
+
+        // 140 / (1 + 7 / 30) = 113.5, na koraku od 2.5 kg: 112.5 - iz maksimuma, ne iz 102.5.
+        Assert.Equal(112.5m, load);
+    }
+
+    /// <summary>
+    /// Kad obe nedelje imaju procenu, odlučuje ona - i kad kaže da par nije uporediv.
+    /// Serije preko 12 na istoj težini tada ne smeju da se upare iza njenih leđa: bench
+    /// 100 x 6 pa 100 x 9 (neuporedivo) uz 80 x 13 pa 80 x 16 bi inače čitao -6.4%.
+    /// </summary>
+    [Fact]
+    public void WhenBothWeeksHaveEstimates_TheSameLoadRuleStaysOut()
+    {
+        Assert.Null(StrengthChange.ChangeShare(
+            [new StrengthSample(Bench, 6, 1, 100m), new StrengthSample(Bench, 13, 1, 80m)],
+            [new StrengthSample(Bench, 9, 1, 100m), new StrengthSample(Bench, 16, 1, 80m)]));
+    }
+
     [Fact]
     public void TheImpliedMaximum_IsTheEstimate_WhereAnEstimateExists()
     {
