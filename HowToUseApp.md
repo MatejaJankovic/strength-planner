@@ -214,8 +214,8 @@ zaista dobija, a koliko ih uđe i koje odlučuje tvoj nivo iskustva (složene ve
 
 | Cilj | Opseg ponavljanja | Ciljni RIR |
 |---|---|---|
-| **Snaga** | 3–6 za glavna dizanja, **8–12 za ostalo** | 2 |
-| **Hipertrofija** | 8–12 | 1 |
+| **Snaga** | 3–6 za glavna dizanja, 8–12 za ostale složene vežbe, **10–20 za izolacije** | 2 |
+| **Hipertrofija** | 8–12 za složene vežbe, **10–20 za izolacije** | 1 |
 
 > Opseg prati vežbu, a ciljni RIR blok. Trojka na bočnom podizanju nije provera sile:
 > snaga se izražava u pokretima koji mogu da nose opterećenje, pa izolacija i u bloku snage
@@ -223,6 +223,11 @@ zaista dobija, a koliko ih uđe i koje odlučuje tvoj nivo iskustva (složene ve
 > — iskorak, bugarski čučanj, step-up, rumunsko mrtvo na jednoj nozi, goblet čučanj i sklek:
 > na jednoj nozi i sa nestabilnim osloncem trojka ruši tehniku, a sklek i goblet čučanj
 > nemaju gde da prime teret. Lični šablon nosi opsege koje si sam uneo.
+>
+> Izolacija u oba bloka ide **10–20**. Mišić raste slično u širokom opsegu ponavljanja kad je
+> serija blizu otkaza (Schoenfeld i sar. 2017; 2021), a i priručnik kaže da se viši opseg
+> obično koristi za izolacione vežbe. Širi opseg je i ono što lakoj bučici dozvoljava da
+> napreduje (vidi „Korak mora da stane u ono što serija može").
 
 **3. Raspored kroz nedelje (periodizacija).**
 
@@ -240,7 +245,8 @@ zaista dobija, a koliko ih uđe i koje odlučuje tvoj nivo iskustva (složene ve
 > blok dobija model prethodnog.
 >
 > Linearan blok počinje lakši po **rezervi**, ne po ponavljanjima: kod hipertrofije opseg 8–12
-> već stoji na gornjoj granici od 12, preko koje procena maksimuma ne važi. Isto zato faza
+> već stoji na gornjoj granici od 12, preko koje procena maksimuma ne važi (a izolacija 10–20
+> na svojoj granici od 20). Isto zato faza
 > volumena obrnutog modela kod hipertrofije nosi **serije**, a ne ponavljanja; kod snage (3–6)
 > se pomeraju i ponavljanja.
 >
@@ -309,7 +315,9 @@ Biraš sve sam:
 - **dane** — koliko ih ima i kako se zovu (1–7);
 - **vežbe u svakom danu** (1–12), iz kataloga i iz svojih vežbi, redosledom kojim ih dodaš;
 - **broj serija** za svaku vežbu (2–10);
-- **opseg ponavljanja** za svaku vežbu (3–12, donja granica ne sme biti veća od gornje).
+- **opseg ponavljanja** za svaku vežbu (od 3 do 12 za složenu vežbu, do 20 za izolaciju;
+  donja granica ne sme biti veća od gornje). Nova vežba dobija opseg koji bi dobila i u
+  ugrađenom šablonu: složena 8–12, izolacija 10–20.
   Ako u oba polja upišeš **isti broj**, dobijaćeš tačno toliko ponavljanja — 5×5 je program,
   pa se i propisuje kao 5, ne kao 5–6. Periodizacija taj broj pomera kroz blok
   (5 → 8 u nedelji volumena, 3 u nedelji intenziteta), ali ga ne razvlači u opseg.
@@ -523,7 +531,8 @@ završiš prvi trening.
 **e1RM trend.** Biraš vežbu iz padajućeg spiska, dobijaš grafik procenjenog maksimuma kroz
 vreme, poslednju vrednost i promenu u odnosu na prethodnu. Ovo je glavna mera napretka.
 Procena postoji samo za serije **do 12 ponavljanja i sa RIR-om do 3** — dalje od otkaza
-formula nije pouzdana, pa se ne beleži. Grafik prikazuje svu istoriju, uključujući i starije
+formula nije pouzdana, pa se ne beleži. Izolacija u opsegu 10–20 zato procenu daje samo iz
+serija do 12; napredak na njoj se vidi u ponavljanjima na istoj težini. Grafik prikazuje svu istoriju, uključujući i starije
 naduvane vrednosti ako ih ima; plan ih ne koristi (vidi „Start novog bloka").
 
 **Nedeljni volumen.** Za izabrani mezociklus i nedelju, po mišićnim grupama: koliko si
@@ -557,8 +566,14 @@ poraslo u odnosu na poslednju uporedivu nedelju:
 | na minimumu, a snaga raste | minimum dole (toliko je bilo dovoljno) |
 | na minimumu, a snaga pada | minimum gore |
 
+Serija preko 12 ponavljanja ne daje procenu maksimuma, pa se izolacija u opsegu 10–20
+poredi drugačije: **na istoj težini**, po ponavljanjima plus rezervi. Više ponavljanja na
+istoj težini je rast snage, i to baš onoliki koliki bi rekle dve procene. Bez toga bi ramena
+i listovi, koje treniraju samo izolacije, prestali da uče granice.
+
 Nedelja koja nema sa čim da se uporedi — prva u bloku, ili ona čija se ponavljanja ne
-poklapaju sa prethodnom — **ne pomera** ni cilj ni minimum. Ranije je granice pomerao
+poklapaju sa prethodnom, ili, kod izolacije, nedelja posle koraka težine — **ne pomera** ni
+cilj ni minimum. Ranije je granice pomerao
 osećaj serija (RIR), ali to je iskaz o **težini tegova**, a nju već ispravlja progresija:
 lagana nedelja je značila i teže tegove i više serija, iz istog podatka.
 
@@ -675,8 +690,9 @@ Ovo je jezgro aplikacije. Ne moraš ga znati da bi je koristio, ali objašnjava 
 izgledaju kako izgledaju.
 
 **Opseg prati vežbu.** U bloku snage glavna dizanja — složene vežbe koje podnose nizak opseg —
-idu na 3–6, a izolacije i složene vežbe na jednoj nozi ili bez načina da se doda teret ostaju na
-8–12 — ciljni RIR je isti za sve, jer on govori koliko nedelja treba da bude teška.
+idu na 3–6, a složene vežbe na jednoj nozi ili bez načina da se doda teret ostaju na 8–12.
+Izolacije u oba bloka idu na 10–20. Ciljni RIR je isti za sve, jer on govori koliko nedelja
+treba da bude teška.
 
 **Radna težina.** Progresija polazi od **najteže** težine koju si podigao u tom treningu, a
 ne od proseka svih serija. Lakše serije ulaze u račun samo ako su išle do otkaza (ili na
@@ -695,10 +711,13 @@ nikad ne spušta opterećenje.
 
 **Korak mora da stane u ono što serija može.** Povratak sa vrha na dno opsega plaća korak
 težine: iz 8–12 sa RIR-om 1 može oko 13% više, pa korak šipke od ~19 kg naviše staje i pravila
-iznad važe bez izmene. Lak teg je drugačiji — bučica od 8 kg sa korakom od 2 kg je skok od 25%,
-posle koga bi po Epley-u ostalo tri-četiri ponavljanja, pet ispod dna opsega. Tada korak dolazi
-tek kad ga **kapacitet** svake serije upija: ponavljanja plus rezerva koja je zaista ostala (za
-taj primer 17 uz RIR 1, ili 15 uz RIR 3). Do tada težina čeka i ne pada, a ekran to kaže. Kad
+iznad važe bez izmene. Iz 10–20, opsega izolacija, može oko 27% više, pa i bučica od 8 kg sa
+korakom od 2 kg (25%) staje u sam opseg. Lak teg u uskom opsegu je drugačiji — ista bučica u
+8–12 (lični šablon, ili blok napravljen pre runde 14) je skok posle koga bi po Epley-u ostalo
+tri-četiri ponavljanja, pet ispod dna opsega. Tada korak dolazi tek kad ga **kapacitet**
+svake serije upija: ponavljanja plus rezerva koja je zaista ostala (za taj primer 17 uz RIR 1,
+ili 15 uz RIR 3). U 10–20 isto važi za bučicu od 5 kg: korak od 2 kg je 40%, pa dolazi posle
+25 ponavljanja uz RIR 1. Do tada težina čeka i ne pada, a ekran to kaže. Kad
 korak dođe, ide na sledeću težinu koju stalak ima — ne korak i korekcija povrh njega, jer bi je
 zaokruživanje na lakom tegu pretvorilo u drugi ceo korak.
 
@@ -797,7 +816,8 @@ osetno teža, a ne ista uvećana za korak.
 12 ponavljanja se spusti nazad i **zadrži širinu** tvog opsega, a ponavljanja koja granica
 pojede dobijaš kao **jednu seriju više**. Zato faza volumena hipertrofije stoji na 8–12 sa
 šest serija, a ne na 11–12 sa pet — dupla progresija u opsegu od dva ponavljanja nema po
-čemu da raste. Donja granica od 3 ponavljanja je drugačija: ona sme da suzi opseg, jer ispod
+čemu da raste. Za izolaciju je ta granica 20: opseg 10–20 se ispod nje pomera isto kao 8–12
+ispod 12. Izolacija iz bloka napravljenog ranije nosi 8–12 i granicu 12, kao i do sada. Donja granica od 3 ponavljanja je drugačija: ona sme da suzi opseg, jer ispod
 tri ponavljanja blok više nije ono što piše da jeste.
 
 ---
