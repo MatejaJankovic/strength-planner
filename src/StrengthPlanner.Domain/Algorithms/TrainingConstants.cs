@@ -16,6 +16,32 @@ public static class TrainingConstants
     public const int EpleyRepCap = 12;
 
     /// <summary>
+    /// Floor of the rep range an isolation exercise is prescribed, in either block.
+    ///
+    /// Hypertrophy is similar across a wide range of loads when sets end close to failure
+    /// (Schoenfeld et al. 2017; 2021), and the handbook itself calls the 8-12 "hypertrophy
+    /// range" a myth, adding that the higher range is the usual one for isolation work. Ten,
+    /// not eight: at eight reps a lateral raise is already a heavy set for the joint rather
+    /// than for the muscle.
+    /// </summary>
+    public const int IsolationRepRangeMin = 10;
+
+    /// <summary>
+    /// Top of the isolation rep range, and the most reps a week may prescribe to one.
+    ///
+    /// A wider range is also what lets a light dumbbell progress. Double progression steps
+    /// the load at the top of the range and starts again at the floor; by Epley, 10-20 at
+    /// RIR 1 absorbs about 27% more load, 8-12 about 13%. A 2 kg step on an 8 kg lateral
+    /// raise is 25%, so it fits the first range and did not fit the second.
+    ///
+    /// Above <see cref="EpleyRepCap"/> no e1RM is read, and that stays true: an isolation
+    /// set of fifteen is not evidence of a maximum. What the volume limits need from those
+    /// sets - whether the lifter got stronger - is read at the same load instead
+    /// (<see cref="StrengthChange"/>).
+    /// </summary>
+    public const int IsolationMaxReps = 20;
+
+    /// <summary>
     /// The divisor of the Epley formula, 1RM = w * (1 + reps / 30). Every rule that trades
     /// reps for load reads it from here, so the estimate, the working weight and the
     /// question of whether a load step fits in a rep range all use the same curve.

@@ -121,6 +121,7 @@ ono što je ispod 20 kg, ono što blok radi kroz nedelje i ono što se tvrdi o v
 | [Tekst na ekranu](ui-copy.md) | Upozorenje na 0 kg je pominjalo praznu šipku i uz sajlu i bučice (ispravka iz runde 13 nije stigla u kod); sedam tekstova (čarobnjak plana, registracija) bilo je bez dijakritika | #88 |
 | [Sastav bloka snage](strength-block-composition.md) | Napredni je i u bloku snage dobijao jednu složenu vežbu po treningu, iskoraci su nosili 3–6, a balansiranje je seklo bench pre razvlačenja (373 puta) | #89 |
 | [Linearan model po priručniku](periodization-shapes.md) | Linearan model je spuštao serije kroz blok, pa je hipertrofija gađala MRV u dve najsvežije nedelje; predlog „obrnut za hipertrofiju" nije imao oslonac. Sada se za svaki blok predlaže linearan, a umor povlači deload najviše jednom po bloku | #90 |
+| [Opseg po ulozi vežbe](rep-ranges-by-role.md) | Izolacije su nosile 8–12 u oba bloka, pa laka bučica nije mogla da primi korak; sada 10–20, uz poređenje snage na istoj težini iznad 12 ponavljanja | #91 |
 
 ## Ako čitaš samo jedno
 

@@ -20,6 +20,21 @@ public sealed class E1RmCalculator
                 nameof(reps));
         }
 
+        return ImpliedOneRepMax(weight, reps, rir);
+    }
+
+    /// <summary>
+    /// The maximum a load implies on the Epley curve, with no rep cap - for trading reps for
+    /// load between two prescriptions, never for a number that is stored or shown.
+    ///
+    /// Scaling a load from one rep target to another is a ratio on the curve, and the
+    /// maximum cancels out of it. The cap on <see cref="EstimateOneRepMax"/> guards
+    /// estimates - records, trends, the fatigue score - where an unreliable absolute value
+    /// would be kept and compared. An isolation week of 12-20 that hands its load to a week
+    /// of 10-18 needs only the ratio, and the cap used to throw there instead.
+    /// </summary>
+    public decimal ImpliedOneRepMax(decimal weight, int reps, int rir = 0)
+    {
         if (rir < 0)
         {
             throw new ArgumentException("RIR cannot be negative.", nameof(rir));

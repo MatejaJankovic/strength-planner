@@ -264,11 +264,18 @@
         @if (plan.targetWeightIsEstimate) {
           <p class="card__hint card__hint--estimate">
             <mat-icon aria-hidden="true">calculate</mat-icon>
-            <span>
-              Predlog je izveden iz tvog maksimuma, jer za ovu vežbu još nema odrađenog
-              treninga od koga bi se računao. Kad ga bude, cilj dolazi iz onoga što si
-              stvarno digao.
-            </span>
+            @if (plan.targetWeightIsCarried) {
+              <span>
+                Predlog je prenet sa poslednje težine ove vežbe u bloku, jer prethodni trening
+                ovog dana nije odrađen. Kad bude, cilj dolazi iz onoga što si stvarno digao.
+              </span>
+            } @else {
+              <span>
+                Predlog je izveden iz tvog maksimuma, jer za ovu vežbu još nema odrađenog
+                treninga od koga bi se računao. Kad ga bude, cilj dolazi iz onoga što si
+                stvarno digao.
+              </span>
+            }
           </p>
         }
 

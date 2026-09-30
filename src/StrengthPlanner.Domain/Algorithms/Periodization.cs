@@ -69,8 +69,30 @@ public static class Periodization
     /// hypertrophy block starts at 8-12, flush against the cap, so the volume phase used to
     /// come out as 11-12: a two-rep window that raised the floor by three reps while
     /// pretending to be the easier week, and left double progression nothing to climb.
+    ///
+    /// It is the cap of a range that ends at or below it. An isolation range ends at
+    /// <see cref="IsolationMaxReps"/>, and there the cap follows - see <see cref="MaxRepsFor"/>.
     /// </summary>
     public const int MaxReps = TrainingConstants.EpleyRepCap;
+
+    /// <summary>Most reps a week may prescribe to an isolation exercise.</summary>
+    public const int IsolationMaxReps = TrainingConstants.IsolationMaxReps;
+
+    /// <summary>
+    /// The rep cap for an exercise whose base range ends at <paramref name="baseRepRangeMax"/>.
+    ///
+    /// Read from the range rather than from the exercise type, for the same reason
+    /// <c>ExercisePlan.BaseRepRangeMin/Max</c> exist: the plan carries its range, and a block
+    /// generated before isolations had their own keeps reading the cap it was written with
+    /// (an 8-12 isolation keeps 12). A range can only end above <see cref="MaxReps"/> when it
+    /// is an isolation's: built-in compounds end at 12 at most, and a custom template refuses
+    /// more for a compound. That range has given up the e1RM at its base already, so a cap of
+    /// twelve would protect no measurement - it would only squeeze the window.
+    /// </summary>
+    public static int MaxRepsFor(int baseRepRangeMax)
+    {
+        return baseRepRangeMax > MaxReps ? IsolationMaxReps : MaxReps;
+    }
 
     /// <summary>
     /// Lowest target RIR a week may prescribe, and it is deliberately not zero.
@@ -270,7 +292,7 @@ public static class Periodization
     private static (int Min, int Max) RepWindow(int baseRepRangeMin, int baseRepRangeMax, int repShift)
     {
         var width = Math.Max(0, baseRepRangeMax - baseRepRangeMin);
-        var max = Math.Clamp(baseRepRangeMax + repShift, MinReps, MaxReps);
+        var max = Math.Clamp(baseRepRangeMax + repShift, MinReps, MaxRepsFor(baseRepRangeMax));
 
         return (Math.Clamp(max - width, MinReps, max), max);
     }
@@ -290,7 +312,7 @@ public static class Periodization
     /// </summary>
     private static int SetShift(WeekShape shape, int baseRepRangeMax)
     {
-        var swallowed = shape.RepShift > 0 && baseRepRangeMax + shape.RepShift > MaxReps;
+        var swallowed = shape.RepShift > 0 && baseRepRangeMax + shape.RepShift > MaxRepsFor(baseRepRangeMax);
 
         return shape.SetShift + (swallowed ? CappedShiftSetBonus : 0);
     }

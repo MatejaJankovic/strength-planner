@@ -87,7 +87,13 @@ export const TEMPLATE_LIMITS = {
   minSets: 2,
   maxSets: 10,
   minReps: 3,
+  /** Složena vežba: iznad 12 ponavljanja se iz serije ne procenjuje maksimum. */
   maxReps: 12,
+  /** Izolacija ima svoj opseg, 10-20, pa sme i do 20. */
+  maxIsolationReps: 20,
+  /** Dno opsega koji nova vežba dobija, kao u ugrađenom šablonu. */
+  isolationMinReps: 10,
+  compoundMinReps: 8,
 } as const;
 
 export interface CustomTemplateExerciseDto {
@@ -176,8 +182,10 @@ export interface ExercisePlanDto {
   repRangeMax: number;
   targetRir: number;
   targetWeightKg?: number | null;
-  /** Cilj je izveden iz poznatog maksimuma, a ne iz odrađenih serija prethodne nedelje. */
+  /** Cilj je izračunat pri čitanju, a ne iz odrađenih serija istog dana prethodne nedelje. */
   targetWeightIsEstimate?: boolean;
+  /** Uz `targetWeightIsEstimate`: prenet sa poslednje težine iste vežbe u bloku, ne iz maksimuma. */
+  targetWeightIsCarried?: boolean;
   weightStepKg: number;
   /** Sprava: "Barbell", "Dumbbell", "Machine", "Cable", "Bodyweight". */
   equipment?: string;

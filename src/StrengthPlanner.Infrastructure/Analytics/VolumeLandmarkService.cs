@@ -234,7 +234,8 @@ public sealed class VolumeLandmarkService
     /// Koliko se promenila snaga po mišićnoj grupi u odnosu na poslednju uporedivu nedelju.
     ///
     /// Poređenje je domensko pravilo (<see cref="StrengthChange"/>): ista vežba, isti broj
-    /// efektivnih ponavljanja. Mišiću se pripisuju sve vežbe koje ga opterećuju, i primarno i
+    /// efektivnih ponavljanja - a za seriju preko 12 ponavljanja, koja procenu ne daje, ista
+    /// težina. Mišiću se pripisuju sve vežbe koje ga opterećuju, i primarno i
     /// sekundarno, sa istim težinom — doprinos meri koliko je vežba nosila <i>volumena</i> za
     /// taj mišić, a ovde se pita nešto drugo: da li je ono što mišić diže poraslo. Mišić koji
     /// je ograničavajući faktor u sekundarnoj ulozi o tome govori jednako.

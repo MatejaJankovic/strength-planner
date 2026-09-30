@@ -37,22 +37,35 @@ public static class GoalPrescriptions
     /// So the rep range follows the exercise and the target RIR follows the block. Reserve
     /// is how hard the week is meant to be, and that is a property of the week, not of the
     /// movement; keeping it from the goal is also what lets the deload restore a plan from
-    /// one number per block. For a hypertrophy block nothing changes at all - isolation
-    /// work was already prescribed in its range.
+    /// one number per block.
     ///
     /// The same holds for a compound that cannot carry a low range
     /// (<paramref name="suitsLowReps"/> false) - see <see cref="CarriesTheGoalRange"/>.
+    ///
+    /// An isolation exercise carries its own range in either block,
+    /// <see cref="TrainingConstants.IsolationRepRangeMin"/> to
+    /// <see cref="TrainingConstants.IsolationMaxReps"/>. It used to take 8-12, the hypertrophy
+    /// range of the compounds, in both blocks.
     /// </summary>
     public static GoalPrescription ForExercise(Goal goal, ExerciseType type, bool suitsLowReps)
     {
         var goalPrescription = ForGoal(goal);
+
+        if (type == ExerciseType.Isolation)
+        {
+            return goalPrescription with
+            {
+                RepRangeMin = TrainingConstants.IsolationRepRangeMin,
+                RepRangeMax = TrainingConstants.IsolationMaxReps
+            };
+        }
 
         if (CarriesTheGoalRange(goal, type, suitsLowReps))
         {
             return goalPrescription;
         }
 
-        // Izolacija, ili složena vežba koja ne podnosi nizak opseg: pomoćni rad.
+        // Složena vežba koja ne podnosi nizak opseg: pomoćni rad u opsegu hipertrofije.
         var accessory = ForGoal(Goal.Hypertrophy);
 
         return goalPrescription with
@@ -63,9 +76,19 @@ public static class GoalPrescriptions
     }
 
     /// <summary>
-    /// Whether this exercise carries the block's own rep range: every exercise in a
+    /// Most reps a custom template may prescribe to an exercise of this type: the isolation
+    /// range's top for an isolation, and the Epley cap for a compound - whose sets are read
+    /// for an estimate by the strength trend, the records and the fatigue score.
+    /// </summary>
+    public static int MaxTemplateReps(ExerciseType type)
+    {
+        return type == ExerciseType.Isolation ? TrainingConstants.IsolationMaxReps : TrainingConstants.EpleyRepCap;
+    }
+
+    /// <summary>
+    /// Whether this exercise carries the block's own rep range: every compound in a
     /// hypertrophy block, and in a strength block only a compound that can be loaded for a
-    /// set of three to six.
+    /// set of three to six. An isolation never does - it has a range of its own.
     ///
     /// Not every compound can. The handbook says unilateral work is <i>"nije idealna za
     /// razvoj apsolutne snage"</i> and that a low range <i>"može narušiti tehniku, naročito
@@ -78,7 +101,7 @@ public static class GoalPrescriptions
     /// </summary>
     public static bool CarriesTheGoalRange(Goal goal, ExerciseType type, bool suitsLowReps)
     {
-        return goal != Goal.Strength || IsStrengthLift(goal, type, suitsLowReps);
+        return type == ExerciseType.Compound && (goal != Goal.Strength || suitsLowReps);
     }
 
     /// <summary>
@@ -98,7 +121,7 @@ public static class GoalPrescriptions
     /// (<see cref="ExerciseSetSlot.IsMainLift"/>) and moves the accessory work around them.
     ///
     /// Read from the plan's range rather than from the catalog, because a custom template
-    /// sets its own: a leg press the lifter entered at 12-15 is accessory work in their
+    /// sets its own: a leg press the lifter entered at 8-12 is accessory work in their
     /// strength block, and a split squat they entered at 3-5 is the lift they chose to load.
     /// For a block generated from a built-in template by this version the two readings agree -
     /// its range comes from <see cref="ForExercise"/>, which gives 3-6 exactly to

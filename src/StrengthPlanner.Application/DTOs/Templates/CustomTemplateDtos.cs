@@ -10,7 +10,10 @@ namespace StrengthPlanner.Application.DTOs.Templates;
 /// <see cref="Periodization"/>. Razlog je praktičan: propis nedelje ionako svodi vrednosti u
 /// te opsege, pa bi šire granice ovde značile da korisnik unese broj koji mu plan tiho
 /// promeni. Ponavljanja iznad <see cref="Periodization.MaxReps"/> posebno: preko te granice
-/// Epley procena ne radi, pa e1RM trend, rekordi i ocena umora ostaju bez podatka.
+/// Epley procena ne radi, pa e1RM trend, rekordi i ocena umora ostaju bez podatka. Zato
+/// anotacija pušta do <see cref="Periodization.IsolationMaxReps"/>, a servis složenoj vežbi
+/// dozvoljava samo do <see cref="Periodization.MaxReps"/>
+/// (<see cref="GoalPrescriptions.MaxTemplateReps"/>): tip vežbe se zna tek iz baze.
 /// </summary>
 public class SaveCustomTemplateRequest
 {
@@ -44,10 +47,10 @@ public class SaveCustomTemplateExerciseDto
     [Range(Periodization.MinSets, TrainingConstants.MaxTemplateSets)]
     public int Sets { get; set; }
 
-    [Range(Periodization.MinReps, Periodization.MaxReps)]
+    [Range(Periodization.MinReps, Periodization.IsolationMaxReps)]
     public int RepRangeMin { get; set; }
 
-    [Range(Periodization.MinReps, Periodization.MaxReps)]
+    [Range(Periodization.MinReps, Periodization.IsolationMaxReps)]
     public int RepRangeMax { get; set; }
 }
 

@@ -13,7 +13,7 @@ public class ProgressionPropertyTests
 {
     private static readonly decimal[] Steps = [0.5m, 1m, 2m, 2.5m, 5m, 10m];
 
-    private static readonly (int Min, int Max)[] Ranges = [(3, 6), (8, 12), (11, 12), (3, 4), (6, 9), (5, 5)];
+    private static readonly (int Min, int Max)[] Ranges = [(3, 6), (8, 12), (11, 12), (3, 4), (6, 9), (5, 5), (10, 20), (9, 19), (8, 18)];
 
     // Van mreže koraka: težina dolazi iz onoga što je vežbač upisao. Lake (9, 13, 15, 22.5)
     // su dodate u rundi 14 - bez njih nijedna težina van mreže nije bila u režimu lakog tega.

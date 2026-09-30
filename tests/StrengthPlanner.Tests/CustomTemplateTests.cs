@@ -130,22 +130,26 @@ public class CustomTemplateTests
     {
         // Granice unosa su preuzete iz Periodization, a ne izmišljene, upravo zbog ovoga:
         // opseg iznad gornje granice bi propis nedelje tiho svukao nazad, pa bi korisnik
-        // uneo 12-16 a u planu video nešto drugo. Sa granicama unosa 3-12 do toga ne dolazi.
-        var clamped = Periodization.ForWeek(PeriodizationModel.Flat, 1, 12, 16, 1, 4);
+        // uneo 16-24 a u planu video nešto drugo. Sa granicama unosa do toga ne dolazi.
+        var clamped = Periodization.ForWeek(PeriodizationModel.Flat, 1, 16, 24, 1, 4);
 
-        Assert.True(clamped.RepRangeMax <= Periodization.MaxReps);
-        Assert.NotEqual(16, clamped.RepRangeMax);
+        Assert.True(clamped.RepRangeMax <= Periodization.IsolationMaxReps);
+        Assert.NotEqual(24, clamped.RepRangeMax);
 
-        var withinBounds = Periodization.ForWeek(
-            PeriodizationModel.Flat,
-            1,
-            Periodization.MinReps,
-            Periodization.MaxReps,
-            1,
-            TrainingConstants.MaxTemplateSets);
+        foreach (var type in Enum.GetValues<ExerciseType>())
+        {
+            var maxReps = GoalPrescriptions.MaxTemplateReps(type);
+            var withinBounds = Periodization.ForWeek(
+                PeriodizationModel.Flat,
+                1,
+                Periodization.MinReps,
+                maxReps,
+                1,
+                TrainingConstants.MaxTemplateSets);
 
-        Assert.Equal(Periodization.MinReps, withinBounds.RepRangeMin);
-        Assert.Equal(Periodization.MaxReps, withinBounds.RepRangeMax);
-        Assert.Equal(TrainingConstants.MaxTemplateSets, withinBounds.Sets);
+            Assert.Equal(Periodization.MinReps, withinBounds.RepRangeMin);
+            Assert.Equal(maxReps, withinBounds.RepRangeMax);
+            Assert.Equal(TrainingConstants.MaxTemplateSets, withinBounds.Sets);
+        }
     }
 }
