@@ -199,9 +199,10 @@ export class WorkoutSession {
     return loadLabel(set.weightKg, set.bodyweightLoadKg > 0);
   }
 
-  /** Napomena uz polje za težinu: jedna bučica, ili nula na vežbi koja se opterećuje. */
+  /** Oznaka uz pomeren predlog serija u rezimeu: mišić, i "pun trening" kad ga je spustila granica. */
   protected readonly adjustmentCause = adjustmentCause;
 
+  /** Napomena uz polje za težinu: jedna bučica, ili nula na vežbi koja se opterećuje. */
   protected loadNote(plan: ExercisePlanDto, draft: SetDraft): LoadInputNote {
     return loadInputNote(plan.equipment, draft.weightKg);
   }

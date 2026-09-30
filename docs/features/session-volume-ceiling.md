@@ -129,7 +129,8 @@ To je cena frekvencije jednom nedeljno, i zato je upozorenje uz šablon.
 
 ## Provera
 
-- `dotnet test`: **704** (bilo 693); `npm run build` i `npm test` (177) prolaze.
+- `dotnet test`: **715** (bilo 693; 704 u prvoj verziji, ostatak su dodale dve revizije);
+  `npm run build` i `npm test` (**181**, bilo 177) prolaze.
 - Novi testovi:
   - `WeeklySetAllocationTests` — trening se drži ispod granice i kad nedelji fali serija;
     višak se seli u drugi trening istog mišića; sekundarni mišić broji pola serije, a višak se
@@ -144,7 +145,8 @@ To je cena frekvencije jednom nedeljno, i zato je upozorenje uz šablon.
   - `TemplateWeekSimulation` sastavlja nedelju ugrađenog šablona istim domenskim pozivima kao
     generator i balansiranje. Katalog-testovi su do sada sabirali propis; ono što korisnik
     dobija posle balansiranja nisu videli.
-- Merenje vraćanjem (commit, pa vraćeno staro pravilo, rebuild): bez granice pada **7 od 704**
+- Merenje vraćanjem (commit, pa vraćeno staro pravilo, rebuild), na prvoj verziji grane: bez
+  granice pada **7 od 704**
   — četiri nova testa alokatora i tri kataloška. Četiri preostala kataloška testa tvrde da
   granica **ne** deluje tamo gde ne treba, pa bez nje prolaze. Sa granicom spuštenom na 8
   padaju **4** testa, među njima dva od ta četiri (Full Body na referentnom nivou i „granica
@@ -183,16 +185,39 @@ Provereno uživo baš na slučaju iz nalaza: Push/Pull/Legs blok generisan stari
 propisan i završen u pregledaču na 375 px. Spisak posle treninga: Barbell Row 6 → 5, Pull-up
 6 → 4 i Face Pull 6 → 4 uz „Back · pun trening", Leg Extension 6 → 5 uz „Quads · pun trening".
 Pre ispravke su Pull-up i Face Pull stajali bez mišića, a veslanje uz „Back" dok su leđa bila
-14 naspram cilja 18. Merenje vraćanjem, svako posebno: bez razloga „granica" padaju 2 od 711
+14 naspram cilja 18. Merenje vraćanjem prve verzije objašnjenja, svako posebno: bez razloga „granica" padaju 2 od 711
 testova, a sa pravcem čitanim od propisa umesto od prethodnog predloga takođe 2. Test preko
 svih ugrađenih nedelja pada u oba.
 
 Pet nalaza niske težine bile su tvrdnje jače od merenja, i sve su ispravljene: višak se seli u
 drugi trening samo koliko taj može da primi (Full Body (4 dana) preseli jednu od dve serije,
 Legs Specialization nijednu); upozorenje i uputstvo su pominjali samo grudi i leđa, a padaju i
-ruke; odbačena granica 8 ostavlja Push/Pull/Legs-u 8 serija grudi samo u ravnom bloku (u
-nedelji volumena 12); „ostaje na 12" važi za ugrađene šablone, lični može i više; i opis jednog
+ruke; odbačena granica 8 ostavlja Push/Pull/Legs-u 8 serija grudi u ravnom bloku, ali ne u
+nedeljama volumena, gde prozor propisa ne pušta niže od 9 do 12; „ostaje na 12" važi za ugrađene šablone, lični može i više; i opis jednog
 testa je obećavao više šablona nego što proverava.
+
+Druga revizija, samo nad ispravkama, našla je da ni ispravljeno objašnjenje nije bilo tačno:
+
+- **„Pun trening" je stajalo i gde granica ništa nije tražila.** Kada balansiranje zameni dve
+  vežbe za leđa u istom treningu — veslanje 4 → 3 jer je biceps pola serije iznad cilja,
+  opružanje ruku sa sajlom 3 → 4 da leđa ostanu na cilju — vraćanje samo veslanja diže
+  trening na 12, pa je provera „ova vežba vraćena" rez nazivala rezom granice. Trening je i pre
+  i posle stajao na 11, a ista raspodela bez granice pravi istu zamenu. Izmereno u reviziji,
+  dvaput nezavisno: 9 takvih oznaka posle prvog dana preko svih ugrađenih nedelja. Granica se
+  sada pita uzročno — `WeeklySetAllocation.AllocateWithoutSessionCeiling` je ista pretraga bez
+  člana granice, i rez je rez granice samo ako bi bez nje vežba ostala viša **i** ako bi njen
+  trening bez nje bio preko granice. Svaka polovina uslova ima svoj test: bez prve pada 1 od
+  715, bez druge 1 od 715.
+- Rez koji granica izazove **posredno** — vežba niža nego bez granice u treningu koji ni bez
+  nje ne bi bio pun, jer je pretraga drugde završila u drugom rasporedu — ne dobija oznaku: 12
+  takvih preko ugrađenih nedelja. Za njega „pun trening" ne bi bilo tačno.
+- Rez zbog MRV-a (lake serije ne daju stimulus, ali troše oporavak) vraćao je **nijedan**
+  mišić, jer je objašnjenje gledalo samo cilj. Sada gleda i MRV. To nije uvela ova grana, ali ga
+  je uputstvo sada obećavalo („uz svaku promenu piše mišić").
+- Nedeljni deo objašnjenja i dalje je kontra-činjenica jedne vežbe, kako je uveden u petoj
+  rundi. U zameni zato može da imenuje mišić koji je vratila druga vežba iz para (veslanje iz
+  primera iznad dobija „Back", a ne „Biceps"). Oznaka nije lažna — bez tog reza leđa bi bila
+  iznad cilja — ali nije ni ceo razlog.
 
 Jedan nalaz je oboren kao nešto što ova grana nije uvela, ali je stvaran i ide dalje:
 **balansiranje seče složenu vežbu pre izolacije** kada ona rasterećuje dva mišića odjednom — u

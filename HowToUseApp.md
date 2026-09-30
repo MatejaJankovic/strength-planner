@@ -808,14 +808,24 @@ Dve posledice koje treba da znaš:
   preskočenog rada prebaci na dane koji ostaju. Izmereno: dan sa 24 serije je posle
   preskočenog drugog dana za noge dobio 30. Ako to ne želiš, smanji serije ručno.
 
-**Na Push/Pull/Legs grudi, leđa i ruke stoje ispod cilja.**
+**Na Push/Pull/Legs mišići stoje ispod cilja.**
 Tako i treba da izgleda. Taj šablon svaki mišić trenira jednom nedeljno, pa ceo nedeljni
-volumen grudi pada u Push dan, a u jednom treningu korisno staje oko 11 serija (vidi „Granica
-po treningu"). Izmereno na srednjem nivou, ravan blok: grudi 11 umesto 16, leđa 14 umesto 18,
-triceps 11 umesto 12, biceps 10,5 umesto 12 — biceps gubi i pola serije sa svakom skinutom
-serijom veslanja ili zgiba. Kod početnika u nedeljama volumena biceps tako pada i ispod minimuma (4,5 naspram
-6). Za više volumena uzmi šablon koji mišić trenira dva puta nedeljno (Upper/Lower, Full Body,
-Push/Pull/Legs x2).
+volumen jednog mišića pada u jedan trening, a u jednom treningu korisno staje oko 11 serija
+(vidi „Granica po treningu"). Izmereno na srednjem nivou, ravan blok:
+
+| Mišić | Nedeljno, bez granice → sa granicom | Cilj |
+|---|---|---|
+| grudi | 16 → 11 | 16 |
+| leđa | 18 → 14 | 18 |
+| ramena | 16 → 15 | 16 |
+| kvadriceps | 12 → 11 | 14 |
+| biceps | 12 → 10,5 | 14 |
+| triceps | 12 → 11 | 12 |
+
+Biceps gubi i pola serije sa svakom skinutom serijom veslanja ili zgiba. Kod početnika Pull dan
+nema posebnu vežbu za biceps, pa on na ovom šablonu u većini nedelja stoji ispod minimuma (MEV 6)
+i bez granice; u nedeljama volumena granica ga spušta sa 7,5 na 4,5. Za više volumena uzmi
+šablon koji mišić trenira dva puta nedeljno (Upper/Lower, Full Body, Push/Pull/Legs x2).
 
 **Promenio sam nivo iskustva usred bloka.**
 Tekući blok ostaje nepromenjen — namerno, da se plan u toku ne bi prekrajao ispod ruku.
