@@ -34,6 +34,7 @@ public class DeloadIntensityTests
     [InlineData(PeriodizationModel.Flat)]
     [InlineData(PeriodizationModel.Linear)]
     [InlineData(PeriodizationModel.Inverse)]
+    [InlineData(PeriodizationModel.LinearRising)]
     public void EveryModel_DeloadsAtTheRaisedRir(PeriodizationModel model)
     {
         var goal = GoalPrescriptions.ForGoal(Goal.Hypertrophy);

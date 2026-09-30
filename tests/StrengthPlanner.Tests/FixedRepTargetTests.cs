@@ -21,6 +21,7 @@ public class FixedRepTargetTests
     [InlineData(PeriodizationModel.Flat)]
     [InlineData(PeriodizationModel.Linear)]
     [InlineData(PeriodizationModel.Inverse)]
+    [InlineData(PeriodizationModel.LinearRising)]
     public void AFixedRepTarget_StaysFixedThroughTheWholeBlock(PeriodizationModel model)
     {
         var weeks = Periodization.ForBlock(model, 5, 5, 1, Sets);
