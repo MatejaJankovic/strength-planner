@@ -178,6 +178,14 @@ oba su ispravljena u ovoj grani:
 - **Zaglavlje tog spiska** je i dalje tvrdilo da je svaka promena tu „da bi nedelja završila u
   ciljnoj zoni" — isti tekst koji je već ispravljen na kartici vežbe. Sada kaže oba razloga.
 
+Provereno uživo baš na slučaju iz nalaza: Push/Pull/Legs blok generisan starim pravilom
+(rebuild sa vraćenim pravilom, API), pa novo pravilo (rebuild, API), Push odrađen kako je
+propisan i završen u pregledaču na 375 px. Spisak posle treninga: Barbell Row 6 → 5, Pull-up
+6 → 4 i Face Pull 6 → 4 uz „Back · pun trening", Leg Extension 6 → 5 uz „Quads · pun trening".
+Pre ispravke su Pull-up i Face Pull stajali bez mišića, a veslanje uz „Back" dok su leđa bila
+14 naspram cilja 18. Merenje vraćanjem: bez razloga „granica" padaju 2 od 711 testova, a sa
+pravcem čitanim od propisa umesto od prethodnog predloga još 2.
+
 Pet nalaza niske težine bile su tvrdnje jače od merenja, i sve su ispravljene: višak se seli u
 drugi trening samo koliko taj može da primi (Full Body (4 dana) preseli jednu od dve serije,
 Legs Specialization nijednu); upozorenje i uputstvo su pominjali samo grudi i leđa, a padaju i
