@@ -118,3 +118,14 @@ prošao sam. Nađeno i ispravljeno:
   početnikova nedelja ne ostaje večno „neocenjena"; svi novi upiti su ograničeni po
   korisniku; polovljenje serija u deload nedelji prati novi početni broj serija; reset
   granica se vraća na skalirane vrednosti, što je i namera.
+
+## Kasnije (runda 14)
+
+Dve stvari iz ove beleške su ispravljene u
+[experience-volume-consistency.md](experience-volume-consistency.md):
+
+- Napredni nivo više ne kreće sa 3 serije po vežbi nego sa 4. Uz granice ×1.2 je sa 3 serije
+  propisivao manje nego što sam traži, pa je vežbač koji radi po planu gledao „ispod MEV-a".
+- Obrazloženje za granice ×0.8 je bilo naopako. „Serija početnika je slabiji stimulus" bi
+  tražila više serija, a ne manje. Tačno je da početnik raste i na manjem volumenu, a radni
+  kapacitet mu je manji.

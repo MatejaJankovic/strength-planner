@@ -94,13 +94,20 @@ Jedno polje zaista menja plan, pa ga popuni iskreno.
 |---|---|---|---|
 | Vežbi po treningu | 5 | 6 | 6 |
 | Najviše složenih vežbi po treningu | 3 | 2 | 1 (u bloku snage 2) |
-| Serija po vežbi na startu | 3 | 4 | 3 |
+| Serija po vežbi na startu | 3 | 4 | 4 |
 | Granice volumena (MEV/MAV/MRV) | ×0.8 | ×1.0 | ×1.2 |
 | Automatski deload zbog umora | **ne** | da (prag 0.60) | da (prag 0.50) |
 
 Početnik namerno **ne** dobija rani deload: procena RIR-a je kod početnika najnepouzdanija,
 a nepotreban deload košta celu nedelju napretka. Planirani deload na kraju bloka i dalje
 dobija.
+
+Napredni vežbač kreće sa istim brojem serija kao srednji nivo, iako priručnik za njega kaže
+„manji volumen". Taj manji volumen podrazumeva napredne tehnike (drop set, rest-pause), a njih
+aplikacija ne modeluje. Bez njih bi manje serija značilo manje stimulusa baš za vežbača čije
+granice stoje najviše. Za naprednog biraj šablon koji svaki mišić trenira **dva puta
+nedeljno**: njegov MEV za grudi i leđa je 12, a jedan trening nosi najviše oko 11 serija
+jednog mišića. Zato Push/Pull/Legs od tri dana za grudi i leđa ostaje ispod MEV-a.
 
 Koliko puta nedeljno treniraš ne unosiš nigde. To bira šablon treninga na kasnijem ekranu:
 šablon od tri dana *jeste* „tri treninga nedeljno".
