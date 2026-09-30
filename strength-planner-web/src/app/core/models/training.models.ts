@@ -87,7 +87,10 @@ export const TEMPLATE_LIMITS = {
   minSets: 2,
   maxSets: 10,
   minReps: 3,
+  /** Složena vežba: iznad 12 ponavljanja se iz serije ne procenjuje maksimum. */
   maxReps: 12,
+  /** Izolacija ima svoj opseg, 10-20, pa sme i do 20. */
+  maxIsolationReps: 20,
 } as const;
 
 export interface CustomTemplateExerciseDto {

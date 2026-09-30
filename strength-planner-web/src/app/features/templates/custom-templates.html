@@ -189,7 +189,7 @@
                     [min]="limits.minSets"
                     [max]="limits.maxSets"
                     [value]="exercise.sets"
-                    (change)="setExerciseNumber(dayIndex, exerciseIndex, 'sets', $any($event.target).value)"
+                    (change)="setExerciseNumber(dayIndex, exerciseIndex, 'sets', $any($event.target).value, $any($event.target))"
                   />
                 </div>
 
@@ -205,9 +205,9 @@
                       inputmode="numeric"
                       [attr.id]="'rmin-' + dayIndex + '-' + exerciseIndex"
                       [min]="limits.minReps"
-                      [max]="limits.maxReps"
+                      [max]="maxRepsFor(exercise.exerciseId)"
                       [value]="exercise.repRangeMin"
-                      (change)="setExerciseNumber(dayIndex, exerciseIndex, 'repRangeMin', $any($event.target).value)"
+                      (change)="setExerciseNumber(dayIndex, exerciseIndex, 'repRangeMin', $any($event.target).value, $any($event.target))"
                     />
 
                     <span class="reprange__dash" aria-hidden="true">-</span>
@@ -221,9 +221,9 @@
                       inputmode="numeric"
                       [attr.id]="'rmax-' + dayIndex + '-' + exerciseIndex"
                       [min]="limits.minReps"
-                      [max]="limits.maxReps"
+                      [max]="maxRepsFor(exercise.exerciseId)"
                       [value]="exercise.repRangeMax"
-                      (change)="setExerciseNumber(dayIndex, exerciseIndex, 'repRangeMax', $any($event.target).value)"
+                      (change)="setExerciseNumber(dayIndex, exerciseIndex, 'repRangeMax', $any($event.target).value, $any($event.target))"
                     />
                   </div>
                 </div>

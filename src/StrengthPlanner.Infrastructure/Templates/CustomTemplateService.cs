@@ -153,7 +153,8 @@ public class CustomTemplateService : ICustomTemplateService
 
     /// <summary>
     /// Provere koje anotacije na DTO-u ne mogu: da vežbe postoje i da su dostupne baš ovom
-    /// korisniku, i da donja granica opsega nije iznad gornje.
+    /// korisniku, da donja granica opsega nije iznad gornje, i da složena vežba ne ide preko
+    /// 12 ponavljanja - izolacija sme do 20, a tip se zna tek iz baze.
     /// </summary>
     private async Task<string> ValidateAsync(
         Guid userId,
@@ -218,12 +219,26 @@ public class CustomTemplateService : ICustomTemplateService
         // ovaj korisnik napravio, pa tuđa custom vežba ovde ispadne kao nepostojeća.
         var found = await _db.Exercises
             .Where(exercise => exerciseIds.Contains(exercise.Id))
-            .Select(exercise => exercise.Id)
+            .Select(exercise => new { exercise.Id, exercise.Name, exercise.Type })
             .ToListAsync(cancellationToken);
 
         if (found.Count != exerciseIds.Count)
         {
             throw new MesocycleGenerationException("Šablon sadrži vežbu koja ne postoji.");
+        }
+
+        var typeById = found.ToDictionary(exercise => exercise.Id);
+        var overTheCap = request.Days
+            .SelectMany(day => day.Exercises)
+            .FirstOrDefault(exercise =>
+                exercise.RepRangeMax > GoalPrescriptions.MaxTemplateReps(typeById[exercise.ExerciseId].Type));
+
+        if (overTheCap is not null)
+        {
+            var exercise = typeById[overTheCap.ExerciseId];
+            throw new MesocycleGenerationException(
+                $"{exercise.Name} je složena vežba i ide najviše do {GoalPrescriptions.MaxTemplateReps(exercise.Type)} "
+                + "ponavljanja: iznad toga se iz serije ne može proceniti maksimum. Do 20 smeju samo izolacije.");
         }
 
         return name;

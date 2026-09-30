@@ -225,14 +225,28 @@ export class CustomTemplates {
     return this.exercises().filter((exercise) => !taken.has(exercise.id));
   }
 
+  /** Da li je vežba izolaciona; vežba koje nema u katalogu se čita kao složena. */
+  private isIsolation(exerciseId: string): boolean {
+    return this.exercises().find((exercise) => exercise.id === exerciseId)?.type === 'Isolation';
+  }
+
+  /** Najviše ponavljanja koje vežba sme da dobije: izolacija 20, složena 12. */
+  protected maxRepsFor(exerciseId: string): number {
+    return this.isIsolation(exerciseId) ? this.limits.maxIsolationReps : this.limits.maxReps;
+  }
+
   /**
-   * Nova vežba kreće od vrednosti koje odgovaraju hipertrofiji (3 serije, 8-12), jer je to
-   * najčešći izbor; svaka je odmah izmenjiva.
+   * Nova vežba kreće od opsega koji bi dobila i u ugrađenom šablonu - izolacija 10-20,
+   * složena 8-12 - uz 3 serije; svaka vrednost je odmah izmenjiva.
    */
   protected addExercise(dayIndex: number, exerciseId: string): void {
     if (!exerciseId || !this.canAddExercise(dayIndex)) {
       return;
     }
+
+    const range = this.isIsolation(exerciseId)
+      ? { repRangeMin: 10, repRangeMax: this.limits.maxIsolationReps }
+      : { repRangeMin: 8, repRangeMax: this.limits.maxReps };
 
     this.days.update((days) =>
       days.map((day, index) =>
@@ -241,7 +255,7 @@ export class CustomTemplates {
               ...day,
               exercises: [
                 ...day.exercises,
-                { exerciseId, sets: 3, repRangeMin: 8, repRangeMax: 12 },
+                { exerciseId, sets: 3, ...range },
               ],
             }
           : day,
@@ -259,22 +273,33 @@ export class CustomTemplates {
     );
   }
 
+  /**
+   * Upisuje broj u vežbu, sveden u granice. `input` je polje iz kog je broj došao: kada
+   * granica odbije unos, a vrednost u modelu se ne promeni, Angular polje ne prepisuje, pa
+   * bi ostao broj koji plan nikad neće dobiti (isti kvar kao u runda 8, `MeasureInput`).
+   */
   protected setExerciseNumber(
     dayIndex: number,
     exerciseIndex: number,
     field: 'sets' | 'repRangeMin' | 'repRangeMax',
     value: string,
+    input?: HTMLInputElement,
   ): void {
     const parsed = Number(value);
     if (Number.isNaN(parsed)) {
       return;
     }
 
+    const exerciseId = this.days()[dayIndex]?.exercises[exerciseIndex]?.exerciseId ?? '';
     const bounds =
       field === 'sets'
         ? { min: this.limits.minSets, max: this.limits.maxSets }
-        : { min: this.limits.minReps, max: this.limits.maxReps };
+        : { min: this.limits.minReps, max: this.maxRepsFor(exerciseId) };
     const clamped = Math.min(Math.max(Math.round(parsed), bounds.min), bounds.max);
+
+    if (input) {
+      input.value = String(clamped);
+    }
 
     this.days.update((days) =>
       days.map((day, index) => {

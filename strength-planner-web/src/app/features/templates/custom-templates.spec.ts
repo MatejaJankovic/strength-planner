@@ -21,6 +21,7 @@ describe('CustomTemplates - editor ličnog šablona', () => {
     { id: 'ex-squat', name: 'Back Squat' },
     { id: 'ex-bench', name: 'Bench Press' },
     { id: 'ex-row', name: 'Barbell Row' },
+    { id: 'ex-raise', name: 'Lateral Raise', type: 'Isolation' },
   ];
 
   beforeEach(async () => {
@@ -90,6 +91,46 @@ describe('CustomTemplates - editor ličnog šablona', () => {
 
     instance.setExerciseNumber(0, 0, 'sets', '0');
     expect(instance.days()[0].exercises[0].sets).toBe(2);
+  });
+
+  /**
+   * Izolacija ima svoj opseg, 10-20, i sme do 20; složena vežba ostaje do 12, jer iznad
+   * toga iz serije nema procene maksimuma. Server odbija isto, pa ovo samo sprečava da
+   * korisnik to sazna tek na čuvanju.
+   */
+  it('izolacija kreće od 10-20 i sme do 20, složena vežba do 12', () => {
+    const instance = component();
+    instance.startNew();
+    instance.addExercise(0, 'ex-raise');
+    instance.addExercise(0, 'ex-squat');
+
+    const [raise, squat] = instance.days()[0].exercises;
+    expect([raise.repRangeMin, raise.repRangeMax]).toEqual([10, 20]);
+    expect([squat.repRangeMin, squat.repRangeMax]).toEqual([8, 12]);
+
+    instance.setExerciseNumber(0, 0, 'repRangeMax', '25');
+    instance.setExerciseNumber(0, 1, 'repRangeMax', '15');
+
+    expect(instance.days()[0].exercises[0].repRangeMax).toBe(20);
+    expect(instance.days()[0].exercises[1].repRangeMax).toBe(12);
+  });
+
+  /**
+   * Odbijen unos mora da nestane i iz polja. Kad je vrednost u modelu već na granici,
+   * signal se ne menja, pa Angular polje ne prepisuje - i ostao bi broj koji plan nikad
+   * neće dobiti.
+   */
+  it('vraća u polje vrednost na koju je unos sveden', () => {
+    const instance = component();
+    instance.startNew();
+    instance.addExercise(0, 'ex-squat');
+
+    const input = document.createElement('input');
+    input.value = '15';
+    instance.setExerciseNumber(0, 0, 'repRangeMax', input.value, input);
+
+    expect(instance.days()[0].exercises[0].repRangeMax).toBe(12);
+    expect(input.value).toBe('12');
   });
 
   it('opseg ostaje opseg kada se donja granica podigne preko gornje', () => {
