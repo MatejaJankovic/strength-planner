@@ -17,17 +17,29 @@ namespace StrengthPlanner.Tests;
 /// </summary>
 public class GoalPrescriptionTests
 {
+    /// <summary>
+    /// Izolacija nosi svoj opseg, 10-20, u oba bloka. Do runde 14 je nosila 8-12, opseg
+    /// hipertrofije složenih vežbi - i u bloku snage, gde je to već bio pomoćni rad.
+    /// </summary>
+    [Theory]
+    [InlineData(Goal.Strength)]
+    [InlineData(Goal.Hypertrophy)]
+    public void AnIsolation_CarriesItsOwnRange_InEitherBlock(Goal goal)
+    {
+        var isolation = GoalPrescriptions.ForExercise(goal, ExerciseType.Isolation, suitsLowReps: true);
+
+        Assert.Equal(10, isolation.RepRangeMin);
+        Assert.Equal(20, isolation.RepRangeMax);
+        Assert.False(GoalPrescriptions.CarriesTheGoalRange(goal, ExerciseType.Isolation, suitsLowReps: true));
+    }
+
     [Fact]
-    public void AStrengthBlock_KeepsIsolationInTheHypertrophyRange()
+    public void AStrengthBlock_KeepsItsCompoundsOnTheStrengthRange()
     {
         var compound = GoalPrescriptions.ForExercise(Goal.Strength, ExerciseType.Compound, suitsLowReps: true);
-        var isolation = GoalPrescriptions.ForExercise(Goal.Strength, ExerciseType.Isolation, suitsLowReps: true);
 
         Assert.Equal(3, compound.RepRangeMin);
         Assert.Equal(6, compound.RepRangeMax);
-
-        Assert.Equal(8, isolation.RepRangeMin);
-        Assert.Equal(12, isolation.RepRangeMax);
     }
 
     /// <summary>
@@ -48,14 +60,11 @@ public class GoalPrescriptionTests
     }
 
     [Fact]
-    public void AHypertrophyBlock_IsUnchangedForBothKinds()
+    public void AHypertrophyBlock_KeepsItsCompoundsOnTheGoalRange()
     {
-        var goal = GoalPrescriptions.ForGoal(Goal.Hypertrophy);
-
-        foreach (var type in Enum.GetValues<ExerciseType>())
-        {
-            Assert.Equal(goal, GoalPrescriptions.ForExercise(Goal.Hypertrophy, type, suitsLowReps: true));
-        }
+        Assert.Equal(
+            GoalPrescriptions.ForGoal(Goal.Hypertrophy),
+            GoalPrescriptions.ForExercise(Goal.Hypertrophy, ExerciseType.Compound, suitsLowReps: true));
     }
 
     /// <summary>
@@ -71,7 +80,7 @@ public class GoalPrescriptionTests
         static string Window(GoalPrescription prescription, int week)
         {
             var result = Periodization.ForWeek(
-                PeriodizationModel.Linear,
+                PeriodizationModel.LinearRising,
                 week,
                 prescription.RepRangeMin,
                 prescription.RepRangeMax,
@@ -81,21 +90,20 @@ public class GoalPrescriptionTests
             return $"{result.RepRangeMin}-{result.RepRangeMax}";
         }
 
-        // Nedelja intenziteta: složena vežba ide na trojku, izolacija ostaje u opsegu
-        // u kome izolacija i ima smisla.
+        // Najteža nedelja: složena vežba ide na trojku, izolacija ostaje u opsegu u kome
+        // izolacija i ima smisla.
         Assert.Equal("3-4", Window(compound, 5));
-        Assert.Equal("6-10", Window(isolation, 5));
+        Assert.Equal("8-18", Window(isolation, 5));
 
         // Deload vraća osnovni opseg svake vežbe, pa i tu ostaju razdvojeni.
         Assert.Equal("3-6", Window(compound, 6));
-        Assert.Equal("8-12", Window(isolation, 6));
+        Assert.Equal("10-20", Window(isolation, 6));
     }
 
     /// <summary>
     /// Opseg odlučuje i o polaznom opterećenju, pa izolacija sa poznatim maksimumom u bloku
-    /// snage od sada startuje lakše — što je i smisao izmene. Za bočno podizanje sa
-    /// maksimumom od 40 kg: propis 8–12 pri RIR 2 traži deset efektivnih ponavljanja, a
-    /// 3–6 samo pet.
+    /// snage startuje lakše — što je i smisao izmene. Za bočno podizanje sa maksimumom od
+    /// 40 kg: propis 10–20 pri RIR 2 traži dvanaest efektivnih ponavljanja, a 3–6 samo pet.
     /// </summary>
     [Fact]
     public void TheRangeAlsoDecidesTheStartingLoad()
@@ -116,7 +124,7 @@ public class GoalPrescriptionTests
             weightStepKg: 2.5m);
 
         Assert.Equal(35m, onStrengthRange);
-        Assert.Equal(30m, onIsolationRange);
+        Assert.Equal(27.5m, onIsolationRange);
     }
 
     /// <summary>
@@ -256,6 +264,19 @@ public class GoalPrescriptionTests
                 GoalPrescriptions.IsStrengthLift(Goal.Strength, exercise.Type, exercise.SuitsLowReps),
                 GoalPrescriptions.IsMainLift(Goal.Strength, exercise.Type, prescription.RepRangeMax));
         }
+    }
+
+    /// <summary>
+    /// Lični šablon sme izolaciji da propiše do 20 ponavljanja, a složenoj vežbi do 12:
+    /// preko toga složena vežba ne daje procenu maksimuma, a nju čitaju trend snage, rekordi
+    /// i ocena umora.
+    /// </summary>
+    [Fact]
+    public void ACustomTemplate_MayGoToTwenty_OnlyForAnIsolation()
+    {
+        Assert.Equal(20, GoalPrescriptions.MaxTemplateReps(ExerciseType.Isolation));
+        Assert.Equal(12, GoalPrescriptions.MaxTemplateReps(ExerciseType.Compound));
+        Assert.Equal(TrainingConstants.EpleyRepCap, GoalPrescriptions.MaxTemplateReps(ExerciseType.Compound));
     }
 
     [Fact]

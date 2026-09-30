@@ -113,7 +113,7 @@ public static class NextWeekLoad
             return null;
         }
 
-        var impliedOneRepMax = calculator.EstimateOneRepMax(
+        var impliedOneRepMax = calculator.ImpliedOneRepMax(
             known.Value + bodyweightLoadKg,
             current.RepRangeMin,
             current.TargetRir);

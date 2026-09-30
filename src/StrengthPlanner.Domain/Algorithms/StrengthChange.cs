@@ -43,6 +43,13 @@ public sealed record StrengthSample(Guid ExerciseId, int Reps, int Rir, decimal 
 ///
 /// Null when no pair is comparable. A missing measurement must not read as a decline —
 /// that was already the rule for a missing week, and it is the same rule here.
+///
+/// A set above <see cref="TrainingConstants.EpleyRepCap"/> gives no estimate, and since
+/// isolations are prescribed 10-20 most of their sets are such sets. Without a second
+/// reading the side delts and the calves, which only isolations train, would have stopped
+/// telling the volume limits anything. So when an exercise offers no pair of estimates, its
+/// sets are compared at the <b>same load</b> (<see cref="SameLoadChange"/>): there, more
+/// effective reps is more strength, and no maximum has to be read to say so.
 /// </summary>
 public static class StrengthChange
 {
@@ -67,20 +74,25 @@ public static class StrengthChange
         ArgumentNullException.ThrowIfNull(current);
         ArgumentNullException.ThrowIfNull(previous);
 
+        var currentSamples = current.ToList();
+        var previousSamples = previous.ToList();
+
         var calculator = new E1RmCalculator();
-        var currentByExercise = Usable(current, calculator);
-        var previousByExercise = Usable(previous, calculator);
+        var currentByExercise = Usable(currentSamples, calculator);
+        var previousByExercise = Usable(previousSamples, calculator);
+        var currentAtLoad = NearFailure(currentSamples);
+        var previousAtLoad = NearFailure(previousSamples);
 
         var changes = new List<decimal>();
 
-        foreach (var (exerciseId, currentSets) in currentByExercise)
+        foreach (var exerciseId in currentAtLoad.Keys.Where(previousAtLoad.ContainsKey))
         {
-            if (!previousByExercise.TryGetValue(exerciseId, out var previousSets))
-            {
-                continue;
-            }
+            var change = currentByExercise.TryGetValue(exerciseId, out var currentSets)
+                         && previousByExercise.TryGetValue(exerciseId, out var previousSets)
+                ? BestComparableChange(currentSets, previousSets)
+                : null;
 
-            var change = BestComparableChange(currentSets, previousSets);
+            change ??= SameLoadChange(currentAtLoad[exerciseId], previousAtLoad[exerciseId]);
 
             if (change is not null)
             {
@@ -89,6 +101,67 @@ public static class StrengthChange
         }
 
         return changes.Count == 0 ? null : changes.Average();
+    }
+
+    /// <summary>
+    /// The change read at one load, for sets the estimate cannot read: the heaviest load of
+    /// the earlier week that the lifter used again, and at it the most effective reps now
+    /// against the most then, priced on the Epley curve, (30 + now) / (30 + then) - 1. At
+    /// equal load that is exactly the ratio two estimates would give, so the two readings
+    /// agree wherever both exist.
+    ///
+    /// At least one of the two sets must lie above the Epley cap. Two sets at or below it
+    /// are the estimate's to compare, and where it declined - effective reps too far apart -
+    /// this must not pair them behind its back: that decision is round 11's, and it stands
+    /// for the compounds exactly as it was.
+    ///
+    /// A load that was not used again gives nothing, which is the common case the week after
+    /// a step: the reps fall because the load rose. That is the rule for silence, not a
+    /// decline.
+    /// </summary>
+    private static decimal? SameLoadChange(
+        IReadOnlyList<StrengthSample> current,
+        IReadOnlyList<StrengthSample> previous)
+    {
+        foreach (var load in previous.Select(sample => sample.TotalLoadKg).Distinct().OrderDescending())
+        {
+            var then = previous.Where(sample => sample.TotalLoadKg == load).ToList();
+            var now = current.Where(sample => sample.TotalLoadKg == load).ToList();
+
+            if (now.Count == 0)
+            {
+                continue;
+            }
+
+            var bestThen = then.MaxBy(sample => sample.Reps + sample.Rir)!;
+            var bestNow = now.MaxBy(sample => sample.Reps + sample.Rir)!;
+
+            if (bestThen.Reps <= TrainingConstants.EpleyRepCap && bestNow.Reps <= TrainingConstants.EpleyRepCap)
+            {
+                continue;
+            }
+
+            return (TrainingConstants.EpleyRepDivisor + bestNow.Reps + bestNow.Rir)
+                   / (TrainingConstants.EpleyRepDivisor + bestThen.Reps + bestThen.Rir)
+                   - 1m;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Sets that are evidence of strength at all - a load, and no further from failure than
+    /// an estimate would accept - grouped by exercise, whatever their rep count.
+    /// </summary>
+    private static Dictionary<Guid, List<StrengthSample>> NearFailure(IEnumerable<StrengthSample> samples)
+    {
+        return samples
+            .Where(sample => sample.TotalLoadKg > 0
+                             && sample.Reps > 0
+                             && sample.Rir >= 0
+                             && sample.Rir <= TrainingConstants.E1RmMaxRir)
+            .GroupBy(sample => sample.ExerciseId)
+            .ToDictionary(group => group.Key, group => group.ToList());
     }
 
     /// <summary>

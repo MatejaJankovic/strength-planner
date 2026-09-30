@@ -42,17 +42,31 @@ public static class GoalPrescriptions
     ///
     /// The same holds for a compound that cannot carry a low range
     /// (<paramref name="suitsLowReps"/> false) - see <see cref="CarriesTheGoalRange"/>.
+    ///
+    /// An isolation exercise carries its own range in either block,
+    /// <see cref="TrainingConstants.IsolationRepRangeMin"/> to
+    /// <see cref="TrainingConstants.IsolationMaxReps"/>. It used to take 8-12, the hypertrophy
+    /// range of the compounds, in both blocks.
     /// </summary>
     public static GoalPrescription ForExercise(Goal goal, ExerciseType type, bool suitsLowReps)
     {
         var goalPrescription = ForGoal(goal);
+
+        if (type == ExerciseType.Isolation)
+        {
+            return goalPrescription with
+            {
+                RepRangeMin = TrainingConstants.IsolationRepRangeMin,
+                RepRangeMax = TrainingConstants.IsolationMaxReps
+            };
+        }
 
         if (CarriesTheGoalRange(goal, type, suitsLowReps))
         {
             return goalPrescription;
         }
 
-        // Izolacija, ili složena vežba koja ne podnosi nizak opseg: pomoćni rad.
+        // Složena vežba koja ne podnosi nizak opseg: pomoćni rad u opsegu hipertrofije.
         var accessory = ForGoal(Goal.Hypertrophy);
 
         return goalPrescription with
@@ -63,9 +77,19 @@ public static class GoalPrescriptions
     }
 
     /// <summary>
-    /// Whether this exercise carries the block's own rep range: every exercise in a
+    /// Most reps a custom template may prescribe to an exercise of this type: the isolation
+    /// range's top for an isolation, and the Epley cap for a compound - whose sets are read
+    /// for an estimate by the strength trend, the records and the fatigue score.
+    /// </summary>
+    public static int MaxTemplateReps(ExerciseType type)
+    {
+        return type == ExerciseType.Isolation ? TrainingConstants.IsolationMaxReps : TrainingConstants.EpleyRepCap;
+    }
+
+    /// <summary>
+    /// Whether this exercise carries the block's own rep range: every compound in a
     /// hypertrophy block, and in a strength block only a compound that can be loaded for a
-    /// set of three to six.
+    /// set of three to six. An isolation never does - it has a range of its own.
     ///
     /// Not every compound can. The handbook says unilateral work is <i>"nije idealna za
     /// razvoj apsolutne snage"</i> and that a low range <i>"može narušiti tehniku, naročito
@@ -78,7 +102,7 @@ public static class GoalPrescriptions
     /// </summary>
     public static bool CarriesTheGoalRange(Goal goal, ExerciseType type, bool suitsLowReps)
     {
-        return goal != Goal.Strength || IsStrengthLift(goal, type, suitsLowReps);
+        return type == ExerciseType.Compound && (goal != Goal.Strength || suitsLowReps);
     }
 
     /// <summary>
