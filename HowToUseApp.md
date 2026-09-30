@@ -229,12 +229,20 @@ zaista dobija, a koliko ih uđe i koje odlučuje tvoj nivo iskustva (složene ve
 | Model | Trajanje | Kako izgleda |
 |---|---|---|
 | **Ravan** | 4 nedelje | isti propis svake nedelje; napredak nosi dupla progresija |
-| **Linearan** | 6 nedelja | kreće volumenom (više serija, lakše serije), završava intenzitetom |
+| **Linearan** | 6 nedelja | serije rastu (srednji nivo: 3 → 4 → 4 → 5 → 5), a ponavljanja i rezerva padaju: najteže su dve nedelje pred deload |
 | **Obrnut** | 6 nedelja | teško dok si svež, volumen pred kraj |
 
-> Kod hipertrofije faza volumena nosi **serije**, a ne ponavljanja: opseg 8–12 već stoji na
-> gornjoj granici od 12, preko koje procena maksimuma ne važi. Kod snage (3–6) se pomeraju i
-> ponavljanja.
+> Čarobnjak predlaže model po nivou i cilju: početniku linearan, a ostalima linearan za
+> hipertrofiju i obrnut za snagu — kako to kaže i priručnik. Za rast mišića nijedan model nije
+> bolji od drugog kad je volumen isti, pa predlog ne tvrdi suprotno.
+>
+> Linearan blok počinje lakši po **rezervi**, ne po ponavljanjima: kod hipertrofije opseg 8–12
+> već stoji na gornjoj granici od 12, preko koje procena maksimuma ne važi. Isto zato faza
+> volumena obrnutog modela kod hipertrofije nosi **serije**, a ne ponavljanja; kod snage (3–6)
+> se pomeraju i ponavljanja.
+>
+> Blok napravljen ranije može da nosi stariji linearan raspored — više serija na početku,
+> manje pred kraj — i u planu piše „Linearan (stari)". On ostaje kakav je bio.
 
 U svakom modelu je **poslednja nedelja deload** (rasterećenje).
 
@@ -323,7 +331,7 @@ konačna reč:
 
 | Radi i dalje | Šta to znači za tvoje brojeve |
 |---|---|
-| Periodizacija | tvoj opseg se pomera kroz nedelje kao i svaki drugi (linearan model: više ponavljanja na startu, manje pred kraj) |
+| Periodizacija | tvoj opseg i serije se pomeraju kroz nedelje kao i svaki drugi (linearan model: serija manje na startu, serija više i ponavljanja manje pred kraj) |
 | Deload | poslednja nedelja polovi **tvoj** broj serija, vraća **tvoj** opseg ponavljanja i diže ciljni RIR za dva |
 | Ciljni volumen | predlog serija se pomera ka cilju **te nedelje** (vidi „Nedeljni volumen"), ali ostaje blizu tvog broja — osim glavnih dizanja u bloku snage (složenih vežbi kojima si dao opseg do 6), koja nedeljni cilj ne pomera s propisa te nedelje |
 | Progresija iz serija | opterećenje raste iz onoga što stvarno odradiš, isto kao inače |
@@ -333,9 +341,9 @@ raspored.
 
 | Nedelja | Šta piše u treningu |
 |---|---|
-| 1 | `7 × 8–11` |
+| 1 | `5 × 5–8`, rezerva jedna više |
 | 3 (osnova) | `6 × 5–8` — tačno ono što si uneo |
-| 5 | `5 × 3–6` |
+| 5 | `7 × 3–6` |
 | 6 (deload) | `3 × 5–8` |
 
 Deload polovi **tvojih šest** na tri; da si uzeo ugrađeni šablon, polovio bi tri serije
@@ -552,10 +560,11 @@ lagana nedelja je značila i teže tegove i više serija, iz istog podatka.
 nedeljama. Vežbe koje diže sopstvena masa ulaze sa **ukupnim** opterećenjem (telo + dodato),
 ne samo sa onim što je dodato — inače bi trening od četrdeset zgibova sabirao nulu.
 
-> **Pad tonaže kroz blok nije loš znak — kod periodizovanog bloka je plan.** Faza intenziteta
-> namerno nosi manje posla: u linearnom hipertrofijskom bloku propis ide sa **60 ponavljanja
-> rada** u drugoj nedelji na **24** u petoj, dakle 60% naniže, dok opterećenje u istom
-> razmaku poraste za korak-dva. Tonaža zato pada iako sve ide po planu.
+> **Kretanje tonaže kroz blok prati model, ne samo napredak.** U linearnom bloku serije rastu
+> ka kraju, pa tonaža raste i bez toga da si jači; u obrnutom je prva faza teška i kratka, a
+> volumen dolazi pred kraj. Stariji linearan raspored („Linearan (stari)") radi obrnuto:
+> propis ide sa **60 ponavljanja rada** u drugoj nedelji na **24** u petoj, pa tonaža tamo pada
+> iako sve ide po planu.
 >
 > Tonaža se poredi **sa istom fazom prethodnog bloka**, ne sa prethodnom nedeljom. Jedino u
 > **ravnom** bloku, gde je propis svake nedelje isti, rast iz nedelje u nedelju zaista znači

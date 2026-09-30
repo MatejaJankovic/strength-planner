@@ -203,3 +203,12 @@ sme time da promeni oblik već napravljenog plana.
 - **Kod hipertrofije RIR ne opada kroz blok.** Osnovni RIR je 1, a niže se ne ide (vidi
   gore), pa intenzifikaciju nose ponavljanja i serije. Kod snage (osnovni RIR 2) pad
   postoji.
+
+## Kasnije (runda 14)
+
+Linearan model opisan ovde je klasičan: od volumena ka intenzitetu, sa serijama koje padaju.
+Priručnikov linearan model podiže serije kroz blok, a to traži i okvir MEV → MRV koji aplikacija
+koristi. Od runde 14 čarobnjak nudi taj oblik (`LinearRising`), a ovde opisan ostaje za blokove
+koji ga već nose, u planu kao „Linearan (stari)". Vidi
+[periodization-shapes.md](periodization-shapes.md).
+

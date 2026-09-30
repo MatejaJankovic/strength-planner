@@ -350,6 +350,8 @@ je ovde, sa razlogom.
 | Priručnik | Aplikacija | Zašto | Grana |
 |---|---|---|---|
 | MAV je „4–8 serija po treningu" | Granica po treningu je **11** serija jednog mišića | 4–8 je MAV podeljen na treninge, dakle gde trening obično pada. Kao granica bi skinuo serije koje po literaturi još mere rast (Remmert i sar. 2025: korist se ne meri tek posle ~11): 3.884,5 serija nedeljnog volumena preko ugrađenih šablona, naspram 985,5 za 11 | [#87](features/session-volume-ceiling.md) |
+| Linearan: serije 3 → 4 → 4 → 5 → 5, ponavljanja 10 → 5 | Serije rastu (za srednji nivo tačno taj talas), ali rane nedelje su lakše po **rezervi**, ne po ponavljanjima | Hipertrofija već počinje na Epley granici od 12; pomeraj ponavljanja naviše bi se vratio kao serija više, baš u nedeljama koje treba da nose manje serija | [periodization-shapes](features/periodization-shapes.md) |
+| Obrnut: RIR 0–1 → 3–4, **raste** | RIR **pada** kroz blok (3 → 1) | RP akumulacija: nedelje bliže otkazu kako se volumen gomila; nedelja propisana daleko od otkaza ne bi imala šta da izmeri ocenom umora | [periodization-shapes](features/periodization-shapes.md) |
 | Napredni: „do 3 složene vežbe nedeljno" | U bloku **snage** najmanje **2 složene po treningu** | Rečenica opisuje nedelju hipertrofije, gde volumen nose izolacije. Snaga je vezana za pokret i raste sa učestalošću višezglobnih dizanja (Pelland i sar. 2025; Grgic i sar. 2018); pre ovoga napredni Upper/Lower blok snage nije veslao, a dvodnevni Full Body nije imao bench | [strength-block-composition](features/strength-block-composition.md) |
 
 Obrnut smer — gde aplikacija prati priručnik, a on se oslanja na nešto što literatura ne
