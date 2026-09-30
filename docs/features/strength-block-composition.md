@@ -79,6 +79,9 @@ Balansiranje sada radi u dva prolaza koja se smenjuju dok nijedan ništa ne pome
 2. Glavno dizanje sme niže samo koliko granica oporavka i dalje traži — MRV nedelje ili
    granica po treningu — pošto pomoćni rad više nema šta da da, i vraća se ka propisu čim mu
    mesto dozvoli. Nedeljni cilj se u tom prolazu ne pita, pa glavno dizanje nikad ne pomera.
+   Kad su dva glavna dizanja podjednako dobar rez, seče se kasnije u treningu: šablon glavno
+   dizanje dana navodi prvo. Uživo je početnikov Push dan (snaga, linearan, nedelja 1) pre toga
+   završavao sa bench-om na 2 serije i incline-om na 3; sada bench 3/4, incline 2/4.
 
 **Jedna kazna ovo nije mogla.** Serija mrtvog dizanja pomera 2,5 serije nedeljnog cilja (leđa,
 gluteus, zadnja loža, kvadriceps). Kazna koja bi blokirala pomeranje zbog cilja morala bi da
@@ -115,7 +118,7 @@ cilj nijedno.
 
 ## Provera
 
-- `dotnet test`: **750** (bilo 715; 741 pre revizije); `npm test`: **188** (bilo 184);
+- `dotnet test`: **751** (bilo 715; 741 pre revizije); `npm test`: **188** (bilo 184);
   `npm run build` prolazi.
 - Novi testovi: `StrengthBlockCompositionTests` (nijedno glavno dizanje ispod propisa dok pomoćni
   rad za isti mišić u istom treningu može još da da — bilo 373; nijedno iznad propisa; blok
@@ -153,7 +156,7 @@ nalaza, i oba su ispravljena:
   na 3, iako četvrta serija ništa ne probija, a leđima i ramenima fali — rezultat nije bio ni
   lokalni optimum sopstvene cene, u 12 od 351 ugrađene nedelje bloka snage. Prolazi se sada
   smenjuju dok nijedan ništa ne pomera. Vraćanje ove ispravke: pada 1 od 750 (baš taj slučaj
-  kao test).
+  kao test). Uživo, isti Pull dan: veslanje, zgib i veslanje na sajli 3/4, face pull **4**/5.
 - **Uputstvo je pogrešno ograničavalo pravilo na ugrađene šablone.** Novi pasus je stajao
   iznad rečenice „Ovo važi samo za ugrađene šablone", pa je izgledalo da se na nju odnosi. Sada
   stoji posle nje i kaže da važi i za lični šablon, a red „Ciljni volumen" u tabeli ličnog
