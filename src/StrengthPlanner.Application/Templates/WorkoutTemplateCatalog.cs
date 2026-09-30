@@ -102,7 +102,7 @@ public static class WorkoutTemplateCatalog
             // Granica po treningu (TrainingConstants.MaxSetsPerMusclePerSession) ga tu
             // zaustavlja, i nedelja ostaje ispod MAV-a - to je frekvencija, ne greška.
             "Svaki mišić se ovde trenira jednom nedeljno. U jednom treningu korisno staje oko "
-            + "11 serija za isti mišić, pa grudi i leđa mogu da ostanu ispod ciljnog volumena. "
+            + "11 serija za isti mišić, pa grudi, leđa i ruke mogu da ostanu ispod ciljnog volumena. "
             + "Za više volumena biraj plan koji mišić trenira dva puta nedeljno."),
         new(
             UpperLowerKey,

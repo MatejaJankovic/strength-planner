@@ -64,7 +64,7 @@ pre nego što je išta ušlo u kod:
   trening nije pao ispod 18, a kazna je kroz sprezanje sa kaznom za odstupanje od propisa
   skinula 605 serija nedeljnog volumena kao nuspojavu.
 - **Tvrda granica 8** skida serije koje po literaturi još mere rast: 3.884,5 serija, a
-  Push/Pull/Legs-u, koji grudi trenira samo u Push danu, ostavlja najviše 8 nedeljno — ispod
+  Push/Pull/Legs-u, koji grudi trenira samo u Push danu, u ravnom bloku ostavlja 8 nedeljno — ispod
   MEV-a srednjeg nivoa (10).
 - **Tvrda granica 11** radi i sa potezima od jedne serije: serija preko granice košta četiri,
   a nedostajuća serija nedelje jednu, pa se višak skida, i ako postoji drugi trening za taj
@@ -112,7 +112,10 @@ Referentni nivo (srednji, hipertrofija, ravan blok, nedelja 1), svaki par koji j
 | Upper/Lower + PPL, Pull | leđa | 12 → 11 | **18 → 18** | 18 |
 | Legs Specialization, Upper A | leđa | 12 → 11 | 18 → 17 | 18 |
 
-Kod Upper/Lower + PPL višak je preseljen u drugi trening, pa nedelja nije izgubila ništa.
+Kod Upper/Lower + PPL višak je preseljen u drugi trening, pa nedelja nije izgubila ništa. Kod
+Full Body (4 dana) od dve skinute serije preseljena je jedna, a kod Legs Specialization nijedna:
+zgib u drugom treningu dostiže šest serija, najviše po vežbi. Višak se seli koliko drugi trening
+može da primi, ne u celini.
 
 Nedelje koje su tek sada ispod MEV-a: **37** od 6.630 —
 
@@ -157,6 +160,37 @@ To je cena frekvencije jednom nedeljno, i zato je upozorenje uz šablon.
 - Na ekranu (375 px, bez horizontalnog skrola): upozorenje stoji ispod izbora Push/Pull/Legs u
   čarobnjaku plana, a kartica Cable Fly kaže „Predlog serija je spušten sa 4 na 3. Nedelja
   cilja svoju zonu volumena, a nijedan trening ne sme da pretrpa jedan mišić."
+
+## Posle revizije
+
+Pregled (dva recenzenta, svaki nalaz srednje težine pred dva osporavača) je potvrdio dva nalaza i
+oba su ispravljena u ovoj grani:
+
+- **Objašnjenje posle treninga je lagalo o rezovima granice.** Postojeći blok dobija granicu
+  pri sledećem završenom treningu, i to kroz spisak „Predlog serija je prilagođen". Taj spisak
+  je uz svaku promenu pisao mišić koji je čitao samo nedeljni cilj: rez koji je tražila granica,
+  dok je nedelja ispod cilja, dobijao je **nijedan** mišić, ili mišić koji stoji ispod cilja
+  pored strelice nadole. Pravac se uz to računao od propisa, a ne od onoga što je korisnik
+  video, pa je veslanje spušteno sa 6 na 5 uz propis 4 čitano kao podizanje. Objašnjenje je
+  sada `SetChangeExplanation` u domenu, sa testovima: pravac od prethodnog predloga, i razlog
+  — `WeeklyTarget` ili `SessionCeiling` — koji ekran piše kao „pun trening". Test preko svih
+  ugrađenih nedelja traži da svaki rez granice dobije baš taj razlog.
+- **Zaglavlje tog spiska** je i dalje tvrdilo da je svaka promena tu „da bi nedelja završila u
+  ciljnoj zoni" — isti tekst koji je već ispravljen na kartici vežbe. Sada kaže oba razloga.
+
+Pet nalaza niske težine bile su tvrdnje jače od merenja, i sve su ispravljene: višak se seli u
+drugi trening samo koliko taj može da primi (Full Body (4 dana) preseli jednu od dve serije,
+Legs Specialization nijednu); upozorenje i uputstvo su pominjali samo grudi i leđa, a padaju i
+ruke; odbačena granica 8 ostavlja Push/Pull/Legs-u 8 serija grudi samo u ravnom bloku (u
+nedelji volumena 12); „ostaje na 12" važi za ugrađene šablone, lični može i više; i opis jednog
+testa je obećavao više šablona nego što proverava.
+
+Jedan nalaz je oboren kao nešto što ova grana nije uvela, ali je stvaran i ide dalje:
+**balansiranje seče složenu vežbu pre izolacije** kada ona rasterećuje dva mišića odjednom — u
+bloku snage naprednog nivoa bench pada na 2 serije dok razvlačenja zadržavaju 5. Osporavači su
+izmerili da je to svojstvo cene po mišiću starije od granice: bez nje ima 630 takvih slučajeva
+(370 u blokovima snage), sa njom 633. Rešava se u grani za sastav bloka snage (nalaz F5), gde
+složena vežba i inače dobija ulogu koju sada nema.
 
 ## Ograničenja
 
