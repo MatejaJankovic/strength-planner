@@ -20,7 +20,8 @@ public class CompleteSessionResultDto
 }
 
 /// <summary>
-/// Jedan predlog serija koji je pomeren da bi nedelja ostala u ciljnoj zoni volumena.
+/// Jedan predlog serija koji je balansiranje pomerilo: ka ciljnoj zoni nedelje, ili ispod
+/// granice serija po treningu.
 /// </summary>
 public class SetAdjustmentDto
 {
@@ -38,8 +39,15 @@ public class SetAdjustmentDto
     /// <summary>Predlog koji sada važi.</summary>
     public int ToSets { get; set; }
 
-    /// <summary>Mišićna grupa čiji nedeljni volumen najbolje objašnjava izmenu.</summary>
+    /// <summary>Mišićna grupa čiji volumen najbolje objašnjava izmenu.</summary>
     public string? Muscle { get; set; }
+
+    /// <summary>
+    /// Šta je tražilo izmenu: "WeeklyTarget" (nedeljni cilj) ili "SessionCeiling" (jedan
+    /// trening bi nosio previše serija tog mišića). Prazno kada izmenu ne objašnjava nijedan
+    /// mišić.
+    /// </summary>
+    public string? Reason { get; set; }
 }
 
 /// <summary>Prelazak na sledeći blok dugoročnog plana.</summary>

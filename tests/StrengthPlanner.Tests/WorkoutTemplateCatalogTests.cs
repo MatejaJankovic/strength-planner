@@ -486,6 +486,7 @@ public class WorkoutTemplateCatalogTests
         string[] templatesWithKnownLimitations =
         [
             WorkoutTemplateCatalog.FullBodyTwoDayKey,
+            WorkoutTemplateCatalog.PushPullLegsKey,
             WorkoutTemplateCatalog.UpperLowerThreeXKey,
             WorkoutTemplateCatalog.LegsSpecializationKey
         ];

@@ -23,6 +23,23 @@ public static class TrainingConstants
     public const decimal EpleyRepDivisor = 30m;
 
     /// <summary>
+    /// Most sets one muscle group should get in one session, counted the way weekly
+    /// volume is counted (a secondary muscle takes half a set).
+    ///
+    /// Weekly volume is the target, but it is performed one session at a time, and the
+    /// return from one session flattens out: the meta-regressions of Remmert, Pelland,
+    /// Robinson, Hinson and Zourdos (2025, preprint) find a positive but diminishing
+    /// dose-response per session, with no detectable benefit from sets past about eleven
+    /// fractional sets in one session. A set beyond that still costs recovery.
+    ///
+    /// The handbook's 4-8 sets per session is MAV divided over the week's sessions - where
+    /// a session usually lands, not the point past which a set stops working. Enforced as a
+    /// ceiling it cuts sets that still measurably help: summed over every built-in week,
+    /// 8 removed 3,884.5 sets of weekly muscle volume where 11 removes 985.5.
+    /// </summary>
+    public const decimal MaxSetsPerMusclePerSession = 11m;
+
+    /// <summary>
     /// Furthest from failure a set may be and still produce an e1RM estimate.
     ///
     /// Defined as <see cref="StimulativeVolume.FullCreditRir"/> on purpose: a set that does

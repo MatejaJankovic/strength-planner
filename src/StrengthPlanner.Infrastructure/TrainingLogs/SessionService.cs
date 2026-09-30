@@ -597,7 +597,8 @@ public class SessionService : ISessionService
                     ExerciseName = adjustment.ExerciseName,
                     FromSets = adjustment.FromSets,
                     ToSets = adjustment.ToSets,
-                    Muscle = adjustment.Muscle
+                    Muscle = adjustment.Muscle,
+                    Reason = adjustment.Reason?.ToString()
                 })
                 .ToList(),
             AutoDeload = autoDeload is null

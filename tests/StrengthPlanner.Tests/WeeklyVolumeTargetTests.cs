@@ -124,6 +124,7 @@ public class WeeklyVolumeTargetTests
             var slots = Enumerable.Range(0, 4)
                 .Select(index => new ExerciseSetSlot(
                     new Guid($"00000000-0000-0000-0000-00000000{index:00}01"),
+                    new Guid($"00000000-0000-0000-0001-00000000{index:00}01"),
                     week.Sets,
                     [new MuscleLoad(chestId, 1m)]))
                 .ToList();
@@ -157,6 +158,7 @@ public class WeeklyVolumeTargetTests
         var slots = Enumerable.Range(0, 4)
             .Select(index => new ExerciseSetSlot(
                 new Guid($"00000000-0000-0000-0000-00000000{index:00}01"),
+                new Guid($"00000000-0000-0000-0001-00000000{index:00}01"),
                 4,
                 [new MuscleLoad(chestId, 1m)]))
             .ToList();

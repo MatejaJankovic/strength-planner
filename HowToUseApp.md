@@ -480,7 +480,13 @@ aplikaciji. Za svaku vežbu piše:
   `102.5 kg ↑ +2.5` kad raste, `90 kg ↓ −10` pred deload, bez strelice kad se zadržava. Ako u bloku nema naredne nedelje, oznake nema — sledeći blok
   svoje težine izvodi iz procene maksimuma.
 
-Povremeno se pojave i dve posebne poruke:
+Povremeno se pojave i posebne poruke:
+
+**„Predlog serija je prilagođen za ostatak nedelje."** — ovaj trening je promenio nedeljni
+volumen, pa su treninzi koji tek predstoje dobili nov broj serija. Uz svaku promenu piše mišić
+zbog kog je napravljena; oznaka **„pun trening"** znači da bi taj trening bez nje nosio više od
+~11 serija tog mišića (vidi „Granica po treningu"), pa je spušten iako nedelja možda još nije
+na cilju.
 
 **„Nedelja N je pretvorena u deload."** — sistem je iz upravo završene nedelje izmerio
 dovoljno umora da rasterećenje pomeri unapred. Serije su prepolovljene, opterećenje spušteno
@@ -740,6 +746,16 @@ dozvoljava), pa izolacione dok se ne popune mesta. Trening nikad nema manje od t
 Ovo važi **samo za ugrađene šablone**. Lični šablon se ne prekraja: u trening ulaze tačno
 tvoje vežbe, pa i dan sa jednom vežbom ostaje dan sa jednom vežbom.
 
+**Granica po treningu.** Predlog serija cilja nedelju, ali se nedelja odrađuje trening po
+trening: jedan mišić u jednom treningu dobija najviše oko **11 serija** (sekundarni mišić broji
+pola serije, kao i u nedeljnom volumenu). Preko toga dalje serije u istom treningu više ne
+donose merljiv rast, a oporavak troše. Ako isti mišić trenira i neki drugi dan, višak se seli
+tamo koliko taj trening može da primi; ostatak otpada, pa nedelja ostaje ispod cilja. Granica
+se drži u istom prozoru kao i ostalo balansiranje — najviše dve serije od propisa i najviše šest
+po vežbi — pa trening čiji je propis mnogo veći ostaje iznad nje: kod ugrađenih šablona najviše
+12, a lični šablon sa mnogo serija za jedan mišić u danu i više. Kod izbora „Prati moj šablon"
+ništa se ne pomera, pa ni ovo.
+
 **Periodizovane nedelje.** Kad se propis menja iz nedelje u nedelju (linearan i obrnut
 model), opterećenje se ne prenosi kroz „+ jedan korak" nego se ponovo izvodi iz najsvežije
 procene 1RM-a i propisa te nedelje. Nedelja koja pada sa 10 na 5 ponavljanja mora da bude
@@ -791,6 +807,25 @@ Dve posledice koje treba da znaš:
 - Kada posle toga završiš neki trening iz iste nedelje, balansiranje volumena deo
   preskočenog rada prebaci na dane koji ostaju. Izmereno: dan sa 24 serije je posle
   preskočenog drugog dana za noge dobio 30. Ako to ne želiš, smanji serije ručno.
+
+**Na Push/Pull/Legs mišići stoje ispod cilja.**
+Tako i treba da izgleda. Taj šablon svaki mišić trenira jednom nedeljno, pa ceo nedeljni
+volumen jednog mišića pada u jedan trening, a u jednom treningu korisno staje oko 11 serija
+(vidi „Granica po treningu"). Izmereno na srednjem nivou, ravan blok:
+
+| Mišić | Nedeljno, bez granice → sa granicom | Cilj |
+|---|---|---|
+| grudi | 16 → 11 | 16 |
+| leđa | 18 → 14 | 18 |
+| ramena | 16 → 15 | 16 |
+| kvadriceps | 12 → 11 | 14 |
+| biceps | 12 → 10,5 | 14 |
+| triceps | 12 → 11 | 12 |
+
+Biceps gubi i pola serije sa svakom skinutom serijom veslanja ili zgiba. Kod početnika Pull dan
+nema posebnu vežbu za biceps, pa on na ovom šablonu u većini nedelja stoji ispod minimuma (MEV 6)
+i bez granice; u nedeljama volumena granica ga spušta sa 7,5 na 4,5. Za više volumena uzmi
+šablon koji mišić trenira dva puta nedeljno (Upper/Lower, Full Body, Push/Pull/Legs x2).
 
 **Promenio sam nivo iskustva usred bloka.**
 Tekući blok ostaje nepromenjen — namerno, da se plan u toku ne bi prekrajao ispod ruku.

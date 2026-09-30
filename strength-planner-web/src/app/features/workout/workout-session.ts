@@ -24,6 +24,7 @@ import { LoadInputNote, loadInputNote } from './load-input-note';
 import { loadLabel } from './load-label';
 import { repRangeLabel } from '../../shared/rep-range-label';
 import { LoadFloorNote, loadFloorNote } from './load-floor-note';
+import { adjustmentCause } from './adjustment-cause';
 
 interface SetDraft {
   weightKg: number;
@@ -197,6 +198,9 @@ export class WorkoutSession {
   protected setLoad(set: SetLogDto): string {
     return loadLabel(set.weightKg, set.bodyweightLoadKg > 0);
   }
+
+  /** Oznaka uz pomeren predlog serija u rezimeu: mišić, i "pun trening" kad ga je spustila granica. */
+  protected readonly adjustmentCause = adjustmentCause;
 
   /** Napomena uz polje za težinu: jedna bučica, ili nula na vežbi koja se opterećuje. */
   protected loadNote(plan: ExercisePlanDto, draft: SetDraft): LoadInputNote {

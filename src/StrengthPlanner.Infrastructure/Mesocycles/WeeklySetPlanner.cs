@@ -127,6 +127,7 @@ public sealed class WeeklySetPlanner
         var slots = plans
             .Select(plan => new ExerciseSetSlot(
                 plan.Id,
+                plan.WorkoutSessionId,
                 plan.PrescribedSets,
                 musclesByExerciseId.GetValueOrDefault(plan.ExerciseId, [])))
             .ToList();
@@ -161,15 +162,18 @@ public sealed class WeeklySetPlanner
 
         var allocated = WeeklySetAllocation.Allocate(slots, targets, completedStimulative, completedRaw);
 
-        // Objašnjenje se čita iz konačne raspodele, sa jednom vežbom vraćenom na propis —
-        // dakle iz pitanja "šta bi ovom mišiću bilo da se ova vežba nije pomerila".
-        //
-        // Polazno stanje ovde ne služi: pritisak koji je vežbu pomerio često u njemu još
-        // ne postoji. Zgib je porastao zbog leđa i time povukao biceps preko cilja, pa je
-        // Hammer Curl morao dole — na početku bloka biceps je stajao tačno na cilju i to
-        // pomeranje je ostajalo bez ijednog objašnjenja.
-        var finalVolume = WeeklySetAllocation.Project(slots, allocated, completedStimulative);
-        var targetByMuscleGroupId = targets.ToDictionary(target => target.MuscleGroupId);
+        // Zašto se koja vežba pomerila čita se iz konačne raspodele (SetChangeExplanation):
+        // polazno stanje tu ne služi, jer pritisak koji je vežbu pomerio u njemu često još
+        // ne postoji. Granica po treningu se pita uzročno - da li bi bez nje vežba ostala
+        // viša - pa se ista raspodela računa i bez granice.
+        var withoutCeiling = WeeklySetAllocation.AllocateWithoutSessionCeiling(
+            slots, targets, completedStimulative, completedRaw);
+        var balancedWeek = new BalancedWeek(
+            WeeklySetAllocation.Project(slots, allocated, completedStimulative),
+            WeeklySetAllocation.Project(slots, allocated, completedRaw),
+            withoutCeiling,
+            WeeklySetAllocation.ProjectPerSession(slots, withoutCeiling),
+            targets.ToDictionary(target => target.MuscleGroupId));
         var slotById = slots.ToDictionary(slot => slot.Id);
 
         var adjustments = new List<SetAdjustment>();
@@ -184,6 +188,8 @@ public sealed class WeeklySetPlanner
             var previousSets = plan.TargetSets;
             plan.TargetSets = sets;
 
+            var cause = SetChangeExplanation.Explain(slotById[plan.Id], previousSets, sets, balancedWeek);
+
             adjustments.Add(new SetAdjustment(
                 plan.WorkoutSessionId,
                 weekNumber,
@@ -192,12 +198,8 @@ public sealed class WeeklySetPlanner
                 plan.Exercise.Name,
                 previousSets,
                 sets,
-                DriverMuscle(
-                    slotById[plan.Id],
-                    sets,
-                    finalVolume,
-                    targetByMuscleGroupId,
-                    muscleNames)));
+                cause is null ? null : muscleNames.GetValueOrDefault(cause.MuscleGroupId),
+                cause?.Reason));
         }
 
         return adjustments;
@@ -226,55 +228,6 @@ public sealed class WeeklySetPlanner
                     .Select(muscle => new MuscleLoad(muscle.MuscleGroupId, muscle.Contribution))
                     .ToList());
     }
-
-    /// <summary>
-    /// Which muscle best explains a change to one exercise: the one that would sit furthest
-    /// on the wrong side of its target had this exercise stayed on its prescription. Null
-    /// when the exercise trains nothing the system has limits for.
-    /// </summary>
-    private static string? DriverMuscle(
-        ExerciseSetSlot slot,
-        int allocatedSets,
-        IReadOnlyDictionary<Guid, decimal> finalVolume,
-        IReadOnlyDictionary<Guid, MuscleVolumeTarget> targetByMuscleGroupId,
-        IReadOnlyDictionary<Guid, string> muscleNames)
-    {
-        var direction = allocatedSets - slot.PrescribedSets;
-
-        // Vežba vraćena tačno na svoj propis: predlog se korisniku jeste promenio, ali ga
-        // ne objašnjava nijedan pojedinačan mišić — plan je samo prestao da odstupa.
-        if (direction == 0)
-        {
-            return null;
-        }
-
-        Guid? driver = null;
-        var widestGap = 0m;
-
-        foreach (var muscle in slot.Muscles)
-        {
-            if (!targetByMuscleGroupId.TryGetValue(muscle.MuscleGroupId, out var target))
-            {
-                continue;
-            }
-
-            // Konačni volumen umanjen za ono što je baš ovo pomeranje donelo.
-            var withoutTheMove = finalVolume.GetValueOrDefault(muscle.MuscleGroupId)
-                                 + (muscle.Contribution * (slot.PrescribedSets - allocatedSets));
-
-            var gap = direction > 0
-                ? target.TargetSets - withoutTheMove
-                : withoutTheMove - target.TargetSets;
-
-            if (gap > widestGap)
-            {
-                widestGap = gap;
-                driver = muscle.MuscleGroupId;
-            }
-        }
-
-        return driver is null ? null : muscleNames.GetValueOrDefault(driver.Value);
-    }
 }
 
 /// <summary>
@@ -287,7 +240,8 @@ public sealed class WeeklySetPlanner
 /// <param name="ExerciseName">Name of that exercise.</param>
 /// <param name="FromSets">Sets proposed before this rebalance — what the lifter last saw.</param>
 /// <param name="ToSets">Sets proposed now.</param>
-/// <param name="Muscle">Muscle group whose weekly volume best explains the change.</param>
+/// <param name="Muscle">Muscle group whose volume best explains the change.</param>
+/// <param name="Reason">Whether the week's target or one session's ceiling asked for it.</param>
 public sealed record SetAdjustment(
     Guid SessionId,
     int WeekNumber,
@@ -296,4 +250,5 @@ public sealed record SetAdjustment(
     string ExerciseName,
     int FromSets,
     int ToSets,
-    string? Muscle);
+    string? Muscle,
+    SetChangeReason? Reason);

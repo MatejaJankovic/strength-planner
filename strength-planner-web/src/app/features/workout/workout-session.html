@@ -60,7 +60,8 @@
             <strong>Predlog serija je prilagođen za ostatak nedelje.</strong>
             <p>
               Ovaj trening je promenio nedeljni volumen, pa treninzi koji tek predstoje nose
-              nov predlog - da bi nedelja završila u ciljnoj zoni.
+              nov predlog. Nedelja cilja svoju zonu volumena, a nijedan trening ne sme da
+              pretrpa jedan mišić.
             </p>
             <ul class="adjustments">
               @for (change of result.volumeAdjustments; track change.sessionId + change.exerciseName) {
@@ -73,8 +74,8 @@
                       {{ change.toSets > change.fromSets ? 'arrow_upward' : 'arrow_downward' }}
                     </mat-icon>
                   </span>
-                  @if (change.muscle) {
-                    <span class="adjustment__muscle">{{ change.muscle }}</span>
+                  @if (adjustmentCause(change); as cause) {
+                    <span class="adjustment__muscle">{{ cause }}</span>
                   }
                 </li>
               }
@@ -204,8 +205,8 @@
               <mat-icon aria-hidden="true">tune</mat-icon>
               <span>
                 Predlog serija je {{ plan.targetSets > plan.prescribedSets ? 'podignut' : 'spušten' }}
-                sa {{ plan.prescribedSets }} na {{ plan.targetSets }}, da bi nedelja ostala u
-                ciljnoj zoni volumena.
+                sa {{ plan.prescribedSets }} na {{ plan.targetSets }}. Nedelja cilja svoju zonu
+                volumena, a nijedan trening ne sme da pretrpa jedan mišić.
               </span>
             </p>
           }

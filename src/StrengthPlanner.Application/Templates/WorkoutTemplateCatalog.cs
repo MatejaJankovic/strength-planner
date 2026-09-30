@@ -97,7 +97,13 @@ public static class WorkoutTemplateCatalog
                     "Back Squat", "Romanian Deadlift", "Goblet Squat",
                     "Leg Extension", "Leg Curl", "Calf Raise", "Machine Crunch", "Cable Crunch"
                 ])
-            ]),
+            ],
+            // Svaki mišić jednom nedeljno, pa ceo nedeljni volumen grudi pada u Push dan.
+            // Granica po treningu (TrainingConstants.MaxSetsPerMusclePerSession) ga tu
+            // zaustavlja, i nedelja ostaje ispod MAV-a - to je frekvencija, ne greška.
+            "Svaki mišić se ovde trenira jednom nedeljno. U jednom treningu korisno staje oko "
+            + "11 serija za isti mišić, pa većina mišića može da ostane ispod ciljnog volumena. "
+            + "Za više volumena biraj plan koji mišić trenira dva puta nedeljno."),
         new(
             UpperLowerKey,
             "Upper/Lower",
