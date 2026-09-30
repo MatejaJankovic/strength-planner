@@ -149,17 +149,21 @@ public class MacrocycleService : IMacrocycleService
             throw new MesocycleGenerationException($"Unknown workout template: '{templateKey}'.");
         }
 
+        var experienceLevel = await _db.Profiles
+            .AsNoTracking()
+            .Where(profile => profile.UserId == userId)
+            .Select(profile => (ExperienceLevel?)profile.ExperienceLevel)
+            .FirstOrDefaultAsync(cancellationToken) ?? ExperienceLevel.Intermediate;
+
         return MacrocyclePlanner
             .AlternatingGoals(blockCount, firstGoal)
-            // Prvi blok gradi volumen, naredni ga pretvara u snagu — pa se i model
-            // periodizacije smenjuje zajedno sa ciljem.
+            // Prvi blok gradi volumen, naredni ga pretvara u snagu; model periodizacije se
+            // predlaže po cilju i nivou (Periodization.SuggestedModel).
             .Select(goal => new CreateMacrocycleBlockDto
             {
                 Goal = goal,
                 TemplateKey = templateKey,
-                PeriodizationModel = goal == Goal.Strength
-                    ? PeriodizationModel.Linear
-                    : PeriodizationModel.Inverse
+                PeriodizationModel = Periodization.SuggestedModel(experienceLevel, goal)
             })
             .ToList();
     }

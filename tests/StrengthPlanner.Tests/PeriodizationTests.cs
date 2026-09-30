@@ -30,6 +30,7 @@ public class PeriodizationTests
     [Theory]
     [InlineData(PeriodizationModel.Flat, 4)]
     [InlineData(PeriodizationModel.Linear, 6)]
+    [InlineData(PeriodizationModel.LinearRising, 6)]
     [InlineData(PeriodizationModel.Inverse, 6)]
     public void DurationWeeks_DependsOnTheModel(PeriodizationModel model, int expected)
     {
@@ -179,6 +180,7 @@ public class PeriodizationTests
     [Theory]
     [InlineData(PeriodizationModel.Flat, 1)]
     [InlineData(PeriodizationModel.Linear, 3)]
+    [InlineData(PeriodizationModel.LinearRising, 3)]
     [InlineData(PeriodizationModel.Inverse, 3)]
     public void TheBaseWeek_CarriesTheBasePrescriptionItself(PeriodizationModel model, int expected)
     {
@@ -231,7 +233,7 @@ public class PeriodizationTests
     [Fact]
     public void TheEpleyCap_MovesTheRepWindow_InsteadOfNarrowingIt()
     {
-        foreach (var model in new[] { PeriodizationModel.Linear, PeriodizationModel.Inverse })
+        foreach (var model in new[] { PeriodizationModel.Linear, PeriodizationModel.LinearRising, PeriodizationModel.Inverse })
         {
             // Hipertrofija stoji na samoj granici, pa je ona jedina koja tu i seče:
             // svaka nedelja zadržava širinu od četiri ponavljanja.
@@ -294,6 +296,7 @@ public class PeriodizationTests
 
     [Theory]
     [InlineData(PeriodizationModel.Linear)]
+    [InlineData(PeriodizationModel.LinearRising)]
     [InlineData(PeriodizationModel.Inverse)]
     public void PeriodizedBlocks_LowerTheRirAsTheBlockGoesOn(PeriodizationModel model)
     {
@@ -316,6 +319,7 @@ public class PeriodizationTests
     [Theory]
     [InlineData(PeriodizationModel.Flat)]
     [InlineData(PeriodizationModel.Linear)]
+    [InlineData(PeriodizationModel.LinearRising)]
     [InlineData(PeriodizationModel.Inverse)]
     public void EveryBlock_HasExactlyOneDeloadAndItIsLast(PeriodizationModel model)
     {
@@ -328,6 +332,7 @@ public class PeriodizationTests
     [Theory]
     [InlineData(PeriodizationModel.Flat)]
     [InlineData(PeriodizationModel.Linear)]
+    [InlineData(PeriodizationModel.LinearRising)]
     [InlineData(PeriodizationModel.Inverse)]
     public void EveryWeek_StaysInsideSafeBounds(PeriodizationModel model)
     {
@@ -359,7 +364,7 @@ public class PeriodizationTests
     public void EveryTrainingWeekOfAPeriodizedBlock_HasItsOwnPrescription()
     {
         // Dve uzastopne nedelje sa istim propisom znače da model tu nedelju ne koristi.
-        foreach (var model in new[] { PeriodizationModel.Linear, PeriodizationModel.Inverse })
+        foreach (var model in new[] { PeriodizationModel.Linear, PeriodizationModel.LinearRising, PeriodizationModel.Inverse })
         {
             foreach (var weeks in new[] { Hypertrophy(model), Strength(model) })
             {
@@ -409,6 +414,7 @@ public class PeriodizationTests
     [Theory]
     [InlineData(PeriodizationModel.Flat)]
     [InlineData(PeriodizationModel.Linear)]
+    [InlineData(PeriodizationModel.LinearRising)]
     [InlineData(PeriodizationModel.Inverse)]
     public void ForWeek_RejectsAWeekOutsideTheBlock(PeriodizationModel model)
     {
@@ -438,7 +444,7 @@ public class PeriodizationTests
     {
         // Bez ovoga bi model mogao da se "primeni" a da ne promeni nijedan propis —
         // što je upravo zamerka od koje je ova grana krenula.
-        foreach (var model in new[] { PeriodizationModel.Linear, PeriodizationModel.Inverse })
+        foreach (var model in new[] { PeriodizationModel.Linear, PeriodizationModel.LinearRising, PeriodizationModel.Inverse })
         {
             var distinct = Hypertrophy(model)
                 .Select(week => (week.Sets, week.RepRangeMin, week.RepRangeMax, week.TargetRir))
@@ -446,6 +452,96 @@ public class PeriodizationTests
                 .Count();
 
             Assert.True(distinct >= 4, $"{model}: samo {distinct} različitih propisa u bloku.");
+        }
+    }
+
+    /// <summary>
+    /// Linearan model po priručniku: serije rastu, a ponavljanja i rezerva padaju kroz
+    /// trenažne nedelje - volumen i intenzitet rastu zajedno ka deload-u, kao u okviru
+    /// MEV -> MRV. Stari linearan model je radio suprotno sa serijama: dve najsvežije nedelje
+    /// su bile najobimnije, a deload je dolazio posle najlakših.
+    /// </summary>
+    [Fact]
+    public void LinearRising_RaisesSetsAndLowersRepsAndReserve_ThroughTheBlock()
+    {
+        foreach (var goal in Enum.GetValues<Goal>())
+        foreach (var baseSets in new[] { 2, 3, 4, 5, 6 })
+        {
+            var settings = GoalPrescriptions.ForGoal(goal);
+            var training = Periodization
+                .ForBlock(PeriodizationModel.LinearRising, settings.RepRangeMin, settings.RepRangeMax, settings.TargetRir, baseSets)
+                .Where(week => !week.IsDeload)
+                .ToList();
+
+            for (var index = 1; index < training.Count; index++)
+            {
+                var previous = training[index - 1];
+                var current = training[index];
+                var where = $"{goal}, osnova {baseSets}, nedelja {current.WeekNumber}";
+
+                Assert.True(current.Sets >= previous.Sets, $"{where}: serije pale.");
+                Assert.True(current.RepRangeMax <= previous.RepRangeMax, $"{where}: ponavljanja porasla.");
+                Assert.True(current.TargetRir <= previous.TargetRir, $"{where}: rezerva porasla.");
+            }
+
+            Assert.True(training[^1].Sets > training[0].Sets, $"{goal}, osnova {baseSets}: serije nisu porasle.");
+        }
+    }
+
+    [Fact]
+    public void LinearRising_GivesTheHandbooksWave_ToAnIntermediateLifter()
+    {
+        // Priručnik (str. 13): serije 3 -> 4 -> 4 -> 5 -> 5. Srednji nivo kreće od 4 serije.
+        var strength = GoalPrescriptions.ForGoal(Goal.Strength);
+        var sets = Periodization
+            .ForBlock(PeriodizationModel.LinearRising, strength.RepRangeMin, strength.RepRangeMax, strength.TargetRir, 4)
+            .Where(week => !week.IsDeload)
+            .Select(week => week.Sets);
+
+        Assert.Equal(new[] { 3, 4, 4, 5, 5 }, sets);
+    }
+
+    [Fact]
+    public void LinearRising_MovesTheWeeklyVolumeTargetUpTowardMrv()
+    {
+        // Cilj nedelje prati odnos propisa prema osnovnoj nedelji: kod linearnog modela po
+        // priručniku on raste ka MRV-u, a deload dolazi posle najobimnije nedelje.
+        var chest = new VolumeLandmarkValues(10, 16, 22);
+        var hypertrophy = GoalPrescriptions.ForGoal(Goal.Hypertrophy);
+        var weeks = Periodization
+            .ForBlock(PeriodizationModel.LinearRising, hypertrophy.RepRangeMin, hypertrophy.RepRangeMax, hypertrophy.TargetRir, 4)
+            .Where(week => !week.IsDeload)
+            .ToList();
+        var baseVolume = 4m * weeks.Single(week => week.WeekNumber == Periodization.BaseWeekNumber(PeriodizationModel.LinearRising)).Sets;
+
+        var targets = weeks
+            .Select(week => WeeklyVolumeTarget.ForWeek(Goal.Hypertrophy, chest, 4m * week.Sets, baseVolume))
+            .ToList();
+
+        Assert.Equal(new[] { 12m, 16m, 16m, 20m, 20m }, targets);
+    }
+
+    [Theory]
+    [InlineData(ExperienceLevel.Beginner, Goal.Hypertrophy, PeriodizationModel.LinearRising)]
+    [InlineData(ExperienceLevel.Beginner, Goal.Strength, PeriodizationModel.LinearRising)]
+    [InlineData(ExperienceLevel.Intermediate, Goal.Hypertrophy, PeriodizationModel.LinearRising)]
+    [InlineData(ExperienceLevel.Intermediate, Goal.Strength, PeriodizationModel.Inverse)]
+    [InlineData(ExperienceLevel.Advanced, Goal.Hypertrophy, PeriodizationModel.LinearRising)]
+    [InlineData(ExperienceLevel.Advanced, Goal.Strength, PeriodizationModel.Inverse)]
+    public void SuggestedModel_FollowsTheHandbook(ExperienceLevel level, Goal goal, PeriodizationModel expected)
+    {
+        // Priručnik: linearan je "idealan za početnike", obrnut je za snagu. Za hipertrofiju
+        // nijedan model nije bolji kad je volumen isti, pa ona dobija akumulaciju ka MRV-u.
+        Assert.Equal(expected, Periodization.SuggestedModel(level, goal));
+    }
+
+    [Fact]
+    public void SuggestedModel_NeverOffersTheOldLinearModel()
+    {
+        foreach (var level in Enum.GetValues<ExperienceLevel>())
+        foreach (var goal in Enum.GetValues<Goal>())
+        {
+            Assert.NotEqual(PeriodizationModel.Linear, Periodization.SuggestedModel(level, goal));
         }
     }
 }

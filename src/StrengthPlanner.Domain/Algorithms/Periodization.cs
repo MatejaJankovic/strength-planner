@@ -142,6 +142,22 @@ public static class Periodization
         Deload
     ];
 
+    // Linearan po priručniku: serije rastu (priručnik: 3 -> 4 -> 4 -> 5 -> 5, što ovo daje
+    // tačno za srednji nivo), ponavljanja i RIR padaju. Rane nedelje su lakše po rezervi, ne
+    // po ponavljanjima: hipertrofija već počinje na Epley granici (12), pa bi pomeraj
+    // ponavljanja naviše Epley pretvorio u seriju više - baš u nedeljama koje treba da nose
+    // manje serija. Rezerva raste za jedan, ne za dva: RIR 4 je granica na kojoj serija
+    // prestaje da se broji kao ceo stimulus, a priručnik linearan blok počinje na RIR 2-3.
+    private static readonly WeekShape[] LinearRisingWeeks =
+    [
+        new(0, 1, -1),
+        new(0, 1, 0),
+        Base,
+        new(-TransitionRepShift, -1, 1),
+        new(-IntensityRepShift, -1, 1),
+        Deload
+    ];
+
     // Obrnut: isti krajevi, obrnutim redom.
     private static readonly WeekShape[] InverseWeeks =
     [
@@ -156,9 +172,36 @@ public static class Periodization
     private static WeekShape[] ShapesFor(PeriodizationModel model) => model switch
     {
         PeriodizationModel.Linear => LinearWeeks,
+        PeriodizationModel.LinearRising => LinearRisingWeeks,
         PeriodizationModel.Inverse => InverseWeeks,
         _ => FlatWeeks
     };
+
+    /// <summary>
+    /// The model a new block of this goal is offered first; the lifter can still pick any.
+    ///
+    /// The handbook calls the linear model <i>"idealan za početnike"</i> and the inverse one
+    /// suited to <i>"snagu i izdržljivost"</i>. The literature does not rank models for
+    /// hypertrophy at all once volume is equated (Grgic et al. 2017; Moesgaard et al. 2022),
+    /// and gives periodization a small edge for strength (Williams et al. 2017). So:
+    /// <list type="bullet">
+    /// <item>a beginner gets <see cref="PeriodizationModel.LinearRising"/> for either goal;</item>
+    /// <item>otherwise a hypertrophy block gets <see cref="PeriodizationModel.LinearRising"/> -
+    /// the MEV-to-MRV accumulation the volume landmarks are built around - and a strength
+    /// block gets <see cref="PeriodizationModel.Inverse"/>, as the handbook suggests.</item>
+    /// </list>
+    /// The suggestion used to be the other way round for hypertrophy - inverse, with the claim
+    /// that it suited muscle growth - which neither source supports.
+    /// </summary>
+    public static PeriodizationModel SuggestedModel(ExperienceLevel level, Goal goal)
+    {
+        if (level == ExperienceLevel.Beginner)
+        {
+            return PeriodizationModel.LinearRising;
+        }
+
+        return goal == Goal.Strength ? PeriodizationModel.Inverse : PeriodizationModel.LinearRising;
+    }
 
     /// <summary>How many weeks a block of this model runs.</summary>
     public static int DurationWeeks(PeriodizationModel model)

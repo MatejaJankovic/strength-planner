@@ -117,8 +117,13 @@ public class SessionVolumeCeilingTests
     }
 
     /// <summary>
-    /// Granica menja samo nedelje u kojima bi neki trening bez nje prešao granicu. Svaka
-    /// druga nedelja svakog šablona dobija isti predlog kao pre.
+    /// Granica menja samo nedelje u kojima je neki trening preko nje - u propisu od kog
+    /// balansiranje kreće, ili u predlogu koji bi bez nje dobio. Svaka druga nedelja svakog
+    /// šablona dobija isti predlog kao pre.
+    ///
+    /// Propis se broji odnedavno: linearan model po priručniku dodaje seriju u nedeljama 4 i 5,
+    /// pa Full Body (4 dana) za početnika u bloku snage kreće od 12 serija jednog mišića i
+    /// završava na 11 i bez granice - ali drugim putem, jer je granica cenila već prvi korak.
     /// </summary>
     [Fact]
     public void TheCeiling_ChangesOnlyWeeksThatWouldBreachIt()
@@ -128,10 +133,11 @@ public class SessionVolumeCeilingTests
         foreach (var week in TemplateWeekSimulation.EveryTrainingWeek())
         {
             var before = week.AllocatedWithoutSessionCeiling();
-            var wouldBreach = WeeklySetAllocation
-                .ProjectPerSession(week.Slots, before)
+            var prescribed = week.Slots.ToDictionary(slot => slot.Id, slot => slot.PrescribedSets);
+            var wouldBreach = new[] { before, prescribed }.Any(allocation => WeeklySetAllocation
+                .ProjectPerSession(week.Slots, allocation)
                 .Any(entry => entry.Value > TrainingConstants.MaxSetsPerMusclePerSession
-                              && week.TargetFor(MuscleName(entry.Key.MuscleGroupId)) is not null);
+                              && week.TargetFor(MuscleName(entry.Key.MuscleGroupId)) is not null));
 
             if (!wouldBreach && !before.SequenceEqual(week.Allocated))
             {
