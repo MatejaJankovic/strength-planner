@@ -125,7 +125,7 @@ Dve stvari iz ove beleške su ispravljene u
 [experience-volume-consistency.md](experience-volume-consistency.md):
 
 - Napredni nivo više ne kreće sa 3 serije po vežbi nego sa 4. Uz granice ×1.2 je sa 3 serije
-  propisivao manje nego što sam traži, pa je vežbač koji radi po planu gledao „ispod MEV-a".
+  propisivao manje nego što sam traži, a razliku je krpilo balansiranje.
 - Obrazloženje za granice ×0.8 je bilo naopako. „Serija početnika je slabiji stimulus" bi
   tražila više serija, a ne manje. Tačno je da početnik raste i na manjem volumenu, a radni
   kapacitet mu je manji.

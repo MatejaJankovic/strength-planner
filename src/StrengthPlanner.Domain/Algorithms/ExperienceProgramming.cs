@@ -34,10 +34,11 @@ public static class ExperienceProgramming
     /// Never fewer for a level whose volume landmarks sit higher (<see cref="LandmarkScale"/>).
     /// The advanced lifter used to start at three - the handbook's <i>"manji volumen, uz
     /// napredne tehnike"</i> - while their landmarks were scaled by 1.2, the highest of the
-    /// three levels. The two pulled in opposite directions: a lifter who did exactly what the
-    /// plan prescribed saw "below MEV" on the analytics screen, and balancing pushed every
-    /// exercise up to its drift limit to patch it. The handbook's smaller volume assumes the
-    /// advanced techniques that carry the rest of the stimulus (drop sets, rest-pause), and
+    /// three levels. The two pulled in opposite directions, and balancing patched the gap: in
+    /// an advanced hypertrophy week of the built-in templates of three days or more it raised
+    /// 155 of 195 exercises, 131 of them to the drift limit (80 at four sets). The handbook's
+    /// smaller volume assumes the advanced techniques that carry the rest of the stimulus
+    /// (drop sets, rest-pause), and
     /// this application does not model them; without them, fewer sets is simply less
     /// stimulus for the lifter who needs the most (Schoenfeld et al. 2019: in trained men,
     /// more sets gave more hypertrophy). Measured over every training week of the built-in
