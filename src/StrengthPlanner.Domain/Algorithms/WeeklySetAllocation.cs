@@ -63,7 +63,8 @@ public sealed record MuscleVolumeTarget(Guid MuscleGroupId, decimal TargetSets, 
 /// <see cref="TrainingConstants.MaxSetsPerMusclePerSession"/>. The week is the target, but
 /// it is performed one session at a time: before this bound the Push day of Push/Pull/Legs
 /// carried 16 to 18 sets of chest, because the week trains chest nowhere else. Where
-/// another session trains the muscle the excess moves there; where none does, it is cut,
+/// another session trains the muscle the excess moves there, as far as that session's own
+/// window lets it take more; what does not fit is cut,
 /// and the week stays below its target rather than spend recovery on sets whose return
 /// can no longer be measured.</item>
 /// </list>
