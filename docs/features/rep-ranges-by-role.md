@@ -110,8 +110,9 @@ Zbog toga su dve stvari morale da se promene:
    nije odrađen (preskočen, ili još nije stigao) nema upisan cilj, pa ga ekran računa pri
    čitanju iz maksimuma na zapisu. Za izolaciju je to ponovo stara procena. Sada se prenosi
    sa poslednje upisane težine iste vežbe u bloku, istim pravilom (`NextWeekLoad`). Kartica
-   tada kaže da je predlog prenet, a ne da je iz maksimuma. Izmereno uživo: nedelja 3
-   preskočena, a nedelja 4 dobija 12 kg umesto 8.
+   tada kaže da je predlog prenet, a ne da je iz maksimuma. Uživo: nedelja 3 preskočena, a
+   nedelja 4 dobija 12 kg. Stari put bi iz procene od 11.7 kg dao 8 kg; to je izračunato,
+   ne pušteno uživo.
 5. **Povratak posle deload-a naduvavao je težinu.** Kad deload nema tačku nastavka (ceo
    prethodni trening je preskočen), težina se vraća sa `UndoDeload`, ali je prevođena preko
    propisa deload-a (RIR cilja + 2). Kablovsko letenje od 30 kg bi se vratilo na 32.5, što
