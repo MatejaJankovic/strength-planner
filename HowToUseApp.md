@@ -93,7 +93,7 @@ Jedno polje zaista menja plan, pa ga popuni iskreno.
 | | Početnik | Srednji nivo | Napredni |
 |---|---|---|---|
 | Vežbi po treningu | 5 | 6 | 6 |
-| Najviše složenih vežbi po treningu | 3 | 2 | 1 |
+| Najviše složenih vežbi po treningu | 3 | 2 | 1 (u bloku snage 2) |
 | Serija po vežbi na startu | 3 | 4 | 3 |
 | Granice volumena (MEV/MAV/MRV) | ×0.8 | ×1.0 | ×1.2 |
 | Automatski deload zbog umora | **ne** | da (prag 0.60) | da (prag 0.50) |
@@ -214,12 +214,15 @@ zaista dobija, a koliko ih uđe i koje odlučuje tvoj nivo iskustva (složene ve
 
 | Cilj | Opseg ponavljanja | Ciljni RIR |
 |---|---|---|
-| **Snaga** | 3–6 za složene, **8–12 za izolacije** | 2 |
+| **Snaga** | 3–6 za glavna dizanja, **8–12 za ostalo** | 2 |
 | **Hipertrofija** | 8–12 | 1 |
 
 > Opseg prati vežbu, a ciljni RIR blok. Trojka na bočnom podizanju nije provera sile:
 > snaga se izražava u pokretima koji mogu da nose opterećenje, pa izolacija i u bloku snage
-> ostaje u opsegu u kome ima smisla. Lični šablon nosi opsege koje si sam uneo.
+> ostaje u opsegu u kome ima smisla. Isto važi i za složene vežbe koje nizak opseg ne podnose
+> — iskorak, bugarski čučanj, step-up, rumunsko mrtvo na jednoj nozi, goblet čučanj i sklek:
+> na jednoj nozi i sa nestabilnim osloncem trojka ruši tehniku, a sklek i goblet čučanj
+> nemaju gde da prime teret. Lični šablon nosi opsege koje si sam uneo.
 
 **3. Raspored kroz nedelje (periodizacija).**
 
@@ -656,8 +659,9 @@ prethodnog bloka.
 Ovo je jezgro aplikacije. Ne moraš ga znati da bi je koristio, ali objašnjava zašto brojevi
 izgledaju kako izgledaju.
 
-**Opseg prati vežbu.** U bloku snage složene vežbe idu na 3–6, a izolacije ostaju na
-8–12 — ciljni RIR je isti za obe, jer on govori koliko nedelja treba da bude teška.
+**Opseg prati vežbu.** U bloku snage glavna dizanja — složene vežbe koje podnose nizak opseg —
+idu na 3–6, a izolacije i složene vežbe na jednoj nozi ili bez načina da se doda teret ostaju na
+8–12 — ciljni RIR je isti za sve, jer on govori koliko nedelja treba da bude teška.
 
 **Radna težina.** Progresija polazi od **najteže** težine koju si podigao u tom treningu, a
 ne od proseka svih serija. Lakše serije ulaze u račun samo ako su išle do otkaza (ili na
@@ -742,6 +746,15 @@ deload nedelji ćute: posle nje se nastavlja od težine zarađene pre nje.
 
 **Sastav treninga.** Iz spiska vežbi u danu uzimaju se prvo složene (do broja koji tvoj nivo
 dozvoljava), pa izolacione dok se ne popune mesta. Trening nikad nema manje od tri vežbe.
+Blok snage ima **najmanje dve** složene vežbe po treningu, pa napredni vežbač tamo dobija dve
+umesto jedne: snaga je vezana za sam pokret i raste sa tim koliko se često višezglobna dizanja
+treniraju. U bloku snage glavna dizanja idu na početak treninga, i pre složene vežbe koja je tu
+pomoćni rad — kod Legs Specialization leg press ide pre bugarskog čučnja.
+
+**Glavna dizanja bloka snage stoje na propisu.** Balansiranje volumena ih ne pomera ni naviše
+ni naniže zbog nedeljnog cilja: njihove serije su posao bloka, a volumen po mišiću se podešava
+pomoćnim radom oko njih. Spustiti ih može samo granica oporavka — MRV nedelje ili granica po
+treningu — i to tek kad pomoćni rad za isti mišić više nema šta da da.
 
 Ovo važi **samo za ugrađene šablone**. Lični šablon se ne prekraja: u trening ulaze tačno
 tvoje vežbe, pa i dan sa jednom vežbom ostaje dan sa jednom vežbom.
