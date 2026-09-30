@@ -107,7 +107,7 @@ nedelju koja postoji, nije deload i nije počela, i samo dok blok nema auto-delo
   - svaka trenažna nedelja se razlikuje za podrazumevane opsege i osnovu od 3 do 10;
   - talas 3/4/4/5/5 za srednji nivo, čitan iz `StartingSetsPerExercise`;
   - cilj nedelje raste od 12 do 20;
-  - predlog je linearan i nikad stari model;
+  - predlog je linearan model po priručniku;
   - `AutoDeloadPlacementTests`, šest slučajeva, uključujući drugi auto-deload.
 - Postojeći testovi koji prolaze kroz sve modele sada pokrivaju i novi: granica ponavljanja,
   RIR iznad nule, sigurne granice, jedan deload na kraju, svaka trenažna nedelja različita,
@@ -154,4 +154,10 @@ nedelju koja postoji, nije deload i nije počela, i samo dok blok nema auto-delo
   Obe stvari nastaju samo u ličnom šablonu. Ugrađeni počinju od bar 3 serije, a snaga ima opseg
   3–6.
 - Blok povlači deload napred najviše jednom. Vežbač koga umor stigne i posle ranog deload-a
-  završava blok bez drugog, a sledeći blok kreće od novog propisa.
+  završava blok bez drugog, a sledeći blok kreće od novog propisa. U najgorem slučaju umor
+  posle nedelje 1 pomera deload na nedelju 2, pa nedelje 3–6 idu bez njega: četiri trenažne
+  nedelje, manje od pet koliko periodizovan blok ionako nosi pred planirani deload. Kasnije
+  nedelje se i dalje ocenjuju, a granice volumena i dalje uče iz njih.
+- Pre ovog pravila drugi auto-deload na nedelji 4 ili 5 je radio, kad god osnovna nedelja nije
+  bila deload. Pravilo ga namerno ukida, jer je obećanje „mezociklus nosi jedno rasterećenje"
+  već stajalo u uputstvu i u kodu koji oslobađa planirani deload.

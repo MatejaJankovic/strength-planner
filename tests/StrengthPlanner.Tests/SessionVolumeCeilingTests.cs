@@ -159,7 +159,8 @@ public class SessionVolumeCeilingTests
             var prescribed = week.Slots.ToDictionary(slot => slot.Id, slot => slot.PrescribedSets);
             Assert.Contains(
                 WeeklySetAllocation.ProjectPerSession(week.Slots, prescribed),
-                entry => entry.Value > TrainingConstants.MaxSetsPerMusclePerSession);
+                entry => entry.Value > TrainingConstants.MaxSetsPerMusclePerSession
+                         && week.TargetFor(MuscleName(entry.Key.MuscleGroupId)) is not null);
         }
     }
 

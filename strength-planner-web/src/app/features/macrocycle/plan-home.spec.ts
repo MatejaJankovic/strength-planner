@@ -251,13 +251,18 @@ describe('PlanHome - sadržaj šablona u čarobnjaku', () => {
     );
   });
 
+  /**
+   * Model se bira tako da ga predlog po cilju ne bi dao: novi blok je blok snage, a dok je
+   * predlog zavisio od cilja, blok snage je dobijao obrnut model (2).
+   */
   it('novi blok nasleđuje model prethodnog', async () => {
     openWizard();
     await fixture.whenStable();
 
+    component().setBlockModel(0, '0');
     component().addBlock();
 
-    expect(component().blocks().map((block: any) => block.periodizationModel)).toEqual([2, 2]);
+    expect(component().blocks().map((block: any) => block.periodizationModel)).toEqual([0, 0]);
   });
 });
 

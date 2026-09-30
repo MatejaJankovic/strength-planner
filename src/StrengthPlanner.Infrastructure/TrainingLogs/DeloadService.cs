@@ -128,11 +128,21 @@ public sealed class DeloadService
             return null;
         }
 
+        // Isti uslovi još jednom, na redu koji se menja: između čitanja i upisa drugi zahtev
+        // je mogao da započne tu nedelju ili da povuče deload u istom bloku.
         var nextWeek = await _db.TrainingWeeks
             .Where(week => week.MesocycleId == mesocycleId
                            && week.Mesocycle.UserId == userId
-                           && week.WeekNumber == nextWeekNumber.Value)
-            .FirstAsync(cancellationToken);
+                           && week.WeekNumber == nextWeekNumber.Value
+                           && !week.IsDeload
+                           && week.Sessions.All(session => session.Status == SessionStatus.Planned)
+                           && !week.Mesocycle.Weeks.Any(other => other.IsAutoDeload))
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (nextWeek is null)
+        {
+            return null;
+        }
 
         // Propis nedelje zavisi od modela: kod periodizovanog bloka nedelja koja postaje
         // deload nosi rep-opseg i RIR svoje faze, a ne cilja. Bez ovoga bi „rasterećenje"

@@ -533,12 +533,6 @@ public class PeriodizationTests
         Assert.Equal(PeriodizationModel.LinearRising, Periodization.SuggestedModel);
     }
 
-    [Fact]
-    public void SuggestedModel_IsNeverTheOldLinearModel()
-    {
-        Assert.NotEqual(PeriodizationModel.Linear, Periodization.SuggestedModel);
-    }
-
     /// <summary>
     /// Pravilo iz runde 10 - svaka trenažna nedelja ima svoj propis - za podrazumevane opsege
     /// i osnove od 3 serije naviše. Osnova 2 i opseg sa vrhom do 4 su izuzeci i zapisani su u

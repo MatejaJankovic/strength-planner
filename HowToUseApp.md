@@ -235,9 +235,9 @@ zaista dobija, a koliko ih uđe i koje odlučuje tvoj nivo iskustva (složene ve
 > Čarobnjak predlaže linearan model za svaki blok. Priručnik obrnut model vezuje za snagu, ali
 > literatura to ne podržava: u direktnom poređenju linearan je dao veću snagu od obrnutog
 > (Prestes i sar. 2009), a pregled istraživanja zaključuje da obrnut nije efikasniji ni za
-> snagu (González-Ravé i sar. 2022). Za rast mišića nijedan model nije bolji kad je volumen
-> isti. Obrnut model i dalje možeš da izabereš, a promena cilja bloka ne menja model koji si
-> izabrao.
+> snagu (González-Ravé i sar. 2022). Ni za rast mišića obrnut model nema prednost. Obrnut
+> model i dalje možeš da izabereš. Promena cilja bloka ne menja model koji si izabrao, a novi
+> blok dobija model prethodnog.
 >
 > Linearan blok počinje lakši po **rezervi**, ne po ponavljanjima: kod hipertrofije opseg 8–12
 > već stoji na gornjoj granici od 12, preko koje procena maksimuma ne važi. Isto zato faza
@@ -533,10 +533,10 @@ stimulativnih serija odradio i gde to pada u odnosu na tvoje granice.
 - **MAV** — naučena ciljna vrednost mišića
 - **MRV** — plafon iznad kog nema oporavka
 
-Marker cilja prati **nedelju**, a ne MAV: nedelja sa više serija od osnovne gađa iznad MAV-a
-(do MRV-a), a nedelja sa manje serija ispod njega. U linearnom bloku to su poslednje, odnosno
-prve nedelje. Blok snage gađa niže od hipertrofijskog, jer teže serije koštaju više
-oporavka. Kada se razlikuju, u redu piše i jedno i drugo: `cilj ove nedelje 22
+Marker cilja prati **nedelju**, a ne MAV. U bloku hipertrofije nedelja sa više serija od
+osnovne gađa iznad MAV-a (do MRV-a), a nedelja sa manje serija ispod njega; u linearnom bloku
+to su nedelje 4 i 5, odnosno prva. Blok snage polazi od sredine između MEV-a i MAV-a, jer teže
+serije koštaju više oporavka, pa i njegove najobimnije nedelje ostaju oko MAV-a. Kada se razlikuju, u redu piše i jedno i drugo: `cilj ove nedelje 22
 (MAV 16)`. U deload nedelji cilja nema — manji volumen je tamo namera.
 
 Boja trake govori da li si ispod, u zoni ili iznad. **Ne broji se svaka serija isto**:
