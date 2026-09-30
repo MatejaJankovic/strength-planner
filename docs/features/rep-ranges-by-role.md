@@ -56,15 +56,24 @@ Zbog toga su dve stvari morale da se promene:
 - **Trend snage za granice volumena.** Ramena i listove treniraju samo izolacije, pa bi MAV i
   MEV za njih prestali da uče. `StrengthChange` zato serije preko granice poredi **na istoj
   težini**, po efektivnim ponavljanjima: (30 + sada) / (30 + tada) − 1. Na istoj težini je to
-  tačno odnos koji bi dale dve procene. Poređenje se koristi samo kad vežba nema par procena,
-  i samo kad je bar jedna od dve serije preko 12. Dve serije do 12 na istoj težini, koje je
+  tačno odnos koji bi dale dve procene. Poređenje se koristi samo kad jedna od dve nedelje za
+  tu vežbu nema nijednu procenu, i samo kad je bar jedna od dve serije preko 12. Kad obe
+  nedelje imaju procenu, odlučuje procena, pa i kad kaže da par nije uporediv. Dve serije do 12 na istoj težini, koje je
   procena odbila (runda 11: efektivna ponavljanja predaleko), ostaju neuporedive. Za složene
   vežbe se ništa ne menja. Nedelja posle koraka nema par na istoj težini, pa ne čita ništa;
   to je tišina, ne pad.
-- **Prenos težine između dva propisa.** `NextWeekLoad` je bez procene maksimuma težinu
-  prevodio preko `EstimateOneRepMax(težina, dno opsega, RIR)`, a ta metoda baca izuzetak
-  iznad 12 ponavljanja. Do sada je to bilo nedostižno. Lična izolacija na 15–20 bi pukla na
-  prvom prelazu u nedelju sa drugim propisom. Prenos je odnos na krivoj, pa sada ide preko
+- **Prenos težine između dva propisa.** Kad sledeća nedelja ima drugi propis, `NextWeekLoad`
+  je težinu izvodio iz najbolje procene u prozoru od 56 dana. Serije izolacije preko 12
+  procenu ne upisuju, pa ta procena potiče iz neke ranije, lakše serije. Review je to našao,
+  a E2E potvrdio: posle 8 kg × 12 u nedelji 1 i 10 kg × 20 u nedelji 2, nedelja 3 bi dobila
+  8 kg iz procene od 11.7 kg, dok je progresija tražila 12. Za opseg koji ide preko 12
+  težina se sada prenosi sa sopstvene težine treninga (progresija, inače referenca), istim
+  putem kojim se prenosila i za vežbu bez ijedne procene. Složene vežbe i dalje čitaju
+  maksimum.
+
+  Taj put je prevodio težinu preko `EstimateOneRepMax(težina, dno opsega, RIR)`, a ta metoda
+  baca izuzetak iznad 12 ponavljanja. Lična izolacija na 15–20 bi pukla na prvom prelazu u
+  nedelju sa drugim propisom. Prenos je odnos na krivoj, pa sada ide preko
   `ImpliedOneRepMax`, koji granicu ne čita i računa isto gde oba postoje.
 
 ### Lični šablon
@@ -86,16 +95,28 @@ Zbog toga su dve stvari morale da se promene:
    dno opsega, pa takve serije dolaze redovno. Bez ijedne procene na zapisu, izolacija u novom
    bloku kreće bez predložene težine, kao i ranije. Ovo nije mereno na stvarnim podacima, jer
    dosadašnji zapisi potiču iz 8–12.
-2. **Pad koji je čekao.** Izuzetak u `NextWeekLoad` nije otkrio nijedan test. Našao se tek
+2. **Težina koja pada posle serije na vrhu opsega.** Prva verzija grane je prošla sve testove
+   i E2E, a propuštala je upravo ono zbog čega je opseg proširen. E2E je proverio samo prelaz
+   iz nedelje 1 u nedelju 2, gde je propis isti. Review je našao nedelju 3 (8 kg umesto 12),
+   i to je izmereno i uživo. Isti oblik greške kao runda 10 (pravilo tačno, aplikacija ne):
+   test je proveravao opseg, a ne ono što sledeća nedelja dobija.
+3. **Poređenje na istoj težini je išlo šire nego što je pisalo.** Pokretalo se kad god par
+   procena nije uporediv, pa bi složena vežba sa neuporedivim procenama i serijama preko 12
+   na istoj težini čitala −6.4% bez ijednog pravog pada. Sada važi samo za nedelju bez
+   procene, kako je beleška i tvrdila.
+4. **Pad koji je čekao.** Izuzetak u `NextWeekLoad` nije otkrio nijedan test. Našao se tek
    pregledom svakog mesta koje zove `EstimateOneRepMax` sa opsegom umesto sa odrađenom
    serijom.
-3. **Opseg nije pomerio nijednu seriju.** Kad se novo pravilo vrati, padaju samo testovi
+5. **Test je zadavao korak koji vežba nema.** Polazna težina bočnog podizanja je proveravana
+   sa korakom od 2.5 kg, a bučica ima korak od 2 kg: aplikacija daje 28 kg, ne 27.5. Isti
+   nalaz kao runda 9, tačka 7. Test sada čita korak iz sprave.
+6. **Opseg nije pomerio nijednu seriju.** Kad se novo pravilo vrati, padaju samo testovi
    opsega (5), a nijedan test MEV/MRV šablona. Pravilo o progutanom pomeraju na 20 daje iste
    serije kao na 12.
 
 ## Provera
 
-- `dotnet test`: **798** (bilo 773); `npm test` **192** (bilo 190); `npm run build` prolazi.
+- `dotnet test`: **801** (bilo 773); `npm test` **192** (bilo 190); `npm run build` prolazi.
 - Novi testovi (`IsolationRepRangeTests`):
   - granica prati opseg (12 / 20, a stari 8–12 ostaje na 12);
   - izolacija ostaje u opsegu i zadržava širinu u svakom modelu;
@@ -104,20 +125,28 @@ Zbog toga su dve stvari morale da se promene:
   - korak lake bučice (8 kg staje; 5 kg posle 25);
   - poređenje na istoj težini: rast, pad, druga težina, daleko od otkaza, i da par procena ima
     prednost;
-  - prenos težine 15–20 → 13–18 bez izuzetka.
+  - prenos težine 15–20 → 13–18 bez izuzetka;
+  - scenario iz review-a: 10 kg × 20, progresija 12, stara procena 11.2 → 12 kg, a složena
+    vežba i dalje iz maksimuma;
+  - kad obe nedelje imaju procenu, poređenje na istoj težini ne učestvuje.
+- Mreže svojstava progresije i upijanja koraka sada sadrže i opsege 10–20, 9–19 i 8–18.
 - `GoalPrescriptionTests` prepisan za novo pravilo; `CustomTemplateTests` proverava granice po
   tipu; dve nove vitest provere editora (granice po tipu i vraćanje u polje).
-- Merenje vraćanjem (commit, vraćeno pravilo, rebuild), na 798 testova:
+- Merenje vraćanjem (commit, vraćeno pravilo, rebuild), na 801 test:
   - opseg izolacije vraćen na 8–12 obara 5;
   - granica uvek 12 obara 10;
   - bez poređenja na istoj težini obara 2;
-  - prenos težine preko `EstimateOneRepMax` obara 1.
+  - prenos težine preko `EstimateOneRepMax` obara 1;
+  - maksimum i za opseg preko 12 obara 1;
+  - poređenje na istoj težini posle svakog odbijenog para obara 1.
 - Na klijentu, na 192 testa: granica editora uvek 12 obara 1, a bez vraćanja u polje obara 1.
 - End-to-end, uživo:
   - blok hipertrofije (Upper/Lower, srednji nivo, linearan): složene vežbe 8–12, izolacije
     10–20 @RIR 2 u nedelji 1. U nedelji 5 je 6–10 i 8–18 @RIR 1.
   - blok snage: bench, veslanje, čučanj i RDL 3–6 @RIR 3, izolacije 10–20 @RIR 3.
   - bočno podizanje 8 kg × 20 @RIR 2 → sledeće nedelje **10 kg** × 10–20, bez produženog cilja.
+  - kroz promenu propisa: 8 kg × 12 @RIR 2 u nedelji 1 (procena 11.7), 10 kg × 20 u nedelji 2
+    (bez procene) → nedelja 3, sa propisom 10–20 @RIR 1, dobija **12 kg**.
   - lični šablon: bočno podizanje 12–20 se čuva. Bench Press 8–15 se odbija (400, „Bench Press
     je složena vežba i ide najviše do 12 ponavljanja…"), a 12–21 odbija anotacija.
   - editor (375 px, bez prelivanja): Lateral Raise dobija 10–20 sa granicom 20, a Bench Press
@@ -128,3 +157,8 @@ Zbog toga su dve stvari morale da se promene:
 - Grafik e1RM trenda za izolacije je većinom prazan, jer procenu daju samo serije do 12.
   Poruka na grafiku to već kaže.
 - Postojeći blokovi i ranije sačuvani lični šabloni zadržavaju opsege sa kojima su napravljeni.
+- Unutar bloka izolacija nosi svoju težinu kroz svaki propis. **Novi blok** je i dalje
+  počinje iz procene na zapisu. Ta procena najčešće dolazi iz prvih treninga posle koraka,
+  na težini na kojoj je vežbač i završio, pa blok kreće sa te težine na dnu opsega. Ako je
+  procena iz ranije, lakše težine, novi blok kreće lakše i dupla progresija ga vraća za
+  nekoliko nedelja. To nije mereno na stvarnim podacima.
