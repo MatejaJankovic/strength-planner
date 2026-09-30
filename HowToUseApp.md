@@ -325,7 +325,7 @@ konačna reč:
 |---|---|
 | Periodizacija | tvoj opseg se pomera kroz nedelje kao i svaki drugi (linearan model: više ponavljanja na startu, manje pred kraj) |
 | Deload | poslednja nedelja polovi **tvoj** broj serija, vraća **tvoj** opseg ponavljanja i diže ciljni RIR za dva |
-| Ciljni volumen | predlog serija se pomera ka cilju **te nedelje** (vidi „Nedeljni volumen"), ali ostaje blizu tvog broja — osim glavnih dizanja u bloku snage (složenih vežbi kojima si dao opseg do 6), koja ostaju tačno na tvom broju |
+| Ciljni volumen | predlog serija se pomera ka cilju **te nedelje** (vidi „Nedeljni volumen"), ali ostaje blizu tvog broja — osim glavnih dizanja u bloku snage (složenih vežbi kojima si dao opseg do 6), koja nedeljni cilj ne pomera s propisa te nedelje |
 | Progresija iz serija | opterećenje raste iz onoga što stvarno odradiš, isto kao inače |
 
 Primer (napredan nalog): uneseš Bench Press **6 serija × 5–8**, cilj hipertrofija, linearan

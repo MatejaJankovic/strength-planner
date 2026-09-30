@@ -100,8 +100,12 @@ public static class GoalPrescriptions
     /// Read from the plan's range rather than from the catalog, because a custom template
     /// sets its own: a leg press the lifter entered at 12-15 is accessory work in their
     /// strength block, and a split squat they entered at 3-5 is the lift they chose to load.
-    /// For a built-in template the two readings agree - its range comes from
-    /// <see cref="ForExercise"/>, which gives 3-6 exactly to <see cref="IsStrengthLift"/>.
+    /// For a block generated from a built-in template by this version the two readings agree -
+    /// its range comes from <see cref="ForExercise"/>, which gives 3-6 exactly to
+    /// <see cref="IsStrengthLift"/>. A strength block generated earlier prescribed 3-6 to its
+    /// unilateral lifts as well, and there they are main lifts: the block's own prescription
+    /// says so, and balancing it by a rule the block was not written with would be the
+    /// round-12 mistake of re-shaping a block in progress.
     /// </summary>
     public static bool IsMainLift(Goal goal, ExerciseType type, int baseRepRangeMax)
     {

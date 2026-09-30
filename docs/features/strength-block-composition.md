@@ -25,9 +25,9 @@ uslovima".
 **3. Balansiranje je seklo glavno dizanje pre pomoćnog rada.** Jedna serija bench-a
 rasterećuje i grudi i triceps, pa je cena po mišiću uvek birala nju. Preko ugrađenih nedelja
 bloka snage: **373** slučaja da je složena vežba ispod propisa dok izolacija za isti mišić u
-istom treningu još može da da seriju (iznad dna svog prozora) — napredni Push dan sa bench-om
-na 2 serije i razvlačenjem sa bučicama na 5. (Uže čitanje, izolacija na svom propisu ili iznad
-njega, daje 284.)
+istom treningu još može da da seriju — pomoćni rad (vežba koja nije glavno dizanje) za isti
+glavni mišić, iznad dna svog prozora. Primer: napredni Push dan sa bench-om na 2 serije i
+razvlačenjem sa bučicama na 5.
 
 ## Rešenje
 
@@ -69,8 +69,9 @@ sedam sistemskih na `false`, korisničke netaknute.
 `ExerciseSetSlot.IsMainLift`: u bloku snage složena vežba čiji je osnovni opseg opseg snage
 (`GoalPrescriptions.IsMainLift`). Čita se iz opsega samog plana, ne iz kataloga: lični šablon
 bira svoj, pa je leg press koji je vežbač uneo na 12–15 u njegovom bloku snage pomoćni rad, a
-iskorak na 3–5 dizanje koje je izabrao da optereti. Kod ugrađenog šablona oba čitanja se slažu,
-i test ih drži zajedno.
+iskorak na 3–5 dizanje koje je izabrao da optereti. Kod bloka koji ova verzija generiše iz
+ugrađenog šablona oba čitanja se slažu, i test ih drži zajedno. Blok snage generisan ranije je i
+iskoracima propisao 3–6, pa su tamo glavna dizanja — kako mu i propis kaže.
 
 Balansiranje sada radi u dva prolaza koja se smenjuju dok nijedan ništa ne pomera:
 
@@ -118,7 +119,7 @@ cilj nijedno.
 
 ## Provera
 
-- `dotnet test`: **751** (bilo 715; 741 pre revizije); `npm test`: **188** (bilo 184);
+- `dotnet test`: **753** (bilo 715; 741 pre revizija); `npm test`: **188** (bilo 184);
   `npm run build` prolazi.
 - Novi testovi: `StrengthBlockCompositionTests` (nijedno glavno dizanje ispod propisa dok pomoćni
   rad za isti mišić u istom treningu može još da da — bilo 373; nijedno iznad propisa; blok
@@ -131,7 +132,7 @@ cilj nijedno.
   opseg za vežbe koje ga ne podnose — 9 od 738; redosled — 2 od 741. Glavna dizanja u
   balansiranju zavise od toga šta se vraća: prvi prolaz bez zakucavanja, a drugi zadržan — 7
   od 738; ceo alokator od pre ove grane (jedan prolaz, bez glavnih dizanja) — 6 od 738 (izmerila
-  revizija), odnosno 7 od 750 na konačnoj verziji, sa testom vraćanja mesta pomoćnom radu.
+  revizija), odnosno **9 od 753** na konačnoj verziji, uz testove koji su u međuvremenu dodati.
 - End-to-end, uživo, napredni nivo, blok snage, prva nedelja:
 
   | Šablon, trening | Predlog / propis × opseg |
@@ -169,6 +170,16 @@ incline bench spušten zbog MRV-a grudi dobijao oznaku „Triceps"; vraćanje ov
 750); komentari koji su govorili „jedna složena vežba više" za blok snage, što važi samo za
 naprednog; brojevi 373, 18 i merenje vraćanjem, sada sa tačnim značenjem; test MRV-a sa ciljem
 iznad MRV-a, što proizvodnja ne može da da.
+
+Druga revizija, samo nad ispravkama, nije našla ništa srednje težine. Od pet nalaza niske težine
+ispravljeno je svih pet: rez glavnog dizanja koji traže obe granice odjednom (bez sesijske granice
+bi ga uzeo MRV, a sa njom MRV sa vraćenom serijom nije probijen) ostajao je bez objašnjenja — tri
+nedelje Push/Pull/Legs x2, veslanje 5 → 4; sada ga objašnjava granica po treningu na samoj
+raspodeli (vraćanje: 2 od 753), a test traži razlog za svaki rez glavnog dizanja preko ugrađenih
+nedelja. Ostalo su bile reči: red u tabeli ličnog šablona je obećavao „tačno tvoj broj", a
+periodizacija i granice oporavka ga pomeraju; tvrdnja da se dva čitanja glavnog dizanja uvek
+slažu ne važi za blokove snage generisane pre ove grane; broj u merenju vraćanjem je bio zastareo;
+a uži broj uz 373 nije mogao da se ponovi i sklonjen je.
 
 ## Ograničenja
 
