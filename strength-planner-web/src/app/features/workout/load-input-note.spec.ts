@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { loadInputNote } from './load-input-note';
+import { loadInputNote, zeroLoadWarning } from './load-input-note';
 
 describe('loadInputNote', () => {
   it('podseća da se kod bučica unosi jedna', () => {
@@ -13,9 +13,10 @@ describe('loadInputNote', () => {
   });
 
   it('upozorava na nulu kod svega što se opterećuje spolja', () => {
-    expect(loadInputNote('Barbell', 0)).toBe('zero-on-loaded');
+    expect(loadInputNote('Barbell', 0)).toBe('zero-on-barbell');
     expect(loadInputNote('Dumbbell', 0)).toBe('zero-on-loaded');
     expect(loadInputNote('Machine', 0)).toBe('zero-on-loaded');
+    expect(loadInputNote('Cable', 0)).toBe('zero-on-loaded');
   });
 
   /**
@@ -31,6 +32,32 @@ describe('loadInputNote', () => {
   it('ćuti kada sprava nije poznata', () => {
     expect(loadInputNote(undefined, 0)).toBeNull();
     expect(loadInputNote('', 0)).toBeNull();
+  });
+
+  /**
+   * Samo šipka ima težinu i kad je prazna - rečenica o šipci uz sajlu ili bučicu bila bi
+   * netačna, a tako je stajala na ekranu od runde 13. Proverava se i izbor i sam tekst: greška
+   * je tada bila u rečenici, ne u izboru.
+   */
+  it('pominje praznu šipku samo kod šipke', () => {
+    for (const equipment of ['Barbell', 'Cable', 'Dumbbell', 'Machine']) {
+      const note = loadInputNote(equipment, 0);
+      expect(note === 'zero-on-barbell' || note === 'zero-on-loaded').toBe(true);
+
+      const text = zeroLoadWarning(note as 'zero-on-barbell' | 'zero-on-loaded');
+      expect(text.includes('šipk')).toBe(equipment === 'Barbell');
+      expect(text).toContain('0 kg');
+    }
+  });
+
+  it('ne tvrdi 20 kg kao težinu vežbe - EZ šipka je oko pola toga', () => {
+    expect(zeroLoadWarning('zero-on-barbell')).not.toMatch(/šipka je (već )?oko 20 kg/);
+  });
+
+  it('spravu čita bez obzira na velika i mala slova, kao i server', () => {
+    expect(loadInputNote('barbell', 0)).toBe('zero-on-barbell');
+    expect(loadInputNote(' DUMBBELL ', 12)).toBe('single-dumbbell');
+    expect(loadInputNote('bodyweight', 0)).toBeNull();
   });
 
   /** Nula je hitnija od podsetnika, pa kod bučice na nuli ide upozorenje. */

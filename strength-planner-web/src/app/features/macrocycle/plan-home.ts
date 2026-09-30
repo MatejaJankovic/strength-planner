@@ -86,21 +86,21 @@ export class PlanHome {
       value: PeriodizationModel.Flat,
       label: 'Ravan',
       weeks: 4,
-      effect: 'Tvoj opseg ponavljanja svake nedelje. Cetvrta je deload.',
+      effect: 'Tvoj opseg ponavljanja svake nedelje. Četvrta je deload.',
     },
     {
       value: PeriodizationModel.Linear,
       label: 'Linearan',
       weeks: 6,
       effect:
-        'Krece sa vise ponavljanja nego sto si uneo, pa se spusta ka tezim serijama. Tvoj opseg dolazi u 3. nedelji.',
+        'Kreće sa više ponavljanja nego što si uneo, pa se spušta ka težim serijama. Tvoj opseg dolazi u 3. nedelji.',
     },
     {
       value: PeriodizationModel.Inverse,
       label: 'Obrnut',
       weeks: 6,
       effect:
-        'Krece sa manje ponavljanja nego sto si uneo, pa raste ka volumenu. Tvoj opseg dolazi u 3. nedelji.',
+        'Kreće sa manje ponavljanja nego što si uneo, pa raste ka volumenu. Tvoj opseg dolazi u 3. nedelji.',
     },
   ];
 
@@ -115,13 +115,13 @@ export class PlanHome {
     {
       value: SetAllocation.TargetVolume,
       label: 'Prilagodi ciljnom volumenu',
-      effect: 'Broj serija se podesava tako da nedelja pogodi ciljni volumen po misicu.',
+      effect: 'Broj serija se podešava tako da nedelja pogodi ciljni volumen po mišiću.',
     },
     {
       value: SetAllocation.FollowTemplate,
-      label: 'Prati moj sablon',
+      label: 'Prati moj šablon',
       effect:
-        'Ostaje tacno onoliko serija koliko si uneo. Nedeljni volumen moze ostati ispod cilja i sistem ga nece ispravljati.',
+        'Ostaje tačno onoliko serija koliko si uneo. Nedeljni volumen može ostati ispod cilja i sistem ga neće ispravljati.',
     },
   ];
 
