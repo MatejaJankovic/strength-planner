@@ -100,7 +100,7 @@ nedelju koja postoji, nije deload i nije počela, i samo dok blok nema auto-delo
 
 ## Provera
 
-- `dotnet test`: **774** (bilo 753); `npm test` 190 i `npm run build` prolaze.
+- `dotnet test`: **773** (bilo 753); `npm test` 190 i `npm run build` prolaze.
 - Novi testovi pokrivaju:
   - serije kroz trenažne nedelje ne padaju, a ponavljanja i rezerva ne rastu, za oba cilja i
     osnovu od 2 do 6 serija;
@@ -118,10 +118,13 @@ nedelju koja postoji, nije deload i nije počela, i samo dok blok nema auto-delo
   ali drugim putem, jer granica ceni već prvi korak. Spisak mora da se poklopi tačno, a za obe
   nedelje test proverava da propis zaista prelazi granicu. Prva verzija ove grane je premisu
   proširila na propis, a to je opravdavalo svaku nedelju, ne samo ove dve.
-- Merenje vraćanjem, na 774 testa (commit, vraćeno pravilo, rebuild):
+- Merenje vraćanjem, na 773 testa (commit, vraćeno pravilo, rebuild):
   - novi model sa starim oblikom obara 4;
   - predlog vraćen na obrnut model obara 1;
-  - pravilo za auto-deload bez provere postojećeg auto-deload-a obara 1.
+  - pravilo za auto-deload bez provere postojećeg auto-deload-a obara 1;
+  - čarobnjak vraćen na predlog po cilju obara 2 od 190 klijentskih testova. Test za nasleđeni
+    model je u prvoj verziji prolazio i na starom kodu, jer je model iz mock-a slučajno bio
+    baš onaj koji je stari predlog davao bloku snage. Otkrio ga je ponovni pregled.
 - End-to-end, uživo:
   - predlog blokova, i za početnika i za srednji nivo: hipertrofija i snaga dobijaju linearan;
   - novi linearan blok (Upper/Lower, srednji nivo, hipertrofija, podrazumevane granice): bench
@@ -134,7 +137,8 @@ nedelju koja postoji, nije deload i nije počela, i samo dok blok nema auto-delo
     auto-deload, a nedelja 6 oslobođena. Nedelja 5 je odrađena isto i dobila 0.66:
     - **stari kod:** poslednji trening nedelje 5 nije mogao da se završi — `400`, „Base sets can
       only be recovered from a training week of this block", stvarna vrednost 6;
-    - **novi kod:** trening se završava, a nedelja 6 ostaje trenažna;
+    - **novi kod:** trening se završava, a nedelja 6 ostaje trenažna. Isto je dao i ponovljen
+      scenario posle ispravki iz ponovnog pregleda (ocene 0.6 i 0.6), bez greške u logu API-ja;
   - blok sa starim modelom (`periodizationModel: 1` preko API-ja): bench 6, 6, 4, 4, 3,
     nepromenjen, i u planu „Upper/Lower · Linearan (stari), 6 ned.";
   - čarobnjak (375 px, bez prelivanja): nudi Ravan, Linearan i Obrnut; oba bloka dobijaju
