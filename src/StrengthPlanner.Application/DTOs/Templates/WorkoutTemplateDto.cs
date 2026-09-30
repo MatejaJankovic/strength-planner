@@ -23,9 +23,10 @@ public sealed class WorkoutTemplateDto
     public IReadOnlyList<WorkoutTemplateDayDto> Days { get; set; } = [];
 
     /// <summary>
-    /// Isti dani za blok snage. Blok snage dobija jednu složenu vežbu više po treningu
-    /// (ExperienceProgramming.MaxCompoundsPerSession), pa se ugrađen šablon za njega skraćuje
-    /// drugačije. Kod ličnog šablona je isto što i <see cref="Days"/>.
+    /// Isti dani za blok snage. Blok snage ima najmanje dve složene vežbe po treningu
+    /// (ExperienceProgramming.MaxCompoundsPerSession) - to menja sastav naprednog vežbača - i
+    /// glavna dizanja stavlja na početak treninga. Kod ličnog šablona je isto što i
+    /// <see cref="Days"/>.
     /// </summary>
     public IReadOnlyList<WorkoutTemplateDayDto> StrengthDays { get; set; } = [];
 }

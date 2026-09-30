@@ -25,8 +25,9 @@ uslovima".
 **3. Balansiranje je seklo glavno dizanje pre pomoćnog rada.** Jedna serija bench-a
 rasterećuje i grudi i triceps, pa je cena po mišiću uvek birala nju. Preko ugrađenih nedelja
 bloka snage: **373** slučaja da je složena vežba ispod propisa dok izolacija za isti mišić u
-istom treningu drži svoje serije — napredni Push dan sa bench-om na 2 serije i razvlačenjima
-na 5.
+istom treningu još može da da seriju (iznad dna svog prozora) — napredni Push dan sa bench-om
+na 2 serije i razvlačenjem sa bučicama na 5. (Uže čitanje, izolacija na svom propisu ili iznad
+njega, daje 284.)
 
 ## Rešenje
 
@@ -65,20 +66,27 @@ sedam sistemskih na `false`, korisničke netaknute.
 
 ### Glavna dizanja stoje na propisu
 
-`ExerciseSetSlot.IsMainLift`: u bloku snage svako dizanje sa opsegom snage. Balansiranje sada
-radi u dva prolaza:
+`ExerciseSetSlot.IsMainLift`: u bloku snage složena vežba čiji je osnovni opseg opseg snage
+(`GoalPrescriptions.IsMainLift`). Čita se iz opsega samog plana, ne iz kataloga: lični šablon
+bira svoj, pa je leg press koji je vežbač uneo na 12–15 u njegovom bloku snage pomoćni rad, a
+iskorak na 3–5 dizanje koje je izabrao da optereti. Kod ugrađenog šablona oba čitanja se slažu,
+i test ih drži zajedno.
 
-1. Nedelja se slaže sa glavnim dizanjima na propisu — cilj, MRV i granicu po treningu nosi
-   pomoćni rad.
+Balansiranje sada radi u dva prolaza koja se smenjuju dok nijedan ništa ne pomera:
+
+1. Pomoćni rad slaže nedelju — cilj, MRV i granicu po treningu — dok glavna dizanja stoje tamo
+   gde su (na početku na propisu).
 2. Glavno dizanje sme niže samo koliko granica oporavka i dalje traži — MRV nedelje ili
-   granica po treningu — pošto pomoćni rad više nema šta da da. Nedeljni cilj se u tom
-   prolazu ne pita, pa glavno dizanje nikad ne pomera ni naviše ni naniže.
+   granica po treningu — pošto pomoćni rad više nema šta da da, i vraća se ka propisu čim mu
+   mesto dozvoli. Nedeljni cilj se u tom prolazu ne pita, pa glavno dizanje nikad ne pomera.
 
 **Jedna kazna ovo nije mogla.** Serija mrtvog dizanja pomera 2,5 serije nedeljnog cilja (leđa,
 gluteus, zadnja loža, kvadriceps). Kazna koja bi blokirala pomeranje zbog cilja morala bi da
 bude veća od 2,5, a da bi granica oporavka (4 po seriji) i dalje mogla da je spusti, manja od
 1,5. Prvi pokušaj — potpuno zaključano glavno dizanje — dao je trening sa **18** serija jednog
-mišića, jer granica više nije imala šta da seče.
+mišića, jer granica više nije imala šta da seče. (Izmereno sa odbačenim budžetom „jedna više za
+svaki nivo"; sa budžetom koji je ušao, zaključano glavno dizanje daje 14 — i dalje preko
+granice, pa zaključavanje ostaje odbačeno.)
 
 ### Glavna dizanja na početku treninga
 
@@ -107,7 +115,8 @@ cilj nijedno.
 
 ## Provera
 
-- `dotnet test`: **741** (bilo 715); `npm test`: **188** (bilo 184); `npm run build` prolazi.
+- `dotnet test`: **750** (bilo 715; 741 pre revizije); `npm test`: **188** (bilo 184);
+  `npm run build` prolazi.
 - Novi testovi: `StrengthBlockCompositionTests` (nijedno glavno dizanje ispod propisa dok pomoćni
   rad za isti mišić u istom treningu može još da da — bilo 373; nijedno iznad propisa; blok
   hipertrofije nema glavnih dizanja; nijedna vežba koja ne podnosi nizak opseg nije glavno
@@ -116,8 +125,10 @@ cilj nijedno.
   tek pošto je pomoćni rad na dnu), budžet po cilju, opseg po zastavici, `MainLiftsFirst`, i test
   MRV-a šablona i za blok snage na sva tri nivoa.
 - Merenje vraćanjem (commit, vraćeno pravilo, rebuild), svako posebno: budžet — 3 od 738;
-  opseg za vežbe koje ga ne podnose — 9 od 738; glavna dizanja u balansiranju — 7 od 738;
-  redosled — 2 od 741.
+  opseg za vežbe koje ga ne podnose — 9 od 738; redosled — 2 od 741. Glavna dizanja u
+  balansiranju zavise od toga šta se vraća: prvi prolaz bez zakucavanja, a drugi zadržan — 7
+  od 738; ceo alokator od pre ove grane (jedan prolaz, bez glavnih dizanja) — 6 od 738 (izmerila
+  revizija), odnosno 7 od 750 na konačnoj verziji, sa testom vraćanja mesta pomoćnom radu.
 - End-to-end, uživo, napredni nivo, blok snage, prva nedelja:
 
   | Šablon, trening | Predlog / propis × opseg |
@@ -131,11 +142,37 @@ cilj nijedno.
 - U čarobnjaku plana (375 px, bez prelivanja): isti šablon za blok hipertrofije i za blok snage
   pokazuje dva različita sastava — blok snage počinje Legs A leg press-om.
 
+## Posle revizije
+
+Revizija (dva recenzenta, svaki nalaz srednje težine pred dva osporavača) potvrdila je dva
+nalaza, i oba su ispravljena:
+
+- **Mesto koje oslobodi rez glavnog dizanja ostajalo je prazno.** Drugi prolaz seče celim
+  serijama, pa često stane ispod granice po treningu sa mestom viška, a prolaz pomoćnog rada se
+  posle toga nije ponavljao. Na Pull danu Push/Pull/Legs (početnik, snaga) face pull je ostajao
+  na 3, iako četvrta serija ništa ne probija, a leđima i ramenima fali — rezultat nije bio ni
+  lokalni optimum sopstvene cene, u 12 od 351 ugrađene nedelje bloka snage. Prolazi se sada
+  smenjuju dok nijedan ništa ne pomera. Vraćanje ove ispravke: pada 1 od 750 (baš taj slučaj
+  kao test).
+- **Uputstvo je pogrešno ograničavalo pravilo na ugrađene šablone.** Novi pasus je stajao
+  iznad rečenice „Ovo važi samo za ugrađene šablone", pa je izgledalo da se na nju odnosi. Sada
+  stoji posle nje i kaže da važi i za lični šablon, a red „Ciljni volumen" u tabeli ličnog
+  šablona pominje izuzetak.
+
+Od nalaza niske težine ispravljeni su: glavno dizanje se čita iz opsega plana (gore);
+objašnjenje posle treninga više ne okrivljuje nedeljni cilj za glavno dizanje — vraćeno ka
+propisu nema oznaku, a spušteno se objašnjava samo MRV-om ili granicom po treningu (ranije je
+incline bench spušten zbog MRV-a grudi dobijao oznaku „Triceps"; vraćanje ove ispravke: 2 od
+750); komentari koji su govorili „jedna složena vežba više" za blok snage, što važi samo za
+naprednog; brojevi 373, 18 i merenje vraćanjem, sada sa tačnim značenjem; test MRV-a sa ciljem
+iznad MRV-a, što proizvodnja ne može da da.
+
 ## Ograničenja
 
 - Upper/Lower ni sada ne daje naprednom vežbaču potisak iznad glave: oba dana za gornji deo ga
   navode tek kao treću složenu vežbu. Premestiti ga bi promenilo i sastav hipertrofije.
 - Korisnička vežba podrazumevano podnosi nizak opseg; ekran za pravljenje vežbe to polje ne
-  nudi. Korisnik koji napravi svoj iskorak dobiće ga u bloku snage na 3–6.
+  nudi. Korisnik koji napravi svoj iskorak i stavi ga u ugrađeni šablon ne može — ugrađeni
+  šabloni koriste samo sistemske vežbe — a u ličnom šablonu opseg ionako bira sam.
 - Već generisani blokovi ne menjaju sastav ni opsege. Balansiranje se ponovo pokreće posle
   završenog treninga, pa tekući blok snage dobija zaštitu glavnih dizanja od tada.

@@ -325,7 +325,7 @@ konačna reč:
 |---|---|
 | Periodizacija | tvoj opseg se pomera kroz nedelje kao i svaki drugi (linearan model: više ponavljanja na startu, manje pred kraj) |
 | Deload | poslednja nedelja polovi **tvoj** broj serija, vraća **tvoj** opseg ponavljanja i diže ciljni RIR za dva |
-| Ciljni volumen | predlog serija se pomera ka cilju **te nedelje** (vidi „Nedeljni volumen"), ali ostaje blizu tvog broja |
+| Ciljni volumen | predlog serija se pomera ka cilju **te nedelje** (vidi „Nedeljni volumen"), ali ostaje blizu tvog broja — osim glavnih dizanja u bloku snage (složenih vežbi kojima si dao opseg do 6), koja ostaju tačno na tvom broju |
 | Progresija iz serija | opterećenje raste iz onoga što stvarno odradiš, isto kao inače |
 
 Primer (napredan nalog): uneseš Bench Press **6 serija × 5–8**, cilj hipertrofija, linearan
@@ -751,13 +751,17 @@ umesto jedne: snaga je vezana za sam pokret i raste sa tim koliko se često viš
 treniraju. U bloku snage glavna dizanja idu na početak treninga, i pre složene vežbe koja je tu
 pomoćni rad — kod Legs Specialization leg press ide pre bugarskog čučnja.
 
-**Glavna dizanja bloka snage stoje na propisu.** Balansiranje volumena ih ne pomera ni naviše
-ni naniže zbog nedeljnog cilja: njihove serije su posao bloka, a volumen po mišiću se podešava
-pomoćnim radom oko njih. Spustiti ih može samo granica oporavka — MRV nedelje ili granica po
-treningu — i to tek kad pomoćni rad za isti mišić više nema šta da da.
-
 Ovo važi **samo za ugrađene šablone**. Lični šablon se ne prekraja: u trening ulaze tačno
 tvoje vežbe, pa i dan sa jednom vežbom ostaje dan sa jednom vežbom.
+
+**Glavna dizanja bloka snage stoje na propisu** — i kod ugrađenog i kod ličnog šablona.
+Glavno dizanje je složena vežba u opsegu snage: kod ugrađenog šablona svaka koja ga podnosi,
+kod ličnog svaka kojoj si dao opseg do 6 (leg press na 12–15 je u tvom bloku snage pomoćni rad,
+a iskorak na 3–5 dizanje koje si izabrao da opteretiš). Balansiranje volumena ih ne pomera ni
+naviše ni naniže zbog nedeljnog cilja: njihove serije su posao bloka, a volumen po mišiću se
+podešava pomoćnim radom oko njih. Spustiti ih može samo granica oporavka — MRV nedelje ili
+granica po treningu — i to tek kad pomoćni rad za isti mišić više nema šta da da; kad glavno
+dizanje padne za celu seriju, mesto koje ostane vraća se pomoćnom radu.
 
 **Granica po treningu.** Predlog serija cilja nedelju, ali se nedelja odrađuje trening po
 trening: jedan mišić u jednom treningu dobija najviše oko **11 serija** (sekundarni mišić broji

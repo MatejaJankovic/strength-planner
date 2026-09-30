@@ -94,8 +94,9 @@ public class WorkoutTemplateResolver : IWorkoutTemplateResolver
 
     /// <summary>
     /// Ugrađeni šablon je ponuda: nosi više vežbi nego što trening dobija, a koliko ih i
-    /// kojih ulazi bira nivo iskustva - i cilj bloka, jer blok snage dobija složenu vežbu
-    /// više. Skraćivanje se dešava ovde, da bi generator dobio isti oblik kao za lični šablon.
+    /// kojih ulazi bira nivo iskustva - i cilj bloka, jer blok snage ima najmanje dve složene
+    /// vežbe po treningu i glavna dizanja stavlja napred. Skraćivanje se dešava ovde, da bi
+    /// generator dobio isti oblik kao za lični šablon.
     /// </summary>
     private async Task<ResolvedTemplate?> ResolveBuiltInAsync(
         Guid userId,

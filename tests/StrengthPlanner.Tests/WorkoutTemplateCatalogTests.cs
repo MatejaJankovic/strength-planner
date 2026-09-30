@@ -392,7 +392,7 @@ public class WorkoutTemplateCatalogTests
     public void EveryTemplate_StaysUnderMrvForEveryMuscle(ExperienceLevel level, Goal goal)
     {
         // Plan koji već na startu stoji iznad MRV tera sistem u deload pre nego što je
-        // išta naučio o korisniku. Blok snage ima složenu vežbu više po treningu, pa se
+        // išta naučio o korisniku. Blok snage ima najmanje dve složene vežbe po treningu (naprednom jednu više), pa se
         // proverava i on.
         var breaches = Breaches(level, (sets, band) => sets > band.Mrv, "prelazi MRV", band => band.Mrv, goal: goal);
 
