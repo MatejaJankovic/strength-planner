@@ -232,9 +232,12 @@ zaista dobija, a koliko ih uđe i koje odlučuje tvoj nivo iskustva (složene ve
 | **Linearan** | 6 nedelja | serije rastu (srednji nivo: 3 → 4 → 4 → 5 → 5), a ponavljanja i rezerva padaju: najteže su dve nedelje pred deload |
 | **Obrnut** | 6 nedelja | teško dok si svež, volumen pred kraj |
 
-> Čarobnjak predlaže model po nivou i cilju: početniku linearan, a ostalima linearan za
-> hipertrofiju i obrnut za snagu — kako to kaže i priručnik. Za rast mišića nijedan model nije
-> bolji od drugog kad je volumen isti, pa predlog ne tvrdi suprotno.
+> Čarobnjak predlaže linearan model za svaki blok. Priručnik obrnut model vezuje za snagu, ali
+> literatura to ne podržava: u direktnom poređenju linearan je dao veću snagu od obrnutog
+> (Prestes i sar. 2009), a pregled istraživanja zaključuje da obrnut nije efikasniji ni za
+> snagu (González-Ravé i sar. 2022). Za rast mišića nijedan model nije bolji kad je volumen
+> isti. Obrnut model i dalje možeš da izabereš, a promena cilja bloka ne menja model koji si
+> izabrao.
 >
 > Linearan blok počinje lakši po **rezervi**, ne po ponavljanjima: kod hipertrofije opseg 8–12
 > već stoji na gornjoj granici od 12, preko koje procena maksimuma ne važi. Isto zato faza
@@ -502,7 +505,9 @@ na cilju.
 **„Nedelja N je pretvorena u deload."** — sistem je iz upravo završene nedelje izmerio
 dovoljno umora da rasterećenje pomeri unapred. Serije su prepolovljene, opterećenje spušteno
 na 90% onoga što si stvarno koristio, a ciljni RIR podignut za dva. Ako je blok već imao planirani deload, on otpada —
-mezociklus nosi jedno rasterećenje.
+mezociklus nosi jedno rasterećenje. Zato se deload unapred povlači **najviše jednom po bloku**.
+Ako umor stigne i posle njega, blok ide do kraja bez drugog deload-a, a sledeći blok kreće
+od novog propisa.
 
 **„Blok X od Y je otvoren."** — završio si ceo blok dugoročnog plana, pa je sledeći
 generisan odmah, od tvojih sadašnjih 1RM vrednosti, i već je aktivan.
@@ -528,9 +533,10 @@ stimulativnih serija odradio i gde to pada u odnosu na tvoje granice.
 - **MAV** — naučena ciljna vrednost mišića
 - **MRV** — plafon iznad kog nema oporavka
 
-Marker cilja prati **nedelju**, a ne MAV: nedelja volumena gađa iznad MAV-a (do MRV-a),
-nedelja intenziteta ispod njega, a blok snage niže od hipertrofijskog — teže serije koštaju
-više oporavka. Kada se razlikuju, u redu piše i jedno i drugo: `cilj ove nedelje 22
+Marker cilja prati **nedelju**, a ne MAV: nedelja sa više serija od osnovne gađa iznad MAV-a
+(do MRV-a), a nedelja sa manje serija ispod njega. U linearnom bloku to su poslednje, odnosno
+prve nedelje. Blok snage gađa niže od hipertrofijskog, jer teže serije koštaju više
+oporavka. Kada se razlikuju, u redu piše i jedno i drugo: `cilj ove nedelje 22
 (MAV 16)`. U deload nedelji cilja nema — manji volumen je tamo namera.
 
 Boja trake govori da li si ispod, u zoni ili iznad. **Ne broji se svaka serija isto**:
@@ -739,7 +745,7 @@ MRV. Nijedan signal sam ne može da pokrene deload — najteži nosi 0.35 naspra
 se bar dva moraju složiti, i to **i u krajnjem slučaju**: nedelja u kojoj je baš svaka serija
 išla do otkaza nosi taj jedan signal (0.25) i sama ne pokreće deload; uz stvaran pad snage
 ili volumen na MRV-u ga pokreće. Kad se pokrene: serije prepolovljene, opterećenje 90%
-stvarno korišćenog, ciljni RIR podignut za dva.
+stvarno korišćenog, ciljni RIR podignut za dva. Pokreće se najviše jednom po bloku.
 
 **Deload rasterećuje i napor.** Ciljni RIR deload nedelje je tvoj ciljni RIR **+2**
 (hipertrofija 3, snaga 4). Pad opterećenja od 10% po Epley-u vredi oko tri ponavljanja, pa
