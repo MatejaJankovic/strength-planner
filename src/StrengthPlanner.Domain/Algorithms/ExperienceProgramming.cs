@@ -17,17 +17,33 @@ namespace StrengthPlanner.Domain.Algorithms;
 /// isolation — <i>"2-3 složene vežbe po treningu"</i> for a beginner against
 /// <i>"do 3 složene vežbe nedeljno, pretežno izolacije"</i> for an advanced lifter;</item>
 /// <item>sets per exercise — beginners run <i>"srednji volumen, ali visok intenzitet"</i>,
-/// intermediates <i>"veći volumen"</i>, advanced <i>"manji volumen, uz napredne
-/// tehnike"</i>;</item>
-/// <item>where the volume landmarks start, because a beginner's set is a weaker stimulus
-/// and their recovery is less developed;</item>
+/// intermediates <i>"veći volumen"</i>; the handbook's <i>"manji volumen, uz napredne
+/// tehnike"</i> for advanced lifters is not followed, see
+/// <see cref="StartingSetsPerExercise"/>;</item>
+/// <item>where the volume landmarks start, because a beginner grows on less volume and
+/// has less work capacity, and an advanced lifter needs more to keep growing;</item>
 /// <item>whether fatigue should pull a deload forward at all — the handbook is blunt that
 /// <i>"početnici ne treba da razmišljaju o ovome"</i>.</item>
 /// </list>
 /// </summary>
 public static class ExperienceProgramming
 {
-    /// <summary>Working sets per exercise the plan starts with.</summary>
+    /// <summary>
+    /// Working sets per exercise the plan starts with.
+    ///
+    /// Never fewer for a level whose volume landmarks sit higher (<see cref="LandmarkScale"/>).
+    /// The advanced lifter used to start at three - the handbook's <i>"manji volumen, uz
+    /// napredne tehnike"</i> - while their landmarks were scaled by 1.2, the highest of the
+    /// three levels. The two pulled in opposite directions: a lifter who did exactly what the
+    /// plan prescribed saw "below MEV" on the analytics screen, and balancing pushed every
+    /// exercise up to its drift limit to patch it. The handbook's smaller volume assumes the
+    /// advanced techniques that carry the rest of the stimulus (drop sets, rest-pause), and
+    /// this application does not model them; without them, fewer sets is simply less
+    /// stimulus for the lifter who needs the most (Schoenfeld et al. 2019: in trained men,
+    /// more sets gave more hypertrophy). Measured over every training week of the built-in
+    /// templates of three days or more, the advanced hypertrophy prescription fell below MEV
+    /// in 153 of 240 muscle-weeks on the flat model at three sets, and in 75 at four.
+    /// </summary>
     public static int StartingSetsPerExercise(ExperienceLevel level) => level switch
     {
         // Srednji volumen uz visok intenzitet: napredak je još linearan i dolazi
@@ -37,8 +53,9 @@ public static class ExperienceProgramming
         // Veći volumen — ovde je volumen glavna poluga napretka.
         ExperienceLevel.Intermediate => 4,
 
-        // Manji volumen po vežbi, ali težih i preciznije biranih serija.
-        ExperienceLevel.Advanced => 3,
+        // Isto koliko i srednji nivo: granice su mu više (×1.2), a napredne tehnike, uz
+        // koje priručnik traži manji volumen, aplikacija ne modeluje.
+        ExperienceLevel.Advanced => 4,
 
         _ => 3
     };
@@ -96,10 +113,13 @@ public static class ExperienceProgramming
     /// <summary>
     /// Multiplier applied to the seeded MEV/MAV/MRV values.
     ///
-    /// A beginner's set is a weaker stimulus — they cannot yet recruit the largest motor
-    /// units — and their recovery capacity is undeveloped, so the whole band sits lower.
-    /// An advanced lifter tolerates and needs more. Personal adaptation then moves from
-    /// this starting point rather than from the population average.
+    /// A beginner grows on less volume - untrained muscle responds to almost any stimulus -
+    /// and has the least work capacity, so the whole band sits lower. An advanced lifter
+    /// needs more volume to keep growing and tolerates it. Personal adaptation then moves
+    /// from this starting point rather than from the population average.
+    ///
+    /// The reason used to be given the wrong way round: "a beginner's set is a weaker
+    /// stimulus" would call for <i>more</i> sets, not fewer.
     /// </summary>
     public static decimal LandmarkScale(ExperienceLevel level) => level switch
     {

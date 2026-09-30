@@ -404,9 +404,9 @@ public class WorkoutTemplateCatalogTests
     /// pogađa — plan ispod MEV ne stimuliše rast. Meri se na srednjem nivou, koji je
     /// referenca sistema (neskalirane seed granice, ponašanje nepromenjeno od početka).
     ///
-    /// Početnik i napredni vežbač ostaju ispod MEV za pojedine grupe i to nije stvar
-    /// šablona nego njihovih konstanti — vidi
-    /// <see cref="LevelConstants_CapTheWeekBelowTheAdvancedLifterOwnMev"/>.
+    /// Početnik i napredni vežbač ostaju ispod MEV za pojedine grupe. Kod naprednog je deo
+    /// toga strukturan - vidi
+    /// <see cref="AnAdvancedLifter_CannotReachChestAndBackMev_InOneSessionAWeek"/>.
     /// </summary>
     [Fact]
     public void TemplatesOfThreeDaysOrMore_ReachMevAtTheReferenceLevel()
@@ -455,32 +455,63 @@ public class WorkoutTemplateCatalogTests
     }
 
     /// <summary>
-    /// Zabeležena granica sistema, ne šablona.
-    ///
-    /// Naprednom vežbaču sistem daje 3 serije po vežbi i 6 vežbi po treningu, a njegove
-    /// granice volumena množi sa 1.2. Zbir skaliranih MEV vrednosti tada premašuje ono
-    /// što nedelja uopšte može da isporuči na manje od šest treninga — nijedan šablon to
-    /// ne može da popravi. Ako se konstante nivoa jednog dana usklade, ovaj test će pasti
-    /// i treba ga obrisati.
+    /// Nivo čije granice volumena stoje više ne sme da krene sa manje serija po vežbi. Do
+    /// runde 14 je napredni nivo imao granice ×1.2 i 3 serije, a srednji ×1.0 i 4: vežbač
+    /// koji je odradio tačno propisano gledao je „ispod MEV-a" na ekranu Analitika.
     /// </summary>
     [Fact]
-    public void LevelConstants_CapTheWeekBelowTheAdvancedLifterOwnMev()
+    public void AHigherVolumeBand_NeverStartsWithFewerSetsPerExercise()
     {
-        const int level3DayTemplateDays = 3;
+        var levels = Enum.GetValues<ExperienceLevel>();
 
-        var deliverable = level3DayTemplateDays
-                          * ExperienceProgramming.ExercisesPerSession(ExperienceLevel.Advanced)
-                          * ExperienceProgramming.StartingSetsPerExercise(ExperienceLevel.Advanced);
+        foreach (var higher in levels)
+        foreach (var lower in levels.Where(level =>
+                     ExperienceProgramming.LandmarkScale(level) < ExperienceProgramming.LandmarkScale(higher)))
+        {
+            Assert.True(
+                ExperienceProgramming.StartingSetsPerExercise(higher) >= ExperienceProgramming.StartingSetsPerExercise(lower),
+                $"{higher} ima više granice od {lower}, a kreće sa manje serija.");
+        }
+    }
 
-        var requiredMev = ExerciseCatalog.VolumeLandmarks.Sum(seed =>
-            ExperienceProgramming
+    /// <summary>
+    /// Zabeležena granica sistema, ne konstanti nivoa: MEV naprednog vežbača za grudi i leđa
+    /// (12) je iznad granice serija po treningu (11). Šablon koji mišić trenira u jednom
+    /// treningu nedeljno - Push/Pull/Legs od tri dana - zato ostaje ispod MEV-a i posle
+    /// balansiranja, i nijedna konstanta nivoa to ne može da popravi. Za naprednog su
+    /// šabloni sa dva treninga po mišiću.
+    ///
+    /// Zamenio je test koji je isto tvrdio zbirom (3 dana × 6 vežbi × 3 serije = 54 naspram
+    /// zbira MEV vrednosti 90). Taj račun je bio pogrešan: serija složene vežbe puni više
+    /// grupa, pa zbir MEV-a nije ono što nedelja mora da isporuči. Sa 4 serije je i dalje
+    /// prolazio (72 &lt; 90), iako je pravi manjak pao sa 153 na 75 nedelja-mišića.
+    /// </summary>
+    [Fact]
+    public void AnAdvancedLifter_CannotReachChestAndBackMev_InOneSessionAWeek()
+    {
+        var pushPullLegs = WorkoutTemplateCatalog.GetByKey("push-pull-legs")!;
+
+        foreach (var muscle in new[] { "Chest", "Back" })
+        {
+            var seed = ExerciseCatalog.VolumeLandmarks.Single(landmark => landmark.Muscle == muscle);
+            var mev = ExperienceProgramming
                 .ScaleLandmarks(new VolumeLandmarkValues(seed.Mev, seed.Mav, seed.Mrv), ExperienceLevel.Advanced)
-                .Mev);
+                .Mev;
 
-        Assert.True(
-            deliverable < requiredMev,
-            $"Napredni nivo sada isporučuje {deliverable} serija nedeljno na tri dana, "
-            + $"a zbir njegovih MEV vrednosti je {requiredMev} — ograničenje više ne važi.");
+            Assert.True(mev > TrainingConstants.MaxSetsPerMusclePerSession, $"{muscle}: MEV {mev}.");
+
+            var week = TemplateWeekSimulation.Build(
+                pushPullLegs,
+                ExperienceLevel.Advanced,
+                Goal.Hypertrophy,
+                PeriodizationModel.Flat,
+                1);
+            var sessionsTrainingIt = Enumerable.Range(0, pushPullLegs.Days.Count)
+                .Count(dayIndex => week.InSession(dayIndex, muscle) >= 1m);
+
+            Assert.Equal(1, sessionsTrainingIt);
+            Assert.True(week.Weekly(muscle) < mev, $"{muscle}: {week.Weekly(muscle)} serija.");
+        }
     }
 
     /// <summary>
