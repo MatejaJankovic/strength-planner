@@ -46,6 +46,24 @@ public class SessionCompositionTests
     }
 
     [Fact]
+    public void MainLiftsFirst_MovesOnlyTheMainLifts_AndKeepsEveryOtherOrder()
+    {
+        string[] legsA = ["Bulgarian Split Squat", "Leg Press", "Leg Extension", "Calf Raise"];
+
+        var ordered = SessionComposition.MainLiftsFirst(legsA, name => name == "Leg Press");
+
+        Assert.Equal(new[] { "Leg Press", "Bulgarian Split Squat", "Leg Extension", "Calf Raise" }, ordered);
+    }
+
+    [Fact]
+    public void MainLiftsFirst_LeavesASessionWithoutMainLiftsAlone()
+    {
+        string[] day = ["Bench Press", "Cable Fly"];
+
+        Assert.Equal(day, SessionComposition.MainLiftsFirst(day, _ => false));
+    }
+
+    [Fact]
     public void ForLevel_GivesAnAdvancedLifterOneCompoundAndTheRestIsolation()
     {
         // Priručnik: "do 3 složene vežbe nedeljno, pretežno izolacije".

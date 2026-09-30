@@ -90,4 +90,22 @@ public static class SessionComposition
         // Redosled iz šablona je trenažno pravilo, a ne slučajnost — složeno pre izolacije.
         return chosenIndices.OrderBy(index => index).Select(index => ordered[index]).ToList();
     }
+
+    /// <summary>
+    /// The same session with its main lifts first, everything else in the order it had.
+    ///
+    /// Templates put the deepest compound first, which is the handbook's rule - <i>"Složene
+    /// vežbe radiš pre izolacionih vežbi, jer su zamornije"</i> - but in a strength block not
+    /// every compound is a strength lift. Legs Specialization opens its leg days with a
+    /// Bulgarian split squat, a single-leg RDL and a step-up, which a strength block keeps
+    /// at 8-12; left in template order, the day's 3-6 lift came second, after the accessory
+    /// had already tired the same muscles.
+    /// </summary>
+    public static IReadOnlyList<T> MainLiftsFirst<T>(IReadOnlyList<T> session, Func<T, bool> isMainLift)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+        ArgumentNullException.ThrowIfNull(isMainLift);
+
+        return session.Where(isMainLift).Concat(session.Where(exercise => !isMainLift(exercise))).ToList();
+    }
 }

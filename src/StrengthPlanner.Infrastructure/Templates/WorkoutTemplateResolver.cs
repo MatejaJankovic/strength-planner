@@ -150,11 +150,13 @@ public class WorkoutTemplateResolver : IWorkoutTemplateResolver
             .Select(day => new ResolvedTemplateDay(
                 day.Name,
                 SessionComposition
-                    .ForLevel(
-                        day.Exercises.Select(name => exerciseByName[name]).ToList(),
-                        exercise => exercise.Type == ExerciseType.Compound,
-                        experienceLevel,
-                        goal)
+                    .MainLiftsFirst(
+                        SessionComposition.ForLevel(
+                            day.Exercises.Select(name => exerciseByName[name]).ToList(),
+                            exercise => exercise.Type == ExerciseType.Compound,
+                            experienceLevel,
+                            goal),
+                        exercise => GoalPrescriptions.IsStrengthLift(goal, exercise.Type, exercise.SuitsLowReps))
                     .Select(exercise => new ResolvedTemplateExercise(exercise, null, null, null))
                     .ToList()))
             .ToList();

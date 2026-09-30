@@ -101,11 +101,14 @@ public class TemplateService : ITemplateService
             .Select(day => new WorkoutTemplateDayDto
             {
                 Name = day.Name,
-                Exercises = SessionComposition.ForLevel(
-                    day.Exercises,
-                    ExerciseCatalog.IsCompound,
-                    experienceLevel,
-                    goal)
+                Exercises = SessionComposition.MainLiftsFirst(
+                    SessionComposition.ForLevel(
+                        day.Exercises,
+                        ExerciseCatalog.IsCompound,
+                        experienceLevel,
+                        goal),
+                    name => ExerciseCatalog.Find(name) is { } exercise
+                            && GoalPrescriptions.IsStrengthLift(goal, exercise.Type, exercise.SuitsLowReps))
             })
             .ToList();
     }

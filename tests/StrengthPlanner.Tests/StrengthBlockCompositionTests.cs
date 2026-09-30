@@ -95,6 +95,26 @@ public class StrengthBlockCompositionTests
         }
     }
 
+    /// <summary>
+    /// U svakom treningu bloka snage glavna dizanja stoje ispred ostalog - i ispred složene
+    /// vežbe koja je tu pomoćni rad.
+    /// </summary>
+    [Fact]
+    public void EveryStrengthSession_OpensWithItsMainLifts()
+    {
+        foreach (var week in TemplateWeekSimulation.EveryTrainingWeek().Where(week => week.Goal == Goal.Strength))
+        foreach (var session in week.Slots.GroupBy(slot => slot.SessionId))
+        {
+            var flags = session.Select(slot => slot.IsMainLift).ToList();
+            var lastMain = flags.LastIndexOf(true);
+            var firstOther = flags.IndexOf(false);
+
+            Assert.True(
+                lastMain < 0 || firstOther < 0 || lastMain < firstOther,
+                $"{week.Name}: glavno dizanje posle pomoćnog rada.");
+        }
+    }
+
     private static int LowestAllowed(ExerciseSetSlot slot)
     {
         return Math.Min(

@@ -95,11 +95,14 @@ internal static class TemplateWeekSimulation
 
         for (var dayIndex = 0; dayIndex < template.Days.Count; dayIndex++)
         {
-            var exerciseNames = SessionComposition.ForLevel(
-                template.Days[dayIndex].Exercises,
-                ExerciseCatalog.IsCompound,
-                level,
-                goal);
+            var exerciseNames = SessionComposition.MainLiftsFirst(
+                SessionComposition.ForLevel(
+                    template.Days[dayIndex].Exercises,
+                    ExerciseCatalog.IsCompound,
+                    level,
+                    goal),
+                name => ExerciseCatalog.Find(name) is { } seed
+                        && GoalPrescriptions.IsStrengthLift(goal, seed.Type, seed.SuitsLowReps));
 
             for (var exerciseIndex = 0; exerciseIndex < exerciseNames.Count; exerciseIndex++)
             {
