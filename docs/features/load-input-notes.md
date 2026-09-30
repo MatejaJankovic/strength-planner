@@ -78,3 +78,15 @@ opterećuje spolja, ćutanje za `Bodyweight` uključujući plank na nuli, ćutan
 nije poznata, i da nula pobeđuje podsetnik.
 
 Ukupno: 613 testova na serveru (bez izmena), 144 → 150 na klijentu.
+
+## Ispravka (runda 14)
+
+Ekran je od ove grane pa do runde 14 uz **svaku** spravu na nuli pisao „prazna šipka je već oko
+20 kg" — i uz sajlu, mašinu i bučicu, koje šipku nemaju. Beleška runde 13 u `CLAUDE.md` navodi
+da je prva verzija upozorenja bila netačna baš zbog te rečenice i da je ispravljena, ali
+ispravka nije stigla u kod: `git log -S "prazna šipka"` pokazuje jedan jedini commit, ovaj. Nađeno
+tek na E2E pregledu granice serija po treningu, na Cable Fly i Triceps Pushdown. Sada upozorenje
+ima dve verzije (`zero-on-barbell` i `zero-on-loaded`), i test traži da rečenica o šipci stoji
+samo uz šipku. Ni kod šipke se više ne tvrdi 20 kg kao činjenica o toj vežbi: Skull Crusher je
+u katalogu `Barbell`, a radi se najčešće sa EZ šipkom od oko pola toga — tekst sada kaže da i
+prazna šipka ima težinu, uz olimpijsku kao primer.

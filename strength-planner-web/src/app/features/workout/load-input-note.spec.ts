@@ -13,9 +13,10 @@ describe('loadInputNote', () => {
   });
 
   it('upozorava na nulu kod svega što se opterećuje spolja', () => {
-    expect(loadInputNote('Barbell', 0)).toBe('zero-on-loaded');
+    expect(loadInputNote('Barbell', 0)).toBe('zero-on-barbell');
     expect(loadInputNote('Dumbbell', 0)).toBe('zero-on-loaded');
     expect(loadInputNote('Machine', 0)).toBe('zero-on-loaded');
+    expect(loadInputNote('Cable', 0)).toBe('zero-on-loaded');
   });
 
   /**
@@ -31,6 +32,17 @@ describe('loadInputNote', () => {
   it('ćuti kada sprava nije poznata', () => {
     expect(loadInputNote(undefined, 0)).toBeNull();
     expect(loadInputNote('', 0)).toBeNull();
+  });
+
+  /**
+   * Samo šipka ima težinu praznu - rečenica o 20 kg uz sajlu ili bučicu bila bi netačna, a
+   * tako je stajala na ekranu od runde 13.
+   */
+  it('pominje praznu šipku samo kod šipke', () => {
+    expect(loadInputNote('Barbell', 0)).toBe('zero-on-barbell');
+    expect(loadInputNote('Cable', 0)).not.toBe('zero-on-barbell');
+    expect(loadInputNote('Dumbbell', 0)).not.toBe('zero-on-barbell');
+    expect(loadInputNote('Machine', 0)).not.toBe('zero-on-barbell');
   });
 
   /** Nula je hitnija od podsetnika, pa kod bučice na nuli ide upozorenje. */

@@ -419,8 +419,8 @@ se pomera po 2 kg po bučici (10, 12, 14…), pa bi uneti zbir davao predloge ko
 nema — 42 kg tamo gde postoje 40 i 44. Isto važi i za tonažu i za procenu maksimuma: svi
 brojevi za vežbu sa bučicama govore o jednoj strani, dosledno.
 
-**0 kg kod vežbe koja se opterećuje spolja** aplikacija označava kao grešku: prazna šipka je
-oko 20 kg. Serija upisana na nuli ne daje ni procenu maksimuma ni tonažu, a iz nje se ne može
+**0 kg kod vežbe koja se opterećuje spolja** aplikacija označava kao grešku (kod šipke dodaje i
+da i prazna šipka ima težinu — olimpijska oko 20 kg). Serija upisana na nuli ne daje ni procenu maksimuma ni tonažu, a iz nje se ne može
 izvesti ni predlog za sledeći put. Vežbe koje nosi sopstvena masa su izuzete — tamo 0 znači
 „sopstvenom masom", što je tačan unos, a plank se i loguje na nuli.
 
