@@ -713,7 +713,7 @@ nikad ne spušta opterećenje.
 težine: iz 8–12 sa RIR-om 1 može oko 13% više, pa korak šipke od ~19 kg naviše staje i pravila
 iznad važe bez izmene. Iz 10–20, opsega izolacija, može oko 27% više, pa i bučica od 8 kg sa
 korakom od 2 kg (25%) staje u sam opseg. Lak teg u uskom opsegu je drugačiji — ista bučica u
-8–12 (lični šablon, ili blok napravljen pre runde 14) je skok posle koga bi po Epley-u ostalo
+8–12 (lični šablon, ili blok napravljen ranije) je skok posle koga bi po Epley-u ostalo
 tri-četiri ponavljanja, pet ispod dna opsega. Tada korak dolazi tek kad ga **kapacitet**
 svake serije upija: ponavljanja plus rezerva koja je zaista ostala (za taj primer 17 uz RIR 1,
 ili 15 uz RIR 3). U 10–20 isto važi za bučicu od 5 kg: korak od 2 kg je 40%, pa dolazi posle

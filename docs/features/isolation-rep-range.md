@@ -126,5 +126,6 @@ Ukupno: 522 → 537 testova na serveru, 139 na klijentu (bez izmena).
 
 Izolacija više ne nosi 8–12, nego svoj opseg **10–20**, u oba bloka. Pravilo iz ove beleške
 (opseg prati vežbu, a RIR blok) ostaje isto; promenio se samo broj. Brojevi u testovima
-iznad (30 kg za bočno podizanje u bloku snage) važe za pravilo kakvo je bilo tada; danas je to
-27.5 kg. Vidi [rep-ranges-by-role.md](rep-ranges-by-role.md).
+iznad (30 kg za bočno podizanje u bloku snage) važe za pravilo kakvo je bilo tada, i uz korak
+od 2.5 kg koji je test upisao ručno. Bučica u aplikaciji ima korak od 2 kg, pa je danas to
+28 kg. Vidi [rep-ranges-by-role.md](rep-ranges-by-role.md).
