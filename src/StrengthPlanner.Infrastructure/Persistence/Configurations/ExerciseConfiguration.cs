@@ -27,6 +27,12 @@ public class ExerciseConfiguration : IEntityTypeConfiguration<Exercise>
             .HasPrecision(3, 2)
             .HasDefaultValue(0m);
 
+        // Namerno bez HasDefaultValue: za bool bi EF izostavio kolonu kad god je vrednost
+        // false (CLR podrazumevana), pa bi baza svaki upisan false pregazila svojim true.
+        // Zatečeni redovi dobijaju true u samoj migraciji - do sada su i bili propisivani
+        // u opsegu snage - a sistemske vežbe koje ga ne podnose poravnava DbSeeder.
+        builder.Property(e => e.SuitsLowReps);
+
         // Enum -> string radi čitljivosti u bazi.
         builder.Property(e => e.Type)
             .HasConversion<string>()

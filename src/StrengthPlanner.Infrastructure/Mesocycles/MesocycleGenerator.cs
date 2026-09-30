@@ -45,7 +45,11 @@ public class MesocycleGenerator : IMesocycleGenerator
         ResolvedTemplate? template;
         try
         {
-            template = await _templateResolver.ResolveAsync(userId, request.TemplateKey, cancellationToken);
+            template = await _templateResolver.ResolveAsync(
+                userId,
+                request.TemplateKey,
+                request.Goal,
+                cancellationToken);
         }
         catch (MissingTemplateExercisesException exception)
         {
@@ -253,8 +257,9 @@ public class MesocycleGenerator : IMesocycleGenerator
                     //
                     // Kada šablon ne kaže opseg, on se izvodi iz cilja I iz tipa vežbe:
                     // izolacija u bloku snage ostaje na 8-12, jer se snaga izražava u
-                    // složenim pokretima, a ne u trojci na bočnom podizanju.
-                    var exerciseSettings = GoalPrescriptions.ForExercise(goal, exercise.Type);
+                    // složenim pokretima, a ne u trojci na bočnom podizanju. Isto važi i za
+                    // složenu vežbu koja nizak opseg ne podnosi (iskorak, step-up, sklek).
+                    var exerciseSettings = GoalPrescriptions.ForExercise(goal, exercise.Type, exercise.SuitsLowReps);
                     var baseRepRangeMin = planned.RepRangeMin ?? exerciseSettings.RepRangeMin;
                     var baseRepRangeMax = planned.RepRangeMax ?? exerciseSettings.RepRangeMax;
 

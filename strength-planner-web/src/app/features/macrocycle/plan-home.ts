@@ -18,6 +18,7 @@ import {
 import { EmptyState } from '../../shared/components/empty-state/empty-state';
 import { repRangeLabel } from '../../shared/rep-range-label';
 import { Loading } from '../../shared/components/loading/loading';
+import { templateDaysFor } from './template-days';
 
 /**
  * Rezerva ako spisak šablona ne stigne: čarobnjak mora da ponudi bar nešto, a
@@ -414,14 +415,12 @@ export class PlanHome {
     return this.templates().find((template) => template.key === templateKey)?.note ?? null;
   }
 
-  /**
-   * Dani i vežbe izabranog šablona. Rezervni šablon nema dane, pa se prazan spisak vraća
-   * kao null da se ne bi prikazao prazan okvir.
-   */
-  protected templateDays(templateKey: string): WorkoutTemplateDto['days'] | null {
-    const days = this.templates().find((template) => template.key === templateKey)?.days;
-
-    return days && days.length > 0 ? days : null;
+  /** Dani i vežbe izabranog šablona, za cilj bloka (vidi templateDaysFor). */
+  protected templateDays(templateKey: string, goal: Goal): WorkoutTemplateDto['days'] | null {
+    return templateDaysFor(
+      this.templates().find((template) => template.key === templateKey),
+      goal,
+    );
   }
 
   /**

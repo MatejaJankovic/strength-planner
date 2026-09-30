@@ -18,12 +18,14 @@ public sealed record SetChangeCause(Guid MuscleGroupId, SetChangeReason Reason);
 /// </param>
 /// <param name="PerSessionWithoutSessionCeiling">Planned volume per session and muscle in that allocation.</param>
 /// <param name="Targets">The week's target and MRV per muscle group.</param>
+/// <param name="PerSession">Planned volume per session and muscle in the allocation itself.</param>
 public sealed record BalancedWeek(
     IReadOnlyDictionary<Guid, decimal> Stimulative,
     IReadOnlyDictionary<Guid, decimal> Raw,
     IReadOnlyDictionary<Guid, int> SetsWithoutSessionCeiling,
     IReadOnlyDictionary<(Guid SessionId, Guid MuscleGroupId), decimal> PerSessionWithoutSessionCeiling,
-    IReadOnlyDictionary<Guid, MuscleVolumeTarget> Targets);
+    IReadOnlyDictionary<Guid, MuscleVolumeTarget> Targets,
+    IReadOnlyDictionary<(Guid SessionId, Guid MuscleGroupId), decimal> PerSession);
 
 /// <summary>
 /// Explains why balancing moved one exercise, for the list the lifter sees after a workout.
@@ -68,12 +70,24 @@ public static class SetChangeExplanation
             return null;
         }
 
+        // Glavno dizanje bloka snage nedeljni cilj ne pomera. Podignuto je samo ka propisu -
+        // tu nema šta da se objašnjava mišićem - a spušteno samo zbog granice oporavka.
+        if (slot.IsMainLift && direction > 0)
+        {
+            return null;
+        }
+
         if (direction < 0
             && week.SetsWithoutSessionCeiling.TryGetValue(slot.Id, out var withoutCeiling)
             && allocatedSets < withoutCeiling
             && CeilingMuscle(slot, week) is { } crowded)
         {
             return new SetChangeCause(crowded, SetChangeReason.SessionCeiling);
+        }
+
+        if (slot.IsMainLift)
+        {
+            return MainLiftCut(slot, previousSets - allocatedSets, week);
         }
 
         Guid? driver = null;
@@ -90,11 +104,10 @@ public static class SetChangeExplanation
             var undone = muscle.Contribution * (previousSets - allocatedSets);
             var stimulativeWithoutTheMove = week.Stimulative.GetValueOrDefault(muscle.MuscleGroupId) + undone;
 
+            var pastMrv = week.Raw.GetValueOrDefault(muscle.MuscleGroupId) + undone - target.CeilingSets;
             var gap = direction > 0
                 ? target.TargetSets - stimulativeWithoutTheMove
-                : Math.Max(
-                    stimulativeWithoutTheMove - target.TargetSets,
-                    week.Raw.GetValueOrDefault(muscle.MuscleGroupId) + undone - target.CeilingSets);
+                : Math.Max(stimulativeWithoutTheMove - target.TargetSets, pastMrv);
 
             if (gap > widestGap)
             {
@@ -104,6 +117,57 @@ public static class SetChangeExplanation
         }
 
         return driver is null ? null : new SetChangeCause(driver.Value, SetChangeReason.WeeklyTarget);
+    }
+
+    /// <summary>
+    /// A main lift is cut only by a recovery ceiling, so only a ceiling explains it: MRV if
+    /// putting the sets back breaks it, otherwise the session ceiling on the allocation
+    /// itself. The second reading is the fallback for a cut two ceilings demand at once -
+    /// without the session ceiling MRV would have cut the same set, so the causal test above
+    /// does not fire, and MRV with the set put back is not broken either, because the session
+    /// ceiling had already taken it. Measured on three weeks of Push/Pull/Legs x2 before this
+    /// fallback: a barbell row 5 -> 4 came back with no muscle at all. For a main lift the
+    /// one-exercise reading is safe: nothing moves a main lift for the weekly target, so it
+    /// cannot be half of a swap the ceiling did not ask for.
+    /// </summary>
+    private static SetChangeCause? MainLiftCut(ExerciseSetSlot slot, int cutSets, BalancedWeek week)
+    {
+        Guid? mrvDriver = null;
+        var widestMrvGap = 0m;
+        Guid? sessionDriver = null;
+        var widestSessionGap = 0m;
+
+        foreach (var muscle in slot.Muscles)
+        {
+            if (!week.Targets.TryGetValue(muscle.MuscleGroupId, out var target))
+            {
+                continue;
+            }
+
+            var undone = muscle.Contribution * cutSets;
+
+            var pastMrv = week.Raw.GetValueOrDefault(muscle.MuscleGroupId) + undone - target.CeilingSets;
+            if (pastMrv > widestMrvGap)
+            {
+                widestMrvGap = pastMrv;
+                mrvDriver = muscle.MuscleGroupId;
+            }
+
+            var pastSession = week.PerSession.GetValueOrDefault((slot.SessionId, muscle.MuscleGroupId)) + undone
+                              - TrainingConstants.MaxSetsPerMusclePerSession;
+            if (pastSession > widestSessionGap)
+            {
+                widestSessionGap = pastSession;
+                sessionDriver = muscle.MuscleGroupId;
+            }
+        }
+
+        if (mrvDriver is not null)
+        {
+            return new SetChangeCause(mrvDriver.Value, SetChangeReason.WeeklyTarget);
+        }
+
+        return sessionDriver is null ? null : new SetChangeCause(sessionDriver.Value, SetChangeReason.SessionCeiling);
     }
 
     /// <summary>

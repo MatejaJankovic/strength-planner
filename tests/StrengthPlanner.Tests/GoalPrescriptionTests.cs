@@ -20,8 +20,8 @@ public class GoalPrescriptionTests
     [Fact]
     public void AStrengthBlock_KeepsIsolationInTheHypertrophyRange()
     {
-        var compound = GoalPrescriptions.ForExercise(Goal.Strength, ExerciseType.Compound);
-        var isolation = GoalPrescriptions.ForExercise(Goal.Strength, ExerciseType.Isolation);
+        var compound = GoalPrescriptions.ForExercise(Goal.Strength, ExerciseType.Compound, suitsLowReps: true);
+        var isolation = GoalPrescriptions.ForExercise(Goal.Strength, ExerciseType.Isolation, suitsLowReps: true);
 
         Assert.Equal(3, compound.RepRangeMin);
         Assert.Equal(6, compound.RepRangeMax);
@@ -42,8 +42,8 @@ public class GoalPrescriptionTests
         {
             var blockRir = GoalPrescriptions.ForGoal(goal).TargetRir;
 
-            Assert.Equal(blockRir, GoalPrescriptions.ForExercise(goal, ExerciseType.Compound).TargetRir);
-            Assert.Equal(blockRir, GoalPrescriptions.ForExercise(goal, ExerciseType.Isolation).TargetRir);
+            Assert.Equal(blockRir, GoalPrescriptions.ForExercise(goal, ExerciseType.Compound, suitsLowReps: true).TargetRir);
+            Assert.Equal(blockRir, GoalPrescriptions.ForExercise(goal, ExerciseType.Isolation, suitsLowReps: true).TargetRir);
         }
     }
 
@@ -54,7 +54,7 @@ public class GoalPrescriptionTests
 
         foreach (var type in Enum.GetValues<ExerciseType>())
         {
-            Assert.Equal(goal, GoalPrescriptions.ForExercise(Goal.Hypertrophy, type));
+            Assert.Equal(goal, GoalPrescriptions.ForExercise(Goal.Hypertrophy, type, suitsLowReps: true));
         }
     }
 
@@ -65,8 +65,8 @@ public class GoalPrescriptionTests
     [Fact]
     public void TheDifferenceSurvivesPeriodization()
     {
-        var compound = GoalPrescriptions.ForExercise(Goal.Strength, ExerciseType.Compound);
-        var isolation = GoalPrescriptions.ForExercise(Goal.Strength, ExerciseType.Isolation);
+        var compound = GoalPrescriptions.ForExercise(Goal.Strength, ExerciseType.Compound, suitsLowReps: true);
+        var isolation = GoalPrescriptions.ForExercise(Goal.Strength, ExerciseType.Isolation, suitsLowReps: true);
 
         static string Window(GoalPrescription prescription, int week)
         {
@@ -101,8 +101,8 @@ public class GoalPrescriptionTests
     public void TheRangeAlsoDecidesTheStartingLoad()
     {
         var calculator = new E1RmCalculator();
-        var strength = GoalPrescriptions.ForExercise(Goal.Strength, ExerciseType.Compound);
-        var isolation = GoalPrescriptions.ForExercise(Goal.Strength, ExerciseType.Isolation);
+        var strength = GoalPrescriptions.ForExercise(Goal.Strength, ExerciseType.Compound, suitsLowReps: true);
+        var isolation = GoalPrescriptions.ForExercise(Goal.Strength, ExerciseType.Isolation, suitsLowReps: true);
 
         var onStrengthRange = calculator.WorkingWeightFor(
             oneRepMax: 40m,
@@ -120,13 +120,14 @@ public class GoalPrescriptionTests
     }
 
     /// <summary>
-    /// Ishod koji plan treba da dobije, izračunat iz kataloga i pravila: u bloku snage
-    /// nijedna izolacija iz ugrađenog šablona ne stoji na opsegu snage, a svaka složena
-    /// vežba stoji. Vezivanje ovog pravila za generator dokazuje E2E, jer servisi nemaju
-    /// test harness — ovo drži ishod, ne prolaz kroz kod.
+    /// Ishod koji plan treba da dobije, izračunat iz kataloga i pravila: u bloku snage opseg
+    /// snage nosi tačno svaka složena vežba koja ga podnosi, a nijedna izolacija i nijedna
+    /// vežba na jednoj nozi ili bez načina da se doda teret. Vezivanje ovog pravila za
+    /// generator dokazuje E2E, jer servisi nemaju test harness — ovo drži ishod, ne prolaz
+    /// kroz kod.
     /// </summary>
     [Fact]
-    public void InAStrengthBlock_NoIsolationExerciseOfABuiltInTemplateSitsOnTheStrengthRange()
+    public void InAStrengthBlock_OnlyLiftsThatSuitLowRepsSitOnTheStrengthRange()
     {
         var strengthRange = GoalPrescriptions.ForGoal(Goal.Strength);
         var places = 0;
@@ -143,18 +144,18 @@ public class GoalPrescriptionTests
                         continue;
                     }
 
-                    var prescription = GoalPrescriptions.ForExercise(Goal.Strength, exercise.Type);
+                    var prescription = GoalPrescriptions.ForExercise(Goal.Strength, exercise.Type, exercise.SuitsLowReps);
                     places++;
 
-                    if (exercise.Type == ExerciseType.Isolation)
-                    {
-                        Assert.NotEqual(strengthRange.RepRangeMin, prescription.RepRangeMin);
-                        Assert.NotEqual(strengthRange.RepRangeMax, prescription.RepRangeMax);
-                    }
-                    else
+                    if (exercise.Type == ExerciseType.Compound && exercise.SuitsLowReps)
                     {
                         Assert.Equal(strengthRange.RepRangeMin, prescription.RepRangeMin);
                         Assert.Equal(strengthRange.RepRangeMax, prescription.RepRangeMax);
+                    }
+                    else
+                    {
+                        Assert.NotEqual(strengthRange.RepRangeMin, prescription.RepRangeMin);
+                        Assert.NotEqual(strengthRange.RepRangeMax, prescription.RepRangeMax);
                     }
                 }
             }
@@ -192,5 +193,77 @@ public class GoalPrescriptionTests
 
         Assert.NotNull(exercise);
         Assert.Equal(ExerciseType.Compound, exercise!.Type);
+    }
+
+    /// <summary>
+    /// Složene vežbe koje opseg snage ne podnose: na jednoj nozi, nestabilne, ili bez načina
+    /// da se doda opterećenje. Pre ovog pravila napredni vežbač je na šablonu Legs
+    /// Specialization tri od pet složenih mesta u bloku snage dobijao baš ovde, na 3–6.
+    /// </summary>
+    [Theory]
+    [InlineData("Bulgarian Split Squat")]
+    [InlineData("Split Squat")]
+    [InlineData("Walking Lunge")]
+    [InlineData("Goblet Squat")]
+    [InlineData("Step-Up")]
+    [InlineData("Single-Leg Romanian Deadlift")]
+    [InlineData("Push-up")]
+    public void AStrengthBlock_KeepsUnilateralAndUnloadableCompoundsOnTheAccessoryRange(string name)
+    {
+        var exercise = ExerciseCatalog.Find(name)!;
+
+        Assert.Equal(ExerciseType.Compound, exercise.Type);
+        Assert.False(exercise.SuitsLowReps);
+
+        var prescription = GoalPrescriptions.ForExercise(Goal.Strength, exercise.Type, exercise.SuitsLowReps);
+        var accessory = GoalPrescriptions.ForGoal(Goal.Hypertrophy);
+        Assert.Equal(accessory.RepRangeMin, prescription.RepRangeMin);
+        Assert.Equal(accessory.RepRangeMax, prescription.RepRangeMax);
+        Assert.Equal(GoalPrescriptions.ForGoal(Goal.Strength).TargetRir, prescription.TargetRir);
+        Assert.False(GoalPrescriptions.IsStrengthLift(Goal.Strength, exercise.Type, exercise.SuitsLowReps));
+    }
+
+    [Fact]
+    public void AStrengthLift_IsOnlyAStrengthLiftInAStrengthBlock()
+    {
+        Assert.True(GoalPrescriptions.IsStrengthLift(Goal.Strength, ExerciseType.Compound, suitsLowReps: true));
+        Assert.False(GoalPrescriptions.IsStrengthLift(Goal.Hypertrophy, ExerciseType.Compound, suitsLowReps: true));
+        Assert.False(GoalPrescriptions.IsStrengthLift(Goal.Strength, ExerciseType.Isolation, suitsLowReps: true));
+    }
+
+    [Theory]
+    [InlineData(ExerciseType.Compound, 6, true)]
+    [InlineData(ExerciseType.Compound, 5, true)]
+    [InlineData(ExerciseType.Compound, 12, false)]
+    [InlineData(ExerciseType.Compound, 15, false)]
+    [InlineData(ExerciseType.Isolation, 6, false)]
+    public void AMainLift_IsReadFromThePlansOwnRange(ExerciseType type, int baseRepRangeMax, bool expected)
+    {
+        // Lični šablon sam bira opseg: leg press na 12-15 je u njegovom bloku snage pomoćni
+        // rad, a iskorak na 3-5 je dizanje koje je izabrao da optereti.
+        Assert.Equal(expected, GoalPrescriptions.IsMainLift(Goal.Strength, type, baseRepRangeMax));
+        Assert.False(GoalPrescriptions.IsMainLift(Goal.Hypertrophy, type, baseRepRangeMax));
+    }
+
+    [Fact]
+    public void ForABuiltInTemplate_TheTwoReadingsOfAMainLiftAgree()
+    {
+        foreach (var exercise in ExerciseCatalog.Exercises)
+        {
+            var prescription = GoalPrescriptions.ForExercise(Goal.Strength, exercise.Type, exercise.SuitsLowReps);
+
+            Assert.Equal(
+                GoalPrescriptions.IsStrengthLift(Goal.Strength, exercise.Type, exercise.SuitsLowReps),
+                GoalPrescriptions.IsMainLift(Goal.Strength, exercise.Type, prescription.RepRangeMax));
+        }
+    }
+
+    [Fact]
+    public void AHypertrophyBlock_IgnoresTheLowRepFlag()
+    {
+        // Za hipertrofiju je svaka vežba u opsegu cilja - zastavica tamo ništa ne menja.
+        Assert.Equal(
+            GoalPrescriptions.ForExercise(Goal.Hypertrophy, ExerciseType.Compound, suitsLowReps: true),
+            GoalPrescriptions.ForExercise(Goal.Hypertrophy, ExerciseType.Compound, suitsLowReps: false));
     }
 }

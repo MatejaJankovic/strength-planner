@@ -14,9 +14,27 @@ public class ExperienceProgrammingTests
     {
         // Složene vežbe nose najveći stimulus ali i najviše zamora, pa ih napredan
         // vežbač — koji ih radi najteže — mora imati najmanje po treningu.
-        Assert.Equal(3, ExperienceProgramming.MaxCompoundsPerSession(ExperienceLevel.Beginner));
-        Assert.Equal(2, ExperienceProgramming.MaxCompoundsPerSession(ExperienceLevel.Intermediate));
-        Assert.Equal(1, ExperienceProgramming.MaxCompoundsPerSession(ExperienceLevel.Advanced));
+        Assert.Equal(3, ExperienceProgramming.MaxCompoundsPerSession(ExperienceLevel.Beginner, Goal.Hypertrophy));
+        Assert.Equal(2, ExperienceProgramming.MaxCompoundsPerSession(ExperienceLevel.Intermediate, Goal.Hypertrophy));
+        Assert.Equal(1, ExperienceProgramming.MaxCompoundsPerSession(ExperienceLevel.Advanced, Goal.Hypertrophy));
+    }
+
+    [Fact]
+    public void MaxCompoundsPerSession_NeverGivesAStrengthSessionFewerThanTwo()
+    {
+        // Snaga je specifična za pokret i raste sa učestalošću višezglobnih dizanja; blok
+        // snage zato ima najmanje dve složene vežbe po treningu. To podiže samo napredni
+        // nivo - srednji ih već ima dve, a početnik tri.
+        Assert.Equal(3, ExperienceProgramming.MaxCompoundsPerSession(ExperienceLevel.Beginner, Goal.Strength));
+        Assert.Equal(2, ExperienceProgramming.MaxCompoundsPerSession(ExperienceLevel.Intermediate, Goal.Strength));
+        Assert.Equal(2, ExperienceProgramming.MaxCompoundsPerSession(ExperienceLevel.Advanced, Goal.Strength));
+
+        foreach (var level in Enum.GetValues<ExperienceLevel>())
+        {
+            Assert.True(
+                ExperienceProgramming.MaxCompoundsPerSession(level, Goal.Strength)
+                >= ExperienceProgramming.MinCompoundsInAStrengthSession);
+        }
     }
 
     [Theory]

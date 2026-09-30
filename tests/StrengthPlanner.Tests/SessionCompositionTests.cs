@@ -20,7 +20,7 @@ public class SessionCompositionTests
     ];
 
     private static IReadOnlyList<string> Pick(ExperienceLevel level) =>
-        SessionComposition.ForLevel(Day, move => move.IsCompound, level)
+        SessionComposition.ForLevel(Day, move => move.IsCompound, level, Goal.Hypertrophy)
             .Select(move => move.Name)
             .ToList();
 
@@ -32,6 +32,35 @@ public class SessionCompositionTests
         Assert.Equal(
             new[] { "Bench Press", "Barbell Row", "Overhead Press", "Barbell Curl", "Triceps Pushdown" },
             chosen);
+    }
+
+    [Fact]
+    public void ForLevel_GivesAnAdvancedLifterTwoCompounds_InAStrengthBlock()
+    {
+        var chosen = SessionComposition
+            .ForLevel(Day, move => move.IsCompound, ExperienceLevel.Advanced, Goal.Strength)
+            .Select(move => move.Name)
+            .ToList();
+
+        Assert.Equal(new[] { "Bench Press", "Barbell Row", "Barbell Curl", "Triceps Pushdown" }, chosen);
+    }
+
+    [Fact]
+    public void MainLiftsFirst_MovesOnlyTheMainLifts_AndKeepsEveryOtherOrder()
+    {
+        string[] legsA = ["Bulgarian Split Squat", "Leg Press", "Leg Extension", "Calf Raise"];
+
+        var ordered = SessionComposition.MainLiftsFirst(legsA, name => name == "Leg Press");
+
+        Assert.Equal(new[] { "Leg Press", "Bulgarian Split Squat", "Leg Extension", "Calf Raise" }, ordered);
+    }
+
+    [Fact]
+    public void MainLiftsFirst_LeavesASessionWithoutMainLiftsAlone()
+    {
+        string[] day = ["Bench Press", "Cable Fly"];
+
+        Assert.Equal(day, SessionComposition.MainLiftsFirst(day, _ => false));
     }
 
     [Fact]
@@ -50,13 +79,13 @@ public class SessionCompositionTests
         foreach (var level in Enum.GetValues<ExperienceLevel>())
         {
             var compounds = SessionComposition
-                .ForLevel(Day, move => move.IsCompound, level)
+                .ForLevel(Day, move => move.IsCompound, level, Goal.Hypertrophy)
                 .Count(move => move.IsCompound);
 
             Assert.True(
-                compounds <= ExperienceProgramming.MaxCompoundsPerSession(level),
+                compounds <= ExperienceProgramming.MaxCompoundsPerSession(level, Goal.Hypertrophy),
                 $"{level}: {compounds} složenih vežbi prelazi dozvoljene "
-                + $"{ExperienceProgramming.MaxCompoundsPerSession(level)}.");
+                + $"{ExperienceProgramming.MaxCompoundsPerSession(level, Goal.Hypertrophy)}.");
         }
     }
 
@@ -65,7 +94,7 @@ public class SessionCompositionTests
     {
         // Dan sa svega dve izolacije ne može naprednom vežbaču da da šest vežbi a da ne
         // prekrši pravilo; ispravno je dati kraći trening.
-        var chosen = SessionComposition.ForLevel(Day, move => move.IsCompound, ExperienceLevel.Advanced);
+        var chosen = SessionComposition.ForLevel(Day, move => move.IsCompound, ExperienceLevel.Advanced, Goal.Hypertrophy);
 
         Assert.Equal(3, chosen.Count);
     }
@@ -76,7 +105,7 @@ public class SessionCompositionTests
         // Redosled je trenažno pravilo: složene vežbe se rade dok si odmoran.
         foreach (var level in Enum.GetValues<ExperienceLevel>())
         {
-            var chosen = SessionComposition.ForLevel(Day, move => move.IsCompound, level);
+            var chosen = SessionComposition.ForLevel(Day, move => move.IsCompound, level, Goal.Hypertrophy);
             var lastCompound = chosen.ToList().FindLastIndex(move => move.IsCompound);
             var firstIsolation = chosen.ToList().FindIndex(move => !move.IsCompound);
 
@@ -99,7 +128,7 @@ public class SessionCompositionTests
             new("Front Squat", true)
         ];
 
-        var chosen = SessionComposition.ForLevel(compoundsOnly, move => move.IsCompound, ExperienceLevel.Advanced);
+        var chosen = SessionComposition.ForLevel(compoundsOnly, move => move.IsCompound, ExperienceLevel.Advanced, Goal.Hypertrophy);
 
         // Prag pobeđuje budžet: trening od jedne vežbe nije trening.
         Assert.Equal(SessionComposition.MinExercisesPerSession, chosen.Count);
@@ -110,7 +139,7 @@ public class SessionCompositionTests
     {
         IReadOnlyList<Move> shortDay = [new("Bench Press", true), new("Barbell Curl", false)];
 
-        var chosen = SessionComposition.ForLevel(shortDay, move => move.IsCompound, ExperienceLevel.Beginner);
+        var chosen = SessionComposition.ForLevel(shortDay, move => move.IsCompound, ExperienceLevel.Beginner, Goal.Hypertrophy);
 
         Assert.Equal(2, chosen.Count);
     }
@@ -121,7 +150,8 @@ public class SessionCompositionTests
         Assert.Empty(SessionComposition.ForLevel(
             Array.Empty<Move>(),
             move => move.IsCompound,
-            ExperienceLevel.Beginner));
+            ExperienceLevel.Beginner,
+            Goal.Hypertrophy));
     }
 
     [Fact]
@@ -138,7 +168,7 @@ public class SessionCompositionTests
             new("Face Pull", false)
         ];
 
-        var chosen = SessionComposition.ForLevel(withDuplicate, move => move.IsCompound, ExperienceLevel.Advanced);
+        var chosen = SessionComposition.ForLevel(withDuplicate, move => move.IsCompound, ExperienceLevel.Advanced, Goal.Hypertrophy);
 
         Assert.Equal(1, chosen.Count(move => move.IsCompound));
         Assert.Equal(4, chosen.Count);
@@ -158,7 +188,7 @@ public class SessionCompositionTests
                     .Select(index => new Move($"Vezba {index}", index % 2 == 0))
                     .ToList();
 
-                var chosen = SessionComposition.ForLevel(day, move => move.IsCompound, level);
+                var chosen = SessionComposition.ForLevel(day, move => move.IsCompound, level, Goal.Hypertrophy);
 
                 Assert.True(chosen.Count <= length, $"{level}/{length}: izabrano više nego što dan ima.");
             }

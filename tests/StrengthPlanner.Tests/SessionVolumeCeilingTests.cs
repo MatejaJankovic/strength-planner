@@ -56,7 +56,8 @@ public class SessionVolumeCeilingTests
 
     /// <summary>
     /// Gornja granica pojedinačnog treninga, u brojevima: najviše jedna serija preko, i to
-    /// samo tamo gde je propis sam bio daleko iznad.
+    /// samo tamo gde je propis sam bio daleko iznad. Važi i posle toga što glavna dizanja
+    /// bloka snage nedeljni cilj više ne pomera - granicu treninga i dalje mogu da spuste.
     /// </summary>
     [Fact]
     public void NoBuiltInSession_GoesMoreThanOneSetPastTheCeiling()

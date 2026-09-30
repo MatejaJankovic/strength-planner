@@ -15,12 +15,18 @@ public sealed record MuscleContributionSeed(string Muscle, decimal Contribution)
 /// vežbe sa telesnom masom su namerno grube: greška od 10% u udelu pomera opterećenje za
 /// manje od jednog koraka tega.
 /// </param>
+/// <param name="SuitsLowReps">
+/// Da li složena vežba podnosi opseg snage (3–6). Ne podnose ga vežbe na jednoj nozi, one sa
+/// nestabilnim uslovima i one kojima se opterećenje ne može dodati — u bloku snage one ostaju
+/// pomoćni rad na 8–12. Za izolacije nije bitno: one su uvek pomoćni rad.
+/// </param>
 public sealed record ExerciseSeed(
     string Name,
     ExerciseType Type,
     string Equipment,
     IReadOnlyList<MuscleContributionSeed> Muscles,
-    decimal BodyweightShare = 0m);
+    decimal BodyweightShare = 0m,
+    bool SuitsLowReps = true);
 
 /// <summary>Orijentacione nedeljne radne serije po mišićnoj grupi.</summary>
 public sealed record VolumeLandmarkSeed(string Muscle, int Mev, int Mav, int Mrv);
@@ -76,18 +82,18 @@ public static class ExerciseCatalog
         // bučice i telesnu težinu, i dodaju jedini unilateralni obrazac u katalogu — dosad
         // nijedna vežba nije izolovala jednu nogu.
         new("Bulgarian Split Squat", ExerciseType.Compound, "Dumbbell",
-            [new("Quads", 1.0m), new("Glutes", 0.5m)]),
+            [new("Quads", 1.0m), new("Glutes", 0.5m)], SuitsLowReps: false),
         // Iskorak na jednoj nozi nosi telo bez oslonjene potkolenice i stopala.
         new("Split Squat", ExerciseType.Compound, "Bodyweight",
-            [new("Quads", 1.0m), new("Glutes", 0.5m)], BodyweightShare: 0.85m),
+            [new("Quads", 1.0m), new("Glutes", 0.5m)], BodyweightShare: 0.85m, SuitsLowReps: false),
         new("Walking Lunge", ExerciseType.Compound, "Dumbbell",
-            [new("Quads", 1.0m), new("Glutes", 0.5m)]),
+            [new("Quads", 1.0m), new("Glutes", 0.5m)], SuitsLowReps: false),
         new("Goblet Squat", ExerciseType.Compound, "Dumbbell",
-            [new("Quads", 1.0m), new("Glutes", 0.5m)]),
+            [new("Quads", 1.0m), new("Glutes", 0.5m)], SuitsLowReps: false),
         new("Step-Up", ExerciseType.Compound, "Dumbbell",
-            [new("Glutes", 1.0m), new("Quads", 0.5m)]),
+            [new("Glutes", 1.0m), new("Quads", 0.5m)], SuitsLowReps: false),
         new("Single-Leg Romanian Deadlift", ExerciseType.Compound, "Dumbbell",
-            [new("Hamstrings", 1.0m), new("Glutes", 0.5m)]),
+            [new("Hamstrings", 1.0m), new("Glutes", 0.5m)], SuitsLowReps: false),
 
         // Horizontalni potisak ne ulazi u budžet ramena. Prednji deltoid u njemu radi i
         // raste — ali „Shoulders" je zbirna grupa, a njen MAV se troši na bočni i zadnji
@@ -106,7 +112,7 @@ public static class ExerciseCatalog
             [new("Chest", 1.0m), new("Triceps", 0.5m)]),
         // Sklek u gornjem položaju nosi oko dve trećine telesne mase.
         new("Push-up", ExerciseType.Compound, "Bodyweight",
-            [new("Chest", 1.0m), new("Triceps", 0.5m)], BodyweightShare: 0.64m),
+            [new("Chest", 1.0m), new("Triceps", 0.5m)], BodyweightShare: 0.64m, SuitsLowReps: false),
 
         // Grudi i leđa dugo nisu imali nijednu izolacionu vežbu. Naprednom vežbaču
         // pripada jedna složena vežba po treningu, pa se te grupe nije imalo čime dopuniti.

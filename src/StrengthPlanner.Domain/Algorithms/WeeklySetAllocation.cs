@@ -18,11 +18,23 @@ public sealed record MuscleLoad(Guid MuscleGroupId, decimal Contribution);
 /// the anchor the result may drift around, never a value the allocator recomputes.
 /// </param>
 /// <param name="Muscles">Muscle groups this exercise loads, with their contributions.</param>
+/// <param name="IsMainLift">
+/// A lift that carries the block's own prescription - in a strength block, a compound whose
+/// base range is the strength range (<see cref="GoalPrescriptions.IsMainLift"/>). The weekly
+/// volume target never moves it: its sets are the block's work, and a hypertrophy landmark
+/// must not reshape them. A recovery ceiling still can, once the accessory work in reach has
+/// nothing left to give. Measured before this flag, balancing a strength week cut a compound
+/// below its prescription while an isolation for the same muscle in the same session could
+/// still have given a set 373 times over the built-in weeks - an advanced lifter's bench
+/// press at 2 sets on a Push day whose dumbbell flyes kept 5, because one bench set relieves
+/// chest and triceps at once.
+/// </param>
 public sealed record ExerciseSetSlot(
     Guid Id,
     Guid SessionId,
     int PrescribedSets,
-    IReadOnlyList<MuscleLoad> Muscles);
+    IReadOnlyList<MuscleLoad> Muscles,
+    bool IsMainLift = false);
 
 /// <summary>Where one muscle group's week should land, and where it must not go.</summary>
 /// <param name="MuscleGroupId">The muscle group these limits belong to.</param>
@@ -213,63 +225,108 @@ public static class WeeklySetAllocation
         var raw = Project(slots, sets, completedRawSets);
         var perSession = ProjectPerSession(slots, sets);
 
-        for (var step = 0; step < MaxSteps; step++)
+        // Obrnutim redom: šablon navodi glavno dizanje dana prvo, pa kad granica mora da seče,
+        // a dva glavna dizanja su podjednako dobar izbor, seče se kasnije. Uživo je početnikov
+        // Push dan inače završavao sa bench-om na 2 serije i incline-om na 3.
+        var mainLifts = slots.Where(slot => slot.IsMainLift).Reverse().ToList();
+
+        // Dva prolaza se smenjuju dok nijedan ništa ne pomera:
+        //  - pomoćni rad slaže nedelju, a glavna dizanja stoje tamo gde su sada (na početku
+        //    na propisu);
+        //  - glavno dizanje sme niže samo koliko granica oporavka i dalje traži - MRV nedelje
+        //    ili granica treninga - i vraća se ka propisu čim mu mesto dozvoli. Nedeljni cilj
+        //    se tu ne pita, pa ga nikad ne pomera.
+        // Ponavljanje nije ukras: kad drugi prolaz spusti glavno dizanje za celu seriju, u
+        // treningu često ostane mesta koje je prvi prolaz već oduzeo pomoćnom radu. Bez
+        // ponavljanja to mesto ostaje prazno - u 12 od 351 ugrađene nedelje bloka snage jedan
+        // potez pomoćnog rada spustio bi cenu, a niko ga nije napravio.
+        for (var round = 0; round < MaxSteps; round++)
         {
-            ExerciseSetSlot? bestSlot = null;
-            var bestDirection = 0;
-            var bestDelta = 0m;
+            var accessoriesMoved = Search(
+                slots,
+                slot => slot.IsMainLift ? (sets[slot.Id], sets[slot.Id]) : bounds[slot.Id],
+                ceilingsOnly: false);
 
-            // Redosled je redosled koji je pozivalac dao (dan, pa mesto u treningu), pa
-            // dva jednako dobra poteza uvek završe istim izborom.
-            foreach (var slot in slots)
+            var mainLiftsMoved = Search(
+                mainLifts,
+                slot => (bounds[slot.Id].Lower, slot.PrescribedSets),
+                ceilingsOnly: true);
+
+            if (!accessoriesMoved && !mainLiftsMoved)
             {
-                var (lower, upper) = bounds[slot.Id];
-                var current = sets[slot.Id];
-
-                foreach (var direction in new[] { 1, -1 })
-                {
-                    var candidate = current + direction;
-                    if (candidate < lower || candidate > upper)
-                    {
-                        continue;
-                    }
-
-                    var delta = CostDelta(
-                        slot,
-                        current,
-                        direction,
-                        stimulative,
-                        raw,
-                        applySessionCeiling ? perSession : null,
-                        targetByMuscleGroupId);
-                    if (delta < bestDelta)
-                    {
-                        bestDelta = delta;
-                        bestSlot = slot;
-                        bestDirection = direction;
-                    }
-                }
-            }
-
-            if (bestSlot is null)
-            {
-                return sets;
-            }
-
-            sets[bestSlot.Id] += bestDirection;
-
-            foreach (var muscle in bestSlot.Muscles)
-            {
-                var moved = muscle.Contribution * bestDirection;
-                stimulative[muscle.MuscleGroupId] = stimulative.GetValueOrDefault(muscle.MuscleGroupId) + moved;
-                raw[muscle.MuscleGroupId] = raw.GetValueOrDefault(muscle.MuscleGroupId) + moved;
-
-                var sessionKey = (bestSlot.SessionId, muscle.MuscleGroupId);
-                perSession[sessionKey] = perSession.GetValueOrDefault(sessionKey) + moved;
+                break;
             }
         }
 
         return sets;
+
+        bool Search(
+            IReadOnlyList<ExerciseSetSlot> movable,
+            Func<ExerciseSetSlot, (int Lower, int Upper)> windowFor,
+            bool ceilingsOnly)
+        {
+            var moved = false;
+
+            for (var step = 0; step < MaxSteps; step++)
+            {
+                ExerciseSetSlot? bestSlot = null;
+                var bestDirection = 0;
+                var bestDelta = 0m;
+
+                // Redosled je redosled koji je pozivalac dao (dan, pa mesto u treningu), pa
+                // dva jednako dobra poteza uvek završe istim izborom.
+                foreach (var slot in movable)
+                {
+                    var (lower, upper) = windowFor(slot);
+                    var current = sets[slot.Id];
+
+                    foreach (var direction in new[] { 1, -1 })
+                    {
+                        var candidate = current + direction;
+                        if (candidate < lower || candidate > upper)
+                        {
+                            continue;
+                        }
+
+                        var delta = CostDelta(
+                            slot,
+                            current,
+                            direction,
+                            stimulative,
+                            raw,
+                            applySessionCeiling ? perSession : null,
+                            targetByMuscleGroupId,
+                            ceilingsOnly);
+                        if (delta < bestDelta)
+                        {
+                            bestDelta = delta;
+                            bestSlot = slot;
+                            bestDirection = direction;
+                        }
+                    }
+                }
+
+                if (bestSlot is null)
+                {
+                    return moved;
+                }
+
+                moved = true;
+                sets[bestSlot.Id] += bestDirection;
+
+                foreach (var muscle in bestSlot.Muscles)
+                {
+                    var change = muscle.Contribution * bestDirection;
+                    stimulative[muscle.MuscleGroupId] = stimulative.GetValueOrDefault(muscle.MuscleGroupId) + change;
+                    raw[muscle.MuscleGroupId] = raw.GetValueOrDefault(muscle.MuscleGroupId) + change;
+
+                    var sessionKey = (bestSlot.SessionId, muscle.MuscleGroupId);
+                    perSession[sessionKey] = perSession.GetValueOrDefault(sessionKey) + change;
+                }
+            }
+
+            return moved;
+        }
     }
 
     /// <summary>
@@ -365,7 +422,8 @@ public static class WeeklySetAllocation
         IReadOnlyDictionary<Guid, decimal> stimulative,
         IReadOnlyDictionary<Guid, decimal> raw,
         IReadOnlyDictionary<(Guid SessionId, Guid MuscleGroupId), decimal>? perSession,
-        IReadOnlyDictionary<Guid, MuscleVolumeTarget> targetByMuscleGroupId)
+        IReadOnlyDictionary<Guid, MuscleVolumeTarget> targetByMuscleGroupId,
+        bool ceilingsOnly)
     {
         var driftBefore = currentSets - slot.PrescribedSets;
         var driftAfter = driftBefore + direction;
@@ -380,9 +438,13 @@ public static class WeeklySetAllocation
 
             var moved = muscle.Contribution * direction;
 
-            var currentStimulative = stimulative.GetValueOrDefault(muscle.MuscleGroupId);
-            delta += Math.Abs(currentStimulative + moved - target.TargetSets)
-                     - Math.Abs(currentStimulative - target.TargetSets);
+            // Glavno dizanje u drugom prolazu ne pita nedeljni cilj - samo granice oporavka.
+            if (!ceilingsOnly)
+            {
+                var currentStimulative = stimulative.GetValueOrDefault(muscle.MuscleGroupId);
+                delta += Math.Abs(currentStimulative + moved - target.TargetSets)
+                         - Math.Abs(currentStimulative - target.TargetSets);
+            }
 
             var currentRaw = raw.GetValueOrDefault(muscle.MuscleGroupId);
             delta += CeilingPenalty

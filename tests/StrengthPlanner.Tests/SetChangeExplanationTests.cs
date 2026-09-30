@@ -125,6 +125,95 @@ public class SetChangeExplanationTests
     }
 
     [Fact]
+    public void AMainLiftBackOnItsPrescription_IsNotBlamedOnTheWeek()
+    {
+        // Blok snage balansiran starim pravilom: čučanj je bio spušten na 2 od propisanih 3.
+        // Novo pravilo ga vraća na propis - nedeljni cilj glavno dizanje ne pomera, pa ni
+        // oznaka "Glutes" ne bi bila istina.
+        var squat = new ExerciseSetSlot(
+            Guid.NewGuid(), Session, 3, [new MuscleLoad(Chest, 1.0m), new MuscleLoad(Biceps, 0.5m)], IsMainLift: true);
+
+        var cause = SetChangeExplanation.Explain(
+            squat,
+            previousSets: 2,
+            allocatedSets: 3,
+            Week(
+                withoutCeiling: (squat, 3),
+                stimulative: [(Chest, 8m), (Biceps, 4m)],
+                perSessionWithoutCeiling: [(Chest, 3m), (Biceps, 1.5m)],
+                targets: [(Chest, 16m, 22m), (Biceps, 14m, 20m)]));
+
+        Assert.Null(cause);
+    }
+
+    [Fact]
+    public void AMainLiftCut_IsExplainedByMrv_NotByAMuscleAboveItsTarget()
+    {
+        // Nalaz revizije: incline bench 4 -> 3 zbog MRV-a grudi (27 bez reza naspram 26).
+        // Triceps stoji daleko iznad cilja, ali ispod MRV-a - cilj glavno dizanje ne pomera,
+        // pa triceps nije razlog.
+        var incline = new ExerciseSetSlot(
+            Guid.NewGuid(), Session, 4, [new MuscleLoad(Chest, 1.0m), new MuscleLoad(Triceps, 0.5m)], IsMainLift: true);
+
+        var cause = SetChangeExplanation.Explain(
+            incline,
+            previousSets: 4,
+            allocatedSets: 3,
+            Week(
+                withoutCeiling: (incline, 3),
+                stimulative: [(Chest, 19m), (Triceps, 20.5m)],
+                raw: [(Chest, 26m), (Triceps, 20.5m)],
+                perSessionWithoutCeiling: [(Chest, 7m), (Triceps, 3.5m)],
+                targets: [(Chest, 19m, 26m), (Triceps, 16m, 22m)]));
+
+        Assert.Equal(new SetChangeCause(Chest, SetChangeReason.WeeklyTarget), cause);
+    }
+
+    [Fact]
+    public void AMainLiftCutTwoCeilingsDemand_IsStillExplained()
+    {
+        // Nalaz druge revizije, Push/Pull/Legs x2: veslanje 5 -> 4. Sa granicom je Pull dan na
+        // 11 serija leđa, pa vraćanje veslanja daje 12; bez granice bi ga isto spustio MRV
+        // bicepsa. Uzročni test granice zato ne vidi razliku, a MRV sa vraćenom serijom nije
+        // probijen - granica je tu seriju već uzela. Rez je ranije ostajao bez objašnjenja.
+        var row = new ExerciseSetSlot(
+            Guid.NewGuid(), Session, 5, [new MuscleLoad(Back, 1.0m), new MuscleLoad(Biceps, 0.5m)], IsMainLift: true);
+
+        var cause = SetChangeExplanation.Explain(
+            row,
+            previousSets: 5,
+            allocatedSets: 4,
+            Week(
+                withoutCeiling: (row, 4),
+                stimulative: [(Back, 20m), (Biceps, 18.5m)],
+                perSessionWithoutCeiling: [(Back, 11m), (Biceps, 4m)],
+                targets: [(Back, 22m, 26m), (Biceps, 16m, 20m)],
+                perSession: [(Back, 11m), (Biceps, 4m)]));
+
+        Assert.Equal(new SetChangeCause(Back, SetChangeReason.SessionCeiling), cause);
+    }
+
+    [Fact]
+    public void EveryMainLiftCutOnABuiltInWeek_HasACause()
+    {
+        // Glavno dizanje spušta samo granica oporavka, pa svaki takav rez mora da ima razlog.
+        var unexplained = TemplateWeekSimulation.EveryTrainingWeek()
+            .SelectMany(week =>
+            {
+                var without = week.AllocatedWithoutSessionCeiling();
+                var balanced = Balanced(week.Slots, week.Targets, week.Allocated, without, NoVolume);
+
+                return week.Slots
+                    .Where(slot => slot.IsMainLift && week.Allocated[slot.Id] < slot.PrescribedSets)
+                    .Where(slot => SetChangeExplanation.Explain(slot, slot.PrescribedSets, week.Allocated[slot.Id], balanced) is null)
+                    .Select(slot => $"{week.Name}: {slot.PrescribedSets} -> {week.Allocated[slot.Id]}");
+            })
+            .ToList();
+
+        Assert.True(unexplained.Count == 0, string.Join(Environment.NewLine, unexplained.Take(20)));
+    }
+
+    [Fact]
     public void ARaise_IsExplainedByTheMuscleTheWeekIsShortOf()
     {
         var curl = Slot(Biceps, prescribed: 3);
@@ -259,10 +348,14 @@ public class SetChangeExplanationTests
         // Put iz revizije: prvi dan odrađen kako je predložen, pa balansiranje ostatka
         // nedelje. Oznaka "pun trening" sme da stoji samo tamo gde bi bez granice vežba
         // ostala viša - u zamenama unutar punog treninga ranije je stajala i bez toga.
+        //
+        // Dva polazna predloga: blok generisan sa granicom, i blok generisan pre nje - onaj
+        // koji granicu dobija tek posle sledećeg završenog treninga, kao u proveri uživo.
         var falseLabels = new List<string>();
         var labels = 0;
 
-        foreach (var week in TemplateWeekSimulation.EveryTrainingWeek())
+        foreach (var generated in TemplateWeekSimulation.EveryTrainingWeek())
+        foreach (var week in new[] { generated, generated with { Allocated = generated.AllocatedWithoutSessionCeiling() } })
         {
             var firstDay = week.Slots[0].SessionId;
             var done = week.Slots.Where(slot => slot.SessionId == firstDay).ToList();
@@ -313,7 +406,8 @@ public class SetChangeExplanationTests
         (Guid Muscle, decimal Sets)[] stimulative,
         (Guid Muscle, decimal Sets)[] perSessionWithoutCeiling,
         (Guid Muscle, decimal Target, decimal Mrv)[] targets,
-        (Guid Muscle, decimal Sets)[]? raw = null)
+        (Guid Muscle, decimal Sets)[]? raw = null,
+        (Guid Muscle, decimal Sets)[]? perSession = null)
     {
         return new BalancedWeek(
             stimulative.ToDictionary(entry => entry.Muscle, entry => entry.Sets),
@@ -322,7 +416,8 @@ public class SetChangeExplanationTests
             perSessionWithoutCeiling.ToDictionary(entry => (Session, entry.Muscle), entry => entry.Sets),
             targets.ToDictionary(
                 entry => entry.Muscle,
-                entry => new MuscleVolumeTarget(entry.Muscle, entry.Target, entry.Mrv)));
+                entry => new MuscleVolumeTarget(entry.Muscle, entry.Target, entry.Mrv)),
+            (perSession ?? []).ToDictionary(entry => (Session, entry.Muscle), entry => entry.Sets));
     }
 
     private static BalancedWeek Balanced(
@@ -337,6 +432,7 @@ public class SetChangeExplanationTests
             WeeklySetAllocation.Project(slots, allocated, banked),
             withoutCeiling,
             WeeklySetAllocation.ProjectPerSession(slots, withoutCeiling),
-            targets.ToDictionary(target => target.MuscleGroupId));
+            targets.ToDictionary(target => target.MuscleGroupId),
+            WeeklySetAllocation.ProjectPerSession(slots, allocated));
     }
 }

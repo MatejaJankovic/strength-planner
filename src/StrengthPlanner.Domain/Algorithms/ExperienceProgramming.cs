@@ -56,17 +56,42 @@ public static class ExperienceProgramming
     };
 
     /// <summary>
+    /// Fewest compounds a strength session holds, whatever the level.
+    /// </summary>
+    public const int MinCompoundsInAStrengthSession = 2;
+
+    /// <summary>
     /// Most compound exercises allowed in one session. This is the handbook's central
     /// distinction: compounds carry the largest stimulus but also the most fatigue, so
     /// the lifter who recovers best from them is the one who needs them most.
+    ///
+    /// A strength block never goes below <see cref="MinCompoundsInAStrengthSession"/>, which
+    /// lifts only the advanced lifter's budget, from one to two. The handbook's <i>"do 3
+    /// složene vežbe nedeljno"</i> for an advanced lifter describes a hypertrophy week, where
+    /// isolation work carries the volume. Strength is specific to the lift and grows with
+    /// how often the lift is trained: frequency raises strength independently of volume
+    /// (Pelland et al. 2025), and it does so for multi-joint lifts rather than single-joint
+    /// ones (Grgic et al. 2018). Measured before this rule, an advanced lifter's Upper/Lower
+    /// strength block never rowed, and the two-day full-body block had no bench press.
+    ///
+    /// "One more for every level" was measured and rejected: a third compound for the
+    /// intermediate lifter put the Upper/Lower strength prescription at 22 sets of quads
+    /// against an MRV of 20, and a lifter who keeps the template's sets gets exactly that.
     /// </summary>
-    public static int MaxCompoundsPerSession(ExperienceLevel level) => level switch
+    public static int MaxCompoundsPerSession(ExperienceLevel level, Goal goal)
     {
-        ExperienceLevel.Beginner => 3,
-        ExperienceLevel.Intermediate => 2,
-        ExperienceLevel.Advanced => 1,
-        _ => 2
-    };
+        var budget = level switch
+        {
+            ExperienceLevel.Beginner => 3,
+            ExperienceLevel.Intermediate => 2,
+            ExperienceLevel.Advanced => 1,
+            _ => 2
+        };
+
+        return goal == Goal.Strength
+            ? Math.Max(budget, MinCompoundsInAStrengthSession)
+            : budget;
+    }
 
     /// <summary>
     /// Multiplier applied to the seeded MEV/MAV/MRV values.

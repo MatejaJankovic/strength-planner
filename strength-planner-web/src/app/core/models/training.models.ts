@@ -65,7 +65,13 @@ export interface WorkoutTemplateDto {
   isCustom: boolean;
   /** Upozorenje o poznatom ograničenju šablona, ako ga ima. */
   note: string | null;
+  /** Dani za blok hipertrofije. */
   days: WorkoutTemplateDayDto[];
+  /**
+   * Isti dani za blok snage: ugrađen šablon tamo daje najmanje dve složene vežbe po treningu.
+   * Kod ličnog šablona isto što i `days`. Stariji server ga ne šalje.
+   */
+  strengthDays?: WorkoutTemplateDayDto[];
 }
 
 /**

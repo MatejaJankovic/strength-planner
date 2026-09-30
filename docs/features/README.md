@@ -119,6 +119,7 @@ ono što je ispod 20 kg, ono što blok radi kroz nedelje i ono što se tvrdi o v
 | [Slične vežbe ne idu u uzastopne dane](session-spacing.md) | Legs Specialization je stavljao noge tri dana zaredom, a Full Body (4 dana) čučanj pa RDL i leg press pa front squat u uzastopne dane | #86 |
 | [Granica serija po treningu](session-volume-ceiling.md) | Balansiranje je gledalo samo nedelju, pa je Push dan Push/Pull/Legs nosio 16–18 serija za grudi; sada jedan mišić dobija najviše ~11 u jednom treningu (Remmert i sar. 2025) | #87 |
 | [Tekst na ekranu](ui-copy.md) | Upozorenje na 0 kg je pominjalo praznu šipku i uz sajlu i bučice (ispravka iz runde 13 nije stigla u kod); sedam tekstova (čarobnjak plana, registracija) bilo je bez dijakritika | #88 |
+| [Sastav bloka snage](strength-block-composition.md) | Napredni je i u bloku snage dobijao jednu složenu vežbu po treningu, iskoraci su nosili 3–6, a balansiranje je seklo bench pre razvlačenja (373 puta) | #89 |
 
 ## Ako čitaš samo jedno
 

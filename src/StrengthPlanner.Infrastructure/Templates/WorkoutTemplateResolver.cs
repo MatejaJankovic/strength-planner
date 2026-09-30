@@ -21,6 +21,7 @@ public class WorkoutTemplateResolver : IWorkoutTemplateResolver
     public async Task<ResolvedTemplate?> ResolveAsync(
         Guid userId,
         string templateKey,
+        Goal goal,
         CancellationToken cancellationToken = default)
     {
         if (CustomTemplateKey.TryParse(templateKey, out var templateId))
@@ -28,7 +29,7 @@ public class WorkoutTemplateResolver : IWorkoutTemplateResolver
             return await ResolveCustomAsync(userId, templateId, cancellationToken);
         }
 
-        return await ResolveBuiltInAsync(userId, templateKey, cancellationToken);
+        return await ResolveBuiltInAsync(userId, templateKey, goal, cancellationToken);
     }
 
     public async Task<string?> NameForAsync(
@@ -93,12 +94,14 @@ public class WorkoutTemplateResolver : IWorkoutTemplateResolver
 
     /// <summary>
     /// Ugrađeni šablon je ponuda: nosi više vežbi nego što trening dobija, a koliko ih i
-    /// kojih ulazi bira nivo iskustva. Skraćivanje se dešava ovde, da bi generator dobio
-    /// isti oblik kao za lični šablon.
+    /// kojih ulazi bira nivo iskustva - i cilj bloka, jer blok snage ima najmanje dve složene
+    /// vežbe po treningu i glavna dizanja stavlja napred. Skraćivanje se dešava ovde, da bi
+    /// generator dobio isti oblik kao za lični šablon.
     /// </summary>
     private async Task<ResolvedTemplate?> ResolveBuiltInAsync(
         Guid userId,
         string templateKey,
+        Goal goal,
         CancellationToken cancellationToken)
     {
         var template = WorkoutTemplateCatalog.GetByKey(templateKey);
@@ -148,10 +151,13 @@ public class WorkoutTemplateResolver : IWorkoutTemplateResolver
             .Select(day => new ResolvedTemplateDay(
                 day.Name,
                 SessionComposition
-                    .ForLevel(
-                        day.Exercises.Select(name => exerciseByName[name]).ToList(),
-                        exercise => exercise.Type == ExerciseType.Compound,
-                        experienceLevel)
+                    .MainLiftsFirst(
+                        SessionComposition.ForLevel(
+                            day.Exercises.Select(name => exerciseByName[name]).ToList(),
+                            exercise => exercise.Type == ExerciseType.Compound,
+                            experienceLevel,
+                            goal),
+                        exercise => GoalPrescriptions.IsStrengthLift(goal, exercise.Type, exercise.SuitsLowReps))
                     .Select(exercise => new ResolvedTemplateExercise(exercise, null, null, null))
                     .ToList()))
             .ToList();

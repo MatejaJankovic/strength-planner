@@ -10,8 +10,8 @@ namespace StrengthPlanner.Tests;
 /// </summary>
 public class WorkoutTemplateCatalogTests
 {
-    private static IReadOnlyList<string> ForLevel(WorkoutTemplateDay day, ExperienceLevel level) =>
-        SessionComposition.ForLevel(day.Exercises, ExerciseCatalog.IsCompound, level);
+    private static IReadOnlyList<string> ForLevel(WorkoutTemplateDay day, ExperienceLevel level, Goal goal = Goal.Hypertrophy) =>
+        SessionComposition.ForLevel(day.Exercises, ExerciseCatalog.IsCompound, level, goal);
 
     [Fact]
     public void EveryTemplate_OnlyUsesSeededExercises()
@@ -125,22 +125,52 @@ public class WorkoutTemplateCatalogTests
     {
         // Popunjavanje treninga ne sme da probije budžet složenih vežbi — a probija ga
         // samo kada dan nema dovoljno izolacija, što ovde više nije slučaj.
+        foreach (var goal in Enum.GetValues<Goal>())
         foreach (var level in Enum.GetValues<ExperienceLevel>())
         {
-            var budget = ExperienceProgramming.MaxCompoundsPerSession(level);
+            var budget = ExperienceProgramming.MaxCompoundsPerSession(level, goal);
 
             foreach (var template in WorkoutTemplateCatalog.GetAll())
             {
                 foreach (var day in template.Days)
                 {
-                    var compounds = ForLevel(day, level).Count(ExerciseCatalog.IsCompound);
+                    var compounds = ForLevel(day, level, goal).Count(ExerciseCatalog.IsCompound);
 
                     Assert.True(
                         compounds <= budget,
-                        $"{level} {template.Key}/{day.Name}: {compounds} složenih umesto najviše {budget}.");
+                        $"{level} {goal} {template.Key}/{day.Name}: {compounds} složenih umesto najviše {budget}.");
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// U bloku snage napredni vežbač dobija dve složene vežbe po treningu, a ne jednu. Pre
+    /// ovog pravila Upper/Lower mu nijednom nedeljno nije davao veslanje, a Full Body (2
+    /// dana) nije imao bench press. Potisak iznad glave Upper/Lower i dalje ne daje: oba
+    /// dana za gornji deo ga navode tek kao treću složenu vežbu.
+    /// </summary>
+    [Fact]
+    public void AdvancedLifter_GetsTwoCompoundsPerSession_InAStrengthBlock()
+    {
+        foreach (var template in WorkoutTemplateCatalog.GetAll())
+        {
+            foreach (var day in template.Days)
+            {
+                Assert.Equal(
+                    2,
+                    ForLevel(day, ExperienceLevel.Advanced, Goal.Strength).Count(ExerciseCatalog.IsCompound));
+            }
+        }
+
+        var upperLower = WorkoutTemplateCatalog.GetByKey(WorkoutTemplateCatalog.UpperLowerKey)!;
+        var week = upperLower.Days
+            .SelectMany(day => ForLevel(day, ExperienceLevel.Advanced, Goal.Strength))
+            .ToList();
+        Assert.Contains("Barbell Row", week);
+
+        var twoDay = WorkoutTemplateCatalog.GetByKey(WorkoutTemplateCatalog.FullBodyTwoDayKey)!;
+        Assert.Contains("Bench Press", twoDay.Days.SelectMany(day => ForLevel(day, ExperienceLevel.Advanced, Goal.Strength)));
     }
 
     /// <summary>
@@ -208,10 +238,11 @@ public class WorkoutTemplateCatalogTests
             var days = template.Days.Count;
 
             foreach (var level in Enum.GetValues<ExperienceLevel>())
+            foreach (var goal in Enum.GetValues<Goal>())
             {
                 var compounds = template.Days
                     .Select(day => SessionComposition
-                        .ForLevel(day.Exercises, ExerciseCatalog.IsCompound, level)
+                        .ForLevel(day.Exercises, ExerciseCatalog.IsCompound, level, goal)
                         .Where(ExerciseCatalog.IsCompound)
                         .ToList())
                     .ToList();
@@ -241,7 +272,7 @@ public class WorkoutTemplateCatalogTests
 
                 if (clashes.Count > 0)
                 {
-                    failures.Add($"{level} {template.Key}: {string.Join("; ", clashes)}");
+                    failures.Add($"{level} {goal} {template.Key}: {string.Join("; ", clashes)}");
                 }
             }
         }
@@ -352,14 +383,18 @@ public class WorkoutTemplateCatalogTests
     /// ispod MEV ne stimuliše rast.
     /// </summary>
     [Theory]
-    [InlineData(ExperienceLevel.Beginner)]
-    [InlineData(ExperienceLevel.Intermediate)]
-    [InlineData(ExperienceLevel.Advanced)]
-    public void EveryTemplate_StaysUnderMrvForEveryMuscle(ExperienceLevel level)
+    [InlineData(ExperienceLevel.Beginner, Goal.Hypertrophy)]
+    [InlineData(ExperienceLevel.Intermediate, Goal.Hypertrophy)]
+    [InlineData(ExperienceLevel.Advanced, Goal.Hypertrophy)]
+    [InlineData(ExperienceLevel.Beginner, Goal.Strength)]
+    [InlineData(ExperienceLevel.Intermediate, Goal.Strength)]
+    [InlineData(ExperienceLevel.Advanced, Goal.Strength)]
+    public void EveryTemplate_StaysUnderMrvForEveryMuscle(ExperienceLevel level, Goal goal)
     {
         // Plan koji već na startu stoji iznad MRV tera sistem u deload pre nego što je
-        // išta naučio o korisniku.
-        var breaches = Breaches(level, (sets, band) => sets > band.Mrv, "prelazi MRV", band => band.Mrv);
+        // išta naučio o korisniku. Blok snage ima najmanje dve složene vežbe po treningu (naprednom jednu više), pa se
+        // proverava i on.
+        var breaches = Breaches(level, (sets, band) => sets > band.Mrv, "prelazi MRV", band => band.Mrv, goal: goal);
 
         Assert.True(breaches.Count == 0, string.Join(Environment.NewLine, breaches));
     }
@@ -509,14 +544,15 @@ public class WorkoutTemplateCatalogTests
         Func<decimal, VolumeLandmarkValues, bool> isBreach,
         string what,
         Func<VolumeLandmarkValues, int> limit,
-        Func<WorkoutTemplate, bool>? include = null)
+        Func<WorkoutTemplate, bool>? include = null,
+        Goal goal = Goal.Hypertrophy)
     {
         var setsPerExercise = ExperienceProgramming.StartingSetsPerExercise(level);
         var breaches = new List<string>();
 
         foreach (var template in WorkoutTemplateCatalog.GetAll().Where(include ?? (_ => true)))
         {
-            var weeklySets = WeeklySetsByMuscle(template, level, setsPerExercise);
+            var weeklySets = WeeklySetsByMuscle(template, level, setsPerExercise, goal);
 
             foreach (var seed in ExerciseCatalog.VolumeLandmarks)
             {
@@ -531,7 +567,7 @@ public class WorkoutTemplateCatalogTests
 
                 if (isBreach(sets, band))
                 {
-                    breaches.Add($"{level} {template.Key}/{seed.Muscle}: {sets} serija {what} {limit(band)}.");
+                    breaches.Add($"{level} {goal} {template.Key}/{seed.Muscle}: {sets} serija {what} {limit(band)}.");
                 }
             }
         }
@@ -542,13 +578,14 @@ public class WorkoutTemplateCatalogTests
     private static Dictionary<string, decimal> WeeklySetsByMuscle(
         WorkoutTemplate template,
         ExperienceLevel level,
-        int setsPerExercise)
+        int setsPerExercise,
+        Goal goal = Goal.Hypertrophy)
     {
         var totals = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var day in template.Days)
         {
-            foreach (var exerciseName in ForLevel(day, level))
+            foreach (var exerciseName in ForLevel(day, level, goal))
             {
                 var exercise = ExerciseCatalog.Find(exerciseName)!;
 

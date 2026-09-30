@@ -338,3 +338,20 @@ zatečenim šablonima dobija krnj trening — a taj problem se nije mogao rešit
 | [`feature/periodization-models`](features/periodization-models.md) | 3 | #11 |
 
 Stavke 5, 6, 7, 9 i 10 su preskočene odlukom korisnika, ne zbog cene.
+
+---
+
+## Gde aplikacija namerno odstupa od priručnika
+
+Runda 14 je proveravala pravila i naspram novije literature. Priručnik je ostao podrazumevan
+izvor; odstupa se samo tamo gde merenje ili literatura jasno kažu drugačije, i svako odstupanje
+je ovde, sa razlogom.
+
+| Priručnik | Aplikacija | Zašto | Grana |
+|---|---|---|---|
+| MAV je „4–8 serija po treningu" | Granica po treningu je **11** serija jednog mišića | 4–8 je MAV podeljen na treninge, dakle gde trening obično pada. Kao granica bi skinuo serije koje po literaturi još mere rast (Remmert i sar. 2025: korist se ne meri tek posle ~11): 3.884,5 serija nedeljnog volumena preko ugrađenih šablona, naspram 985,5 za 11 | [#87](features/session-volume-ceiling.md) |
+| Napredni: „do 3 složene vežbe nedeljno" | U bloku **snage** najmanje **2 složene po treningu** | Rečenica opisuje nedelju hipertrofije, gde volumen nose izolacije. Snaga je vezana za pokret i raste sa učestalošću višezglobnih dizanja (Pelland i sar. 2025; Grgic i sar. 2018); pre ovoga napredni Upper/Lower blok snage nije veslao, a dvodnevni Full Body nije imao bench | [strength-block-composition](features/strength-block-composition.md) |
+
+Obrnut smer — gde aplikacija prati priručnik, a on se oslanja na nešto što literatura ne
+potvrđuje — beleži se kod samog pravila.
+

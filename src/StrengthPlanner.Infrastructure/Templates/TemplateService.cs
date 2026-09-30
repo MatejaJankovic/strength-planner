@@ -46,19 +46,8 @@ public class TemplateService : ITemplateService
                 Name = template.Name,
                 IsCustom = false,
                 Note = template.Note,
-                Days = template.Days
-                    .Select(day => new WorkoutTemplateDayDto
-                    {
-                        Name = day.Name,
-                        // Tip vežbe se čita iz kataloga, a ne iz baze: katalog je izvor
-                        // iz kojeg se baza i puni, tu ga proveravaju testovi, i nema
-                        // tihog svrstavanja nepoznatog naziva u izolacije.
-                        Exercises = SessionComposition.ForLevel(
-                            day.Exercises,
-                            ExerciseCatalog.IsCompound,
-                            experienceLevel)
-                    })
-                    .ToList()
+                Days = DaysFor(template, experienceLevel, Goal.Hypertrophy),
+                StrengthDays = DaysFor(template, experienceLevel, Goal.Strength)
             })
             .ToList();
 
@@ -73,13 +62,9 @@ public class TemplateService : ITemplateService
 
         // Lični šabloni idu prvi: korisnik koji ih je napravio traži njih, a ne katalog.
         return custom
-            .Select(template => new WorkoutTemplateDto
+            .Select(template =>
             {
-                Key = CustomTemplateKey.For(template.Id),
-                Name = template.Name,
-                IsCustom = true,
-                Note = null,
-                Days = template.Days
+                var days = template.Days
                     .OrderBy(day => day.Order)
                     .Select(day => new WorkoutTemplateDayDto
                     {
@@ -89,9 +74,42 @@ public class TemplateService : ITemplateService
                             .Select(exercise => exercise.Exercise.Name)
                             .ToList()
                     })
-                    .ToList()
+                    .ToList();
+
+                return new WorkoutTemplateDto
+                {
+                    Key = CustomTemplateKey.For(template.Id),
+                    Name = template.Name,
+                    IsCustom = true,
+                    Note = null,
+                    Days = days,
+                    StrengthDays = days
+                };
             })
             .Concat(builtIn)
+            .ToList();
+    }
+
+    // Tip vežbe se čita iz kataloga, a ne iz baze: katalog je izvor iz kojeg se baza i puni,
+    // tu ga proveravaju testovi, i nema tihog svrstavanja nepoznatog naziva u izolacije.
+    private static List<WorkoutTemplateDayDto> DaysFor(
+        WorkoutTemplate template,
+        ExperienceLevel experienceLevel,
+        Goal goal)
+    {
+        return template.Days
+            .Select(day => new WorkoutTemplateDayDto
+            {
+                Name = day.Name,
+                Exercises = SessionComposition.MainLiftsFirst(
+                    SessionComposition.ForLevel(
+                        day.Exercises,
+                        ExerciseCatalog.IsCompound,
+                        experienceLevel,
+                        goal),
+                    name => ExerciseCatalog.Find(name) is { } exercise
+                            && GoalPrescriptions.IsStrengthLift(goal, exercise.Type, exercise.SuitsLowReps))
+            })
             .ToList();
     }
 }
