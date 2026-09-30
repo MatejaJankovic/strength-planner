@@ -362,12 +362,38 @@ public class WeeklySetAllocationTests
 
         var sets = WeeklySetAllocation.Allocate(
             slots,
-            [Target(Chest, mav: 18, mrv: 16)],
+            [Target(Chest, mav: 14, mrv: 16)],
             Banked(Chest, 0m),
             Banked(Chest, 10m));
 
         Assert.Equal(2, sets[fly.Id]);
         Assert.Equal(4, sets[bench.Id]);
+    }
+
+    [Fact]
+    public void Allocate_GivesTheAccessoryBackTheRoomAMainLiftCutFreed()
+    {
+        // Nalaz revizije, Pull dan Push/Pull/Legs (početnik, snaga): tri glavna dizanja za
+        // leđa po 4 i face pull (ramena + pola leđa) po 5 - 14,5 serija leđa u treningu. Prvi
+        // prolaz face pull spušta na 3, drugi glavna dizanja na po 3, jer se ide celim serijama:
+        // leđa 10,5, pola serije ispod granice. Ta polovina pripada face pull-u - četvrta
+        // serija ne probija ništa, a ramenima i leđima fali. Bez ponavljanja prolaza ostajala
+        // je prazna.
+        var session = SessionId(1);
+        var row = new ExerciseSetSlot(SlotId(1), session, 4, [new MuscleLoad(Quads, 1.0m)], IsMainLift: true);
+        var pullUp = new ExerciseSetSlot(SlotId(2), session, 4, [new MuscleLoad(Quads, 1.0m)], IsMainLift: true);
+        var cableRow = new ExerciseSetSlot(SlotId(3), session, 4, [new MuscleLoad(Quads, 1.0m)], IsMainLift: true);
+        var facePull = new ExerciseSetSlot(
+            SlotId(4), session, 5, [new MuscleLoad(Shoulders, 1.0m), new MuscleLoad(Quads, 0.5m)]);
+        ExerciseSetSlot[] slots = [row, pullUp, cableRow, facePull];
+
+        var sets = WeeklySetAllocation.Allocate(
+            slots,
+            [Target(Quads, mav: 15, mrv: 40), Target(Shoulders, mav: 14, mrv: 40)]);
+
+        Assert.Equal(9, sets[row.Id] + sets[pullUp.Id] + sets[cableRow.Id]);
+        Assert.Equal(4, sets[facePull.Id]);
+        Assert.Equal(TrainingConstants.MaxSetsPerMusclePerSession, TotalFor(slots, sets, Quads));
     }
 
     [Fact]

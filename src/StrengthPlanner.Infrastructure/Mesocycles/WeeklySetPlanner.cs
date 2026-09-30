@@ -139,7 +139,7 @@ public sealed class WeeklySetPlanner
                 musclesByExerciseId.GetValueOrDefault(plan.ExerciseId, []),
                 // U bloku snage glavna dizanja nose propis bloka; volumen po mišiću se
                 // podešava pomoćnim radom oko njih.
-                IsMainLift: GoalPrescriptions.IsStrengthLift(goal, plan.Exercise.Type, plan.Exercise.SuitsLowReps)))
+                IsMainLift: GoalPrescriptions.IsMainLift(goal, plan.Exercise.Type, plan.BaseRepRangeMax)))
             .ToList();
 
         // Šta je nedelja već upisala. Dve mere, jer na dva pitanja odgovaraju: koliko

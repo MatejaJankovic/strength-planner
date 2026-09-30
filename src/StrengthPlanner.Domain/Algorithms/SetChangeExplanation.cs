@@ -68,6 +68,13 @@ public static class SetChangeExplanation
             return null;
         }
 
+        // Glavno dizanje bloka snage nedeljni cilj ne pomera. Podignuto je samo ka propisu -
+        // tu nema šta da se objašnjava mišićem - a spušteno samo zbog granice oporavka.
+        if (slot.IsMainLift && direction > 0)
+        {
+            return null;
+        }
+
         if (direction < 0
             && week.SetsWithoutSessionCeiling.TryGetValue(slot.Id, out var withoutCeiling)
             && allocatedSets < withoutCeiling
@@ -90,11 +97,12 @@ public static class SetChangeExplanation
             var undone = muscle.Contribution * (previousSets - allocatedSets);
             var stimulativeWithoutTheMove = week.Stimulative.GetValueOrDefault(muscle.MuscleGroupId) + undone;
 
+            var pastMrv = week.Raw.GetValueOrDefault(muscle.MuscleGroupId) + undone - target.CeilingSets;
             var gap = direction > 0
                 ? target.TargetSets - stimulativeWithoutTheMove
-                : Math.Max(
-                    stimulativeWithoutTheMove - target.TargetSets,
-                    week.Raw.GetValueOrDefault(muscle.MuscleGroupId) + undone - target.CeilingSets);
+                : slot.IsMainLift
+                    ? pastMrv
+                    : Math.Max(stimulativeWithoutTheMove - target.TargetSets, pastMrv);
 
             if (gap > widestGap)
             {

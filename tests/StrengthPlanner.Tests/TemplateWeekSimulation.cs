@@ -124,7 +124,7 @@ internal static class TemplateWeekSimulation
                         .Select(muscle => new MuscleLoad(MuscleId(muscle.Muscle), muscle.Contribution))
                         .ToList(),
                     // Isto kao WeeklySetPlanner: u bloku snage glavna dizanja se ne pomeraju.
-                    IsMainLift: GoalPrescriptions.IsStrengthLift(goal, exercise.Type, exercise.SuitsLowReps)));
+                    IsMainLift: GoalPrescriptions.IsMainLift(goal, exercise.Type, settings.RepRangeMax)));
             }
         }
 

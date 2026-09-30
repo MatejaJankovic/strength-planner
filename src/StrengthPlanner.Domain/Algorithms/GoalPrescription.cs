@@ -82,13 +82,31 @@ public static class GoalPrescriptions
     }
 
     /// <summary>
-    /// A lift that carries a strength block's own prescription: a compound that can be
-    /// loaded for three to six. Its sets are the block's work, so volume balancing leaves
-    /// them where periodization put them (<see cref="ExerciseSetSlot.IsMainLift"/>) and moves
-    /// the accessory work around them instead.
+    /// A catalog lift that a strength block programs as a strength lift: a compound that can
+    /// be loaded for three to six. It decides a built-in template's rep range and which lifts
+    /// open a strength session; <see cref="IsMainLift"/> decides what balancing may move.
     /// </summary>
     public static bool IsStrengthLift(Goal goal, ExerciseType type, bool suitsLowReps)
     {
         return goal == Goal.Strength && type == ExerciseType.Compound && suitsLowReps;
+    }
+
+    /// <summary>
+    /// A planned exercise that carries a strength block's own prescription: a compound whose
+    /// base range sits in the strength range. Its sets are the block's work, so volume
+    /// balancing leaves them where periodization put them
+    /// (<see cref="ExerciseSetSlot.IsMainLift"/>) and moves the accessory work around them.
+    ///
+    /// Read from the plan's range rather than from the catalog, because a custom template
+    /// sets its own: a leg press the lifter entered at 12-15 is accessory work in their
+    /// strength block, and a split squat they entered at 3-5 is the lift they chose to load.
+    /// For a built-in template the two readings agree - its range comes from
+    /// <see cref="ForExercise"/>, which gives 3-6 exactly to <see cref="IsStrengthLift"/>.
+    /// </summary>
+    public static bool IsMainLift(Goal goal, ExerciseType type, int baseRepRangeMax)
+    {
+        return goal == Goal.Strength
+               && type == ExerciseType.Compound
+               && baseRepRangeMax <= ForGoal(Goal.Strength).RepRangeMax;
     }
 }

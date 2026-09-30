@@ -125,6 +125,51 @@ public class SetChangeExplanationTests
     }
 
     [Fact]
+    public void AMainLiftBackOnItsPrescription_IsNotBlamedOnTheWeek()
+    {
+        // Blok snage balansiran starim pravilom: čučanj je bio spušten na 2 od propisanih 3.
+        // Novo pravilo ga vraća na propis - nedeljni cilj glavno dizanje ne pomera, pa ni
+        // oznaka "Glutes" ne bi bila istina.
+        var squat = new ExerciseSetSlot(
+            Guid.NewGuid(), Session, 3, [new MuscleLoad(Chest, 1.0m), new MuscleLoad(Biceps, 0.5m)], IsMainLift: true);
+
+        var cause = SetChangeExplanation.Explain(
+            squat,
+            previousSets: 2,
+            allocatedSets: 3,
+            Week(
+                withoutCeiling: (squat, 3),
+                stimulative: [(Chest, 8m), (Biceps, 4m)],
+                perSessionWithoutCeiling: [(Chest, 3m), (Biceps, 1.5m)],
+                targets: [(Chest, 16m, 22m), (Biceps, 14m, 20m)]));
+
+        Assert.Null(cause);
+    }
+
+    [Fact]
+    public void AMainLiftCut_IsExplainedByMrv_NotByAMuscleAboveItsTarget()
+    {
+        // Nalaz revizije: incline bench 4 -> 3 zbog MRV-a grudi (27 bez reza naspram 26).
+        // Triceps stoji daleko iznad cilja, ali ispod MRV-a - cilj glavno dizanje ne pomera,
+        // pa triceps nije razlog.
+        var incline = new ExerciseSetSlot(
+            Guid.NewGuid(), Session, 4, [new MuscleLoad(Chest, 1.0m), new MuscleLoad(Triceps, 0.5m)], IsMainLift: true);
+
+        var cause = SetChangeExplanation.Explain(
+            incline,
+            previousSets: 4,
+            allocatedSets: 3,
+            Week(
+                withoutCeiling: (incline, 3),
+                stimulative: [(Chest, 19m), (Triceps, 20.5m)],
+                raw: [(Chest, 26m), (Triceps, 20.5m)],
+                perSessionWithoutCeiling: [(Chest, 7m), (Triceps, 3.5m)],
+                targets: [(Chest, 19m, 26m), (Triceps, 16m, 22m)]));
+
+        Assert.Equal(new SetChangeCause(Chest, SetChangeReason.WeeklyTarget), cause);
+    }
+
+    [Fact]
     public void ARaise_IsExplainedByTheMuscleTheWeekIsShortOf()
     {
         var curl = Slot(Biceps, prescribed: 3);

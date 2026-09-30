@@ -19,14 +19,15 @@ public sealed record MuscleLoad(Guid MuscleGroupId, decimal Contribution);
 /// </param>
 /// <param name="Muscles">Muscle groups this exercise loads, with their contributions.</param>
 /// <param name="IsMainLift">
-/// A lift that carries the block's own prescription - in a strength block, every compound
-/// in the strength range. The weekly volume target never moves it: its sets are the block's
-/// work, and a hypertrophy landmark must not reshape them. A recovery ceiling still can, once
-/// the accessory work in reach has nothing left to give (see <see cref="WeeklySetAllocation"/>).
-/// Measured before this flag, balancing a strength week cut a compound below its prescription
-/// while an isolation for the same muscle in the same session kept its sets 373 times over
-/// the built-in weeks - an advanced lifter's bench press at 2 sets on a Push day whose flyes
-/// kept 5, because one bench set relieves chest and triceps at once.
+/// A lift that carries the block's own prescription - in a strength block, a compound whose
+/// base range is the strength range (<see cref="GoalPrescriptions.IsMainLift"/>). The weekly
+/// volume target never moves it: its sets are the block's work, and a hypertrophy landmark
+/// must not reshape them. A recovery ceiling still can, once the accessory work in reach has
+/// nothing left to give. Measured before this flag, balancing a strength week cut a compound
+/// below its prescription while an isolation for the same muscle in the same session could
+/// still have given a set 373 times over the built-in weeks - an advanced lifter's bench
+/// press at 2 sets on a Push day whose dumbbell flyes kept 5, because one bench set relieves
+/// chest and triceps at once.
 /// </param>
 public sealed record ExerciseSetSlot(
     Guid Id,
@@ -224,27 +225,45 @@ public static class WeeklySetAllocation
         var raw = Project(slots, sets, completedRawSets);
         var perSession = ProjectPerSession(slots, sets);
 
-        // Prvi prolaz: glavna dizanja stoje na propisu, a nedelja se slaže pomoćnim radom.
-        Search(
-            slots,
-            slot => slot.IsMainLift ? (slot.PrescribedSets, slot.PrescribedSets) : bounds[slot.Id],
-            ceilingsOnly: false);
+        var mainLifts = slots.Where(slot => slot.IsMainLift).ToList();
 
-        // Drugi prolaz: glavno dizanje sme niže samo koliko granica oporavka i dalje traži -
-        // MRV nedelje ili granica treninga - pošto pomoćni rad više nema šta da da. Nedeljni
-        // cilj se ovde ne pita, pa ga nikad ne pomera.
-        Search(
-            slots.Where(slot => slot.IsMainLift).ToList(),
-            slot => (bounds[slot.Id].Lower, slot.PrescribedSets),
-            ceilingsOnly: true);
+        // Dva prolaza se smenjuju dok nijedan ništa ne pomera:
+        //  - pomoćni rad slaže nedelju, a glavna dizanja stoje tamo gde su sada (na početku
+        //    na propisu);
+        //  - glavno dizanje sme niže samo koliko granica oporavka i dalje traži - MRV nedelje
+        //    ili granica treninga - i vraća se ka propisu čim mu mesto dozvoli. Nedeljni cilj
+        //    se tu ne pita, pa ga nikad ne pomera.
+        // Ponavljanje nije ukras: kad drugi prolaz spusti glavno dizanje za celu seriju, u
+        // treningu često ostane mesta koje je prvi prolaz već oduzeo pomoćnom radu. Bez
+        // ponavljanja to mesto ostaje prazno - u 12 od 351 ugrađene nedelje bloka snage jedan
+        // potez pomoćnog rada spustio bi cenu, a niko ga nije napravio.
+        for (var round = 0; round < MaxSteps; round++)
+        {
+            var accessoriesMoved = Search(
+                slots,
+                slot => slot.IsMainLift ? (sets[slot.Id], sets[slot.Id]) : bounds[slot.Id],
+                ceilingsOnly: false);
+
+            var mainLiftsMoved = Search(
+                mainLifts,
+                slot => (bounds[slot.Id].Lower, slot.PrescribedSets),
+                ceilingsOnly: true);
+
+            if (!accessoriesMoved && !mainLiftsMoved)
+            {
+                break;
+            }
+        }
 
         return sets;
 
-        void Search(
+        bool Search(
             IReadOnlyList<ExerciseSetSlot> movable,
             Func<ExerciseSetSlot, (int Lower, int Upper)> windowFor,
             bool ceilingsOnly)
         {
+            var moved = false;
+
             for (var step = 0; step < MaxSteps; step++)
             {
                 ExerciseSetSlot? bestSlot = null;
@@ -286,21 +305,24 @@ public static class WeeklySetAllocation
 
                 if (bestSlot is null)
                 {
-                    return;
+                    return moved;
                 }
 
+                moved = true;
                 sets[bestSlot.Id] += bestDirection;
 
                 foreach (var muscle in bestSlot.Muscles)
                 {
-                    var moved = muscle.Contribution * bestDirection;
-                    stimulative[muscle.MuscleGroupId] = stimulative.GetValueOrDefault(muscle.MuscleGroupId) + moved;
-                    raw[muscle.MuscleGroupId] = raw.GetValueOrDefault(muscle.MuscleGroupId) + moved;
+                    var change = muscle.Contribution * bestDirection;
+                    stimulative[muscle.MuscleGroupId] = stimulative.GetValueOrDefault(muscle.MuscleGroupId) + change;
+                    raw[muscle.MuscleGroupId] = raw.GetValueOrDefault(muscle.MuscleGroupId) + change;
 
                     var sessionKey = (bestSlot.SessionId, muscle.MuscleGroupId);
-                    perSession[sessionKey] = perSession.GetValueOrDefault(sessionKey) + moved;
+                    perSession[sessionKey] = perSession.GetValueOrDefault(sessionKey) + change;
                 }
             }
+
+            return moved;
         }
     }
 

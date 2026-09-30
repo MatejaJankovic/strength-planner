@@ -231,6 +231,33 @@ public class GoalPrescriptionTests
         Assert.False(GoalPrescriptions.IsStrengthLift(Goal.Strength, ExerciseType.Isolation, suitsLowReps: true));
     }
 
+    [Theory]
+    [InlineData(ExerciseType.Compound, 6, true)]
+    [InlineData(ExerciseType.Compound, 5, true)]
+    [InlineData(ExerciseType.Compound, 12, false)]
+    [InlineData(ExerciseType.Compound, 15, false)]
+    [InlineData(ExerciseType.Isolation, 6, false)]
+    public void AMainLift_IsReadFromThePlansOwnRange(ExerciseType type, int baseRepRangeMax, bool expected)
+    {
+        // Lični šablon sam bira opseg: leg press na 12-15 je u njegovom bloku snage pomoćni
+        // rad, a iskorak na 3-5 je dizanje koje je izabrao da optereti.
+        Assert.Equal(expected, GoalPrescriptions.IsMainLift(Goal.Strength, type, baseRepRangeMax));
+        Assert.False(GoalPrescriptions.IsMainLift(Goal.Hypertrophy, type, baseRepRangeMax));
+    }
+
+    [Fact]
+    public void ForABuiltInTemplate_TheTwoReadingsOfAMainLiftAgree()
+    {
+        foreach (var exercise in ExerciseCatalog.Exercises)
+        {
+            var prescription = GoalPrescriptions.ForExercise(Goal.Strength, exercise.Type, exercise.SuitsLowReps);
+
+            Assert.Equal(
+                GoalPrescriptions.IsStrengthLift(Goal.Strength, exercise.Type, exercise.SuitsLowReps),
+                GoalPrescriptions.IsMainLift(Goal.Strength, exercise.Type, prescription.RepRangeMax));
+        }
+    }
+
     [Fact]
     public void AHypertrophyBlock_IgnoresTheLowRepFlag()
     {
