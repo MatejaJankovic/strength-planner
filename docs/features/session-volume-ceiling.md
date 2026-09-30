@@ -219,6 +219,10 @@ Druga revizija, samo nad ispravkama, našla je da ni ispravljeno objašnjenje ni
   primera iznad dobija „Back", a ne „Biceps"). Oznaka nije lažna — bez tog reza leđa bi bila
   iznad cilja — ali nije ni ceo razlog.
 
+Uživo, na slučaju iz druge revizije (Upper/Lower + PPL, srednji nivo, prvi dan odrađen kako je
+predložen i završen kroz API): Pull-up 4 → 3 i Straight-Arm Pulldown 3 → 4, oba uz „Back" i
+razlog `WeeklyTarget` — bez „pun trening".
+
 Jedan nalaz je oboren kao nešto što ova grana nije uvela, ali je stvaran i ide dalje:
 **balansiranje seče složenu vežbu pre izolacije** kada ona rasterećuje dva mišića odjednom — u
 bloku snage naprednog nivoa bench pada na 2 serije dok razvlačenja zadržavaju 5. Osporavači su
