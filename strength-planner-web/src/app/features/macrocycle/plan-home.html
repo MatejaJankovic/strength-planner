@@ -108,7 +108,7 @@
                         </ul>
                       </div>
                     }
-                  } @else if (templateDays(block.templateKey); as days) {
+                  } @else if (templateDays(block.templateKey, block.goal); as days) {
                     <p class="preview__note">
                       Blok još nije generisan, pa ovde stoji šablon iz kog nastaje. Serije i
                       opterećenja se računaju kad mu dođe red.
@@ -351,7 +351,7 @@
               prikazivao sadržaj šablona, više ne postoji - bez ovoga bi se plan sastavljao
               od šablona čije vežbe korisnik nigde ne vidi.
             -->
-            @if (templateDays(block.templateKey); as days) {
+            @if (templateDays(block.templateKey, block.goal); as days) {
               <ul class="tpldays">
                 @for (day of days; track day.name) {
                   <li class="tplday">
