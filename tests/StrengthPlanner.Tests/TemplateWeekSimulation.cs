@@ -167,17 +167,16 @@ internal sealed record SimulatedWeek(
     }
 
     /// <summary>
-    /// Isti propis i isti ciljevi, ali sa svakom vežbom u zasebnom treningu — dakle bez
-    /// granice po treningu, jer jedna vežba ne može da nosi više od šest serija. Tako je
-    /// alokator radio pre granice, pa je ovo poređenje "pre" i "posle" na istom ulazu.
+    /// Isti propis i isti ciljevi, ali bez granice po treningu - tako je alokator radio pre
+    /// nje, pa je ovo poređenje "pre" i "posle" na istom ulazu.
     /// </summary>
     public IReadOnlyDictionary<Guid, int> AllocatedWithoutSessionCeiling()
     {
-        var oneSessionEach = Slots
-            .Select(slot => slot with { SessionId = slot.Id })
-            .ToList();
-
-        return WeeklySetAllocation.Allocate(oneSessionEach, Targets);
+        return WeeklySetAllocation.AllocateWithoutSessionCeiling(
+            Slots,
+            Targets,
+            new Dictionary<Guid, decimal>(),
+            new Dictionary<Guid, decimal>());
     }
 
     public MuscleVolumeTarget? TargetFor(string muscle)

@@ -164,10 +164,16 @@ public sealed class WeeklySetPlanner
 
         // Zašto se koja vežba pomerila čita se iz konačne raspodele (SetChangeExplanation):
         // polazno stanje tu ne služi, jer pritisak koji je vežbu pomerio u njemu često još
-        // ne postoji.
-        var finalVolume = WeeklySetAllocation.Project(slots, allocated, completedStimulative);
-        var finalPerSession = WeeklySetAllocation.ProjectPerSession(slots, allocated);
-        var targetByMuscleGroupId = targets.ToDictionary(target => target.MuscleGroupId);
+        // ne postoji. Granica po treningu se pita uzročno - da li bi bez nje vežba ostala
+        // viša - pa se ista raspodela računa i bez granice.
+        var withoutCeiling = WeeklySetAllocation.AllocateWithoutSessionCeiling(
+            slots, targets, completedStimulative, completedRaw);
+        var balancedWeek = new BalancedWeek(
+            WeeklySetAllocation.Project(slots, allocated, completedStimulative),
+            WeeklySetAllocation.Project(slots, allocated, completedRaw),
+            withoutCeiling,
+            WeeklySetAllocation.ProjectPerSession(slots, withoutCeiling),
+            targets.ToDictionary(target => target.MuscleGroupId));
         var slotById = slots.ToDictionary(slot => slot.Id);
 
         var adjustments = new List<SetAdjustment>();
@@ -182,13 +188,7 @@ public sealed class WeeklySetPlanner
             var previousSets = plan.TargetSets;
             plan.TargetSets = sets;
 
-            var cause = SetChangeExplanation.Explain(
-                slotById[plan.Id],
-                previousSets,
-                sets,
-                finalVolume,
-                finalPerSession,
-                targetByMuscleGroupId);
+            var cause = SetChangeExplanation.Explain(slotById[plan.Id], previousSets, sets, balancedWeek);
 
             adjustments.Add(new SetAdjustment(
                 plan.WorkoutSessionId,

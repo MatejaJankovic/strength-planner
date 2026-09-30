@@ -162,6 +162,35 @@ public static class WeeklySetAllocation
         IReadOnlyDictionary<Guid, decimal> completedStimulativeSets,
         IReadOnlyDictionary<Guid, decimal> completedRawSets)
     {
+        return Allocate(slots, targets, completedStimulativeSets, completedRawSets, applySessionCeiling: true);
+    }
+
+    /// <summary>
+    /// The same allocation with the per-session ceiling lifted.
+    ///
+    /// Not a plan anyone gets: it is the answer to "did the ceiling cause this cut". An
+    /// exercise the ceiling lowered holds more sets here; one that a weekly limit lowered
+    /// holds the same. Reading that off a counterfactual of one exercise alone is not
+    /// enough - when balancing swaps two exercises of the same muscle inside one session,
+    /// putting either one back pushes the session over the ceiling, although the ceiling
+    /// never asked for the swap.
+    /// </summary>
+    public static IReadOnlyDictionary<Guid, int> AllocateWithoutSessionCeiling(
+        IReadOnlyList<ExerciseSetSlot> slots,
+        IReadOnlyList<MuscleVolumeTarget> targets,
+        IReadOnlyDictionary<Guid, decimal> completedStimulativeSets,
+        IReadOnlyDictionary<Guid, decimal> completedRawSets)
+    {
+        return Allocate(slots, targets, completedStimulativeSets, completedRawSets, applySessionCeiling: false);
+    }
+
+    private static IReadOnlyDictionary<Guid, int> Allocate(
+        IReadOnlyList<ExerciseSetSlot> slots,
+        IReadOnlyList<MuscleVolumeTarget> targets,
+        IReadOnlyDictionary<Guid, decimal> completedStimulativeSets,
+        IReadOnlyDictionary<Guid, decimal> completedRawSets,
+        bool applySessionCeiling)
+    {
         ArgumentNullException.ThrowIfNull(slots);
         ArgumentNullException.ThrowIfNull(targets);
         ArgumentNullException.ThrowIfNull(completedStimulativeSets);
@@ -211,7 +240,7 @@ public static class WeeklySetAllocation
                         direction,
                         stimulative,
                         raw,
-                        perSession,
+                        applySessionCeiling ? perSession : null,
                         targetByMuscleGroupId);
                     if (delta < bestDelta)
                     {
@@ -335,7 +364,7 @@ public static class WeeklySetAllocation
         int direction,
         IReadOnlyDictionary<Guid, decimal> stimulative,
         IReadOnlyDictionary<Guid, decimal> raw,
-        IReadOnlyDictionary<(Guid SessionId, Guid MuscleGroupId), decimal> perSession,
+        IReadOnlyDictionary<(Guid SessionId, Guid MuscleGroupId), decimal>? perSession,
         IReadOnlyDictionary<Guid, MuscleVolumeTarget> targetByMuscleGroupId)
     {
         var driftBefore = currentSets - slot.PrescribedSets;
@@ -362,10 +391,13 @@ public static class WeeklySetAllocation
 
             // Isto pravilo za jedan trening: serija preko granice troši oporavak, a rast od
             // nje više nije merljiv. Planirane serije ovog treninga, ne cele nedelje.
-            var currentSession = perSession.GetValueOrDefault((slot.SessionId, muscle.MuscleGroupId));
-            delta += CeilingPenalty
-                     * (Math.Max(0m, currentSession + moved - TrainingConstants.MaxSetsPerMusclePerSession)
-                        - Math.Max(0m, currentSession - TrainingConstants.MaxSetsPerMusclePerSession));
+            if (perSession is not null)
+            {
+                var currentSession = perSession.GetValueOrDefault((slot.SessionId, muscle.MuscleGroupId));
+                delta += CeilingPenalty
+                         * (Math.Max(0m, currentSession + moved - TrainingConstants.MaxSetsPerMusclePerSession)
+                            - Math.Max(0m, currentSession - TrainingConstants.MaxSetsPerMusclePerSession));
+            }
         }
 
         return delta;
