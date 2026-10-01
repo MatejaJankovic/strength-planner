@@ -134,6 +134,7 @@ uputstvo, G5 (pauze između serija) ostaje van opsega.
 | Grana | O čemu je | PR |
 |---|---|---|
 | [Korekcija po RIR-u čita Epley krivu](rir-correction-from-epley.md) | Korekcija je bila ravnih 3% po poenu za svaki propis, pa je laka izolacija dobijala oko 40% veću korekciju nego što njena ponavljanja opravdavaju (sajla 50 kg → 55 umesto 52.5) | — |
+| [Pad snage u oceni umora traži dve nedelje](fatigue-signal-noise.md) | Jedan slab dan je punio i RIR i pad snage, pa je vežbač koji napreduje dobijao lažan deload u svakom petom bloku (na MRV-u u tri od četiri) | — |
 
 ## Ako čitaš samo jedno
 

@@ -127,3 +127,10 @@ da ponder ne vraća otkaze u prosek — sa starom računicom ostavljenom u testu
 (−2 naspram 0).
 
 Ukupno: 550 → 555 testova na serveru, 139 na klijentu (bez izmena).
+
+## Kasnije (runda 15)
+
+Ocena umora sada računa pad snage tek kad ga potvrdi i prethodna uporediva nedelja. Jedan slab
+dan spušta i RIR i procenu maksimuma, pa ta dva signala nisu bila nezavisna: vežbač koji
+napreduje 1% nedeljno dobijao je lažan deload u 20% blokova na MAV-u i 73% na MRV-u (simulacija
+sa šumom iz runde 14). Vidi [fatigue-signal-noise.md](fatigue-signal-noise.md).

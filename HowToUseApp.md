@@ -815,6 +815,11 @@ išla do otkaza nosi taj jedan signal (0.25) i sama ne pokreće deload; uz stvar
 ili volumen na MRV-u ga pokreće. Kad se pokrene: serije prepolovljene, opterećenje 90%
 stvarno korišćenog, ciljni RIR podignut za dva. Pokreće se najviše jednom po bloku.
 
+Pad snage se računa tek kad ga kažu **dve uporedive nedelje zaredom**, isto kao kod granica
+volumena. Jedan slab dan spušta i rezervu i procenu maksimuma, pa bi „dva signala se slažu"
+bila jedna loša nedelja izbrojana dvaput. Nedelja koja je pala 6% uz RIR ispod cilja zato
+sama ne pokreće deload; ista takva nedelja posle još jednog pada ga pokreće.
+
 **Deload rasterećuje i napor.** Ciljni RIR deload nedelje je tvoj ciljni RIR **+2**
 (hipertrofija 3, snaga 4). Pad opterećenja od 10% po Epley-u vredi oko tri ponavljanja, pa
 se isti opseg na 90% odrađuje sa više u rezervi: sa maksimumom od 130 kg deload je 90 kg, a
