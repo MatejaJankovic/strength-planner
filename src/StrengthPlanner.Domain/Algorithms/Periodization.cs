@@ -404,6 +404,73 @@ public static class Periodization
         return Math.Clamp(baseTargetRir + DeloadRirShift, MinRir, MaxRir);
     }
 
+    /// <summary>
+    /// Whether a block of this model, for a lifter of this level, ends in a planned deload.
+    ///
+    /// Every block does, except a beginner's flat block. Of deloads the handbook says
+    /// <i>"Početnici ne treba da razmišljaju o ovome"</i>, and a deload week in the middle of
+    /// a nine-week program added nothing to hypertrophy and slightly reduced lower-body
+    /// strength (Coleman et al. 2024). In a four-week flat block the planned deload was a
+    /// quarter of a beginner's training time; there it becomes a fourth training week.
+    ///
+    /// A periodized block keeps it. The handbook's own linear and inverse schemes end in
+    /// <i>"Nedelja 6: DELOAD"</i>, and the block's hardest weeks lead into it - which is also
+    /// why a beginner, who gets no fatigue-driven deload
+    /// (<see cref="ExperienceProgramming.DeloadThreshold"/>), keeps this one.
+    /// </summary>
+    public static bool HasPlannedDeload(PeriodizationModel model, ExperienceLevel level)
+    {
+        return !(level == ExperienceLevel.Beginner && model == PeriodizationModel.Flat);
+    }
+
+    /// <summary>
+    /// One week's prescription for a lifter of this level: the same as
+    /// <see cref="ForWeek(PeriodizationModel, int, int, int, int, int)"/>, except that a block
+    /// without a planned deload (<see cref="HasPlannedDeload"/>) trains its deload week at the
+    /// base prescription. The block keeps its length, so a plan's dates do not move.
+    /// </summary>
+    public static WeekPrescription ForWeek(
+        PeriodizationModel model,
+        ExperienceLevel level,
+        int weekNumber,
+        int baseRepRangeMin,
+        int baseRepRangeMax,
+        int baseTargetRir,
+        int baseSets)
+    {
+        var week = ForWeek(model, weekNumber, baseRepRangeMin, baseRepRangeMax, baseTargetRir, baseSets);
+
+        if (!week.IsDeload || HasPlannedDeload(model, level))
+        {
+            return week;
+        }
+
+        return ForWeek(model, BaseWeekNumber(model), baseRepRangeMin, baseRepRangeMax, baseTargetRir, baseSets)
+            with { WeekNumber = weekNumber };
+    }
+
+    /// <summary>The whole block, week by week, for a lifter of this level.</summary>
+    public static IReadOnlyList<WeekPrescription> ForBlock(
+        PeriodizationModel model,
+        ExperienceLevel level,
+        int baseRepRangeMin,
+        int baseRepRangeMax,
+        int baseTargetRir,
+        int baseSets)
+    {
+        return Enumerable
+            .Range(1, DurationWeeks(model))
+            .Select(weekNumber => ForWeek(
+                model,
+                level,
+                weekNumber,
+                baseRepRangeMin,
+                baseRepRangeMax,
+                baseTargetRir,
+                baseSets))
+            .ToList();
+    }
+
     /// <summary>The whole block, week by week.</summary>
     public static IReadOnlyList<WeekPrescription> ForBlock(
         PeriodizationModel model,

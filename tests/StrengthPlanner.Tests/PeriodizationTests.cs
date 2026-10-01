@@ -557,4 +557,65 @@ public class PeriodizationTests
             Assert.Equal(weeks.Count, weeks.Distinct().Count());
         }
     }
+
+    [Theory]
+    [InlineData(ExperienceLevel.Beginner, PeriodizationModel.Flat, false)]
+    [InlineData(ExperienceLevel.Beginner, PeriodizationModel.LinearRising, true)]
+    [InlineData(ExperienceLevel.Beginner, PeriodizationModel.Inverse, true)]
+    [InlineData(ExperienceLevel.Beginner, PeriodizationModel.Linear, true)]
+    [InlineData(ExperienceLevel.Intermediate, PeriodizationModel.Flat, true)]
+    [InlineData(ExperienceLevel.Advanced, PeriodizationModel.Flat, true)]
+    public void OnlyABeginnersFlatBlock_HasNoPlannedDeload(ExperienceLevel level, PeriodizationModel model, bool expected)
+    {
+        Assert.Equal(expected, Periodization.HasPlannedDeload(model, level));
+    }
+
+    /// <summary>
+    /// Ravan blok početnika ima četiri trenažne nedelje: četvrta nosi isti propis kao prve tri,
+    /// a blok zadržava dužinu, pa se datumi plana ne pomeraju.
+    /// </summary>
+    [Theory]
+    [InlineData(Goal.Hypertrophy)]
+    [InlineData(Goal.Strength)]
+    public void ABeginnersFlatBlock_TrainsItsFourthWeek(Goal goal)
+    {
+        var prescription = GoalPrescriptions.ForGoal(goal);
+        var weeks = Periodization.ForBlock(
+            PeriodizationModel.Flat,
+            ExperienceLevel.Beginner,
+            prescription.RepRangeMin,
+            prescription.RepRangeMax,
+            prescription.TargetRir,
+            3);
+
+        Assert.Equal(Periodization.DurationWeeks(PeriodizationModel.Flat), weeks.Count);
+        Assert.DoesNotContain(weeks, week => week.IsDeload);
+        Assert.Equal(new[] { 1, 2, 3, 4 }, weeks.Select(week => week.WeekNumber));
+        Assert.All(weeks, week => Assert.Equal(weeks[0] with { WeekNumber = week.WeekNumber }, week));
+    }
+
+    /// <summary>
+    /// Svaki drugi blok je isti kao i bez nivoa: nivo menja samo deload ravnog bloka početnika.
+    /// </summary>
+    [Fact]
+    public void TheLevel_ChangesNothingButABeginnersFlatDeload()
+    {
+        foreach (var level in Enum.GetValues<ExperienceLevel>())
+        foreach (var model in Enum.GetValues<PeriodizationModel>())
+        foreach (var goal in Enum.GetValues<Goal>())
+        {
+            var prescription = GoalPrescriptions.ForGoal(goal);
+            var withLevel = Periodization.ForBlock(model, level, prescription.RepRangeMin, prescription.RepRangeMax, prescription.TargetRir, 4);
+            var withoutLevel = Periodization.ForBlock(model, prescription.RepRangeMin, prescription.RepRangeMax, prescription.TargetRir, 4);
+
+            if (Periodization.HasPlannedDeload(model, level))
+            {
+                Assert.Equal(withoutLevel, withLevel);
+            }
+            else
+            {
+                Assert.Equal(withoutLevel.Where(week => !week.IsDeload), withLevel.Where(week => week.WeekNumber < withoutLevel.Count));
+            }
+        }
+    }
 }
