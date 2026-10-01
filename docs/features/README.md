@@ -124,7 +124,7 @@ ono što je ispod 20 kg, ono što blok radi kroz nedelje i ono što se tvrdi o v
 | [Opseg po ulozi vežbe](rep-ranges-by-role.md) | Izolacije su nosile 8–12 u oba bloka, pa laka bučica nije mogla da primi korak; sada 10–20, uz poređenje snage na istoj težini iznad 12 ponavljanja | #91 |
 | [Volumen naprednog nivoa](experience-volume-consistency.md) | Napredni je imao najviše granice volumena (×1.2) i najmanje serija (3), pa je propis bio ispod MEV-a u 153 od 240 nedelja-mišića i balansiranje ga je krpilo; sada kreće sa 4 | #92 |
 | [Deload početnika](beginner-deload.md) | Ravan blok početnika je četvrtinu vremena provodio u rasterećenju, iako priručnik kaže da početnici o deload-u ne treba da razmišljaju; sada je i četvrta nedelja trenažna | #93 |
-| [Šum u signalu snage](landmark-signal-noise.md) | Jedno nedeljno čitanje snage je pretežno šum, pa su MAV i MRV vežbača koji napreduje klizili do poda; sada se dve uzastopne nedelje moraju složiti | — |
+| [Šum u signalu snage](landmark-signal-noise.md) | Jedno nedeljno čitanje snage je pretežno šum, pa su MAV i MRV vežbača koji napreduje klizili do poda; sada se dve uzastopne nedelje moraju složiti | #94 |
 
 ## Ako čitaš samo jedno
 
