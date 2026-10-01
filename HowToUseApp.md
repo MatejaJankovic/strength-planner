@@ -94,13 +94,33 @@ Jedno polje zaista menja plan, pa ga popuni iskreno.
 |---|---|---|---|
 | Vežbi po treningu | 5 | 6 | 6 |
 | Najviše složenih vežbi po treningu | 3 | 2 | 1 (u bloku snage 2) |
-| Serija po vežbi na startu | 3 | 4 | 3 |
+| Serija po vežbi na startu | 3 | 4 | 4 |
 | Granice volumena (MEV/MAV/MRV) | ×0.8 | ×1.0 | ×1.2 |
 | Automatski deload zbog umora | **ne** | da (prag 0.60) | da (prag 0.50) |
 
 Početnik namerno **ne** dobija rani deload: procena RIR-a je kod početnika najnepouzdanija,
 a nepotreban deload košta celu nedelju napretka. Planirani deload na kraju bloka i dalje
 dobija.
+
+Napredni vežbač kreće sa istim brojem serija kao srednji nivo, iako priručnik za njega kaže
+„manji volumen". Taj manji volumen podrazumeva napredne tehnike (drop set, rest-pause), a njih
+aplikacija ne modeluje. Bez njih bi manje serija značilo manje stimulusa baš za vežbača čije
+granice stoje najviše.
+
+Ni tada svaki šablon naprednom ne daje MEV za svaki mišić. U bloku hipertrofije on dobija
+jednu složenu vežbu po treningu, a MEV mu je za grudi i leđa 12, dok jedan trening nosi
+najviše oko 11 serija jednog mišića:
+
+- **Push/Pull/Legs (3 dana):** grudi se treniraju jednom nedeljno i staju na 11, a leđa
+  dobijaju samo jedno veslanje (oko 9);
+- **Upper/Lower + Push/Pull/Legs:** Upper dan zadržava bench, pa se leđa treniraju samo na
+  Pull danu i staju na 11;
+- gluteusi ostaju ispod MEV-a na većini šablona, a listovi i trbuh na Full Body.
+
+Jedini šablon koji naprednom daje MEV za svaki mišić u svakoj nedelji je **Upper/Lower x3**,
+ali traži šest treninga. Od šablona sa pet dana ili manje najbolji je **Upper/Lower (4 dana)**:
+ispod MEV-a je samo u prvoj nedelji linearnog bloka, koja nosi seriju manje (gluteusi, a u
+bloku snage biceps), i u prve dve nedelje obrnutog.
 
 Koliko puta nedeljno treniraš ne unosiš nigde. To bira šablon treninga na kasnijem ekranu:
 šablon od tri dana *jeste* „tri treninga nedeljno".
@@ -357,7 +377,7 @@ raspored.
 | 5 | `7 × 3–6` |
 | 6 (deload) | `3 × 5–8` |
 
-Deload polovi **tvojih šest** na tri; da si uzeo ugrađeni šablon, polovio bi tri serije
+Deload polovi **tvojih šest** na tri; da si uzeo ugrađeni šablon, polovio bi četiri serije
 koliko naprednom vežbaču sledi po nivou, i dobio bi dve. I vraća **tvoj** opseg `5–8`, a ne
 `8–12` koji nosi cilj hipertrofije.
 

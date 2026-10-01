@@ -404,9 +404,9 @@ public class WorkoutTemplateCatalogTests
     /// pogađa — plan ispod MEV ne stimuliše rast. Meri se na srednjem nivou, koji je
     /// referenca sistema (neskalirane seed granice, ponašanje nepromenjeno od početka).
     ///
-    /// Početnik i napredni vežbač ostaju ispod MEV za pojedine grupe i to nije stvar
-    /// šablona nego njihovih konstanti — vidi
-    /// <see cref="LevelConstants_CapTheWeekBelowTheAdvancedLifterOwnMev"/>.
+    /// Početnik i napredni vežbač ostaju ispod MEV za pojedine grupe. Za naprednog je spisak
+    /// zabeležen, sa uzrokom - vidi
+    /// <see cref="AnAdvancedHypertrophyWeek_FallsBelowMev_OnlyWhereRecorded"/>.
     /// </summary>
     [Fact]
     public void TemplatesOfThreeDaysOrMore_ReachMevAtTheReferenceLevel()
@@ -455,32 +455,162 @@ public class WorkoutTemplateCatalogTests
     }
 
     /// <summary>
-    /// Zabeležena granica sistema, ne šablona.
-    ///
-    /// Naprednom vežbaču sistem daje 3 serije po vežbi i 6 vežbi po treningu, a njegove
-    /// granice volumena množi sa 1.2. Zbir skaliranih MEV vrednosti tada premašuje ono
-    /// što nedelja uopšte može da isporuči na manje od šest treninga — nijedan šablon to
-    /// ne može da popravi. Ako se konstante nivoa jednog dana usklade, ovaj test će pasti
-    /// i treba ga obrisati.
+    /// Nivo čije granice volumena stoje više ne sme da krene sa manje serija po vežbi. Do
+    /// runde 14 je napredni nivo imao granice ×1.2 i 3 serije, a srednji ×1.0 i 4: propis
+    /// naprednog je bio ispod njegovog MEV-a u 153 od 240 nedelja-mišića (hipertrofija, ravan
+    /// model, šabloni od tri dana naviše), a razliku je krpilo balansiranje.
     /// </summary>
     [Fact]
-    public void LevelConstants_CapTheWeekBelowTheAdvancedLifterOwnMev()
+    public void AHigherVolumeBand_NeverStartsWithFewerSetsPerExercise()
     {
-        const int level3DayTemplateDays = 3;
+        var levels = Enum.GetValues<ExperienceLevel>();
 
-        var deliverable = level3DayTemplateDays
-                          * ExperienceProgramming.ExercisesPerSession(ExperienceLevel.Advanced)
-                          * ExperienceProgramming.StartingSetsPerExercise(ExperienceLevel.Advanced);
+        foreach (var higher in levels)
+        foreach (var lower in levels.Where(level =>
+                     ExperienceProgramming.LandmarkScale(level) < ExperienceProgramming.LandmarkScale(higher)))
+        {
+            Assert.True(
+                ExperienceProgramming.StartingSetsPerExercise(higher) >= ExperienceProgramming.StartingSetsPerExercise(lower),
+                $"{higher} ima više granice od {lower}, a kreće sa manje serija.");
+        }
+    }
 
-        var requiredMev = ExerciseCatalog.VolumeLandmarks.Sum(seed =>
-            ExperienceProgramming
-                .ScaleLandmarks(new VolumeLandmarkValues(seed.Mev, seed.Mav, seed.Mrv), ExperienceLevel.Advanced)
-                .Mev);
+    /// <summary>
+    /// Zabeležena granica sistema: gde napredni vežbač u bloku hipertrofije i posle
+    /// balansiranja ostaje ispod svog MEV-a, i zašto. Meri se osnovna nedelja ravnog modela na
+    /// šablonima od tri dana naviše; spisak mora da se poklopi tačno, pa se svaka promena
+    /// šablona, sastava ili granica ovde vidi. Mišić koji šablon uopšte ne trenira se čita kao
+    /// nula serija, a ne preskače se - inače bi najveći mogući manjak nestao bez traga.
+    ///
+    /// Dva uzroka, i test za svaki par proverava koji je:
+    ///
+    /// <list type="bullet">
+    /// <item><b>Granica serija po treningu</b> (11): MEV naprednog za grudi i leđa je 12, pa
+    /// mišić koji se trenira u jednom treningu nedeljno ostaje na 11 - a bez granice bi
+    /// balansiranje doseglo MEV. Grudi na Push/Pull/Legs, i leđa na Upper/Lower +
+    /// Push/Pull/Legs, gde Upper dan naprednom zadržava samo bench.</item>
+    /// <item><b>Sastav treninga</b>: MEV se ne doseže ni bez granice. Napredni u hipertrofiji
+    /// dobija jednu složenu vežbu po treningu (priručnikovo „do 3 složene nedeljno"), pa leđa
+    /// na Push/Pull/Legs imaju samo jedno veslanje, a gluteusi i zadnja loža volumen dobijaju
+    /// iz složenih vežbi. Listovi i trbuh na Full Body imaju po jednu vežbu nedeljno, a ona
+    /// staje na 6 serija.</item>
+    /// </list>
+    ///
+    /// Zamenio je test koji je granicu tvrdio zbirom (3 dana × 6 vežbi × 3 serije = 54 naspram
+    /// zbira MEV vrednosti 90). Taj račun je bio pogrešan: serija složene vežbe puni više
+    /// grupa. Sa 4 serije je i dalje prolazio (72 &lt; 90).
+    /// </summary>
+    [Fact]
+    public void AnAdvancedHypertrophyWeek_FallsBelowMev_OnlyWhereRecorded()
+    {
+        const string SessionCeiling = "granica po treningu";
+        const string Composition = "sastav treninga";
 
-        Assert.True(
-            deliverable < requiredMev,
-            $"Napredni nivo sada isporučuje {deliverable} serija nedeljno na tri dana, "
-            + $"a zbir njegovih MEV vrednosti je {requiredMev} — ograničenje više ne važi.");
+        var recorded = new Dictionary<string, string>
+        {
+            ["full-body/Glutes"] = Composition,
+            ["full-body/Calves"] = Composition,
+            ["full-body/Abs"] = Composition,
+            ["push-pull-legs/Chest"] = SessionCeiling,
+            ["push-pull-legs/Back"] = Composition,
+            ["push-pull-legs/Hamstrings"] = Composition,
+            ["push-pull-legs/Glutes"] = Composition,
+            ["full-body-4/Glutes"] = Composition,
+            ["upper-lower-ppl/Back"] = SessionCeiling,
+            ["upper-lower-ppl/Glutes"] = Composition,
+            ["push-pull-legs-6/Glutes"] = Composition,
+        };
+
+        var found = new Dictionary<string, string>();
+
+        foreach (var template in WorkoutTemplateCatalog.GetAll().Where(template => template.Days.Count >= 3))
+        {
+            var week = TemplateWeekSimulation.Build(
+                template,
+                ExperienceLevel.Advanced,
+                Goal.Hypertrophy,
+                PeriodizationModel.Flat,
+                Periodization.BaseWeekNumber(PeriodizationModel.Flat));
+            var withoutCeiling = WeeklySetAllocation.Project(
+                week.Slots,
+                week.AllocatedWithoutSessionCeiling(),
+                new Dictionary<Guid, decimal>());
+
+            foreach (var seed in ExerciseCatalog.VolumeLandmarks)
+            {
+                var mev = ExperienceProgramming
+                    .ScaleLandmarks(new VolumeLandmarkValues(seed.Mev, seed.Mav, seed.Mrv), ExperienceLevel.Advanced)
+                    .Mev;
+                var muscleGroupId = TemplateWeekSimulation.MuscleId(seed.Muscle);
+
+                if (week.Weekly(seed.Muscle) >= mev)
+                {
+                    continue;
+                }
+
+                found[$"{template.Key}/{seed.Muscle}"] = withoutCeiling.GetValueOrDefault(muscleGroupId) >= mev
+                    ? SessionCeiling
+                    : Composition;
+            }
+        }
+
+        Assert.Equal(
+            recorded.OrderBy(entry => entry.Key).Select(entry => $"{entry.Key}: {entry.Value}"),
+            found.OrderBy(entry => entry.Key).Select(entry => $"{entry.Key}: {entry.Value}"));
+    }
+
+    /// <summary>
+    /// Ono što uputstvo naprednom preporučuje, drži test. Upper/Lower x3 mu daje MEV za
+    /// svaki mišić u svakoj trenažnoj nedelji svakog modela koji čarobnjak nudi. Upper/Lower
+    /// (4 dana) ispod MEV-a pada samo u prvoj nedelji linearnog bloka (gluteusi, a u bloku
+    /// snage biceps) i u prve dve nedelje obrnutog.
+    /// </summary>
+    [Fact]
+    public void TheTemplatesTheGuideRecommends_GiveAnAdvancedLifterMev_WhereTheGuideSays()
+    {
+        var offered = new[] { PeriodizationModel.Flat, PeriodizationModel.LinearRising, PeriodizationModel.Inverse };
+        var belowMev = new List<string>();
+
+        foreach (var key in new[] { WorkoutTemplateCatalog.UpperLowerThreeXKey, WorkoutTemplateCatalog.UpperLowerKey })
+        foreach (var goal in Enum.GetValues<Goal>())
+        foreach (var model in offered)
+        {
+            var template = WorkoutTemplateCatalog.GetByKey(key)!;
+
+            for (var weekNumber = 1; weekNumber <= Periodization.DurationWeeks(model); weekNumber++)
+            {
+                if (Periodization.ForWeek(model, weekNumber, 8, 12, 1, 3).IsDeload)
+                {
+                    continue;
+                }
+
+                var week = TemplateWeekSimulation.Build(template, ExperienceLevel.Advanced, goal, model, weekNumber);
+
+                foreach (var seed in ExerciseCatalog.VolumeLandmarks)
+                {
+                    var mev = ExperienceProgramming
+                        .ScaleLandmarks(new VolumeLandmarkValues(seed.Mev, seed.Mav, seed.Mrv), ExperienceLevel.Advanced)
+                        .Mev;
+
+                    if (week.Weekly(seed.Muscle) < mev)
+                    {
+                        belowMev.Add($"{key} {goal} {model} w{weekNumber} {seed.Muscle}");
+                    }
+                }
+            }
+        }
+
+        Assert.Equal(
+            new[]
+            {
+                "upper-lower Strength LinearRising w1 Biceps",
+                "upper-lower Strength Inverse w1 Biceps",
+                "upper-lower Strength Inverse w2 Biceps",
+                "upper-lower Hypertrophy LinearRising w1 Glutes",
+                "upper-lower Hypertrophy Inverse w1 Glutes",
+                "upper-lower Hypertrophy Inverse w2 Glutes",
+            }.Order(),
+            belowMev.Order());
     }
 
     /// <summary>
