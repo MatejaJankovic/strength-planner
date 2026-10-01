@@ -89,7 +89,7 @@ export class PlanHome {
       value: PeriodizationModel.Flat,
       label: 'Ravan',
       weeks: 4,
-      effect: 'Tvoj opseg ponavljanja svake nedelje. Četvrta je deload.',
+      effect: 'Tvoj opseg ponavljanja svake nedelje. Četvrta je deload, a početnik je trenira kao ostale.',
     },
     {
       value: PeriodizationModel.LinearRising,
