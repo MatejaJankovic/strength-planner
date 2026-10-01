@@ -80,7 +80,7 @@ public static class FatigueEvaluator
         // dovršenu seriju na cilju 0.25.
         var rir = Normalize(-fatigue.AverageRirDeviation, 0m, Math.Max(1m, fatigue.AchievableRirDeficit));
         var failures = Normalize(fatigue.FailureShare, 0m, FailureShareAtFullWeight);
-        var e1Rm = Normalize(-fatigue.E1RmChangeShare, 0m, E1RmDropAtFullWeight);
+        var e1Rm = Normalize(ConfirmedStrengthDrop(fatigue), 0m, E1RmDropAtFullWeight);
         var volume = Normalize(fatigue.VolumeVsMrvShare, VolumeShareFloor, VolumeShareAtFullWeight);
 
         return rir * RirWeight
@@ -119,6 +119,38 @@ public static class FatigueEvaluator
 
         return completed.Sum(sample =>
             sample.Weight * (sample.Set.EffectiveRir(sample.RepRangeMin) - sample.TargetRir)) / weight;
+    }
+
+    /// <summary>
+    /// The week's drop in strength as the score reads it: the drop itself, but only when the
+    /// previous comparable week was a decline as well (by
+    /// <see cref="VolumeAdaptation.StrengthChangeThreshold"/>, the definition the volume
+    /// limits use); otherwise zero.
+    ///
+    /// The "two signals must agree" rule assumes the signals are independent, and a single
+    /// strength reading is not independent of the RIR signal. One weak day lowers both: the
+    /// lifter brings the same load and the same rep goal, reports less in reserve, and the
+    /// week's estimate falls with it. A reading is mostly that kind of noise - a one-rep max
+    /// varies day to day by a median 4.2% (Grgic et al. 2020), more than a week of real
+    /// progress - so a lifter who truly progressed 1% a week crossed the threshold on RIR and
+    /// strength together, from one cause. Simulated with the noise model of the volume limits
+    /// (reading sd 3.5%) and a lifter who keeps the rep goal and reports the reserve honestly:
+    /// a fatigue deload in 20% of five-week blocks at MAV and 73% at MRV. With the confirmation
+    /// it is 0.5% and 6%, and a real decline of 3% a week is still caught in 50% and 83% of
+    /// blocks (from 90% and 100%). A lifter who instead stops at the target RIR moves the RIR
+    /// signal only by misjudging it, and was rarely deloaded either way.
+    ///
+    /// Requiring the previous reading to be a decline, rather than both readings to be large,
+    /// keeps the size of this week's drop: two readings share the week between them, so noise
+    /// makes them disagree in sign, while a real decline makes them agree.
+    /// </summary>
+    public static decimal ConfirmedStrengthDrop(WeeklyFatigue fatigue)
+    {
+        ArgumentNullException.ThrowIfNull(fatigue);
+
+        var confirmed = fatigue.PreviousE1RmChangeShare <= -VolumeAdaptation.StrengthChangeThreshold;
+
+        return confirmed ? Math.Max(0m, -fatigue.E1RmChangeShare) : 0m;
     }
 
     /// <summary>

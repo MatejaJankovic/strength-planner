@@ -552,12 +552,17 @@ public sealed class DeloadService
         var e1RmChange = await GetE1RmChangeShareAsync(userId, mesocycleId, weekNumber, sets, cancellationToken);
         var volumeShare = await GetVolumeVsMrvShareAsync(userId, mesocycleId, weekId, cancellationToken);
 
+        // Isto čitanje nedelju ranije: pad snage ulazi u ocenu tek kad ga potvrdi i prethodna
+        // nedelja, jer jedan slab dan spušta i RIR i procenu (FatigueEvaluator.ConfirmedStrengthDrop).
+        var previousE1RmChange = await GetPreviousE1RmChangeShareAsync(userId, mesocycleId, weekNumber, cancellationToken);
+
         return new WeeklyFatigue(
             rirDeviation,
             achievableDeficit,
             failureShare,
             e1RmChange,
-            volumeShare);
+            volumeShare,
+            previousE1RmChange);
     }
 
     /// <summary>
@@ -591,21 +596,7 @@ public sealed class DeloadService
             return 0m;
         }
 
-        var previousSets = await _db.SetLogs
-            .AsNoTracking()
-            .Where(set => set.ExercisePlan.WorkoutSession.TrainingWeek.MesocycleId == mesocycleId
-                          && set.ExercisePlan.WorkoutSession.TrainingWeek.WeekNumber == comparableWeekNumber
-                          && set.ExercisePlan.WorkoutSession.TrainingWeek.Mesocycle.UserId == userId)
-            .Select(set => new SetSignal(
-                set.ExercisePlan.ExerciseId,
-                set.Reps,
-                set.Rir,
-                set.IsFailure,
-                set.WeightKg,
-                set.BodyweightLoadKg,
-                set.ExercisePlan.TargetRir,
-                set.ExercisePlan.RepRangeMin))
-            .ToListAsync(cancellationToken);
+        var previousSets = await GetWeekSignalsAsync(userId, mesocycleId, comparableWeekNumber.Value, cancellationToken);
 
         if (previousSets.Count == 0)
         {
@@ -622,6 +613,58 @@ public sealed class DeloadService
         return StrengthChange.ChangeShare(
             currentSets.Select(ToStrengthSample),
             previousSets.Select(ToStrengthSample)) ?? 0m;
+    }
+
+    /// <summary>
+    /// Promena snage prethodne uporedive nedelje u odnosu na nedelju pre nje — isto čitanje
+    /// kao <see cref="GetE1RmChangeShareAsync"/>, pomereno za jednu nedelju. Nula kada
+    /// poređenja nema, što pad ne potvrđuje.
+    /// </summary>
+    private async Task<decimal> GetPreviousE1RmChangeShareAsync(
+        Guid userId,
+        Guid mesocycleId,
+        int weekNumber,
+        CancellationToken cancellationToken)
+    {
+        var previousWeekNumber = await ComparableWeek.PreviousTrainingWeekAsync(
+            _db,
+            userId,
+            mesocycleId,
+            weekNumber,
+            cancellationToken);
+
+        if (previousWeekNumber is null)
+        {
+            return 0m;
+        }
+
+        var previousSets = await GetWeekSignalsAsync(userId, mesocycleId, previousWeekNumber.Value, cancellationToken);
+
+        return await GetE1RmChangeShareAsync(userId, mesocycleId, previousWeekNumber.Value, previousSets, cancellationToken);
+    }
+
+    /// <summary>Serije jedne nedelje mezociklusa, u obliku koji čitaju signali umora.</summary>
+    private async Task<List<SetSignal>> GetWeekSignalsAsync(
+        Guid userId,
+        Guid mesocycleId,
+        int weekNumber,
+        CancellationToken cancellationToken)
+    {
+        return await _db.SetLogs
+            .AsNoTracking()
+            .Where(set => set.ExercisePlan.WorkoutSession.TrainingWeek.MesocycleId == mesocycleId
+                          && set.ExercisePlan.WorkoutSession.TrainingWeek.WeekNumber == weekNumber
+                          && set.ExercisePlan.WorkoutSession.TrainingWeek.Mesocycle.UserId == userId)
+            .Select(set => new SetSignal(
+                set.ExercisePlan.ExerciseId,
+                set.Reps,
+                set.Rir,
+                set.IsFailure,
+                set.WeightKg,
+                set.BodyweightLoadKg,
+                set.ExercisePlan.TargetRir,
+                set.ExercisePlan.RepRangeMin))
+            .ToListAsync(cancellationToken);
     }
 
     private static StrengthSample ToStrengthSample(SetSignal set)
