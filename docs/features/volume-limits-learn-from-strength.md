@@ -100,3 +100,9 @@ zaokruživanja. Sva zatečena pravila o pojasu, koraku i lutanju od seed-a ostaj
 testovima.
 
 Ukupno: 568 → 576 testova na serveru, 139 na klijentu (bez izmena).
+
+## Kasnije (runda 14)
+
+Snaga sada pomera granice tek kad se **dve uzastopne uporedive nedelje** slože. Jedno čitanje
+je pretežno šum, i uz njega su granice vežbača koji napreduje klizile naniže (MAV 16 → 11,
+MRV 22 → 12 za godinu dana u simulaciji). Vidi [landmark-signal-noise.md](landmark-signal-noise.md).

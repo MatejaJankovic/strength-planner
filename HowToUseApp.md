@@ -582,7 +582,11 @@ Dugme **„Vrati podrazumevane granice"** poništava naučeno.
 
 Svaka granica uči iz onoga što njoj pripada. **MRV** (plafon oporavka) čita umor: rezervu u
 RIR-u, otkaze i pad snage. **MAV** i **MEV** čitaju **napredak** — da li je ono što dižeš
-poraslo u odnosu na poslednju uporedivu nedelju:
+poraslo u odnosu na poslednju uporedivu nedelju. Snaga se računa tek kad je kažu **dve
+uporedive nedelje zaredom**: „raste" znači da je porasla obe nedelje, „pada" da je pala obe.
+Jedna nedelja je pretežno šum. Pogrešno procenjena rezerva za jedno ponavljanje pomera
+procenu maksimuma za oko 2.4%, a i sam maksimum varira iz dana u dan više nego što
+vežbač u nedelji stvarno napreduje.
 
 | Nedelja | Šta se pomera |
 |---|---|
