@@ -37,7 +37,7 @@ jer je to materijal za odbranu:
 
 | Priručnik | Aplikacija |
 |---|---|
-| *"jedno ponavljanje je ekvivalentno povećanju opterećenja za otprilike 2-3%"* | `RpeCorrectionPerPoint = 0.03` — korekcija od 3% po RIR poenu je tačno to |
+| *"jedno ponavljanje je ekvivalentno povećanju opterećenja za otprilike 2-3%"* | Korekcija po RIR poenu je Epley-eva za propis: 2.7% za 3-6, 2.4% za 8-12, 2.2% za izolaciju 10-20 — u tom rasponu. Do runde 15 je bila ravnih 3%, gornja ivica (vidi [rir-correction-from-epley](features/rir-correction-from-epley.md)) |
 | *"Progressive overload nije: dodavanje serija"* | Progresija menja opterećenje i ponavljanja, nikad broj serija |
 | *"Pravi volumen za tebe ćeš odrediti testiranjem i prilagođavanjem tokom dužeg perioda"* | Adaptivne MEV/MRV granice rade upravo to |
 | *"Planiraj [deload] na vreme kako bi izbegao negativne efekte nakupljenog zamora"* | Auto-deload iz ocene umora, umesto čekanja četvrte nedelje |

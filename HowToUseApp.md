@@ -759,22 +759,41 @@ lek finiji korak na ekranu „Vežbe" ili opseg umesto fiksnog broja.
 **Sopstvena masa je opterećenje.** Zgib, sklek i iskorak nose deo tvoje telesne mase: 100%,
 64% i 85% redom. Sve računice — korekcija, procena maksimuma, deload, tonaža — rade sa
 **ukupnim** opterećenjem, a prikazuje se i unosi ono što je *dodato*. Zato zgib sa +10 kg
-uz korekciju od 6% ne dobija 0.6 kg nego 5.4 kg: procenat se meri na celom poslu, ne na
+uz korekciju od 4.9% ne dobija 0.5 kg nego 4.4 kg: procenat se meri na celom poslu, ne na
 pojasu. Kada pravilo traži manje od tvog tela, predlog stane na sopstvenoj masi — dalje se
 napreduje ponavljanjima. Plank nema udeo (izdržaj nema ponavljanje čije bi se opterećenje
 merilo) i ne koristi ga nijedan ugrađen šablon.
 
-**Korekcija po RIR-u.** Sledeće opterećenje se koriguje za `(prosečan RIR − ciljni RIR) × 3%`,
-ograničeno na **±10%**. Lakše nego traženo → težina raste; teže → pada. Serija ispod
-donje granice opsega meri se kapacitetom: ponavljanja plus RIR, u odnosu na donju granicu.
-5 ponavljanja sa RIR 2 u opsegu 8–12 je isto što i otkaz na 7, pa sledeći put težina pada.
-Zato korekcija naniže može da dosegne isti plafon kao naviše.
+**Korekcija po RIR-u.** Sledeće opterećenje se koriguje za onoliko koliko po Epley-u vredi
+razlika između prosečnog i ciljnog RIR-a, ograničeno na **±10%**:
+`(prosečan RIR − ciljni RIR) / (30 + sredina opsega + ciljni RIR)`. Lakše nego traženo →
+težina raste; teže → pada. Jedno ponavljanje rezerve vredi manje opterećenja u dužoj seriji:
+
+| Propis | Jedan RIR vredi |
+|---|---|
+| snaga 3–6, RIR 2 | 2.7% |
+| hipertrofija 8–12, RIR 1 | 2.4% |
+| izolacija 10–20, RIR 1 | 2.2% |
+
+> Priručnik kaže da je jedno ponavljanje „otprilike 2–3%" opterećenja, i tabela ostaje u tom
+> rasponu. Ravnih 3% za svaku vežbu, gornja ivica raspona, lakoj seriji izolacije je davalo
+> oko 40% veću korekciju nego što njena ponavljanja opravdavaju: sajla od 50 kg posle 3 × 15
+> sa RIR 4 je išla na 55 kg, a po Epley-u tih 15 ponavljanja sa RIR 1 ide na 53.3 (predlog je
+> sada 52.5). Ista kriva sada važi za korekciju, procenu maksimuma, radnu težinu i korak.
+
+Serija ispod donje granice opsega meri se kapacitetom: ponavljanja plus RIR, u odnosu na
+donju granicu. 5 ponavljanja sa RIR 2 u opsegu 8–12 je isto što i otkaz na 7, pa sledeći put
+težina pada. Zato isto odstupanje vredi isto u oba smera, a otkaz daleko ispod opsega stiže i
+do granice od −10%. Naviše granica u praksi ne dolazi: RIR na ekranu ide do 5, a četiri poena
+iznad cilja su u 8–12 oko 9.8%.
 
 Korak tega ograničava koliko fino korekcija može da se izrazi: do pet koraka težine (bučice
 do 10 kg, šipka i sajla do 12.5 kg, mašina do 25 kg) čak i punih −10% zaokruživanje vraća na
-istu težinu. Kad se to desi sa korekcijom naniže na punom plafonu — sesija daleko ispod
-opsega — težina se spušta za **jedan korak**, osim kad bi tako ostala prazna ruka (bučica od
-2 kg nema lakšu). Manja korekcija naniže tu ostavlja težinu, pa se napreduje ponavljanjima.
+istu težinu. Kad se to desi posle sesije koja je bila bar **tri ponavljanja** teža od ciljnog
+RIR-a — sesija daleko ispod opsega, na primer 5, 4 i 4 sa RIR 1 u opsegu 8–12 — težina se
+spušta za **jedan korak**, osim kad bi tako ostala prazna ruka (bučica od 2 kg nema lakšu).
+Manja razlika tu ostavlja težinu (otkaz na 7, jedno ispod dna), pa se napreduje
+ponavljanjima.
 
 **Procena maksimuma (e1RM).** Epley formula preko efektivnih ponavljanja
 (`ponavljanja + RIR`), samo za serije do 12 ponavljanja **i sa RIR-om do 3**. Serija sa
