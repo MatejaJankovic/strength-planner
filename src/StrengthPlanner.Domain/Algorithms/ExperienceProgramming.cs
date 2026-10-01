@@ -135,11 +135,10 @@ public static class ExperienceProgramming
     /// fatigue should not pull a deload forward at all.
     ///
     /// Beginners get null on purpose. The handbook says of deloads that <i>"Početnici ne
-    /// treba da razmišljaju o ovome"</i>, and a deload week in the middle of a program added
-    /// nothing to hypertrophy and slightly reduced lower-body strength (Coleman et al. 2024),
-    /// so an unnecessary one costs a beginner a week of progress. A periodized block keeps
-    /// its planned deload; a flat one has none
-    /// (<see cref="Periodization.HasPlannedDeload"/>).
+    /// treba da razmišljaju o ovome"</i>, and in untrained men reduced-volume deloads neither
+    /// helped nor hindered hypertrophy and strength endurance (Pancar et al. 2026), so there
+    /// is nothing for a fatigue-driven one to gain. A periodized block keeps its planned
+    /// deload; a flat one has none (<see cref="Periodization.HasPlannedDeload"/>).
     ///
     /// The reason used to be that beginners misjudge RIR. That is the handbook's claim, but
     /// the meta-analysis on RIR accuracy found no effect of training experience on it

@@ -5,7 +5,10 @@ namespace StrengthPlanner.Domain.Enums;
 /// </summary>
 public enum PeriodizationModel
 {
-    /// <summary>Ravan blok: isti propis svake nedelje, deload na kraju.</summary>
+    /// <summary>
+    /// Ravan blok: isti propis svake nedelje, deload na kraju - osim za početnika, kome je i
+    /// četvrta nedelja trenažna (Periodization.HasPlannedDeload).
+    /// </summary>
     Flat = 0,
 
     /// <summary>

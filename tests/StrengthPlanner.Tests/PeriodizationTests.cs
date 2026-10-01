@@ -558,16 +558,24 @@ public class PeriodizationTests
         }
     }
 
-    [Theory]
-    [InlineData(ExperienceLevel.Beginner, PeriodizationModel.Flat, false)]
-    [InlineData(ExperienceLevel.Beginner, PeriodizationModel.LinearRising, true)]
-    [InlineData(ExperienceLevel.Beginner, PeriodizationModel.Inverse, true)]
-    [InlineData(ExperienceLevel.Beginner, PeriodizationModel.Linear, true)]
-    [InlineData(ExperienceLevel.Intermediate, PeriodizationModel.Flat, true)]
-    [InlineData(ExperienceLevel.Advanced, PeriodizationModel.Flat, true)]
-    public void OnlyABeginnersFlatBlock_HasNoPlannedDeload(ExperienceLevel level, PeriodizationModel model, bool expected)
+    /// <summary>
+    /// Svih 12 parova nivo × model, a očekivanje je zapisano ovde, ne izvedeno iz pravila koje
+    /// se proverava: deload gubi samo ravan blok početnika. Prva verzija je imala šest redova,
+    /// pa je mutant koji deload skida i naprednom u linearnom bloku - najčešćem bloku, jer je
+    /// linearan predlog za svaki - prolazio ceo paket.
+    /// </summary>
+    [Fact]
+    public void OnlyABeginnersFlatBlock_HasNoPlannedDeload()
     {
-        Assert.Equal(expected, Periodization.HasPlannedDeload(model, level));
+        foreach (var level in Enum.GetValues<ExperienceLevel>())
+        foreach (var model in Enum.GetValues<PeriodizationModel>())
+        {
+            var expected = !(level == ExperienceLevel.Beginner && model == PeriodizationModel.Flat);
+
+            Assert.True(
+                expected == Periodization.HasPlannedDeload(model, level),
+                $"{level} {model}: očekivano {(expected ? "ima" : "nema")} deload.");
+        }
     }
 
     /// <summary>
@@ -595,7 +603,9 @@ public class PeriodizationTests
     }
 
     /// <summary>
-    /// Svaki drugi blok je isti kao i bez nivoa: nivo menja samo deload ravnog bloka početnika.
+    /// Svaki drugi blok je isti kao i bez nivoa, a u ravnom bloku početnika je poslednja
+    /// nedelja osnovna, ne deload. Grana se bira istim nezavisnim uslovom kao iznad, a ne
+    /// pravilom koje se proverava: inače bi test potvrđivao šta god to pravilo kaže.
     /// </summary>
     [Fact]
     public void TheLevel_ChangesNothingButABeginnersFlatDeload()
@@ -608,14 +618,18 @@ public class PeriodizationTests
             var withLevel = Periodization.ForBlock(model, level, prescription.RepRangeMin, prescription.RepRangeMax, prescription.TargetRir, 4);
             var withoutLevel = Periodization.ForBlock(model, prescription.RepRangeMin, prescription.RepRangeMax, prescription.TargetRir, 4);
 
-            if (Periodization.HasPlannedDeload(model, level))
+            if (!(level == ExperienceLevel.Beginner && model == PeriodizationModel.Flat))
             {
                 Assert.Equal(withoutLevel, withLevel);
+                continue;
             }
-            else
-            {
-                Assert.Equal(withoutLevel.Where(week => !week.IsDeload), withLevel.Where(week => week.WeekNumber < withoutLevel.Count));
-            }
+
+            var last = withLevel[^1];
+            var baseWeek = withoutLevel[Periodization.BaseWeekNumber(model) - 1];
+
+            Assert.Equal(withoutLevel.Take(withoutLevel.Count - 1), withLevel.Take(withLevel.Count - 1));
+            Assert.False(last.IsDeload);
+            Assert.Equal(baseWeek with { WeekNumber = last.WeekNumber }, last);
         }
     }
 }

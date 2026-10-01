@@ -176,6 +176,10 @@ naprednom spustiti — priručnik je tu izričit.
 >
 > Ograničenje koje je ta grana sama prijavila (napredni vežbač je dobijao svega tri vežbe)
 > zatvoreno je u [`feature/more-templates`](features/more-templates.md).
+>
+> Runda 14 dodaje petu: ravan blok početnika nema ni planirani deload
+> ([beginner-deload](features/beginner-deload.md)), a napredni kreće sa 4 serije
+> ([experience-volume-consistency](features/experience-volume-consistency.md)).
 
 ---
 

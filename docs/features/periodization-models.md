@@ -214,3 +214,5 @@ koji ga već nose, u planu kao „Linearan (stari)". Predlog po cilju opisan gor
 predlaže se linearan model za svaki blok, jer obrnut ni za snagu nema oslonac u literaturi.
 Vidi [periodization-shapes.md](periodization-shapes.md).
 
+Ravan blok početnika od runde 14 nema deload na kraju: i četvrta nedelja je trenažna. Vidi
+[beginner-deload.md](beginner-deload.md).

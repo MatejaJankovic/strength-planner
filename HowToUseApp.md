@@ -88,7 +88,7 @@ petom ekranu, ništa nije napravljeno.
 
 Jedno polje zaista menja plan, pa ga popuni iskreno.
 
-**Nivo iskustva** povlači četiri stvari odjednom:
+**Nivo iskustva** povlači više stvari odjednom:
 
 | | Početnik | Srednji nivo | Napredni |
 |---|---|---|---|
@@ -100,11 +100,12 @@ Jedno polje zaista menja plan, pa ga popuni iskreno.
 | Planirani deload u ravnom bloku | **ne** (četvrta nedelja je trenažna) | da | da |
 
 Početnik namerno **ne** dobija rani deload. Priručnik za deload kaže „Početnici ne treba da
-razmišljaju o ovome", a nedelja rasterećenja usred programa nije dodala ništa rastu mišića i
-malo je umanjila snagu nogu (Coleman i sar. 2024). Nepotreban deload početnika košta nedelju
-napretka. Zato ni ravan blok od četiri nedelje nema planirani deload, jer bi to bila četvrtina
-treninga. Periodizovan blok ga zadržava: i priručnikova linearna i obrnuta šema završavaju
-nedeljom deload-a, a najteže nedelje bloka vode baš ka njoj.
+razmišljaju o ovome", a kod netreniranih ni deload sa smanjenim volumenom nije ni pomogao ni
+odmogao rastu mišića (Pancar i sar. 2026). Zato ni ravan blok od četiri nedelje nema planirani
+deload, jer bi to bila četvrtina treninga. Periodizovan blok ga zadržava: i priručnikova
+linearna i obrnuta šema završavaju nedeljom deload-a, a najteže nedelje bloka vode baš ka
+njoj. Plan sastavljen samo od ravnih blokova početniku zato nema nijednu nedelju
+rasterećenja; ako je želiš, izaberi linearan model.
 
 Napredni vežbač kreće sa istim brojem serija kao srednji nivo, iako priručnik za njega kaže
 „manji volumen". Taj manji volumen podrazumeva napredne tehnike (drop set, rest-pause), a njih
@@ -368,7 +369,7 @@ konačna reč:
 | Radi i dalje | Šta to znači za tvoje brojeve |
 |---|---|
 | Periodizacija | tvoj opseg i serije se pomeraju kroz nedelje kao i svaki drugi (linearan model: serija manje na startu, serija više i ponavljanja manje pred kraj) |
-| Deload | poslednja nedelja polovi **tvoj** broj serija, vraća **tvoj** opseg ponavljanja i diže ciljni RIR za dva |
+| Deload | poslednja nedelja polovi **tvoj** broj serija, vraća **tvoj** opseg ponavljanja i diže ciljni RIR za dva (osim u ravnom bloku početnika, gde je i poslednja nedelja trenažna) |
 | Ciljni volumen | predlog serija se pomera ka cilju **te nedelje** (vidi „Nedeljni volumen"), ali ostaje blizu tvog broja — osim glavnih dizanja u bloku snage (složenih vežbi kojima si dao opseg do 6), koja nedeljni cilj ne pomera s propisa te nedelje |
 | Progresija iz serija | opterećenje raste iz onoga što stvarno odradiš, isto kao inače |
 
@@ -702,8 +703,8 @@ ostala da ga čeka. Vraća se dugmetom „Vrati na plan".
 oko MAV-a. Ako je nešto stalno ispod MEV-a, u sledećem bloku uzmi šablon sa više dana ili
 dodaj vežbu za tu grupu.
 
-**Na kraju bloka** — deload nedelju odradi kako je propisana (lakše je namerno, to nije
-gubljenje vremena). Zatim: ako plan ima sledeći blok, on se otvara sam; ako je plan bio od
+**Na kraju bloka** — ako blok ima deload nedelju (ravan blok početnika je nema), odradi je
+kako je propisana (lakše je namerno, to nije gubljenje vremena). Zatim: ako plan ima sledeći blok, on se otvara sam; ako je plan bio od
 jednog bloka, napravi nov — startna opterećenja se povuku iz procena koje su nastale tokom
 prethodnog bloka.
 
