@@ -198,9 +198,11 @@ public class MesocycleGenerator : IMesocycleGenerator
     {
         var startingSets = ExperienceProgramming.StartingSetsPerExercise(experienceLevel);
 
-        // Model određuje i koliko blok traje i kako se propis menja iz nedelje u nedelju.
+        // Model određuje i koliko blok traje i kako se propis menja iz nedelje u nedelju, a
+        // nivo da li se blok završava deload-om (ravan blok početnika ne).
         var prescriptions = Periodization.ForBlock(
             periodizationModel,
+            experienceLevel,
             goalSettings.RepRangeMin,
             goalSettings.RepRangeMax,
             goalSettings.TargetRir,
@@ -269,6 +271,7 @@ public class MesocycleGenerator : IMesocycleGenerator
                     // Za slozene vezbe iz ugradjenog sablona daje identicne brojeve.
                     var exercisePrescription = Periodization.ForWeek(
                         periodizationModel,
+                        experienceLevel,
                         weekNumber,
                         baseRepRangeMin,
                         baseRepRangeMax,

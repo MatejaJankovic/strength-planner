@@ -9,8 +9,9 @@ namespace StrengthPlanner.Infrastructure.TrainingLogs;
 
 /// <summary>
 /// Ocenjuje umor iz završene nedelje i, ako je prešao prag, pretvara sledeću nedelju u
-/// deload. Planirani deload u četvrtoj nedelji ostaje kao donja granica — ovo ga samo
-/// može povući ranije kada podaci to traže.
+/// deload. Planirani deload na kraju bloka ostaje kao donja granica — ovo ga samo može
+/// povući ranije kada podaci to traže. (Ravan blok početnika planirani deload nema, a
+/// početnik ni prag umora - vidi ExperienceProgramming.DeloadThreshold.)
 /// </summary>
 public sealed class DeloadService
 {
@@ -93,11 +94,9 @@ public sealed class DeloadService
                 setters => setters.SetProperty(week => week.FatigueScore, score),
                 cancellationToken);
 
-        // Prag zavisi od nivoa iskustva. Početnik ga nema: priručnik je izričit da
-        // "početnici ne treba da razmišljaju o ovome", a i signali od kojih se ocena gradi
-        // su kod njih najmanje pouzdani — RIR procenjuju loše jer staju na pečenju misleći
-        // da su na otkazu. Nepotreban deload ih košta nedelje napretka, pa im ostaje samo
-        // planirani deload na kraju bloka.
+        // Prag zavisi od nivoa iskustva. Početnik ga nema; razlog je zapisan uz
+        // ExperienceProgramming.DeloadThreshold, a da li blok početnika ima i planirani
+        // deload odlučuje Periodization.HasPlannedDeload.
         var threshold = ExperienceProgramming.DeloadThreshold(
             await BlockExperienceLevel.ForBlockAsync(_db, userId, mesocycleId, cancellationToken));
 

@@ -557,4 +557,79 @@ public class PeriodizationTests
             Assert.Equal(weeks.Count, weeks.Distinct().Count());
         }
     }
+
+    /// <summary>
+    /// Svih 12 parova nivo × model, a očekivanje je zapisano ovde, ne izvedeno iz pravila koje
+    /// se proverava: deload gubi samo ravan blok početnika. Prva verzija je imala šest redova,
+    /// pa je mutant koji deload skida i naprednom u linearnom bloku - najčešćem bloku, jer je
+    /// linearan predlog za svaki - prolazio ceo paket.
+    /// </summary>
+    [Fact]
+    public void OnlyABeginnersFlatBlock_HasNoPlannedDeload()
+    {
+        foreach (var level in Enum.GetValues<ExperienceLevel>())
+        foreach (var model in Enum.GetValues<PeriodizationModel>())
+        {
+            var expected = !(level == ExperienceLevel.Beginner && model == PeriodizationModel.Flat);
+
+            Assert.True(
+                expected == Periodization.HasPlannedDeload(model, level),
+                $"{level} {model}: očekivano {(expected ? "ima" : "nema")} deload.");
+        }
+    }
+
+    /// <summary>
+    /// Ravan blok početnika ima četiri trenažne nedelje: četvrta nosi isti propis kao prve tri,
+    /// a blok zadržava dužinu, pa se datumi plana ne pomeraju.
+    /// </summary>
+    [Theory]
+    [InlineData(Goal.Hypertrophy)]
+    [InlineData(Goal.Strength)]
+    public void ABeginnersFlatBlock_TrainsItsFourthWeek(Goal goal)
+    {
+        var prescription = GoalPrescriptions.ForGoal(goal);
+        var weeks = Periodization.ForBlock(
+            PeriodizationModel.Flat,
+            ExperienceLevel.Beginner,
+            prescription.RepRangeMin,
+            prescription.RepRangeMax,
+            prescription.TargetRir,
+            3);
+
+        Assert.Equal(Periodization.DurationWeeks(PeriodizationModel.Flat), weeks.Count);
+        Assert.DoesNotContain(weeks, week => week.IsDeload);
+        Assert.Equal(new[] { 1, 2, 3, 4 }, weeks.Select(week => week.WeekNumber));
+        Assert.All(weeks, week => Assert.Equal(weeks[0] with { WeekNumber = week.WeekNumber }, week));
+    }
+
+    /// <summary>
+    /// Svaki drugi blok je isti kao i bez nivoa, a u ravnom bloku početnika je poslednja
+    /// nedelja osnovna, ne deload. Grana se bira istim nezavisnim uslovom kao iznad, a ne
+    /// pravilom koje se proverava: inače bi test potvrđivao šta god to pravilo kaže.
+    /// </summary>
+    [Fact]
+    public void TheLevel_ChangesNothingButABeginnersFlatDeload()
+    {
+        foreach (var level in Enum.GetValues<ExperienceLevel>())
+        foreach (var model in Enum.GetValues<PeriodizationModel>())
+        foreach (var goal in Enum.GetValues<Goal>())
+        {
+            var prescription = GoalPrescriptions.ForGoal(goal);
+            var withLevel = Periodization.ForBlock(model, level, prescription.RepRangeMin, prescription.RepRangeMax, prescription.TargetRir, 4);
+            var withoutLevel = Periodization.ForBlock(model, prescription.RepRangeMin, prescription.RepRangeMax, prescription.TargetRir, 4);
+
+            if (!(level == ExperienceLevel.Beginner && model == PeriodizationModel.Flat))
+            {
+                Assert.Equal(withoutLevel, withLevel);
+                continue;
+            }
+
+            var last = withLevel[^1];
+            var baseWeek = withoutLevel[Periodization.BaseWeekNumber(model) - 1];
+
+            Assert.Equal(withoutLevel.Take(withoutLevel.Count - 1), withLevel.Take(withLevel.Count - 1));
+            Assert.False(last.IsDeload);
+            Assert.Equal(baseWeek with { WeekNumber = last.WeekNumber }, last);
+        }
+    }
 }

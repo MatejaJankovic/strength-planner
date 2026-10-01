@@ -134,11 +134,16 @@ public static class ExperienceProgramming
     /// Fatigue score at or above which the next week becomes a deload, or null when
     /// fatigue should not pull a deload forward at all.
     ///
-    /// Beginners get null on purpose. Their RIR estimates are unreliable — the handbook
-    /// says they stop at the burn believing they are at failure — so the very signals the
-    /// score is built from are noisiest exactly where an unnecessary deload costs the most
-    /// progress. They keep the planned end-of-block deload; they simply do not get an
-    /// early one.
+    /// Beginners get null on purpose. The handbook says of deloads that <i>"Početnici ne
+    /// treba da razmišljaju o ovome"</i>, and in untrained men deloads scheduled in weeks 4
+    /// and 8 neither helped nor hindered hypertrophy and strength endurance (Pancar et al.
+    /// 2026). The study did not test a deload triggered by fatigue, so it does not show what
+    /// one would gain; it gives no reason to add one, and the handbook's position stands. A periodized block keeps its planned
+    /// deload; a flat one has none (<see cref="Periodization.HasPlannedDeload"/>).
+    ///
+    /// The reason used to be that beginners misjudge RIR. That is the handbook's claim, but
+    /// the meta-analysis on RIR accuracy found no effect of training experience on it
+    /// (Halperin et al. 2022), so it is no longer given as the reason.
     /// </summary>
     public static decimal? DeloadThreshold(ExperienceLevel level) => level switch
     {
