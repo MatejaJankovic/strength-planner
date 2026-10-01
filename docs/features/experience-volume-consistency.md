@@ -107,10 +107,11 @@ nijednog modela, ali traži šest treninga. Uputstvo zato preporučuje Upper/Low
 
 ## Provera
 
-- `dotnet test`: **803** (bilo 802: jedan test obrisan, dva dodata); `npm test` 192 i
+- `dotnet test`: **804** (bilo 802: jedan test obrisan, tri dodata); `npm test` 192 i
   `npm run build` prolaze.
-- Merenje vraćanjem (commit, 4 → 3, rebuild): obara **2** od 803. Pada
-  `AHigherVolumeBand_NeverStartsWithFewerSetsPerExercise`, i
+- Merenje vraćanjem (commit, 4 → 3, rebuild): obara **3** od 804. Pada
+  `AHigherVolumeBand_NeverStartsWithFewerSetsPerExercise`, a pada i
+  `TheTemplatesTheGuideRecommends_GiveAnAdvancedLifterMev_WhereTheGuideSays`. Pada i
   `AnAdvancedHypertrophyWeek_FallsBelowMev_OnlyWhereRecorded`, jer sa 3 serije spisak nije isti.
   Tada su ispod MEV-a i grudi na Full Body i Full Body (4 dana) i leđa na Legs Specialization,
   a gluteusi na Upper/Lower + Push/Pull/Legs i Push/Pull/Legs x2 nisu. Sa 4 serije ta dva para
@@ -137,11 +138,15 @@ nijednog modela, ali traži šest treninga. Uputstvo zato preporučuje Upper/Low
 ## Posle review-a
 
 Review (tri recenzenta, po dva nezavisna proveravača za svaki nalaz) je potvrdio svih 12
-nalaza. Nijedan nije visok; ispravljeno je:
+nalaza, a ponovni pregled ispravki još 6. Nijedan nije visok; ispravljeno je:
 
 - test strukturne granice je zamenjen tačnim spiskom sa uzrokom, i opis uzroka iznad;
 - Upper/Lower + Push/Pull/Legs je dodat u uputstvo i u belešku (leđa, granica po treningu);
 - brojevi sada kažu na koji se model odnose, uz podrazumevani linearni;
 - rečenica o MRV-u je svedena na ono što je provereno;
 - primer u uputstvu za lični šablon („polovio bi tri serije") i beleška iz runde 2
-  (`more-templates.md`) su usklađeni sa 4 serije.
+  (`more-templates.md`) su usklađeni sa 4 serije;
+- uputstvo je kao najbolji šablon navodilo Upper/Lower (4 dana), a jedini bez manjka u svakoj
+  nedelji je Upper/Lower x3. Sada navodi oba, uz razlog, i test drži obe tvrdnje;
+- test zabeleženog spiska je preskakao mišić koji šablon ne trenira, pa bi šablon koji
+  prestane da trenira listove nestao iz njega bez traga.
