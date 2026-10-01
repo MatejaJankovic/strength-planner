@@ -10,7 +10,8 @@ Prva grana petnaestog kruga, nalaz G1 iz revizije posle runde 14.
 `ProgressionEngine` je sledeće opterećenje korigovao za `(prosečan RIR − ciljni RIR) × 3%`,
 ograničeno na ±10%. Stopa je bila ista za trojku i za seriju od dvadeset ponavljanja.
 
-Po Epley-u jedno ponavljanje rezerve vredi `1 / (30 + ponavljanja)` opterećenja:
+Po Epley-u jedno ponavljanje rezerve vredi `1 / (30 + efektivna ponavljanja)` opterećenja,
+gde su efektivna ponavljanja ponavljanja plus rezerva:
 
 | Propis | Jedan RIR po Epley-u (sredina opsega) | Stara stopa |
 |---|---|---|
@@ -50,12 +51,14 @@ ponavljanja ispod vrha, a sredina prepolovi najveću grešku bilo kog kraja.
 
 **Korak naniže kad zaokruživanje obriše korekciju sada zavisi od ponavljanja.** Taj korak
 (#85) davao se kad korekcija udari u −10%, što je uz 3% značilo odstupanje od 3.33 RIR-a. Uz
-Epley stopu granica od −10% stoji na 3.7–4.7 RIR-a. Baš slučaj zbog koga je pravilo uvedeno
+Epley stopu granica od −10% stoji na 3.5–4.9 RIR-a, zavisno od propisa. Baš slučaj zbog koga je pravilo uvedeno
 (bučica od 10 kg, 5/4/4 sa RIR 1 u 8–12, odstupanje −3.67) više nije stizao do granice, pa bi
 se vratio na držanje 10 kg. Odluka je o sesiji, pa je sada izražena u ponavljanjima: korak
-naniže dolazi kad je sesija bar **tri ponavljanja** teža od ciljnog RIR-a
+naniže dolazi kad je sesija **ispod dna opsega** i bar **tri ponavljanja** teža od ciljnog RIR-a
 (`TrainingConstants.StepDownRirShortfall`). Otkaz na 7, jedno ispod dna (−2), i dalje drži
-težinu, kao što je #85 odlučio.
+težinu, kao što je #85 odlučio. Tri je za trećinu ponavljanja blaže od starih 3.33: prvi slučaj
+koji to dodaje je otkaz dva ispod dna (6 u 8–12), koji je ranije držao težinu, a sada spušta
+korak.
 
 ## Šta se menja za vežbača
 
@@ -73,13 +76,15 @@ ponavljanja, a novi je najbliža težina na koraku. Treći red je okidač za kor
 odstupanje je tačno −3. Stara korekcija od −9% nije stigla do granice, pa je težina ostala na
 10 kg, ispod dna opsega.
 
-Naviše granica od +10% u praksi više ne dolazi: RIR na ekranu ide do 5, a četiri poena iznad
-cilja su u 8–12 oko 9.8%. „5" na ekranu znači „5 ili više", pa je i to ispravno. Granica je
-zaštita, a ne cilj.
+Naviše granicu od +10% dostižu samo nedelje sa malo ponavljanja i ciljnim RIR-om 1: RIR na
+ekranu ide do 5, pa je najveće odstupanje četiri poena, što je u 8–12 oko 9.8%, a u 6–10 10.3% i
+u 3–5 11.4%. (Prva verzija ove beleške je tvrdila da se granica naviše više ne dostiže uopšte.
+To važi samo za 8–12, i pregled je to uhvatio.) Granica je zaštita, a ne cilj.
 
 ## Provera
 
-- `dotnet test`: **828** (bilo 814), `npm run build` bez izmena na klijentu.
+- `dotnet test`: **828** (bilo 814), posle pregleda **838**; `npm run build` bez izmena na
+  klijentu.
 - Merenje pre bilo kakve izmene testova. Prva verzija (stopa po ponavljanjima sesije) je
   oborila **12** od 814, među njima dva svojstva: monotonost i „vrh opsega nikad ne daje manje
   od iste serije jedno ponavljanje ispod". Zbog njih je stopa vezana za sredinu opsega.
@@ -103,6 +108,30 @@ zaštita, a ne cilj.
   - samo okidač nazad na granicu od −10%: obara **5** od 828.
 - Uživo u oba smera, iz zasebnog worktree-a za stari kod, sa restartom API-ja između. Tabela
   iznad, i snimak ekrana sledećeg treninga u pregledaču.
+
+## Posle pregleda
+
+Pregled (agent, radio na kopiji repozitorijuma; radno stablo posle njega čisto) nije našao ništa
+što blokira, a ponovio je sva tri merenja vraćanjem. Dva nalaza su ispravljena:
+
+- **Korak naniže je okidao i unutar opsega.** Sama granica od tri poena se dostiže u opsegu kad
+  je ciljna rezerva velika: izolacija 10–20 sa RIR 3 (rane nedelje bloka snage), 15 ponavljanja
+  bez rezerve, je tri poena teža od cilja, i bučica od 10 kg je išla na 8, tamo prebacila vrh
+  opsega i vratila se na 10. Pravilo iz #85 je za vežbača koji ne može da dosegne opseg, pa sada
+  traži i da je sesija ispod dna, računajući rezervu. Proročište stare formule je ovaj slučaj
+  sakrivalo, jer je izuzimalo isto što i nova granica. Sada izuzima tačno ono što motor radi, i
+  vraćanje novog uslova obara **3** od 838, među njima i proročište. Uživo, blok snage
+  (Upper/Lower, linearan po priručniku, 1. nedelja: izolacije 10–20 sa RIR 3), bočno podizanje
+  10 kg × 15 × 3 bez rezerve: pre ispravke rezime i 2. nedelja kažu **8 kg**, posle ispravke
+  **10 kg**.
+- **„Granica naviše se ne dostiže" nije bilo tačno** za nedelje sa malo ponavljanja (vidi gore).
+  Ispravljeno u uputstvu i ovde. Poruka commit-a sa dokumentacijom i dalje to tvrdi.
+
+Sitnice koje su ispravljene: raspon granice (3.5–4.9, a ne 3.7–4.7), dva komentara koja su i
+dalje tvrdila „isti plafon od 10% u oba smera", i opis granice od tri kao blažeg pravila. Test
+`AtTheMiddleOfTheRange_TheNextLoadKeepsTheEstimatedMax` ne razlikuje sredinu opsega od
+ponavljanja sesije. To sada piše uz njega, a razliku drže monotonost i
+`TheSameDeviation_MovesALongSetLessThanAShortOne`.
 
 ## Ograničenja
 

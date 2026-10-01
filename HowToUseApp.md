@@ -796,16 +796,17 @@ težina raste; teže → pada. Jedno ponavljanje rezerve vredi manje opterećenj
 Serija ispod donje granice opsega meri se kapacitetom: ponavljanja plus RIR, u odnosu na
 donju granicu. 5 ponavljanja sa RIR 2 u opsegu 8–12 je isto što i otkaz na 7, pa sledeći put
 težina pada. Zato isto odstupanje vredi isto u oba smera, a otkaz daleko ispod opsega stiže i
-do granice od −10%. Naviše granica u praksi ne dolazi: RIR na ekranu ide do 5, a četiri poena
-iznad cilja su u 8–12 oko 9.8%.
+do granice od −10%. Naviše granicu dostižu samo nedelje sa malo ponavljanja i ciljnim RIR-om 1
+(npr. 6–10 ili 3–5): RIR na ekranu ide do 5, a četiri poena iznad cilja su u 8–12 oko 9.8%.
 
 Korak tega ograničava koliko fino korekcija može da se izrazi: do pet koraka težine (bučice
 do 10 kg, šipka i sajla do 12.5 kg, mašina do 25 kg) čak i punih −10% zaokruživanje vraća na
-istu težinu. Kad se to desi posle sesije koja je bila bar **tri ponavljanja** teža od ciljnog
-RIR-a — sesija daleko ispod opsega, na primer 5, 4 i 4 sa RIR 1 u opsegu 8–12 — težina se
-spušta za **jedan korak**, osim kad bi tako ostala prazna ruka (bučica od 2 kg nema lakšu).
-Manja razlika tu ostavlja težinu (otkaz na 7, jedno ispod dna), pa se napreduje
-ponavljanjima.
+istu težinu. Kad se to desi posle sesije koja je bila **ispod dna opsega** i bar **tri ponavljanja** teža
+od ciljnog RIR-a — na primer 5, 4 i 4 sa RIR 1 u opsegu 8–12 — težina se spušta za **jedan
+korak**, osim kad bi tako ostala prazna ruka (bučica od 2 kg nema lakšu). Manja razlika tu
+ostavlja težinu (otkaz na 7, jedno ispod dna), pa se napreduje ponavljanjima. Sesija u opsegu
+nikad ne spušta težinu za korak, ni kad je ciljna rezerva velika: 15 ponavljanja bez rezerve u
+10–20 sa ciljem RIR 3 ostaje na istoj bučici.
 
 **Procena maksimuma (e1RM).** Epley formula preko efektivnih ponavljanja
 (`ponavljanja + RIR`), samo za serije do 12 ponavljanja **i sa RIR-om do 3**. Serija sa

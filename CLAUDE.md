@@ -852,7 +852,7 @@ intervals) stays out of scope.
 | `Count a strength drop toward fatigue only when two weeks agree` + docs | One weak day lowered both the RIR signal and the strength reading, so "two signals agree" was one cause counted twice: a progressing lifter got a false deload in 20% of blocks at MAV, 73% at MRV | — |
 | `Say where the volume rules are estimates rather than measurements` | The stimulative-volume step and the MEV/MAV/MRV values are the handbook's estimates; the comment and the guide now say so. No rule changed | — |
 
-814 → 835 tests on the server, 192 on the client (unchanged).
+814 → 838 tests on the server, 192 on the client (unchanged).
 
 All three sit on one branch, `fix/landmark-signal-noise-cda1md`: the session that built them
 was allowed to push only that branch, and GitHub then refused the push (403) and the merge of
@@ -867,7 +867,8 @@ Decisions worth keeping:
 - **A rule triggered by the arithmetic of another rule changes when that rule does.** The
   step down for a correction that rounding erases fired at the -10% cap, which at 3% meant a
   shortfall of 3.33 reps. With the Epley rate #85's own case (5/4/4 at RIR 1) stopped
-  reaching the cap. The trigger is now stated in reps: three harder than the target.
+  reaching the cap. The trigger is now stated as what #85 meant: a session below the range
+  floor and at least three reps harder than its target.
 - **Independence is a property to check, not to assume.** The fatigue score's safeguard
   holds only if its signals have separate causes, and a lifter who keeps the rep goal turns
   a weak day into both a RIR shortfall and a strength drop. Measured under both extremes of
@@ -878,12 +879,19 @@ Measurements from this round that contradicted the expectation:
 1. **A test passed by accident again.** `ComputeNext_ReachesSameCapDownwardAsUpward` stayed
    green after the rate changed: 8 reps at RIR 5 now give +9.76%, and 109.76 kg rounds to
    exactly the 110 the test asserted as the cap. It now uses a 0.25 kg step.
-2. **The upward cap is no longer reachable from the screen.** RIR goes up to 5, and four
-   points above target in 8-12 are 9.8%. Correct by Epley, and written into the guide.
+2. **A claim of my own was half true, and review caught it.** "The upward cap is no longer
+   reachable from the screen" holds for 8-12 (four points above target are 9.8%), not for a
+   week of 6-10 or 3-5 at RIR 1 (10.3% and 11.4%). It went into the guide and the note first.
+   The commit message of the docs commit still says it.
 3. **The first rate broke a property, not an example:** 12 of 814 failed with the session's
    reps, 10 with the middle of the range, and every one was read before being changed.
 4. Reverts on the committed tree: rate alone 17 of 828, trigger alone 5 of 828; fatigue
-   confirmation 4 of 835.
+   confirmation 4 of 835; the review's below-the-floor condition 3 of 838.
+6. **The trigger in reps fired inside the range,** found in review: with a target of RIR 3
+   (the early weeks of a strength block) 15 reps at RIR 0 are three short, and a 10 kg
+   dumbbell went to 8 and back. The oracle hid it because its exclusion was the same
+   threshold as the engine. The step down now also needs the session below the floor; live,
+   8 kg before and 10 kg after.
 5. Live in both directions, the old code from a separate worktree: bench 110 → 107.5 kg,
    pushdown 55 → 52.5 kg, lateral raise held at 10 kg → down to 8; a week 6% weaker scored
    0.60 and pulled a deload, now 0.35, and 0.60 only after the second weak week.
