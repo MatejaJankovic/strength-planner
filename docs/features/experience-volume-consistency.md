@@ -47,7 +47,7 @@ početnika je slabiji stimulus" bi tražila **više** serija, a ne manje.
    | | 3 serije | 4 serije |
    |---|---|---|
    | Hipertrofija, ravan model (od 240) | 153 | 75 |
-   | Hipertrofija, linearan model - podrazumevani (od 400) | 223 | 123 |
+   | Hipertrofija, linearan model (`LinearRising`, podrazumevani; od 400) | 223 | 123 |
    | Snaga, ravan model (od 228) | 87 | 27 |
 2. **Na ekranu Analitika se broj grupa ispod MEV-a skoro ne menja.** Plan je tvrdio da vežbač
    koji odradi tačno propisano vidi „ispod MEV-a". Uživo, ista nedelja odrađena po planu sa
@@ -61,7 +61,7 @@ početnika je slabiji stimulus" bi tražila **više** serija, a ne manje.
    Balansiranje je manjak već krpilo. U simulaciji je nedelja hipertrofije podigla 155 od 195
    vežbi, i to 131 do granice pomeraja (+2). Sa 4 serije ih podiže 118, a do granice 80. Posle
    balansiranja je ispod MEV-a ostalo, sa 3 pa sa 4 serije: hipertrofija ravan 36 → 33,
-   hipertrofija linearan 69 → 55, snaga ravan 24 → 6, snaga linearan 47 → 15. Izmena je dakle
+   hipertrofija `LinearRising` 69 → 55, snaga ravan 24 → 6, snaga `LinearRising` 47 → 15. Izmena je dakle
    najviše promenila **ko nosi serije**: propis umesto balansiranja, a kod bloka snage i sam
    ishod.
 3. **Ono što ostaje ima dva uzroka, i prva verzija ove grane ih je pomešala.** Tvrdila je da
@@ -78,9 +78,12 @@ početnika je slabiji stimulus" bi tražila **više** serija, a ne manje.
      dobijaju iz složenih vežbi. Listovi i trbuh na Full Body imaju po jednu vežbu nedeljno.
 
    Rečenica „nijedna konstanta to ne popravlja" je bila netačna. Manjak na grudima je posledica
-   izabrane skale (×1.2 daje MEV 12 naspram granice 11), a manjak iz sastava posledica budžeta
-   složenih vežbi - obe su konstante nivoa. Ova grana ih ne menja, jer je to odluka o modelu,
-   ne ispravka greške.
+   izabrane skale (×1.2 daje MEV 12 naspram granice 11). Manjak na leđima i zadnjoj loži na
+   Push/Pull/Legs i manjak gluteusa su posledica budžeta složenih vežbi. Obe su konstante
+   nivoa, a ova grana ih ne menja, jer je to odluka o modelu, ne ispravka greške. Listovi i
+   trbuh na Full Body imaju treći uzrok: šablon im daje po jednu vežbu nedeljno, a vežba
+   staje na 6 serija (propis 4 + pomeraj 2). Veći budžet složenih vežbi bi tu pogoršao stvar,
+   jer bi trening od šest vežbi izbacio baš tu izolaciju.
 
 U osnovnoj nedelji ravnog bloka hipertrofije spisak je 11 parova, i test ga drži tačno:
 
@@ -94,11 +97,13 @@ U osnovnoj nedelji ravnog bloka hipertrofije spisak je 11 parova, i test ga drž
 | Upper/Lower + Push/Pull/Legs | gluteusi | sastav |
 | Push/Pull/Legs x2 | gluteusi | sastav |
 
-Upper/Lower (4 dana) i Legs Specialization u toj nedelji nemaju nijedan. U linearnom modelu,
-koji je podrazumevani, prva nedelja nosi seriju manje. Tada i Upper/Lower ima gluteuse ispod
-MEV-a (u bloku snage biceps), Full Body i Full Body (4 dana) grudi, a Legs Specialization
-leđa. Od druge nedelje Upper/Lower nema nijedan par. Zato uputstvo naprednom preporučuje
-Upper/Lower.
+Upper/Lower (4 dana), Upper/Lower x3 i Legs Specialization u toj nedelji nemaju nijedan. U
+linearnom modelu (`LinearRising`, podrazumevani) prva nedelja nosi seriju manje. Tada i
+Upper/Lower ima gluteuse ispod MEV-a (u bloku snage biceps), Full Body i Full Body (4 dana)
+grudi, a Legs Specialization leđa. Od druge nedelje Upper/Lower nema nijedan par. U obrnutom
+modelu ima isti par u prve dve nedelje. Upper/Lower x3 nema nijedan par ni u jednoj nedelji
+nijednog modela, ali traži šest treninga. Uputstvo zato preporučuje Upper/Lower x3, a od
+šablona sa pet dana ili manje Upper/Lower (4 dana), i test drži obe tvrdnje.
 
 ## Provera
 
