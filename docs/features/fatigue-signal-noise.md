@@ -154,3 +154,38 @@ Merenje vraćanjem na kraju (potvrda uvek tačna, rebuild): obara **4** od 838.
   a pravilo je izabrano da bude ispravno i pod (A).
 - Pod (B) RIR se ne pomera ni kad snaga stvarno pada, pa ocena umora takvom vežbaču retko
   pokreće deload i pre i posle ove izmene. Tu signal nose otkazi i serije ispod opsega.
+
+## Odbačen nalaz G6: volumen meren od propisa
+
+Pregled ove grane je primetio da napredni nivo (prag 0.50) od potvrde pada snage dobija malo:
+RIR (0.35) i volumen na MRV-u (0.15) zajedno daju tačno 0.50. Predlog je bio da signal volumena
+broji samo serije preko propisa nedelje, jer nedelja volumena periodizovanog bloka stoji blizu
+MRV-a po planu, a deload posle nje je već planiran. Izmena je napravljena, testirana i proverena
+uživo (ocena 4. nedelje naprednog 0.375 → 0.35, 5. nedelje 0.402 → 0.35), a onda **odbačena
+merenjem, pre PR-a**.
+
+Broj koji ju je opravdavao („lažan deload u 65% blokova") pretpostavljao je nedelju tačno na
+MRV-u. Izmereno nad svim trenažnim nedeljama ugrađenih šablona (`TemplateWeekSimulation`),
+najveći udeo propisa prema MRV-u po mišiću:
+
+| Nivo, cilj | Nedelja | ≥ 80% MRV-a | ≥ 100% | najviše |
+|---|---|---|---|---|
+| napredni, hipertrofija | 162 | 33 | **0** | 0.98 |
+| napredni, snaga | 162 | 24 | **0** | 0.96 |
+| srednji, hipertrofija | 162 | 42 | 21 | 1.00 |
+| srednji, snaga | 162 | 62 | 18 | 1.00 |
+
+Na udelima koje propis stvarno dostiže (`python3 docs/simulations/fatigue_signal_noise.py --g6`):
+
+| Nivo | Udeo propisa | Lažni deload, napreduje 1% | Uhvaćen pad od 3% nedeljno |
+|---|---|---|---|
+| napredni | 0.98 | 5.3% → 1.5% | 59% → 49% |
+| srednji | 1.0 | 3.0% → 0.3% | 55% → 27% |
+
+Tri do četiri poena manje lažnih deload-a za deset do dvadeset osam poena manje uhvaćenih
+stvarnih padova. Lažan deload košta nedelju, a propušten pad kasni samo do planiranog deload-a,
+ali ni to ne izjednačava ovakvu razmenu. Signal volumena ostaje udeo odrađenog prema MRV-u.
+
+Lekcija je ista kao gore: stopa iz modela nije stopa u aplikaciji. Ovde je model pretpostavio
+udeo koji propis naprednog nikad ne dostiže.
+
