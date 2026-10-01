@@ -117,9 +117,9 @@ prose — no need for academic style.
 
 ## Scope note
 
-Thirteen rounds of work, all merged to `main`. Every branch got its own PR, an agent code
-review, fixes for what the review turned up, and a plain-language write-up in
-`docs/features/`. (This line said "two rounds" until round 9 — a count in prose goes stale
+Fourteen rounds of work merged to `main`, and a fifteenth built on a branch. Every branch
+got its own PR, an agent code review, fixes for what the review turned up, and a
+plain-language write-up in `docs/features/`. (This line said "two rounds" until round 9 — a count in prose goes stale
 the moment it is written, which is why the rounds below are a list and not a number.)
 
 **Round 1 — five "future improvements" from the thesis conclusion:**
@@ -790,6 +790,109 @@ Seven measurements from this round contradicted the expectation behind the chang
 
 Still unbuilt from the same audit: only the **suggestions list**. Sections A through E are
 done.
+
+**Round 14 — section F: training science.** Periodization, exercises and progression against
+the handbook, the thesis and newer literature. Ten branches, nine of them findings of the
+audit and one a copy fix.
+
+| Branch | What it fixed | PR |
+|---|---|---|
+| `fix/load-step-absorption` | A light dumbbell stepped 8 → 10 kg (+25%) after 3 × 12, leaving 3-4 reps of an 8-12 range; corrections and deloads of light loads rounded back to the same weight | #85 |
+| `fix/session-spacing` | Legs Specialization put legs on three days in a row; Full Body (4 days) put squat then RDL on consecutive days | #86 |
+| `fix/session-volume-ceiling` | Balancing looked only at the week, so the Push day of Push/Pull/Legs carried 16-18 sets of chest; one muscle now gets at most ~11 in a session (Remmert et al. 2025) | #87 |
+| `fix/ui-copy` | The 0 kg warning mentioned an empty bar on cables and dumbbells; seven strings without diacritics | #88 |
+| `fix/strength-block-composition` | An advanced lifter got one compound per strength session, lunges carried 3-6, and balancing cut the bench before the flyes (373 times) | #89 |
+| `fix/periodization-shapes` | The linear model lowered sets through the block; "inverse for strength" had no support; linear is now proposed for every block | #90 |
+| `feature/rep-ranges-by-role` | Isolations carried 8-12 in both blocks, so a light dumbbell could not take a step; now 10-20, with strength compared at the same load above 12 reps | #91 |
+| `fix/experience-volume-consistency` | The advanced level had the highest volume landmarks and the fewest sets (3), below MEV in 153 of 240 muscle-weeks; now 4 | #92 |
+| `fix/beginner-deload` | A beginner's flat block spent a quarter of its time deloading, though the handbook says beginners need not think about it | #93 |
+| `fix/landmark-signal-noise` | One weekly strength reading is mostly noise, so MAV and MRV of a progressing lifter slid to the floor; now two weeks must agree | #94 |
+
+613 → 814 tests on the server, 150 → 192 on the client.
+
+The finding that shaped the round: **the tests that should have caught the light-load defect
+were locking it in.** The property grids of round 9 already contained light weights, and
+asserted the old rule there (8 → 10 kg, 20 → 25 kg on a machine) — a grid that encodes the
+current behaviour as the oracle protects whatever that behaviour is. The same shape appeared
+twice more: catalogue tests summed the *prescription*, so what the lifter receives after
+balancing was never seen by a test until `TemplateWeekSimulation` (#87); and a client test for
+the inherited periodization model passed on the old code because the mock happened to hold the
+model the old suggestion gave a strength block (#90).
+
+Decisions worth keeping:
+
+- **A step has to fit what the set can do.** Returning from the top of the range to its floor
+  pays for a step only where Epley says so; below that, a step comes when every set's capacity
+  absorbs it, and goes to the next weight the rack has.
+- **Weekly volume is performed one session at a time.** The per-session ceiling is 11, not
+  the handbook's 8: as a hard ceiling, 8 removed 3,884.5 sets of weekly volume across the
+  built-in weeks where 11 removes 985.5.
+- **Strength is specific to the lift.** A strength block keeps at least two compounds per
+  session and its main lifts stay on the prescription; volume is adjusted around them.
+- **The handbook is the default, the literature decides only where it is clearly on the
+  other side (decision D1).** That moved linear over inverse, and it kept the beginner's
+  deload only out of the flat block.
+- **One noisy reading must not move a limit.** Two comparable weeks in a row must agree, and
+  the first decision comes in the third week of a block.
+
+Measurements from this round that contradicted the expectation, each recorded in its note:
+the second auto-deload that made the old code answer `400` on completing week 5 (#90, found
+only live);
+the generator splice that no test sees, 0 of 808 when reverted (#93, the same shape as
+round 12); and the noise in #94, modelled from the literature (Halperin et al. 2022, Grgic
+et al. 2020) because the development database holds no long real history.
+
+**Round 15 — a review after round 14.** Five findings (G1-G5) reported to the owner, who
+decided: G1 is built, G2 is measured first, G3 and G4 become comment and guide only, G5 (rest
+intervals) stays out of scope.
+
+| Commits | What it changed | PR |
+|---|---|---|
+| `Read the RIR correction off the Epley curve` + docs | The correction was a flat 3% per RIR point for every prescription; by Epley one rep is 2.7% for 3-6, 2.4% for 8-12, 2.2% for an isolation at 10-20, so an easy isolation was corrected about 40% more than its reps justify | — |
+| `Count a strength drop toward fatigue only when two weeks agree` + docs | One weak day lowered both the RIR signal and the strength reading, so "two signals agree" was one cause counted twice: a progressing lifter got a false deload in 20% of blocks at MAV, 73% at MRV | — |
+| `Say where the volume rules are estimates rather than measurements` | The stimulative-volume step and the MEV/MAV/MRV values are the handbook's estimates; the comment and the guide now say so. No rule changed | — |
+
+814 → 835 tests on the server, 192 on the client (unchanged).
+
+All three sit on one branch, `fix/landmark-signal-noise-cda1md`: the session that built them
+was allowed to push only that branch, and GitHub then refused the push (403) and the merge of
+#94 alike. They are sequential commits, not a stack.
+
+Decisions worth keeping:
+
+- **The rate is the prescription's, not the session's.** With the session's own reps the
+  correction is exact for that session, but 10 reps at RIR 3 got less than 9 reps at RIR 3,
+  which broke the round-9 property that more reps never propose a lighter load. The middle of
+  the range halves the worst error of either end.
+- **A rule triggered by the arithmetic of another rule changes when that rule does.** The
+  step down for a correction that rounding erases fired at the -10% cap, which at 3% meant a
+  shortfall of 3.33 reps. With the Epley rate #85's own case (5/4/4 at RIR 1) stopped
+  reaching the cap. The trigger is now stated in reps: three harder than the target.
+- **Independence is a property to check, not to assume.** The fatigue score's safeguard
+  holds only if its signals have separate causes, and a lifter who keeps the rep goal turns
+  a weak day into both a RIR shortfall and a strength drop. Measured under both extremes of
+  lifter behaviour; the rule is chosen to be right under the worse one.
+
+Measurements from this round that contradicted the expectation:
+
+1. **A test passed by accident again.** `ComputeNext_ReachesSameCapDownwardAsUpward` stayed
+   green after the rate changed: 8 reps at RIR 5 now give +9.76%, and 109.76 kg rounds to
+   exactly the 110 the test asserted as the cap. It now uses a 0.25 kg step.
+2. **The upward cap is no longer reachable from the screen.** RIR goes up to 5, and four
+   points above target in 8-12 are 9.8%. Correct by Epley, and written into the guide.
+3. **The first rate broke a property, not an example:** 12 of 814 failed with the session's
+   reps, 10 with the middle of the range, and every one was read before being changed.
+4. Reverts on the committed tree: rate alone 17 of 828, trigger alone 5 of 828; fatigue
+   confirmation 4 of 835.
+5. Live in both directions, the old code from a separate worktree: bench 110 → 107.5 kg,
+   pushdown 55 → 52.5 kg, lateral raise held at 10 kg → down to 8; a week 6% weaker scored
+   0.60 and pulled a deload, now 0.35, and 0.60 only after the second weak week.
+
+Process notes from this round, because the environment differed from the usual one: the
+container had .NET SDK 8.0.131 (from Ubuntu) where `global.json` pins 8.0.422 with
+`latestFeature`, so `global.json` was overridden locally and kept out of every commit with
+`git update-index --skip-worktree`; the Angular CLI refused Node 22.22.0 and ran on 22.23.3;
+PostgreSQL was 16, not 18. None of it is in the history.
 
 Deliberately **out of scope**: i18n, full-history analytics, undulating periodization,
 PWA/offline, changing an already-generated block's periodization model, email delivery (so no
