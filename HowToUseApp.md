@@ -97,10 +97,14 @@ Jedno polje zaista menja plan, pa ga popuni iskreno.
 | Serija po vežbi na startu | 3 | 4 | 4 |
 | Granice volumena (MEV/MAV/MRV) | ×0.8 | ×1.0 | ×1.2 |
 | Automatski deload zbog umora | **ne** | da (prag 0.60) | da (prag 0.50) |
+| Planirani deload u ravnom bloku | **ne** (četvrta nedelja je trenažna) | da | da |
 
-Početnik namerno **ne** dobija rani deload: procena RIR-a je kod početnika najnepouzdanija,
-a nepotreban deload košta celu nedelju napretka. Planirani deload na kraju bloka i dalje
-dobija.
+Početnik namerno **ne** dobija rani deload. Priručnik za deload kaže „Početnici ne treba da
+razmišljaju o ovome", a nedelja rasterećenja usred programa nije dodala ništa rastu mišića i
+malo je umanjila snagu nogu (Coleman i sar. 2024). Nepotreban deload početnika košta nedelju
+napretka. Zato ni ravan blok od četiri nedelje nema planirani deload, jer bi to bila četvrtina
+treninga. Periodizovan blok ga zadržava: i priručnikova linearna i obrnuta šema završavaju
+nedeljom deload-a, a najteže nedelje bloka vode baš ka njoj.
 
 Napredni vežbač kreće sa istim brojem serija kao srednji nivo, iako priručnik za njega kaže
 „manji volumen". Taj manji volumen podrazumeva napredne tehnike (drop set, rest-pause), a njih
@@ -273,7 +277,8 @@ zaista dobija, a koliko ih uđe i koje odlučuje tvoj nivo iskustva (složene ve
 > Blok napravljen ranije može da nosi stariji linearan raspored — više serija na početku,
 > manje pred kraj — i u planu piše „Linearan (stari)". On ostaje kakav je bio.
 
-U svakom modelu je **poslednja nedelja deload** (rasterećenje).
+U svakom modelu je **poslednja nedelja deload** (rasterećenje), osim u ravnom bloku
+početnika: tamo je i četvrta nedelja trenažna.
 
 **4. Naziv i datum početka.** Naziv se predlaže iz šablona; datum je danas, ali ga možeš
 pomeriti. Datumi treninga se iz njega razmeštaju kroz nedelju, tako da slične složene vežbe
