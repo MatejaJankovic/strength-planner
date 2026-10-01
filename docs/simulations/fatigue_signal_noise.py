@@ -22,6 +22,7 @@ izbor pravila prvo napravljen.
 Pokretanje: python3 docs/simulations/fatigue_signal_noise.py (runda 15), sa --g6 za odbačeni nalaz G6.
 """
 import random
+import sys
 
 RATE = 0.024
 LEVEL_SD = 0.0247
@@ -81,11 +82,13 @@ STRUCTURES = {
 
 def g6_table():
     """Nalaz G6, odbačen: da li signal volumena treba da broji samo serije preko propisa.
-    Nedelja odrađena po propisu bi tada imala udeo 0.8 (dno opsega). Udeli su oni koje propis
-    ugrađenih šablona stvarno dostiže: napredni najviše 0.98, srednji 1.0."""
+    Nedelja odrađena po predlogu bi tada imala udeo 0.8 (dno opsega). Udeli su oni koje predlog
+    (posle balansiranja) ugrađenih šablona stvarno dostiže: napredni najviše 0.98, srednji 1.0.
+    Svaka nedelja u kojoj ocena deluje stavlja se na taj najveći udeo, pa je ovo gornja granica
+    koristi od G6."""
     weeks = STRUCTURES["periodizovan, 6 nedelja"]
     print("\n## G6 (odbačen): periodizovan blok, ponašanje (A), sa potvrdom pada snage")
-    print("| Nivo (prag) | Udeo propisa | Signal | +1%/ned. (lažni) | -3%/ned. (uhvaćen) |")
+    print("| Nivo (prag) | Udeo predloga | Signal | +1%/ned. (lažni) | -3%/ned. (uhvaćen) |")
     print("|---|---|---|---|---|")
     for threshold, label, planned in ((0.50, "napredni (0.50)", 0.98), (0.60, "srednji (0.60)", 1.0)):
         for volume, name in ((planned, "udeo prema MRV-u (zadržano)"), (0.8, "preko propisa (odbačeno)")):
@@ -94,7 +97,7 @@ def g6_table():
 
 
 if __name__ == "__main__":
-    if "--g6" in __import__("sys").argv:
+    if "--g6" in sys.argv:
         g6_table()
         raise SystemExit
     for threshold, label in ((0.60, "srednji nivo, prag 0.60"), (0.50, "napredni nivo, prag 0.50")):

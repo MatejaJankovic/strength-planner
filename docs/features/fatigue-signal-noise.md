@@ -165,27 +165,35 @@ uživo (ocena 4. nedelje naprednog 0.375 → 0.35, 5. nedelje 0.402 → 0.35), a
 merenjem, pre PR-a**.
 
 Broj koji ju je opravdavao („lažan deload u 65% blokova") pretpostavljao je nedelju tačno na
-MRV-u. Izmereno nad svim trenažnim nedeljama ugrađenih šablona (`TemplateWeekSimulation`),
-najveći udeo propisa prema MRV-u po mišiću:
+MRV-u. Vežbač radi **predlog** (serije posle balansiranja), a ne sirov propis, i balansiranje
+drži predlog ispod MRV-a. Izmereno nad svim trenažnim nedeljama ugrađenih šablona
+(`TemplateWeekSimulation`), najveći udeo predloga prema MRV-u po mišiću:
 
-| Nivo, cilj | Nedelja | ≥ 80% MRV-a | ≥ 100% | najviše |
+| Nivo, cilj | Broj nedelja | ≥ 80% MRV-a | ≥ 100% | najviše |
 |---|---|---|---|---|
 | napredni, hipertrofija | 162 | 33 | **0** | 0.98 |
 | napredni, snaga | 162 | 24 | **0** | 0.96 |
 | srednji, hipertrofija | 162 | 42 | 21 | 1.00 |
 | srednji, snaga | 162 | 62 | 18 | 1.00 |
 
-Na udelima koje propis stvarno dostiže (`python3 docs/simulations/fatigue_signal_noise.py --g6`):
+Sam propis, pre balansiranja, kod naprednog ide i do 1.20 MRV-a (u 21 nedelji hipertrofije i
+29 nedelja snage preko 1.0), ali to vežbaču ne stiže na ekran. Tvrdnja važi za ugrađene šablone
+i polazne granice. Lični šablon, MRV koji je naučen niže ili serije preko predloga mogu da
+dovedu nedelju do MRV-a, i tamo bi G6 pomogao više.
 
-| Nivo | Udeo propisa | Lažni deload, napreduje 1% | Uhvaćen pad od 3% nedeljno |
+Na udelima koje predlog stvarno dostiže (`python3 docs/simulations/fatigue_signal_noise.py --g6`).
+Simulacija svaku nedelju u kojoj ocena deluje stavlja na najveći udeo nivoa, pa je ovo gornja
+granica koristi od G6:
+
+| Nivo | Udeo predloga | Lažni deload, napreduje 1% | Uhvaćen pad od 3% nedeljno |
 |---|---|---|---|
 | napredni | 0.98 | 5.3% → 1.5% | 59% → 49% |
 | srednji | 1.0 | 3.0% → 0.3% | 55% → 27% |
 
-Tri do četiri poena manje lažnih deload-a za deset do dvadeset osam poena manje uhvaćenih
-stvarnih padova. Lažan deload košta nedelju, a propušten pad kasni samo do planiranog deload-a,
-ali ni to ne izjednačava ovakvu razmenu. Signal volumena ostaje udeo odrađenog prema MRV-u.
+Oko tri do četiri poena manje lažnih deload-a plaćeno bi bilo sa deset do dvadeset osam poena
+manje uhvaćenih stvarnih padova. Pojedinačan lažan deload košta više od propuštenog pada (gubi se
+nedelja treninga, a propušten pad kasni samo do planiranog deload-a), ali ne toliko puta više.
+Signal volumena ostaje udeo odrađenog prema MRV-u.
 
 Lekcija je ista kao gore: stopa iz modela nije stopa u aplikaciji. Ovde je model pretpostavio
-udeo koji propis naprednog nikad ne dostiže.
-
+udeo koji predlog naprednog nikad ne dostiže.

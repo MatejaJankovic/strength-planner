@@ -128,8 +128,8 @@ ono što je ispod 20 kg, ono što blok radi kroz nedelje i ono što se tvrdi o v
 
 ## Petnaesti krug — revizija posle runde 14
 
-Nalazi G1–G5 iz pregleda posle runde 14. Odluke: G1 se radi, G3 samo kao komentar i
-uputstvo, G5 (pauze između serija) ostaje van opsega. Nalaz G6 (signal volumena meren od
+Nalazi G1–G5 iz pregleda posle runde 14. Odluke: G1 se radi, G2 se prvo meri (pa je urađen),
+G3 i G4 samo kao komentar i uputstvo, G5 (pauze između serija) ostaje van opsega. Nalaz G6 (signal volumena meren od
 propisa) je napravljen pa odbačen merenjem; obrazloženje je na kraju
 [beleške o šumu u signalu umora](fatigue-signal-noise.md).
 
