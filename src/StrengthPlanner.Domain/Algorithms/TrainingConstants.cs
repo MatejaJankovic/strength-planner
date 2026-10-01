@@ -10,8 +10,9 @@ public static class TrainingConstants
     public const decimal MaxCorrection = 0.10m;
 
     /// <summary>
-    /// How many reps harder than its target reserve a session must have been before a
-    /// downward correction that rounding erased moves the load down by a whole step.
+    /// How many reps harder than its target reserve a session below the range floor must have
+    /// been before a downward correction that rounding erased moves the load down by a whole
+    /// step.
     ///
     /// On a light load the step is too coarse to express a correction: 10% of a 10 kg
     /// dumbbell is half its 2 kg step, so the load rounds back to itself and a lifter who
@@ -19,8 +20,10 @@ public static class TrainingConstants
     /// correction asked for, so it is kept for a session that clearly missed: 5, 4 and 4 reps
     /// at RIR 1, against 8-12 with a target of RIR 1, fall 3.67 reps short and step down; one
     /// set to failure a rep under the floor falls 2 short, and the lifter builds reps at the
-    /// same load instead. Three reps is where the old flat 3% per point reached the 10% cap
-    /// (3.33), which is what this rule was first tied to.
+    /// same load instead. The rule was first tied to the 10% cap, which the old flat 3% per
+    /// point reached at 3.33. Three is a third of a rep looser: the first case it adds is a
+    /// set to failure two reps under the floor (6 in 8-12), which used to hold and now steps
+    /// down. A session inside the range never steps down, whatever its target reserve.
     /// </summary>
     public const int StepDownRirShortfall = 3;
 

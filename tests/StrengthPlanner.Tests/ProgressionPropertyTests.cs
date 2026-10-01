@@ -194,8 +194,9 @@ public class ProgressionPropertyTests
                             // umesto ravnih 3%. To je namerno promenjeno svuda gde ima korekcije, pa
                             // je proročište dobija kao parametar - sve ostalo u starom pravilu i dalje
                             // mora da važi. Korak naniže zato više ne zavisi od granice od -10%, nego
-                            // od toga koliko je sesija bila teža od cilja.
+                            // od toga da je sesija ispod dna opsega i bar tri ponavljanja teža od cilja.
                             var cappedCorrectionErased = !allHitTop
+                                && LegacyEffectiveRir(set, min) < 0
                                 && legacyDeviation <= -TrainingConstants.StepDownRirShortfall
                                 && expected >= used;
 

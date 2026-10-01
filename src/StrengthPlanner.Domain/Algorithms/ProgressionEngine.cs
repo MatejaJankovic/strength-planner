@@ -13,7 +13,7 @@ public sealed class ProgressionEngine
     ///
     /// Effective RIR comes from <see cref="WorkingSet.EffectiveRir"/>: below the range floor
     /// it is the lifter's capacity measured against the floor, which is what lets the
-    /// correction reach the same 10% cap downward as it does upward.
+    /// correction go as far downward as upward for the same deviation, and on to the 10% cap.
     ///
     /// When not every set reached the top of the range, the next load is the used load
     /// scaled by the correction.
@@ -107,7 +107,7 @@ public sealed class ProgressionEngine
                 stepKg,
                 bodyweightLoadKg,
                 usedWeightKg,
-                farHarderThanPlanned: deviation <= -TrainingConstants.StepDownRirShortfall);
+                farHarderThanPlanned: averageRir < 0 && deviation <= -TrainingConstants.StepDownRirShortfall);
             atBodyweightFloor = BodyweightLoad.IsAtBodyweightFloor(usedTotalKg * (1 + correction), bodyweightLoadKg);
         }
         else if (StepAbsorption.IsNarrow(repRangeMin, repRangeMax, targetRir)
@@ -252,19 +252,26 @@ public sealed class ProgressionEngine
     /// five steps: rounding away from zero lifts exactly half a step up, so +10% on 10 kg
     /// becomes 12.) A lateral raise at 10 kg done for 5, 4 and 4 reps of an 8-12 range asked
     /// for 9 kg and got 10, session after session - the lifter stayed below the range until
-    /// the reps crept back up on their own. A session at least
-    /// <see cref="TrainingConstants.StepDownRirShortfall"/> reps harder than its target
-    /// reserve is the strongest signal the rule acts on, so when rounding erases its
-    /// correction the load moves down by one step instead - unless that would leave an
-    /// externally loaded lift empty (a 2 kg dumbbell has no lighter one), where the load
-    /// stays. Upward the same erasure is left alone: holding the load there only means the
-    /// reps keep climbing toward the step.
+    /// the reps crept back up on their own. A session that could not reach the range at
+    /// all - below its floor even counting the reserve - and fell at least
+    /// <see cref="TrainingConstants.StepDownRirShortfall"/> reps short of its target is the
+    /// strongest signal the rule acts on, so when rounding erases its correction the load
+    /// moves down by one step instead - unless that would leave an externally loaded lift
+    /// empty (a 2 kg dumbbell has no lighter one), where the load stays. Upward the same
+    /// erasure is left alone: holding the load there only means the reps keep climbing
+    /// toward the step.
     ///
     /// The trigger used to be "the correction reached the -10% cap", which at 3% a point
-    /// meant a shortfall of 3.33 reps. With the Epley rate the cap sits at 3.7-4.7 reps, and
-    /// the very case above (5, 4 and 4 at RIR 1, a shortfall of 3.67) stopped reaching it and
-    /// went back to holding 10 kg. The decision is about the session, so it is now stated in
-    /// reps rather than read off the arithmetic of the load.
+    /// meant a shortfall of 3.33 reps. With the Epley rate the cap sits at 3.5-4.9 reps across
+    /// the built-in prescriptions, and the very case above (5, 4 and 4 at RIR 1, a shortfall
+    /// of 3.67) stopped reaching it and went back to holding 10 kg. The decision is about the
+    /// session, so it is now stated in reps rather than read off the arithmetic of the load.
+    ///
+    /// Both halves are needed. The shortfall alone fired inside the range whenever the target
+    /// reserve is large: an isolation at 10-20 with a target of RIR 3 (the early weeks of a
+    /// strength block) done for 15 reps at RIR 0 is three short, and a 10 kg dumbbell went to
+    /// 8 kg, overshot the range there and came back - 10, 8, 10. A lifter inside the range
+    /// builds reps at the load they have. Found in review.
     /// </summary>
     private static decimal ApplyCorrection(
         decimal usedTotalKg,

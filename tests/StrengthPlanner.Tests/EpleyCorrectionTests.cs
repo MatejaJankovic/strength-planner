@@ -30,6 +30,10 @@ public class EpleyCorrectionTests
     /// Na sredini opsega korekcija čuva procenu maksimuma tačno: posle nje isti broj
     /// ponavljanja pada na ciljni RIR. Korak od 0.01 kg je tu da zaokruživanje ne sakrije
     /// grešku od nekoliko desetina procenta.
+    ///
+    /// Ovaj test ne razlikuje stopu sa sredine opsega od stope iz ponavljanja same sesije,
+    /// jer su ovde iste. Tu razliku drže svojstvo monotonosti i
+    /// <see cref="TheSameDeviation_MovesALongSetLessThanAShortOne"/>.
     /// </summary>
     [Theory]
     [InlineData(3, 7, 2)]
@@ -91,7 +95,8 @@ public class EpleyCorrectionTests
 
     /// <summary>
     /// Korak naniže kad zaokruživanje obriše korekciju zavisi od toga koliko je sesija bila
-    /// teža od cilja, a ne od toga da li je korekcija dotakla -10%. Granica je tri poena.
+    /// teža od cilja, a ne od toga da li je korekcija dotakla -10%. Granica je tri poena, i
+    /// samo za sesiju ispod dna opsega.
     /// </summary>
     [Theory]
     // Šest do otkaza: dva ispod dna, odstupanje -3 => -7.3%, 9.27 kg se zaokruži na 10.
@@ -105,6 +110,26 @@ public class EpleyCorrectionTests
         var sets = new[] { new WorkingSet(reps, rir, isFailure), new WorkingSet(reps, rir, isFailure), new WorkingSet(reps, rir, isFailure) };
 
         var result = _engine.ComputeNext(10m, sets, targetRir: 1, repRangeMin: 8, repRangeMax: 12, weightStepKg: 2m);
+
+        Assert.Equal((decimal)expectedKg, result.NextWeightKg);
+    }
+    /// <summary>
+    /// Nalaz iz pregleda: sama granica od tri poena je okidala i unutar opsega kad je ciljna
+    /// rezerva velika. Izolacija 10-20 uz RIR 3 (rane nedelje bloka snage), 15 ponavljanja
+    /// uz RIR 0, je tri poena teža od cilja, i bučica od 10 kg je išla na 8, tamo prebacila
+    /// vrh opsega i vratila se na 10. Vežbač u opsegu gradi ponavljanja na težini koju ima.
+    /// </summary>
+    [Theory]
+    [InlineData(3, 15, 0, 10)]
+    // Cilj deload-a (RIR 4), serija na dnu bez rezerve: i dalje u opsegu.
+    [InlineData(4, 10, 0, 10)]
+    // Ispod dna opsega i bar tri teža od cilja: korak naniže ostaje.
+    [InlineData(3, 9, 0, 8)]
+    public void InsideTheRange_ALightLoadNeverStepsDown(int targetRir, int reps, int rir, double expectedKg)
+    {
+        var sets = new[] { new WorkingSet(reps, rir), new WorkingSet(reps, rir), new WorkingSet(reps, rir) };
+
+        var result = _engine.ComputeNext(10m, sets, targetRir, repRangeMin: 10, repRangeMax: 20, weightStepKg: 2m);
 
         Assert.Equal((decimal)expectedKg, result.NextWeightKg);
     }
