@@ -203,6 +203,13 @@ premašuje ono što nedelja uopšte može da isporuči na manje od šest trening
 šablon to ne može da popravi. Ograničenje je u konstantama nivoa, koje ova grana namerno
 ne dira.
 
+> **Kasnije (runda 14):** račun iznad je bio pogrešan - serija složene vežbe puni više grupa,
+> pa zbir MEV vrednosti nije ono što nedelja mora da isporuči. Napredni sada kreće sa 4 serije,
+> test sa zbirom je zamenjen testom koji beleži tačan spisak mišića ispod MEV-a i uzrok za
+> svaki, i Upper/Lower (4 dana) naprednom daje MEV za svaki mišić - u ravnom bloku svake
+> nedelje, a u linearnom od druge. Vidi
+> [experience-volume-consistency.md](experience-volume-consistency.md).
+
 ### Pravilo za složene vežbe je po treningu, ne po nedelji
 
 Priručnik naprednom daje *„do 3 složene vežbe nedeljno"*, ali sistem primenjuje granicu

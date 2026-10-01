@@ -404,9 +404,9 @@ public class WorkoutTemplateCatalogTests
     /// pogađa — plan ispod MEV ne stimuliše rast. Meri se na srednjem nivou, koji je
     /// referenca sistema (neskalirane seed granice, ponašanje nepromenjeno od početka).
     ///
-    /// Početnik i napredni vežbač ostaju ispod MEV za pojedine grupe. Kod naprednog je deo
-    /// toga strukturan - vidi
-    /// <see cref="AnAdvancedLifter_CannotReachChestAndBackMev_InOneSessionAWeek"/>.
+    /// Početnik i napredni vežbač ostaju ispod MEV za pojedine grupe. Za naprednog je spisak
+    /// zabeležen, sa uzrokom - vidi
+    /// <see cref="AnAdvancedHypertrophyWeek_FallsBelowMev_OnlyWhereRecorded"/>.
     /// </summary>
     [Fact]
     public void TemplatesOfThreeDaysOrMore_ReachMevAtTheReferenceLevel()
@@ -456,8 +456,9 @@ public class WorkoutTemplateCatalogTests
 
     /// <summary>
     /// Nivo čije granice volumena stoje više ne sme da krene sa manje serija po vežbi. Do
-    /// runde 14 je napredni nivo imao granice ×1.2 i 3 serije, a srednji ×1.0 i 4: vežbač
-    /// koji je odradio tačno propisano gledao je „ispod MEV-a" na ekranu Analitika.
+    /// runde 14 je napredni nivo imao granice ×1.2 i 3 serije, a srednji ×1.0 i 4: propis
+    /// naprednog je bio ispod njegovog MEV-a u 153 od 240 nedelja-mišića (hipertrofija, ravan
+    /// model, šabloni od tri dana naviše), a razliku je krpilo balansiranje.
     /// </summary>
     [Fact]
     public void AHigherVolumeBand_NeverStartsWithFewerSetsPerExercise()
@@ -475,43 +476,85 @@ public class WorkoutTemplateCatalogTests
     }
 
     /// <summary>
-    /// Zabeležena granica sistema, ne konstanti nivoa: MEV naprednog vežbača za grudi i leđa
-    /// (12) je iznad granice serija po treningu (11). Šablon koji mišić trenira u jednom
-    /// treningu nedeljno - Push/Pull/Legs od tri dana - zato ostaje ispod MEV-a i posle
-    /// balansiranja, i nijedna konstanta nivoa to ne može da popravi. Za naprednog su
-    /// šabloni sa dva treninga po mišiću.
+    /// Zabeležena granica sistema: gde napredni vežbač u bloku hipertrofije i posle
+    /// balansiranja ostaje ispod svog MEV-a, i zašto. Meri se osnovna nedelja ravnog modela na
+    /// šablonima od tri dana naviše; spisak mora da se poklopi tačno, pa se svaka promena
+    /// šablona, sastava ili granica ovde vidi.
     ///
-    /// Zamenio je test koji je isto tvrdio zbirom (3 dana × 6 vežbi × 3 serije = 54 naspram
+    /// Dva uzroka, i test za svaki par proverava koji je:
+    ///
+    /// <list type="bullet">
+    /// <item><b>Granica serija po treningu</b> (11): MEV naprednog za grudi i leđa je 12, pa
+    /// mišić koji se trenira u jednom treningu nedeljno ostaje na 11 - a bez granice bi
+    /// balansiranje doseglo MEV. Grudi na Push/Pull/Legs, i leđa na Upper/Lower +
+    /// Push/Pull/Legs, gde Upper dan naprednom zadržava samo bench.</item>
+    /// <item><b>Sastav treninga</b>: napredni u hipertrofiji dobija jednu složenu vežbu po
+    /// treningu (priručnikovo „do 3 složene nedeljno"), pa MEV ne doseže ni bez granice. Leđa
+    /// na Push/Pull/Legs imaju samo jedno veslanje; gluteusi i zadnja loža volumen dobijaju
+    /// iz složenih vežbi; listovi i trbuh na Full Body dobijaju po jednu vežbu nedeljno.</item>
+    /// </list>
+    ///
+    /// Zamenio je test koji je granicu tvrdio zbirom (3 dana × 6 vežbi × 3 serije = 54 naspram
     /// zbira MEV vrednosti 90). Taj račun je bio pogrešan: serija složene vežbe puni više
-    /// grupa, pa zbir MEV-a nije ono što nedelja mora da isporuči. Sa 4 serije je i dalje
-    /// prolazio (72 &lt; 90), iako je pravi manjak pao sa 153 na 75 nedelja-mišića.
+    /// grupa. Sa 4 serije je i dalje prolazio (72 &lt; 90).
     /// </summary>
     [Fact]
-    public void AnAdvancedLifter_CannotReachChestAndBackMev_InOneSessionAWeek()
+    public void AnAdvancedHypertrophyWeek_FallsBelowMev_OnlyWhereRecorded()
     {
-        var pushPullLegs = WorkoutTemplateCatalog.GetByKey("push-pull-legs")!;
+        const string SessionCeiling = "granica po treningu";
+        const string Composition = "sastav treninga";
 
-        foreach (var muscle in new[] { "Chest", "Back" })
+        var recorded = new Dictionary<string, string>
         {
-            var seed = ExerciseCatalog.VolumeLandmarks.Single(landmark => landmark.Muscle == muscle);
-            var mev = ExperienceProgramming
-                .ScaleLandmarks(new VolumeLandmarkValues(seed.Mev, seed.Mav, seed.Mrv), ExperienceLevel.Advanced)
-                .Mev;
+            ["full-body/Glutes"] = Composition,
+            ["full-body/Calves"] = Composition,
+            ["full-body/Abs"] = Composition,
+            ["push-pull-legs/Chest"] = SessionCeiling,
+            ["push-pull-legs/Back"] = Composition,
+            ["push-pull-legs/Hamstrings"] = Composition,
+            ["push-pull-legs/Glutes"] = Composition,
+            ["full-body-4/Glutes"] = Composition,
+            ["upper-lower-ppl/Back"] = SessionCeiling,
+            ["upper-lower-ppl/Glutes"] = Composition,
+            ["push-pull-legs-6/Glutes"] = Composition,
+        };
 
-            Assert.True(mev > TrainingConstants.MaxSetsPerMusclePerSession, $"{muscle}: MEV {mev}.");
+        var found = new Dictionary<string, string>();
 
+        foreach (var template in WorkoutTemplateCatalog.GetAll().Where(template => template.Days.Count >= 3))
+        {
             var week = TemplateWeekSimulation.Build(
-                pushPullLegs,
+                template,
                 ExperienceLevel.Advanced,
                 Goal.Hypertrophy,
                 PeriodizationModel.Flat,
-                1);
-            var sessionsTrainingIt = Enumerable.Range(0, pushPullLegs.Days.Count)
-                .Count(dayIndex => week.InSession(dayIndex, muscle) >= 1m);
+                Periodization.BaseWeekNumber(PeriodizationModel.Flat));
+            var withoutCeiling = WeeklySetAllocation.Project(
+                week.Slots,
+                week.AllocatedWithoutSessionCeiling(),
+                new Dictionary<Guid, decimal>());
 
-            Assert.Equal(1, sessionsTrainingIt);
-            Assert.True(week.Weekly(muscle) < mev, $"{muscle}: {week.Weekly(muscle)} serija.");
+            foreach (var seed in ExerciseCatalog.VolumeLandmarks)
+            {
+                var mev = ExperienceProgramming
+                    .ScaleLandmarks(new VolumeLandmarkValues(seed.Mev, seed.Mav, seed.Mrv), ExperienceLevel.Advanced)
+                    .Mev;
+                var muscleGroupId = TemplateWeekSimulation.MuscleId(seed.Muscle);
+
+                if (week.TargetFor(seed.Muscle) is null || week.Weekly(seed.Muscle) >= mev)
+                {
+                    continue;
+                }
+
+                found[$"{template.Key}/{seed.Muscle}"] = withoutCeiling.GetValueOrDefault(muscleGroupId) >= mev
+                    ? SessionCeiling
+                    : Composition;
+            }
         }
+
+        Assert.Equal(
+            recorded.OrderBy(entry => entry.Key).Select(entry => $"{entry.Key}: {entry.Value}"),
+            found.OrderBy(entry => entry.Key).Select(entry => $"{entry.Key}: {entry.Value}"));
     }
 
     /// <summary>

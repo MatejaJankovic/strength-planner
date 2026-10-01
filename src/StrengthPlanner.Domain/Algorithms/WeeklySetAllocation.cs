@@ -46,7 +46,7 @@ public sealed record MuscleVolumeTarget(Guid MuscleGroupId, decimal TargetSets, 
 /// Chooses how many sets each exercise of a week gets, so that the week as a whole lands
 /// in the optimal volume zone of every muscle it trains.
 ///
-/// Until now the set count came from the experience level alone (three, four, three) and
+/// Until now the set count came from the experience level alone (then three, four, three) and
 /// periodization shifted it by one — the same number for every exercise, whatever it
 /// trained and however often the week trained it. Weekly volume per muscle was therefore
 /// whatever the template happened to add up to. The system already knew where that volume

@@ -105,9 +105,21 @@ dobija.
 Napredni vežbač kreće sa istim brojem serija kao srednji nivo, iako priručnik za njega kaže
 „manji volumen". Taj manji volumen podrazumeva napredne tehnike (drop set, rest-pause), a njih
 aplikacija ne modeluje. Bez njih bi manje serija značilo manje stimulusa baš za vežbača čije
-granice stoje najviše. Za naprednog biraj šablon koji svaki mišić trenira **dva puta
-nedeljno**: njegov MEV za grudi i leđa je 12, a jedan trening nosi najviše oko 11 serija
-jednog mišića. Zato Push/Pull/Legs od tri dana za grudi i leđa ostaje ispod MEV-a.
+granice stoje najviše.
+
+Ni tada svaki šablon naprednom ne daje MEV za svaki mišić. U bloku hipertrofije on dobija
+jednu složenu vežbu po treningu, a MEV mu je za grudi i leđa 12, dok jedan trening nosi
+najviše oko 11 serija jednog mišića:
+
+- **Push/Pull/Legs (3 dana):** grudi se treniraju jednom nedeljno i staju na 11, a leđa
+  dobijaju samo jedno veslanje (oko 9);
+- **Upper/Lower + Push/Pull/Legs:** Upper dan zadržava bench, pa se leđa treniraju samo na
+  Pull danu i staju na 11;
+- gluteusi ostaju ispod MEV-a na većini šablona, a listovi i trbuh na Full Body.
+
+Za naprednog je zato najbolji **Upper/Lower (4 dana)**. U linearnom bloku prva nedelja nosi
+seriju manje, pa i on tada može da bude ispod MEV-a za gluteuse (u bloku snage za biceps);
+od druge nedelje nije.
 
 Koliko puta nedeljno treniraš ne unosiš nigde. To bira šablon treninga na kasnijem ekranu:
 šablon od tri dana *jeste* „tri treninga nedeljno".
@@ -364,7 +376,7 @@ raspored.
 | 5 | `7 × 3–6` |
 | 6 (deload) | `3 × 5–8` |
 
-Deload polovi **tvojih šest** na tri; da si uzeo ugrađeni šablon, polovio bi tri serije
+Deload polovi **tvojih šest** na tri; da si uzeo ugrađeni šablon, polovio bi četiri serije
 koliko naprednom vežbaču sledi po nivou, i dobio bi dve. I vraća **tvoj** opseg `5–8`, a ne
 `8–12` koji nosi cilj hipertrofije.
 
