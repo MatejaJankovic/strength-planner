@@ -94,7 +94,8 @@ public class VolumeAdaptationTests
             RawSets: 9m,
             AverageRirDeviation: 0m,
             FailureShare: 0m,
-            StrengthChangeShare: 0.03m);
+            StrengthChangeShare: 0.03m,
+            PreviousStrengthChangeShare: 0.03m);
 
         var result = VolumeAdaptation.Adjust(Seed, Seed, response);
 
@@ -110,7 +111,8 @@ public class VolumeAdaptationTests
             RawSets: 9m,
             AverageRirDeviation: 0m,
             FailureShare: 0m,
-            StrengthChangeShare: -0.03m);
+            StrengthChangeShare: -0.03m,
+            PreviousStrengthChangeShare: -0.03m);
 
         var result = VolumeAdaptation.Adjust(Seed, Seed, response);
 
@@ -283,7 +285,8 @@ public class VolumeAdaptationTests
             RawSets: 16m,
             AverageRirDeviation: 0m,
             FailureShare: 0m,
-            StrengthChangeShare: 0m);
+            StrengthChangeShare: 0m,
+            PreviousStrengthChangeShare: 0m);
 
         var result = VolumeAdaptation.Adjust(Seed, Seed, response);
 
@@ -299,7 +302,8 @@ public class VolumeAdaptationTests
             RawSets: 16m,
             AverageRirDeviation: 0m,
             FailureShare: 0m,
-            StrengthChangeShare: -0.03m);
+            StrengthChangeShare: -0.03m,
+            PreviousStrengthChangeShare: -0.03m);
 
         var result = VolumeAdaptation.Adjust(Seed, Seed, response);
 
@@ -315,7 +319,8 @@ public class VolumeAdaptationTests
             RawSets: 16m,
             AverageRirDeviation: 0m,
             FailureShare: 0m,
-            StrengthChangeShare: 0.03m);
+            StrengthChangeShare: 0.03m,
+            PreviousStrengthChangeShare: 0.03m);
 
         var result = VolumeAdaptation.Adjust(Seed, Seed, response);
 
@@ -356,7 +361,8 @@ public class VolumeAdaptationTests
             RawSets: 40m,
             AverageRirDeviation: 2m,
             FailureShare: 0m,
-            StrengthChangeShare: 0m);
+            StrengthChangeShare: 0m,
+            PreviousStrengthChangeShare: 0m);
 
         for (var week = 0; week < 30; week++)
         {
@@ -400,7 +406,8 @@ public class VolumeAdaptationTests
             16m,
             AverageRirDeviation: 0m,
             FailureShare: 0m,
-            StrengthChangeShare: 0m);
+            StrengthChangeShare: 0m,
+            PreviousStrengthChangeShare: 0m);
 
         current = VolumeAdaptation.Adjust(current, Seed, response);
 
@@ -524,7 +531,8 @@ public class VolumeAdaptationTests
             RawSets: 16m,
             AverageRirDeviation: 0m,
             FailureShare: 0m,
-            StrengthChangeShare: -0.03m);
+            StrengthChangeShare: -0.03m,
+            PreviousStrengthChangeShare: -0.03m);
 
         var result = VolumeAdaptation.Adjust(Seed, Seed, declined);
 
@@ -546,7 +554,8 @@ public class VolumeAdaptationTests
             RawSets: 16m,
             AverageRirDeviation: 0m,
             FailureShare: 0m,
-            StrengthChangeShare: (decimal)change);
+            StrengthChangeShare: (decimal)change,
+            PreviousStrengthChangeShare: (decimal)change);
 
         var result = VolumeAdaptation.Adjust(Seed, Seed, response);
 
@@ -567,7 +576,8 @@ public class VolumeAdaptationTests
             RawSets: 16m,
             AverageRirDeviation: 0m,
             FailureShare: 0m,
-            StrengthChangeShare: 0m);
+            StrengthChangeShare: 0m,
+            PreviousStrengthChangeShare: 0m);
 
         for (var week = 0; week < 20; week++)
         {
@@ -590,12 +600,121 @@ public class VolumeAdaptationTests
             RawSets: 10m,
             AverageRirDeviation: 0m,
             FailureShare: 0m,
-            StrengthChangeShare: -0.03m);
+            StrengthChangeShare: -0.03m,
+            PreviousStrengthChangeShare: -0.03m);
 
         var result = VolumeAdaptation.Adjust(narrow, Seed, declined);
 
         Assert.True(result.Mev < result.Mav, $"MEV {result.Mev}, MAV {result.Mav}");
         Assert.True(result.Mav < result.Mrv, $"MAV {result.Mav}, MRV {result.Mrv}");
         Assert.True(result.Mrv - result.Mev >= VolumeAdaptation.MinBandWidth);
+    }
+
+    // --- runda 14: dva uzastopna čitanja snage moraju da se slože ---
+
+    [Theory]
+    [InlineData(0.03)]
+    [InlineData(-0.03)]
+    [InlineData(0.0)]
+    public void ASingleStrengthReading_MovesNoLimit(double change)
+    {
+        foreach (var performed in new[] { 9m, 16m, 21m })
+        {
+            var single = new VolumeResponse(performed, performed, 0m, 0m, StrengthChangeShare: (decimal)change);
+
+            Assert.Equal(Seed, VolumeAdaptation.Adjust(Seed, Seed, single));
+        }
+    }
+
+    [Fact]
+    public void TwoReadingsThatDisagree_MoveNoLimit()
+    {
+        foreach (var (current, previous) in new[] { (0.03m, -0.03m), (-0.03m, 0.03m), (0m, -0.03m), (0.03m, 0m) })
+        foreach (var performed in new[] { 9m, 16m, 21m })
+        {
+            var response = new VolumeResponse(performed, performed, 0m, 0m, current, previous);
+
+            Assert.Equal(Seed, VolumeAdaptation.Adjust(Seed, Seed, response));
+        }
+    }
+
+    /// <summary>
+    /// Pad snage je i znak umora za plafon - ali tek kad ga kažu dve nedelje zaredom.
+    /// </summary>
+    [Fact]
+    public void TwoDeclinesInARow_LowerTheCeiling_AndOneDoesNot()
+    {
+        var once = new VolumeResponse(16m, 16m, 0m, 0m, StrengthChangeShare: -0.03m);
+        var twice = once with { PreviousStrengthChangeShare = -0.03m };
+
+        Assert.Equal(22, VolumeAdaptation.Adjust(Seed, Seed, once).Mrv);
+        Assert.Equal(21, VolumeAdaptation.Adjust(Seed, Seed, twice).Mrv);
+    }
+
+    /// <summary>
+    /// Zašto je pravilo promenjeno, kao merenje. Vežbač koji stvarno napreduje 1% nedeljno i
+    /// trenira na MAV-u, uz šum čitanja od 3.5% (greška procene RIR-a od oko jednog
+    /// ponavljanja i dnevno variranje snage), godinu dana. Po starom pravilu, kad je jedno
+    /// čitanje bilo dovoljno, MAV i MRV su skliznuli do poda (prosek preko 500 semena: MAV 11,
+    /// MRV 12 od 16 i 22), iako je vežbač napredovao. Po novom ostaju blizu polazne vrednosti.
+    /// A vežbač koji stvarno slabi 2% nedeljno i dalje do kraja godine stiže do poda - pravilo
+    /// je sporije, ali nije slepo.
+    /// </summary>
+    [Fact]
+    public void UnderRealisticNoise_AProgressingLifterKeepsTheLimits_AndADecliningOneDoesNot()
+    {
+        var (progressingMav, progressingMrv) = MeanAfterAYear(trend: 0.01m, singleReading: false);
+        var (oldMav, oldMrv) = MeanAfterAYear(trend: 0.01m, singleReading: true);
+        var (decliningMav, decliningMrv) = MeanAfterAYear(trend: -0.02m, singleReading: false);
+
+        Assert.True(progressingMav >= 15m && progressingMrv >= 20m, $"novo pravilo: MAV {progressingMav}, MRV {progressingMrv}");
+        Assert.True(oldMav <= 12m && oldMrv <= 13m, $"staro pravilo: MAV {oldMav}, MRV {oldMrv}");
+        Assert.True(decliningMav <= 12m && decliningMrv <= 13m, $"pad: MAV {decliningMav}, MRV {decliningMrv}");
+    }
+
+    /// <summary>
+    /// Prosek MAV-a i MRV-a posle 52 nedelje na MAV-u, preko 100 semena. Šum je po nedelji
+    /// (sd 2.47%), pa čitanje - razlika dve nedelje - ima sd oko 3.5%, a dva uzastopna čitanja
+    /// dele nedelju u sredini, kao u stvarnosti. <paramref name="singleReading"/> oponaša
+    /// staro pravilo tako što prethodno čitanje izjednači sa tekućim.
+    /// </summary>
+    private static (decimal Mav, decimal Mrv) MeanAfterAYear(decimal trend, bool singleReading)
+    {
+        const int Runs = 100;
+        decimal mavSum = 0m, mrvSum = 0m;
+
+        for (var run = 0; run < Runs; run++)
+        {
+            var random = new Random(run);
+            decimal Level() => (decimal)(Math.Sqrt(-2 * Math.Log(1 - random.NextDouble()))
+                                         * Math.Cos(2 * Math.PI * random.NextDouble()) * 0.0247);
+
+            var current = Seed;
+            decimal? previous = null;
+            var lastLevel = Level();
+
+            for (var week = 0; week < 52; week++)
+            {
+                var level = Level();
+                var reading = trend + level - lastLevel;
+                lastLevel = level;
+
+                var response = new VolumeResponse(
+                    current.Mav,
+                    current.Mav,
+                    AverageRirDeviation: 0m,
+                    FailureShare: 0.05m,
+                    StrengthChangeShare: reading,
+                    PreviousStrengthChangeShare: singleReading ? reading : previous);
+
+                current = VolumeAdaptation.Adjust(current, Seed, response);
+                previous = reading;
+            }
+
+            mavSum += current.Mav;
+            mrvSum += current.Mrv;
+        }
+
+        return (mavSum / Runs, mrvSum / Runs);
     }
 }
