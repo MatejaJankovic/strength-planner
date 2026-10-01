@@ -117,7 +117,7 @@ prose — no need for academic style.
 
 ## Scope note
 
-Fourteen rounds of work merged to `main`, and a fifteenth built on a branch. Every branch
+Fourteen rounds of work merged to `main`, and a fifteenth in review (#95). Every branch
 got its own PR, an agent code review, fixes for what the review turned up, and a
 plain-language write-up in `docs/features/`. (This line said "two rounds" until round 9 — a count in prose goes stale
 the moment it is written, which is why the rounds below are a list and not a number.)
@@ -848,9 +848,9 @@ intervals) stays out of scope.
 
 | Commits | What it changed | PR |
 |---|---|---|
-| `Read the RIR correction off the Epley curve` + docs | The correction was a flat 3% per RIR point for every prescription; by Epley one rep is 2.7% for 3-6, 2.4% for 8-12, 2.2% for an isolation at 10-20, so an easy isolation was corrected about 40% more than its reps justify | — |
-| `Count a strength drop toward fatigue only when two weeks agree` + docs | One weak day lowered both the RIR signal and the strength reading, so "two signals agree" was one cause counted twice: a progressing lifter got a false deload in 20% of blocks at MAV, 73% at MRV | — |
-| `Say where the volume rules are estimates rather than measurements` | The stimulative-volume step and the MEV/MAV/MRV values are the handbook's estimates; the comment and the guide now say so. No rule changed | — |
+| `Read the RIR correction off the Epley curve` + docs | The correction was a flat 3% per RIR point for every prescription; by Epley one rep is 2.7% for 3-6, 2.4% for 8-12, 2.2% for an isolation at 10-20, so an easy isolation was corrected about 40% more than its reps justify | #95 |
+| `Count a strength drop toward fatigue only when two weeks agree` + docs | One weak day lowered both the RIR signal and the strength reading, so "two signals agree" was one cause counted twice: a progressing lifter got a false deload in 20% of blocks at MAV, 73% at MRV | #95 |
+| `Say where the volume rules are estimates rather than measurements` | The stimulative-volume step and the MEV/MAV/MRV values are the handbook's estimates; the comment and the guide now say so. No rule changed | #95 |
 
 814 → 838 tests on the server, 192 on the client (unchanged).
 
