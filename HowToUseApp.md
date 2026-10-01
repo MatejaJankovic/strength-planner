@@ -580,6 +580,18 @@ donosi zamor ali ne i volumen. Granice se **uče iz tvojih podataka** — posle 
 nedelje pomeraju se najviše za jednu seriju, i najviše 50% od podrazumevane vrednosti.
 Dugme **„Vrati podrazumevane granice"** poništava naučeno.
 
+> Oba pravila su opreznija nego što istraživanja tvrde. Granica brojanja dolazi iz priručnika
+> („minimalno RIR 4"). Novija istraživanja nalaze da rast mišića sa rezervom opada postepeno,
+> a ne stepenicom, i da serija sa RIR 5 nije bez ikakvog efekta (Robinson i sar. 2024). Uz isti
+> volumen, otkaz i serija pre otkaza daju sličan rast (Refalo i sar. 2023). Planirane nedelje
+> ionako ne idu preko RIR 4, pa pravilo pogađa samo serije koje su ispale lakše od plana.
+>
+> Ni MEV, MAV i MRV nisu izmerene vrednosti, nego polazna procena iz priručnika koju aplikacija
+> dalje uči. Pregled istraživanja o dozi volumena nalazi da rast raste sa nedeljnim serijama
+> uz opadajući prinos, bez jasnog plafona u ispitanom opsegu, a da se snaga zasiti mnogo ranije
+> (Pelland i sar. 2025). MRV je zato zaštita oporavka koju aplikacija poštuje, a ne granica
+> preko koje rast prestaje.
+
 Svaka granica uči iz onoga što njoj pripada. **MRV** (plafon oporavka) čita umor: rezervu u
 RIR-u, otkaze i pad snage. **MAV** i **MEV** čitaju **napredak** — da li je ono što dižeš
 poraslo u odnosu na poslednju uporedivu nedelju. Snaga se računa tek kad je kažu **dve

@@ -15,6 +15,16 @@ namespace StrengthPlanner.Domain.Algorithms;
 /// Without this weighting a lifter who does twenty easy sets is told they are over their
 /// MRV and should cut back, when by the handbook they have not done a single stimulative
 /// set.
+///
+/// The cut-off is the handbook's, and it is more conservative than the evidence. "Only the
+/// last few reps carry tension" is the effective-reps hypothesis, not a measured mechanism:
+/// the dose-response of Robinson et al. (2024) has hypertrophy falling off gradually with
+/// reserve rather than at a step, with a set at RIR 5 still doing something, and with
+/// volume equated, sets to failure and sets short of it grow muscle similarly (Refalo et al.
+/// 2023). The step is kept on purpose (decision D1: the handbook is the default unless the
+/// literature is clearly on the other side, and here it is only smoother), and planned
+/// weeks never prescribe more than <see cref="Periodization.MaxRir"/>, so it only touches
+/// sets that turned out easier than the plan.
 /// </summary>
 public static class StimulativeVolume
 {
