@@ -70,14 +70,18 @@ Tri rečenice teze (verzija 2.1) treba uskladiti sa aplikacijom:
 
 ## Provera
 
-- `dotnet test`: **813** (bilo 804); `npm test` 192 i `npm run build` prolaze.
+- `dotnet test`: **808** (bilo 804); `npm test` 192 i `npm run build` prolaze.
 - Novi testovi:
-  - tabela `HasPlannedDeload` po nivou i modelu;
+  - `HasPlannedDeload` za svih 12 parova nivo × model, sa očekivanjem zapisanim nezavisno;
   - ravan blok početnika ima četiri trenažne nedelje sa istim propisom, za oba cilja;
-  - nivo ne menja nijedan drugi blok.
-- Merenje vraćanjem (commit, pravilo uvek „ima deload", rebuild): obara **3** od 813.
+  - nivo ne menja nijedan drugi blok, a u ravnom bloku početnika je poslednja nedelja baš
+    osnovna.
+- Merenje vraćanjem (commit, rebuild):
+  - pravilo uvek „ima deload" obara **4** od 808;
+  - mutant iz review-a (deload skinut i naprednom u linearnom bloku) obara **2** od 808.
+    Pre ispravke testova je prolazio svih 813.
 - **Spoj u generatoru ne vidi nijedan test.** Vraćen samo generator na verzije bez nivoa:
-  0 od 813, a uživo se deload vraća u četvrtu nedelju. To je isti oblik kao u rundi 12, gde
+  0 od 808 (i 0 od 813 pre ispravki), a uživo se deload vraća u četvrtu nedelju. To je isti oblik kao u rundi 12, gde
   pravilo živi u servisu, pa zato oba smera ide i uživo.
 - End-to-end, uživo (Upper/Lower, hipertrofija):
   - početnik, ravan: 4 trenažne nedelje, bench 3 × 8–12 @RIR 1 svake nedelje, poslednji
