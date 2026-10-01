@@ -36,6 +36,8 @@ planirani bio jedini, i nije imao uporište.
 - Obrazloženje praga umora više ne tvrdi da početnik loše procenjuje RIR. To je tvrdnja
   priručnika, a meta-analiza tačnosti RIR-a (Halperin i sar. 2022) nije našla da iskustvo
   utiče na tačnost. Pravilo ostaje, a razlog je sada priručnik i Pancar 2026.
+- Čarobnjak za ravan model kaže da početnik četvrtu nedelju trenira kao ostale. Uputstvo
+  ima novi red u tabeli nivoa i izuzetak u odeljku o modelima.
 
 ## Šta je review ispravio
 
@@ -52,21 +54,24 @@ planirani bio jedini, i nije imao uporište.
   zapisanim nezavisno, i proverava i samu poslednju nedelju.
 - Zastareli tekst: komentar u `DeloadService` (stari razlog i „ostaje samo planirani
   deload"), dva mesta u uputstvu (tabela ličnog šablona i „Na kraju bloka"), „četiri
-  stvari" iznad tabele sa pet, opis ravnog modela u `PeriodizationModel` i beleške iz ranijih
-  rundi (`experience-level.md`, `periodization-models.md`, `analiza-prirucnika.md`).
+  stvari" iznad tabele sa šest redova, opis ravnog modela u `PeriodizationModel` i
+  `TrainingWeek` i beleške iz ranijih rundi (`experience-level.md`,
+  `periodization-models.md`, `analiza-prirucnika.md`).
 - Stranica priručnika je 13, ne 12.
 
 ## Šta rad kaže
 
-Tri rečenice teze (verzija 2.1) treba uskladiti sa aplikacijom:
+Pet mesta u tezi (verzija 2.1) treba uskladiti sa aplikacijom:
 
 - zaključak: „Ауто-регулација почива на субјективној RIR процени, која је код почетника
   непоуздана" - Halperin i sar. 2022 ne nalaze da iskustvo utiče na tačnost;
 - slučaj korišćenja 4: sistem „креира четири недеље - три акумулационе и завршну deload
   недељу" - danas postoje i šestonedeljni modeli, a ravan blok početnika deload nema;
+- odeljak 4.4: „три недеље прогресивног повећања оптерећења праћене су четвртом, недељом
+  планираног растерећења" - na tome počivaju i slučaj korišćenja i slika;
+- odeljak 6, uz listing 6.4: „четврта недеља аутоматски означена као недеља за
+  рестерећење";
 - opis slike 7.7: „Четврта недеља носи ознаку DELOAD" - ne važi za ravan blok početnika.
-- Čarobnjak za ravan model kaže da početnik četvrtu nedelju trenira kao ostale. Uputstvo
-  ima novi red u tabeli nivoa i izuzetak u odeljku o modelima.
 
 ## Provera
 

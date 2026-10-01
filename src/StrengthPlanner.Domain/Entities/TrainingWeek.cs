@@ -1,7 +1,8 @@
 namespace StrengthPlanner.Domain.Entities;
 
 /// <summary>
-/// Mikrociklus (nedelja) unutar mezociklusa. Nedelja 4 je planirani deload.
+/// Mikrociklus (nedelja) unutar mezociklusa. Planirani deload je poslednja nedelja bloka,
+/// osim u ravnom bloku početnika (Periodization.HasPlannedDeload); označava ga IsDeload.
 /// </summary>
 public class TrainingWeek
 {

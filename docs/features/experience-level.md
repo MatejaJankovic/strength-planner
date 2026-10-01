@@ -131,4 +131,6 @@ Tri stvari iz ove beleške su kasnije ispravljene (prve dve u
   kapacitet mu je manji.
 - Početnik više ne dobija ni planirani deload u **ravnom** bloku (periodizovan ga zadržava), a
   razlog „RIR procenjuje loše" je povučen: Halperin i sar. 2022 ne nalaze da iskustvo utiče
-  na tačnost procene. Vidi [beginner-deload.md](beginner-deload.md).
+  na tačnost procene. Povučena je i tvrdnja da nepotreban deload početnika „košta nedelju
+  napretka": kod netreniranih planirani deload nije ni pomogao ni odmogao (Pancar i sar.
+  2026). Vidi [beginner-deload.md](beginner-deload.md).
