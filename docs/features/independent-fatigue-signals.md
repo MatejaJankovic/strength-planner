@@ -131,6 +131,13 @@ Ukupno: 550 → 555 testova na serveru, 139 na klijentu (bez izmena).
 ## Kasnije (runda 15)
 
 Ocena umora sada računa pad snage tek kad ga potvrdi i prethodna uporediva nedelja. Jedan slab
-dan spušta i RIR i procenu maksimuma, pa ta dva signala nisu bila nezavisna: vežbač koji
-napreduje 1% nedeljno dobijao je lažan deload u 20% blokova na MAV-u i 73% na MRV-u (simulacija
-sa šumom iz runde 14). Vidi [fatigue-signal-noise.md](fatigue-signal-noise.md).
+dan spušta i RIR i procenu maksimuma, pa ta dva signala nisu bila nezavisna. Vidi
+[fatigue-signal-noise.md](fatigue-signal-noise.md).
+
+**Merenje iz tabele iznad više ne važi u tom obliku.** Ponovljena nedelja „sve do otkaza" je
+dobijala 0.65 jer je u drugoj nedelji progovorio pad snage. Druga nedelja bloka sada nema
+potvrdu (prva nema čitanje), pa daje **0.40** (otkazi 0.25 + volumen 0.15), bez deload-a.
+Isti vežbač dobija deload tek ako se iscrpi i treći put: tada je pad potvrđen, ocena je 0.65, a
+deload pada u četvrtu nedelju umesto u treću. U ravnom bloku od četiri nedelje pad snage više
+ne može da povuče deload uopšte. Tabela „sve do otkaza + …" i dalje važi, ako se pad snage
+čita kao potvrđen pad.

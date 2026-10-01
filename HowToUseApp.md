@@ -564,9 +564,9 @@ naduvane vrednosti ako ih ima; plan ih ne koristi (vidi „Start novog bloka").
 **Nedeljni volumen.** Za izabrani mezociklus i nedelju, po mišićnim grupama: koliko si
 stimulativnih serija odradio i gde to pada u odnosu na tvoje granice.
 
-- **MEV** — minimum ispod kog nema stimulusa
+- **MEV** — procena minimuma koji još donosi rast
 - **MAV** — naučena ciljna vrednost mišića
-- **MRV** — plafon iznad kog nema oporavka
+- **MRV** — procena plafona preko kog oporavak ne stiže
 
 Marker cilja prati **nedelju**, a ne MAV. U bloku hipertrofije nedelja sa više serija od
 osnovne gađa iznad MAV-a (do MRV-a), a nedelja sa manje serija ispod njega; u linearnom bloku
@@ -581,13 +581,15 @@ nedelje pomeraju se najviše za jednu seriju, i najviše 50% od podrazumevane vr
 Dugme **„Vrati podrazumevane granice"** poništava naučeno.
 
 > Oba pravila su opreznija nego što istraživanja tvrde. Granica brojanja dolazi iz priručnika
-> („minimalno RIR 4"). Novija istraživanja nalaze da rast mišića sa rezervom opada postepeno,
-> a ne stepenicom, i da serija sa RIR 5 nije bez ikakvog efekta (Robinson i sar. 2024). Uz isti
-> volumen, otkaz i serija pre otkaza daju sličan rast (Refalo i sar. 2023). Planirane nedelje
-> ionako ne idu preko RIR 4, pa pravilo pogađa samo serije koje su ispale lakše od plana.
+> („minimalno RIR 4"). Novija istraživanja nalaze da rast mišića sa procenjenom rezervom opada
+> postepeno, a ne stepenicom (Robinson i sar. 2024). Uz izjednačen volumen, otkaz i serija blizu
+> otkaza daju sličan rast (Refalo i sar. 2023), ali te studije ne govore o seriji sa četiri ili
+> pet ponavljanja u rezervi. Trenažne nedelje ne idu preko RIR 3, pa se serija odrađena po planu
+> tamo uvek broji cela. Deload bloka snage propisuje RIR 4, pa se tamo i serija po planu broji
+> upola.
 >
 > Ni MEV, MAV i MRV nisu izmerene vrednosti, nego polazna procena iz priručnika koju aplikacija
-> dalje uči. Pregled istraživanja o dozi volumena nalazi da rast raste sa nedeljnim serijama
+> dalje uči. Pregled istraživanja o dozi volumena nalazi da hipertrofija raste sa nedeljnim serijama
 > uz opadajući prinos, bez jasnog plafona u ispitanom opsegu, a da se snaga zasiti mnogo ranije
 > (Pelland i sar. 2025). MRV je zato zaštita oporavka koju aplikacija poštuje, a ne granica
 > preko koje rast prestaje.
@@ -824,14 +826,17 @@ ničega, uzima se najnoviji zapis ikada.
 signala: odstupanje RIR-a, udeo serija do otkaza, pad procenjenog 1RM i volumen u odnosu na
 MRV. Nijedan signal sam ne može da pokrene deload — najteži nosi 0.35 naspram praga 0.60, pa
 se bar dva moraju složiti, i to **i u krajnjem slučaju**: nedelja u kojoj je baš svaka serija
-išla do otkaza nosi taj jedan signal (0.25) i sama ne pokreće deload; uz stvaran pad snage
-ili volumen na MRV-u ga pokreće. Kad se pokrene: serije prepolovljene, opterećenje 90%
+išla do otkaza nosi taj jedan signal (0.25) i sama ne pokreće deload. Ne pokreće ga ni uz
+potvrđen pad snage (0.50) ni uz volumen na MRV-u (0.40), nego tek uz oba (0.65). Kad se pokrene: serije prepolovljene, opterećenje 90%
 stvarno korišćenog, ciljni RIR podignut za dva. Pokreće se najviše jednom po bloku.
 
-Pad snage se računa tek kad ga kažu **dve uporedive nedelje zaredom**, isto kao kod granica
-volumena. Jedan slab dan spušta i rezervu i procenu maksimuma, pa bi „dva signala se slažu"
-bila jedna loša nedelja izbrojana dvaput. Nedelja koja je pala 6% uz RIR ispod cilja zato
-sama ne pokreće deload; ista takva nedelja posle još jednog pada ga pokreće.
+Pad snage se računa tek kad ga potvrdi i **prethodna uporediva nedelja**, padom od bar 1% (ista
+mera kao kod granica volumena). Jedan slab dan spušta i rezervu i procenu maksimuma, pa bi „dva
+signala se slažu" bila jedna loša nedelja izbrojana dvaput. Nedelja hipertrofije koja je pala
+6% uz RIR jedan ispod cilja zato sama ne pokreće deload (0.35), a ista takva nedelja posle još
+jednog pada ga pokreće (0.60). U ravnom bloku od četiri nedelje pad snage zato ne može da
+povuče deload: druga nedelja nema potvrdu, a posle treće ionako sledi planirani deload. Otkazi i
+rezerva i dalje mogu.
 
 **Deload rasterećuje i napor.** Ciljni RIR deload nedelje je tvoj ciljni RIR **+2**
 (hipertrofija 3, snaga 4). Pad opterećenja od 10% po Epley-u vredi oko tri ponavljanja, pa

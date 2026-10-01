@@ -219,3 +219,11 @@ se ionako ne ocenjuju. Vidi [`deload-intensity.md`](deload-intensity.md).
   ostale decimalne kolone u šemi.
 - `WorkoutSessionDto.IsAutoDeload` je bio popunjen ali nigde prikazan — zaglavlje
   treninga sada razlikuje "Deload" od "Deload zbog umora".
+
+### Kasnija izmena (runda 15): pad snage traži potvrdu
+
+Pad snage ulazi u ocenu tek kad ga potvrdi i prethodna uporediva nedelja. Merenje iz odeljka C
+iznad („ponovljena još jednom daje 0.65") zato više ne važi: druga nedelja bloka nema potvrdu i
+daje 0.40, pa deload dolazi tek posle treće iscrpljujuće nedelje, u četvrtoj. U ravnom bloku od
+četiri nedelje pad snage više ne može da povuče deload, a otkazi i rezerva i dalje mogu. Vidi
+[`fatigue-signal-noise.md`](fatigue-signal-noise.md).

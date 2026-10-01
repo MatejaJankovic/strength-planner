@@ -549,12 +549,21 @@ public sealed class DeloadService
         var achievableDeficit = sets.Max(set => (decimal)set.TargetRir);
         var failureShare = (decimal)sets.Count(set => set.IsFailure) / sets.Count;
 
-        var e1RmChange = await GetE1RmChangeShareAsync(userId, mesocycleId, weekNumber, sets, cancellationToken);
+        var comparable = await GetComparableWeekAsync(userId, mesocycleId, weekNumber, cancellationToken);
+        var e1RmChange = ChangeShare(sets, comparable.Sets);
         var volumeShare = await GetVolumeVsMrvShareAsync(userId, mesocycleId, weekId, cancellationToken);
 
-        // Isto čitanje nedelju ranije: pad snage ulazi u ocenu tek kad ga potvrdi i prethodna
-        // nedelja, jer jedan slab dan spušta i RIR i procenu (FatigueEvaluator.ConfirmedStrengthDrop).
-        var previousE1RmChange = await GetPreviousE1RmChangeShareAsync(userId, mesocycleId, weekNumber, cancellationToken);
+        // Isto čitanje nedelju ranije - uporediva nedelja naspram one pre nje: pad snage ulazi
+        // u ocenu tek kad ga potvrdi i prethodna nedelja, jer jedan slab dan spušta i RIR i
+        // procenu (FatigueEvaluator.ConfirmedStrengthDrop). Serije uporedive nedelje su već
+        // učitane, pa se ovde čita samo nedelja pre nje.
+        var previousE1RmChange = 0m;
+
+        if (comparable.WeekNumber is { } comparableWeekNumber && comparable.Sets.Count > 0)
+        {
+            var beforeIt = await GetComparableWeekAsync(userId, mesocycleId, comparableWeekNumber, cancellationToken);
+            previousE1RmChange = ChangeShare(comparable.Sets, beforeIt.Sets);
+        }
 
         return new WeeklyFatigue(
             rirDeviation,
@@ -566,20 +575,18 @@ public sealed class DeloadService
     }
 
     /// <summary>
-    /// Relativna promena snage u odnosu na poslednju uporedivu nedelju, po pravilu iz
-    /// <see cref="StrengthChange"/>. Nula kada poređenja nema — nedostatak podatka ne sme
-    /// da se protumači kao pad.
+    /// Uporediva nedelja pre date (po pravilu iz <see cref="ComparableWeek"/>) i njene serije.
+    /// Bez broja i sa praznim spiskom kada takve nedelje nema.
     /// </summary>
-    private async Task<decimal> GetE1RmChangeShareAsync(
+    private async Task<(int? WeekNumber, List<SetSignal> Sets)> GetComparableWeekAsync(
         Guid userId,
         Guid mesocycleId,
         int weekNumber,
-        IReadOnlyList<SetSignal> currentSets,
         CancellationToken cancellationToken)
     {
         if (weekNumber <= 1)
         {
-            return 0m;
+            return (null, []);
         }
 
         // Koja je nedelja uporediva odlučuje jedno pravilo (ComparableWeek), jer isto
@@ -593,12 +600,20 @@ public sealed class DeloadService
 
         if (comparableWeekNumber is null)
         {
-            return 0m;
+            return (null, []);
         }
 
-        var previousSets = await GetWeekSignalsAsync(userId, mesocycleId, comparableWeekNumber.Value, cancellationToken);
+        return (comparableWeekNumber, await GetWeekSignalsAsync(userId, mesocycleId, comparableWeekNumber.Value, cancellationToken));
+    }
 
-        if (previousSets.Count == 0)
+    /// <summary>
+    /// Relativna promena snage jedne nedelje u odnosu na uporedivu nedelju pre nje, po pravilu
+    /// iz <see cref="StrengthChange"/>. Nula kada poređenja nema — nedostatak podatka ne sme
+    /// da se protumači kao pad.
+    /// </summary>
+    private static decimal ChangeShare(IReadOnlyList<SetSignal> currentSets, IReadOnlyList<SetSignal> previousSets)
+    {
+        if (currentSets.Count == 0 || previousSets.Count == 0)
         {
             return 0m;
         }
@@ -613,34 +628,6 @@ public sealed class DeloadService
         return StrengthChange.ChangeShare(
             currentSets.Select(ToStrengthSample),
             previousSets.Select(ToStrengthSample)) ?? 0m;
-    }
-
-    /// <summary>
-    /// Promena snage prethodne uporedive nedelje u odnosu na nedelju pre nje — isto čitanje
-    /// kao <see cref="GetE1RmChangeShareAsync"/>, pomereno za jednu nedelju. Nula kada
-    /// poređenja nema, što pad ne potvrđuje.
-    /// </summary>
-    private async Task<decimal> GetPreviousE1RmChangeShareAsync(
-        Guid userId,
-        Guid mesocycleId,
-        int weekNumber,
-        CancellationToken cancellationToken)
-    {
-        var previousWeekNumber = await ComparableWeek.PreviousTrainingWeekAsync(
-            _db,
-            userId,
-            mesocycleId,
-            weekNumber,
-            cancellationToken);
-
-        if (previousWeekNumber is null)
-        {
-            return 0m;
-        }
-
-        var previousSets = await GetWeekSignalsAsync(userId, mesocycleId, previousWeekNumber.Value, cancellationToken);
-
-        return await GetE1RmChangeShareAsync(userId, mesocycleId, previousWeekNumber.Value, previousSets, cancellationToken);
     }
 
     /// <summary>Serije jedne nedelje mezociklusa, u obliku koji čitaju signali umora.</summary>

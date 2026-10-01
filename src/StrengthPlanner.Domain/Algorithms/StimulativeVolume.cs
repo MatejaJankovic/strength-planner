@@ -18,13 +18,14 @@ namespace StrengthPlanner.Domain.Algorithms;
 ///
 /// The cut-off is the handbook's, and it is more conservative than the evidence. "Only the
 /// last few reps carry tension" is the effective-reps hypothesis, not a measured mechanism:
-/// the dose-response of Robinson et al. (2024) has hypertrophy falling off gradually with
-/// reserve rather than at a step, with a set at RIR 5 still doing something, and with
-/// volume equated, sets to failure and sets short of it grow muscle similarly (Refalo et al.
-/// 2023). The step is kept on purpose (decision D1: the handbook is the default unless the
-/// literature is clearly on the other side, and here it is only smoother), and planned
-/// weeks never prescribe more than <see cref="Periodization.MaxRir"/>, so it only touches
-/// sets that turned out easier than the plan.
+/// the meta-regressions of Robinson et al. (2024) have hypertrophy falling off gradually with
+/// estimated reserve rather than at a step, and with volume equated, sets to failure and sets
+/// close to it grow muscle similarly (Refalo et al. 2023) - though those non-failure sets were
+/// mostly near failure, so they say little about a set at RIR 4 or 5. The step is kept on
+/// purpose (decision D1: the handbook is the default unless the literature is clearly on the
+/// other side, and here it is only smoother). Training weeks never prescribe more than RIR 3,
+/// so a set done to plan there always counts in full; a strength block's deload prescribes
+/// RIR 4, so there a set done to plan counts half.
 /// </summary>
 public static class StimulativeVolume
 {

@@ -200,10 +200,10 @@ public class FatigueEvaluatorTests
     {
         var extremes = new[]
         {
-            new WeeklyFatigue(-100m, 1m, 5m, -5m, 10m),
-            new WeeklyFatigue(100m, 1m, -5m, 5m, -10m),
-            new WeeklyFatigue(0m, 0m, 0m, 0m, 0m),
-            new WeeklyFatigue(-1m, -3m, 0m, 0m, 0m)
+            new WeeklyFatigue(-100m, 1m, 5m, -5m, 10m, PreviousE1RmChangeShare: -5m),
+            new WeeklyFatigue(100m, 1m, -5m, 5m, -10m, PreviousE1RmChangeShare: 5m),
+            new WeeklyFatigue(0m, 0m, 0m, 0m, 0m, PreviousE1RmChangeShare: 0m),
+            new WeeklyFatigue(-1m, -3m, 0m, 0m, 0m, PreviousE1RmChangeShare: 0m)
         };
 
         foreach (var fatigue in extremes)
@@ -354,19 +354,22 @@ public class FatigueEvaluatorTests
     /// procene sd 0.22 nad nedeljom. Stvaran pad snage se oseti i u RIR-u, jer opterećenje
     /// dolazi iz prethodne nedelje; napredak ne, jer ga progresija prati.
     ///
-    /// Udeo blokova od pet nedelja u kojima ocena umora povuče deload:
-    /// - vežbač koji napreduje 1% nedeljno, nedelje na MAV-u: jedno čitanje ~20%, potvrda ~0.5%;
-    /// - isti, nedelje na MRV-u: ~73% naspram ~6%;
-    /// - stvaran pad od 3% nedeljno na MRV-u: ~100% naspram ~83% - i dalje se hvata.
+    /// Struktura je periodizovan blok od šest nedelja: 1. nedelja nema čitanje, a ocena deluje
+    /// posle 2., 3. i 4. (posle 5. je sledeća već deload). Udeo blokova u kojima ocena povuče
+    /// deload, isto kao u docs/simulations/fatigue_signal_noise.py:
+    /// - vežbač koji napreduje 1% nedeljno, nedelje na MAV-u: jedno čitanje ~12.5%, potvrda ~0.3%;
+    /// - isti, nedelje na MRV-u: ~53% naspram ~3%;
+    /// - stvaran pad od 3% nedeljno na MRV-u: ~98% naspram ~55% - ređe, ali i dalje se hvata.
     /// </summary>
     [Fact]
     public void UnderRealisticNoise_AProgressingLifterIsRarelyDeloaded_AndADecliningOneStillIs()
     {
-        Assert.True(DeloadedBlocks(trend: 0.01m, volumeShare: 0.75m, confirmed: false) > 0.12m);
-        Assert.True(DeloadedBlocks(trend: 0.01m, volumeShare: 0.75m, confirmed: true) < 0.03m);
-        Assert.True(DeloadedBlocks(trend: 0.01m, volumeShare: 1m, confirmed: false) > 0.60m);
-        Assert.True(DeloadedBlocks(trend: 0.01m, volumeShare: 1m, confirmed: true) < 0.12m);
-        Assert.True(DeloadedBlocks(trend: -0.03m, volumeShare: 1m, confirmed: true) > 0.70m);
+        Assert.True(DeloadedBlocks(trend: 0.01m, volumeShare: 0.75m, confirmed: false) > 0.08m);
+        Assert.True(DeloadedBlocks(trend: 0.01m, volumeShare: 0.75m, confirmed: true) < 0.02m);
+        Assert.True(DeloadedBlocks(trend: 0.01m, volumeShare: 1m, confirmed: false) > 0.40m);
+        Assert.True(DeloadedBlocks(trend: 0.01m, volumeShare: 1m, confirmed: true) < 0.08m);
+        Assert.True(DeloadedBlocks(trend: -0.03m, volumeShare: 1m, confirmed: false) > 0.90m);
+        Assert.True(DeloadedBlocks(trend: -0.03m, volumeShare: 1m, confirmed: true) > 0.40m);
     }
 
     private static decimal DeloadedBlocks(decimal trend, decimal volumeShare, bool confirmed)
@@ -374,6 +377,7 @@ public class FatigueEvaluatorTests
         const int Blocks = 3000;
         const double LevelSd = 0.0247;
         const double LoadPerRep = 0.024;
+        int[] actionableWeeks = [2, 3, 4];
         var random = new Random(15);
         double Gauss(double sd) => Math.Sqrt(-2 * Math.Log(1 - random.NextDouble())) * Math.Cos(2 * Math.PI * random.NextDouble()) * sd;
 
@@ -385,13 +389,14 @@ public class FatigueEvaluatorTests
             var previousReading = 0m;
             var hit = false;
 
-            for (var week = 0; week < 5; week++)
+            for (var week = 1; week <= actionableWeeks.Max(); week++)
             {
                 var level = Gauss(LevelSd);
                 var change = level - lastLevel;
                 lastLevel = level;
 
-                var reading = trend + (decimal)change;
+                // Prva nedelja bloka nema sa čim da se poredi.
+                var reading = week == 1 ? 0m : trend + (decimal)change;
                 var rirDeviation = (decimal)(change / LoadPerRep + Gauss(0.22))
                                    + (trend < 0 ? trend / (decimal)LoadPerRep : 0m);
 
@@ -399,9 +404,11 @@ public class FatigueEvaluatorTests
                     rirDeviation: rirDeviation,
                     e1RmChange: reading,
                     volumeShare: volumeShare,
-                    previousE1RmChange: confirmed ? (week == 0 ? 0m : previousReading) : reading);
+                    // Staro pravilo je svaki pad brojalo odmah, što je isto što i prethodna
+                    // nedelja koja uvek potvrđuje.
+                    previousE1RmChange: confirmed ? previousReading : -1m);
 
-                hit |= FatigueEvaluator.ShouldDeload(fatigue);
+                hit |= actionableWeeks.Contains(week) && FatigueEvaluator.ShouldDeload(fatigue);
                 previousReading = reading;
             }
 

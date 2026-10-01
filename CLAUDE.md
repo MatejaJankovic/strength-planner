@@ -849,7 +849,7 @@ intervals) stays out of scope.
 | Commits | What it changed | PR |
 |---|---|---|
 | `Read the RIR correction off the Epley curve` + docs | The correction was a flat 3% per RIR point for every prescription; by Epley one rep is 2.7% for 3-6, 2.4% for 8-12, 2.2% for an isolation at 10-20, so an easy isolation was corrected about 40% more than its reps justify | #95 |
-| `Count a strength drop toward fatigue only when two weeks agree` + docs | One weak day lowered both the RIR signal and the strength reading, so "two signals agree" was one cause counted twice: a progressing lifter got a false deload in 20% of blocks at MAV, 73% at MRV | #95 |
+| `Count a strength drop toward fatigue only when two weeks agree` + docs | One weak day lowered both the RIR signal and the strength reading, so "two signals agree" was one cause counted twice: a progressing lifter got a false deload in 12.5% of six-week blocks at MAV, 53% at MRV; now 0.3% and 3% | #95 |
 | `Say where the volume rules are estimates rather than measurements` | The stimulative-volume step and the MEV/MAV/MRV values are the handbook's estimates; the comment and the guide now say so. No rule changed | #95 |
 
 814 → 838 tests on the server, 192 on the client (unchanged).
@@ -873,6 +873,12 @@ Decisions worth keeping:
   holds only if its signals have separate causes, and a lifter who keeps the rep goal turns
   a weak day into both a RIR shortfall and a strength drop. Measured under both extremes of
   lifter behaviour; the rule is chosen to be right under the worse one.
+- **A rate measured on a model is not a rate in the app.** The first G2 numbers (20% → 0.5%,
+  73% → 6%) came from five weeks with a reading in each. No block has that: a six-week block
+  lets the score act after weeks 2-4, a flat block only after week 2. The committed script
+  (`docs/simulations/fatigue_signal_noise.py`) measures by block shape, and the cost is said
+  out loud: a real 3%/week decline at MRV is caught in 55% of six-week blocks instead of 98%,
+  and in a four-week flat block the strength term can no longer pull a deload at all.
 
 Measurements from this round that contradicted the expectation:
 
@@ -887,14 +893,19 @@ Measurements from this round that contradicted the expectation:
    reps, 10 with the middle of the range, and every one was read before being changed.
 4. Reverts on the committed tree: rate alone 17 of 828, trigger alone 5 of 828; fatigue
    confirmation 4 of 835; the review's below-the-floor condition 3 of 838.
+5. Live in both directions, the old code from a separate worktree: bench 110 → 107.5 kg,
+   pushdown 55 → 52.5 kg, lateral raise held at 10 kg → down to 8; a week 6% weaker scored
+   0.60 and pulled a deload, now 0.35, and 0.60 only after the second weak week.
 6. **The trigger in reps fired inside the range,** found in review: with a target of RIR 3
    (the early weeks of a strength block) 15 reps at RIR 0 are three short, and a 10 kg
    dumbbell went to 8 and back. The oracle hid it because its exclusion was the same
    threshold as the engine. The step down now also needs the session below the floor; live,
    8 kg before and 10 kg after.
-5. Live in both directions, the old code from a separate worktree: bench 110 → 107.5 kg,
-   pushdown 55 → 52.5 kg, lateral raise held at 10 kg → down to 8; a week 6% weaker scored
-   0.60 and pulled a deload, now 0.35, and 0.60 only after the second weak week.
+7. **Review of G2 found the write-up overstating the change,** not the code: the flat-block
+   consequence was in the note's own live table and never said; the round-11 measurement
+   "repeated all-failure week scores 0.65" went stale (0.40 now, deload a week later); and the
+   guide said an all-failure week deloads with a strength drop *or* volume at MRV, which was
+   false before this round too (0.50 and 0.40; only both give 0.65).
 
 Process notes from this round, because the environment differed from the usual one: the
 container had .NET SDK 8.0.131 (from Ubuntu) where `global.json` pins 8.0.422 with

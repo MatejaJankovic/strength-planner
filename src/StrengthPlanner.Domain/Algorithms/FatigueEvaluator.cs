@@ -131,14 +131,23 @@ public static class FatigueEvaluator
     /// strength reading is not independent of the RIR signal. One weak day lowers both: the
     /// lifter brings the same load and the same rep goal, reports less in reserve, and the
     /// week's estimate falls with it. A reading is mostly that kind of noise - a one-rep max
-    /// varies day to day by a median 4.2% (Grgic et al. 2020), more than a week of real
+    /// varies between sessions by a median 4.2% (Grgic et al. 2020), more than a week of real
     /// progress - so a lifter who truly progressed 1% a week crossed the threshold on RIR and
     /// strength together, from one cause. Simulated with the noise model of the volume limits
-    /// (reading sd 3.5%) and a lifter who keeps the rep goal and reports the reserve honestly:
-    /// a fatigue deload in 20% of five-week blocks at MAV and 73% at MRV. With the confirmation
-    /// it is 0.5% and 6%, and a real decline of 3% a week is still caught in 50% and 83% of
-    /// blocks (from 90% and 100%). A lifter who instead stops at the target RIR moves the RIR
-    /// signal only by misjudging it, and was rarely deloaded either way.
+    /// (reading sd 3.5%) and a lifter who keeps the rep goal and reports the reserve honestly,
+    /// over a six-week periodized block (the score acts after weeks 2, 3 and 4): a fatigue
+    /// deload in 12.5% of blocks at MAV and 53% at MRV; with the confirmation 0.3% and 3%. A
+    /// real decline of 3% a week at MRV is caught in 55% of blocks rather than 98%
+    /// (docs/simulations/fatigue_signal_noise.py). A lifter who instead stops at the target
+    /// RIR moves the RIR signal only by misjudging it, and was rarely deloaded either way.
+    ///
+    /// Two consequences of the block's shape. In a four-week flat block the strength term can
+    /// no longer pull a deload at all: week 2 has nothing to confirm it, and week 3's score
+    /// would act on week 4, which is the planned deload already. Failures, RIR and volume still
+    /// can. And the gate applies to every pair the strength term joins - failures with
+    /// strength, volume with strength - not only to the RIR pair the argument was made for. At
+    /// the advanced level's threshold of 0.50 the gate helps little at MRV, because RIR and
+    /// volume reach 0.50 without strength.
     ///
     /// Requiring the previous reading to be a decline, rather than both readings to be large,
     /// keeps the size of this week's drop: two readings share the week between them, so noise
