@@ -5,8 +5,24 @@ namespace StrengthPlanner.Domain.Algorithms;
 /// </summary>
 public static class TrainingConstants
 {
-    public const decimal RpeCorrectionPerPoint = 0.03m;
+    // Korekcija po RIR poenu nije konstanta: izvodi se iz Epley-a za propis vežbe
+    // (ProgressionEngine.CorrectionPerRirPoint). Ovo je samo njena granica.
     public const decimal MaxCorrection = 0.10m;
+
+    /// <summary>
+    /// How many reps harder than its target reserve a session must have been before a
+    /// downward correction that rounding erased moves the load down by a whole step.
+    ///
+    /// On a light load the step is too coarse to express a correction: 10% of a 10 kg
+    /// dumbbell is half its 2 kg step, so the load rounds back to itself and a lifter who
+    /// cannot reach the range stays below it. A whole step down is a larger change than the
+    /// correction asked for, so it is kept for a session that clearly missed: 5, 4 and 4 reps
+    /// at RIR 1, against 8-12 with a target of RIR 1, fall 3.67 reps short and step down; one
+    /// set to failure a rep under the floor falls 2 short, and the lifter builds reps at the
+    /// same load instead. Three reps is where the old flat 3% per point reached the 10% cap
+    /// (3.33), which is what this rule was first tied to.
+    /// </summary>
+    public const int StepDownRirShortfall = 3;
 
     // Podrazumevani korak opterećenja kada vežba nema svoj (npr. nepoznata sprava).
     // Stvarni korak po vežbi dolazi iz EquipmentWeightStep ili korisničkog override-a.

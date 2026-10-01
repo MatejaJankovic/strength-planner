@@ -78,7 +78,8 @@ public class FailedSetProgressionTests
     public void ComputeNext_CorrectsFurtherDown_WhenSetsFailShortOfRange()
     {
         // Tri otkaza na 5 ponavljanja uz opseg 8-12: promašena su po 3 ponavljanja,
-        // pa je efektivni RIR -3, odstupanje od cilja -4 poena => -12% ograničeno na -10%.
+        // pa je efektivni RIR -3, odstupanje od cilja -4 poena => -4 / 41 = -9.8% (Epley za
+        // 8-12 uz RIR 1) => 90.24, zaokruženo 90.
         var failed = new List<WorkingSet>
         {
             new(5, 0, IsFailure: true),
@@ -97,31 +98,48 @@ public class FailedSetProgressionTests
         Assert.False(result.WeightIncreased);
     }
 
+    /// <summary>
+    /// Simetrija koju rad navodi kao nedostatak: pre otkaza je najveća korekcija naniže bila
+    /// jedan poen (RIR 0 uz cilj 1), a naviše četiri. Otkaz ispod dna se meri kapacitetom, pa
+    /// isto odstupanje vredi isto u oba smera, a naniže se stiže i do granice od 10%.
+    ///
+    /// Test je ranije tvrdio "isti plafon": 8 x RIR 5 je uz 3% po poenu davao +12%, ograničeno
+    /// na +10%. Po Epley-u za 8-12 uz RIR 1 isti set daje 4 / 41 = +9.76%, a 109.76 se na
+    /// koraku od 2.5 kg zaokruži na 110 - test bi prolazio slučajno. Zato korak od 0.25 kg.
+    /// </summary>
     [Fact]
-    public void ComputeNext_ReachesSameCapDownwardAsUpward()
+    public void ComputeNext_CorrectsAsFarDownwardAsUpward_AndCapsTheFall()
     {
-        // Simetrija koju rad navodi kao nedostatak: pre otkaza je najveća korekcija
-        // naniže bila -3% (RIR 0 uz cilj 1), a naviše punih +10%.
         var tooEasy = new List<WorkingSet> { new(8, 5), new(8, 5), new(8, 5) };
         var tooHard = new List<WorkingSet>
         {
-            new(4, 0, IsFailure: true),
-            new(4, 0, IsFailure: true),
-            new(4, 0, IsFailure: true)
+            new(5, 0, IsFailure: true),
+            new(5, 0, IsFailure: true),
+            new(5, 0, IsFailure: true)
+        };
+        var farTooHard = new List<WorkingSet>
+        {
+            new(3, 0, IsFailure: true),
+            new(3, 0, IsFailure: true),
+            new(3, 0, IsFailure: true)
         };
 
-        var up = _engine.ComputeNext(100m, tooEasy, targetRir: 1, repRangeMin: 8, repRangeMax: 12);
-        var down = _engine.ComputeNext(100m, tooHard, targetRir: 1, repRangeMin: 8, repRangeMax: 12);
+        var up = _engine.ComputeNext(100m, tooEasy, targetRir: 1, repRangeMin: 8, repRangeMax: 12, weightStepKg: 0.25m);
+        var down = _engine.ComputeNext(100m, tooHard, targetRir: 1, repRangeMin: 8, repRangeMax: 12, weightStepKg: 0.25m);
+        var capped = _engine.ComputeNext(100m, farTooHard, targetRir: 1, repRangeMin: 8, repRangeMax: 12, weightStepKg: 0.25m);
 
-        Assert.Equal(110m, up.NextWeightKg);
-        Assert.Equal(90m, down.NextWeightKg);
+        // +4 i -4 poena: 100 * (1 +/- 4/41) = 109.76 i 90.24.
+        Assert.Equal(109.75m, up.NextWeightKg);
+        Assert.Equal(90.25m, down.NextWeightKg);
+        // -6 poena bi bilo -14.6% (85.4 kg); granica ga drži na -10%.
+        Assert.Equal(90m, capped.NextWeightKg);
     }
 
     [Fact]
     public void ComputeNext_WithoutFailure_KeepsNarrowDownwardCorrection()
     {
         // RIR 0 bez otkaza i dalje znači "jedva sam stigao", ne "nisam uspeo":
-        // korekcija ostaje -3%, kao i pre ove izmene.
+        // korekcija ostaje jedan poen (-2.4%, 97.56 -> 97.5), kao i pre ove izmene.
         var hardButCompleted = new List<WorkingSet> { new(8, 0), new(8, 0), new(8, 0) };
 
         var result = _engine.ComputeNext(100m, hardButCompleted, targetRir: 1, repRangeMin: 8, repRangeMax: 12);
@@ -232,8 +250,8 @@ public class FailedSetProgressionTests
     {
         // Prijavljeno u pregledu logike: 3x5 sa RIR 2 u opsegu 8-12 davalo je 102.5 kg -
         // teže - jer se RIR 2 čitao kao "lakše od plana". Kapacitet je 5 + 2 = 7, jedno
-        // ispod dna: odstupanje -2 poena, -6% => 94 -> 95 kg. Epley daje isto:
-        // 100 * (1 + 7/30) / (1 + 9/30) = 94.9 kg.
+        // ispod dna: odstupanje -2 poena, -2 / 41 = -4.9% => 95.1 -> 95 kg. Epley za samu
+        // ovu seriju daje 100 * (1 + 7/30) / (1 + 9/30) = 94.9 kg.
         var sets = new List<WorkingSet> { new(5, 2), new(5, 2), new(5, 2) };
 
         var result = _engine.ComputeNext(100m, sets, targetRir: 1, repRangeMin: 8, repRangeMax: 12);
@@ -290,8 +308,8 @@ public class FailedSetProgressionTests
 
         var result = _engine.ComputeNext(100m, mixed, targetRir: 1, repRangeMin: 8, repRangeMax: 12);
 
-        // -1.3333 * 3% = -4% => 96 kg, zaokruženo na 2.5 kg.
-        Assert.Equal(95m, result.NextWeightKg);
+        // -1.3333 / 41 = -3.25% (Epley za 8-12 uz RIR 1) => 96.75 kg, zaokruženo 97.5.
+        Assert.Equal(97.5m, result.NextWeightKg);
         Assert.False(result.WeightIncreased);
     }
 }

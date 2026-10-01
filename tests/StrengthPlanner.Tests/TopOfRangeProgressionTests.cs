@@ -100,10 +100,11 @@ public class TopOfRangeProgressionTests
     // Zaokruživanje ne sme da obrne smer korekcije. Upotrebljena težina ne mora da bude
     // umnožak koraka: dolazi iz onoga što je vežbač upisao.
     //
-    // 107 kg na mašini (korak 10), odstupanje -1/3 poena => -1%: 105.93 se zaokružuje na
+    // 107 kg na mašini (korak 10), odstupanje -1/3 poena => -0.8% (1/3 od 1/43, Epley za
+    // 11-13 uz RIR 1): 106.17 se zaokružuje na
     // 110, dakle VIŠE od podignutog posle teže nedelje. Pravilo to vraća na 107.
     [InlineData(107.0, 10.0, 1, 1, 0, 107.0)]
-    // 103 kg, odstupanje +1/3 => +1%: 104.03 se zaokružuje na 100, dakle MANJE od
+    // 103 kg, odstupanje +1/3 => +0.8%: 103.8 se zaokružuje na 100, dakle MANJE od
     // podignutog posle lakše nedelje.
     [InlineData(103.0, 10.0, 1, 1, 2, 103.0)]
     // Bez ikakve korekcije se težina ne "prilepljuje" na mrežu koraka (bilo bi 127.5).
@@ -134,11 +135,12 @@ public class TopOfRangeProgressionTests
     public void ComputeNext_KeepsPositiveCorrectionOnTopOfStep()
     {
         // Lakše od plana na vrhu opsega: teza traži i korekciju naviše i korak.
-        // 160 * 1.06 = 169.6 + 2.5 = 172.1 -> 68.84 koraka -> 69 -> 172.5. Čuva pravilo od
+        // Dva poena po Epley-u za 8-12 uz RIR 1: 2 / 41 = 4.88%. 160 * 1.0488 = 167.8 + 2.5
+        // = 170.3 -> 68.12 koraka -> 68 -> 170, iznad samog koraka (162.5). Čuva pravilo od
         // "popravke" koja bi korekciju na vrhu jednostavno izbacila.
         var result = ComputeForThreeSets(160.0, 2.5, 8, 12, 1, 12, 3, false);
 
-        Assert.Equal(172.5m, result.NextWeightKg);
+        Assert.Equal(170m, result.NextWeightKg);
         Assert.True(result.WeightIncreased);
     }
 

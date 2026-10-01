@@ -189,8 +189,14 @@ public class ProgressionPropertyTests
                             var stepDoesNotFitYet = allHitTop
                                 && !StepAbsorption.IsNarrow(min, max, targetRir)
                                 && !StepAbsorption.FitsAtTarget(used, step, min, max, targetRir);
+                            //
+                            // Šesti (runda 15): stopa korekcije po RIR poenu je Epley-eva za propis
+                            // umesto ravnih 3%. To je namerno promenjeno svuda gde ima korekcije, pa
+                            // je proročište dobija kao parametar - sve ostalo u starom pravilu i dalje
+                            // mora da važi. Korak naniže zato više ne zavisi od granice od -10%, nego
+                            // od toga koliko je sesija bila teža od cilja.
                             var cappedCorrectionErased = !allHitTop
-                                && legacyDeviation * TrainingConstants.RpeCorrectionPerPoint <= -TrainingConstants.MaxCorrection
+                                && legacyDeviation <= -TrainingConstants.StepDownRirShortfall
                                 && expected >= used;
 
                             var unchangedCase = !roundingReversedTheCorrection
@@ -414,12 +420,15 @@ public class ProgressionPropertyTests
         }
     }
 
-    /// <summary>The rule before this change, kept verbatim as an oracle.</summary>
+    /// <summary>
+    /// The rule before this change, kept verbatim as an oracle - except for the rate per RIR
+    /// point, which round 15 changed on purpose everywhere and is therefore today's.
+    /// </summary>
     private static decimal LegacyNext(decimal used, WorkingSet set, int min, int max, int targetRir, decimal step)
     {
         var deviation = LegacyEffectiveRir(set, min) - targetRir;
         var correction = Math.Clamp(
-            deviation * TrainingConstants.RpeCorrectionPerPoint,
+            deviation * ProgressionEngine.CorrectionPerRirPoint(min, max, targetRir),
             -TrainingConstants.MaxCorrection,
             TrainingConstants.MaxCorrection);
         var adjusted = used * (1 + correction);

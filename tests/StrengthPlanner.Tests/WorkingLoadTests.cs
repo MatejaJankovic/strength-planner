@@ -111,8 +111,9 @@ public class WorkingLoadTests
             repRangeMax: 12,
             weightStepKg: 2.5m);
 
-        // Prosek efektivnog RIR-a (1 + 1 - 3) / 3 = -0.333, odstupanje -1.333 => -4%.
-        Assert.Equal(95m, result.NextWeightKg);
+        // Prosek efektivnog RIR-a (1 + 1 - 3) / 3 = -0.333, odstupanje -1.333 poena; po
+        // Epley-u za 8-12 uz RIR 1 to je -1.333 / 41 = -3.25% => 96.75 kg, zaokruženo 97.5.
+        Assert.Equal(97.5m, result.NextWeightKg);
         Assert.Equal(3, load.WorkingSets.Count);
     }
 
