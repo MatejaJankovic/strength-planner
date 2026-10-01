@@ -44,4 +44,43 @@ public static class ComparableWeek
             .Select(week => (int?)week.WeekNumber)
             .FirstOrDefaultAsync(cancellationToken);
     }
+
+    /// <summary>
+    /// The id of the most recent training week before the given one, or null when there is
+    /// none (see <see cref="PreviousTrainingWeekAsync"/> for which weeks count).
+    /// </summary>
+    public static async Task<Guid?> PreviousTrainingWeekIdAsync(
+        AppDbContext db,
+        Guid userId,
+        Guid trainingWeekId,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(db);
+
+        var week = await db.TrainingWeeks
+            .AsNoTracking()
+            .Where(candidate => candidate.Id == trainingWeekId && candidate.Mesocycle.UserId == userId)
+            .Select(candidate => new { candidate.MesocycleId, candidate.WeekNumber })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (week is null)
+        {
+            return null;
+        }
+
+        var previousNumber = await PreviousTrainingWeekAsync(db, userId, week.MesocycleId, week.WeekNumber, cancellationToken);
+
+        if (previousNumber is null)
+        {
+            return null;
+        }
+
+        return await db.TrainingWeeks
+            .AsNoTracking()
+            .Where(candidate => candidate.MesocycleId == week.MesocycleId
+                                && candidate.Mesocycle.UserId == userId
+                                && candidate.WeekNumber == previousNumber.Value)
+            .Select(candidate => (Guid?)candidate.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
 }

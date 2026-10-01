@@ -140,6 +140,17 @@ public sealed class VolumeLandmarkService
             trainingWeekId,
             cancellationToken);
 
+        // Isto čitanje nedelju ranije: granice se po snazi pomeraju tek kad se dva uzastopna
+        // čitanja slože, jer je jedno pretežno šum (VolumeAdaptation.Agree).
+        var previousWeekId = await ComparableWeek.PreviousTrainingWeekIdAsync(
+            _db,
+            userId,
+            trainingWeekId,
+            cancellationToken);
+        var previousStrengthByMuscleGroupId = previousWeekId is null
+            ? new Dictionary<Guid, decimal>()
+            : await GetStrengthChangeAsync(userId, previousWeekId.Value, cancellationToken);
+
         var seeds = await GetScaledSeedsAsync(userId, mesocycleId, cancellationToken);
 
         var personal = await _db.UserVolumeLandmarks
@@ -153,9 +164,15 @@ public sealed class VolumeLandmarkService
                 continue;
             }
 
-            var measured = strengthByMuscleGroupId.TryGetValue(muscleGroupId, out var change)
-                ? response with { StrengthChangeShare = change }
-                : response;
+            var measured = response with
+            {
+                StrengthChangeShare = strengthByMuscleGroupId.TryGetValue(muscleGroupId, out var change)
+                    ? change
+                    : null,
+                PreviousStrengthChangeShare = previousStrengthByMuscleGroupId.TryGetValue(muscleGroupId, out var previous)
+                    ? previous
+                    : null
+            };
 
             personal.TryGetValue(muscleGroupId, out var row);
             var current = row is null
