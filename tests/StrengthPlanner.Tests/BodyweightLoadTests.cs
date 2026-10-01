@@ -112,8 +112,8 @@ public class BodyweightLoadTests
             weightStepKg: EquipmentWeightStep.ForEquipment(BodyweightLoad.BodyweightEquipment),
             bodyweightLoadKg: 80m);
 
-        // Ukupno 90 -> 90 × 1.06 + 1 = 96.4; na pojas ide 16.
-        Assert.Equal(16m, result.NextWeightKg);
+        // Ukupno 90 -> 90 × (1 + 2/41) + 1 = 95.39; na pojas ide 15.
+        Assert.Equal(15m, result.NextWeightKg);
         Assert.True(result.WeightIncreased);
         Assert.False(result.LoadFloorReached);
     }
@@ -123,22 +123,23 @@ public class BodyweightLoadTests
     {
         // Merenje koje stoji u docs/features/bodyweight-load.md: bez dela telesne mase se
         // isti trening skalirao samo nad dodatim kilogramima, pa je korekcija od 6%
-        // vredela 0.6 kg umesto 5.4.
+        // vredela 0.6 kg umesto 5.4. Od runde 15 korekcija je 4.9% (Epley za 8-12 uz RIR 1),
+        // pa je to 0.5 kg umesto 4.4, a razlika na pojasu i dalje četiri kilograma.
         var sets = new[] { new WorkingSet(12, 3), new WorkingSet(12, 3), new WorkingSet(12, 3) };
         var step = EquipmentWeightStep.ForEquipment(BodyweightLoad.BodyweightEquipment);
 
         var withoutBody = _engine.ComputeNext(10m, sets, 1, 8, 12, step);
         var withBody = _engine.ComputeNext(10m, sets, 1, 8, 12, step, 80m);
 
-        Assert.Equal(12m, withoutBody.NextWeightKg);
-        Assert.Equal(16m, withBody.NextWeightKg);
+        Assert.Equal(11m, withoutBody.NextWeightKg);
+        Assert.Equal(15m, withBody.NextWeightKg);
     }
 
     [Fact]
     public void ComputeNext_StopsAtBodyMassAndSaysSo_WhenTheRuleWantsLess()
     {
-        // Pet zgibova do otkaza u opsegu 8-12: kapacitet je tri ponavljanja ispod dna, pa
-        // korekcija pada na -10%. Ukupno 72 kg je ispod tela od 80 — nema šta da se skine.
+        // Pet zgibova do otkaza u opsegu 8-12: kapacitet je tri ponavljanja ispod dna, pa je
+        // korekcija -4 / 41 = -9.8%. Ukupno 72.2 kg je ispod tela od 80 — nema šta da se skine.
         var result = _engine.ComputeNext(
             usedWeightKg: 0m,
             workingSets:
@@ -183,7 +184,8 @@ public class BodyweightLoadTests
         // Ovaj test je poredio poziv sa samim sobom: bodyweightLoadKg ima podrazumevanu
         // vrednost 0, pa su dva izraza bila ISTI poziv iste čiste metode i tvrdnja nije
         // mogla da padne ni za jednu implementaciju. Sada se poredi sa brojem koji pravilo
-        // daje: prosečan RIR 2 na cilju 1 je +3%, 105 × 1.03 = 108.15, zaokruženo 107.5.
+        // daje: prosečan RIR 2 na cilju 1 je jedan poen, po Epley-u za 8-12 uz RIR 1 to je
+        // 1 / 41 = +2.4%, 105 × 1.0244 = 107.56, zaokruženo 107.5.
         var sets = new[] { new WorkingSet(10, 2), new WorkingSet(10, 2), new WorkingSet(9, 2) };
 
         var result = _engine.ComputeNext(105m, sets, 1, 8, 12, 2.5m);

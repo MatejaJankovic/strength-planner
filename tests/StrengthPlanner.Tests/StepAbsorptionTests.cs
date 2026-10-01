@@ -137,7 +137,7 @@ public class StepAbsorptionTests
     [Fact]
     public void WhileTheLoadWaits_ReserveAboveTarget_AppliesAsItWouldInsideTheRange()
     {
-        // 8 kg, 3 x 12 @RIR3: korekcija +6% je 8.48, zaokruženo 8 - čeka.
+        // 8 kg, 3 x 12 @RIR3: korekcija +4.9% (2 / 41) je 8.39, zaokruženo 8 - čeka.
         Assert.Equal(8m, Next(8m, 12, 3, 8, 12, 1, 2m));
 
         // 28 kg u 11-12 @RIR1, korak 2 (7%, ne staje): dve lake serije i jedna na cilju.
@@ -261,10 +261,11 @@ public class StepAbsorptionTests
     // --- korekcija koju korak ne može da izrazi ---
 
     [Theory]
-    // Dumbbell 10 kg, 5/4/4 @RIR1 u 8-12: korekcija -10% daje 9, što se zaokruživalo na 10.
+    // Dumbbell 10 kg, 5/4/4 @RIR1 u 8-12: odstupanje -3.67 poena, korekcija -8.9% daje 9.1,
+    // što se zaokruživalo na 10. Sesija je bar StepDownRirShortfall (3) teža od cilja.
     [InlineData(10, 2, 8)]
     [InlineData(8, 2, 6)]
-    // Šipka i sajla na 12.5, mašina na 25: ista granica, 10% je tačno pola koraka.
+    // Šipka i sajla na 12.5, mašina na 25: ista granica, korekcija je manja od pola koraka.
     [InlineData(12.5, 2.5, 10)]
     [InlineData(25, 5, 20)]
     // Iznad granice zaokruživanje korekciju već izražava: nepromenjeno ponašanje.
@@ -275,7 +276,7 @@ public class StepAbsorptionTests
     [InlineData(2, 2, 2)]
     [InlineData(5, 5, 5)]
     [InlineData(2.5, 2.5, 2.5)]
-    public void ACappedCorrectionThatRoundingErased_MovesTheLoadDownOneStep(
+    public void ACorrectionRoundingErased_AfterAFarHarderSession_MovesTheLoadDownOneStep(
         double loadKg,
         double stepKg,
         double expectedKg)
@@ -288,11 +289,11 @@ public class StepAbsorptionTests
     }
 
     [Fact]
-    public void AnUncappedCorrectionThatRoundingErased_StillHoldsTheLoad()
+    public void ACorrectionRoundingErased_CloseToTheTarget_StillHoldsTheLoad()
     {
-        // 7 @RIR0 ispod dna je otkaz jedno ponavljanje ispod opsega: odstupanje -2, -6%,
-        // 9.4 kg se zaokružuje na 10. Korak naniže se daje samo na granici korekcije;
-        // ovde vežbač gradi ponavljanja na istoj težini.
+        // 7 @RIR0 ispod dna je otkaz jedno ponavljanje ispod opsega: odstupanje -2, -4.9%,
+        // 9.5 kg se zaokružuje na 10. Korak naniže se daje tek kad je sesija bar tri
+        // ponavljanja teža od cilja; ovde vežbač gradi ponavljanja na istoj težini.
         Assert.Equal(10m, Next(10m, 7, 0, 8, 12, 1, 2m));
     }
 

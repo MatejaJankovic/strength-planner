@@ -6,12 +6,14 @@ namespace StrengthPlanner.Domain.Algorithms;
 public sealed class ProgressionEngine
 {
     /// <summary>
-    /// Applies RIR correction = clamp((average effective RIR - target RIR) * 3%, +/-10%)
-    /// and double progression rules.
+    /// Applies RIR correction = clamp((average effective RIR - target RIR) / (30 + middle of
+    /// the range + target RIR), +/-10%) and double progression rules. The rate per RIR point
+    /// is Epley's (<see cref="CorrectionPerRirPoint"/>): 2.7% for 3-6 at RIR 2, 2.4% for 8-12
+    /// at RIR 1 and 2.2% for an isolation at 10-20.
     ///
     /// Effective RIR comes from <see cref="WorkingSet.EffectiveRir"/>: below the range floor
     /// it is the lifter's capacity measured against the floor, which is what lets the
-    /// correction reach the same 10% cap downward as it does upward.
+    /// correction go as far downward as upward for the same deviation, and on to the 10% cap.
     ///
     /// When not every set reached the top of the range, the next load is the used load
     /// scaled by the correction.
@@ -89,7 +91,7 @@ public sealed class ProgressionEngine
         var averageRir = workingSets.Average(set => (decimal)set.EffectiveRir(repRangeMin));
         var deviation = averageRir - targetRir;
         var correction = Math.Clamp(
-            deviation * TrainingConstants.RpeCorrectionPerPoint,
+            deviation * CorrectionPerRirPoint(repRangeMin, repRangeMax, targetRir),
             -TrainingConstants.MaxCorrection,
             TrainingConstants.MaxCorrection);
         var allHitTop = workingSets.All(set => set.Reps >= repRangeMax);
@@ -99,7 +101,13 @@ public sealed class ProgressionEngine
 
         if (!allHitTop)
         {
-            nextWeight = ApplyCorrection(usedTotalKg, correction, stepKg, bodyweightLoadKg, usedWeightKg);
+            nextWeight = ApplyCorrection(
+                usedTotalKg,
+                correction,
+                stepKg,
+                bodyweightLoadKg,
+                usedWeightKg,
+                farHarderThanPlanned: averageRir < 0 && deviation <= -TrainingConstants.StepDownRirShortfall);
             atBodyweightFloor = BodyweightLoad.IsAtBodyweightFloor(usedTotalKg * (1 + correction), bodyweightLoadKg);
         }
         else if (StepAbsorption.IsNarrow(repRangeMin, repRangeMax, targetRir)
@@ -148,6 +156,36 @@ public sealed class ProgressionEngine
             nextWeight,
             WeightIncreased: nextWeight > usedWeightKg,
             LoadFloorReached: atBodyweightFloor);
+    }
+
+    /// <summary>
+    /// How much load one point of RIR deviation is worth, read from the same Epley curve as
+    /// the estimate, the working weight and the step absorption.
+    ///
+    /// A lifter who did r reps with e in reserve at load w has an e1RM of
+    /// w * (30 + r + e) / 30. Doing r reps at the target reserve t takes
+    /// w * (30 + r + e) / (30 + r + t), so the correction is (e - t) / (30 + r + t): linear
+    /// in the deviation, at a rate set by how many reps the set carries.
+    ///
+    /// r is the middle of the prescribed range, not the reps of the session. With the
+    /// session's own reps, 10 reps at RIR 3 got a smaller correction than 9 reps at RIR 3
+    /// (4.9% against 5.0%): correct by Epley, since the stronger lifter will also do more
+    /// reps next time, but it breaks the rule that more reps never propose a lighter load,
+    /// for a difference rounding hides anyway. A session that does not reach the top sits
+    /// anywhere from the floor to one rep below it, and the middle halves the worst error of
+    /// either end.
+    ///
+    /// It used to be a flat 3% per point, the top of the handbook's "one rep is about 2-3%
+    /// of load". By Epley that holds for a triple and is too much for everything the plan
+    /// prescribes above it: at the middle of the range it is 2.7% for 3-6 at RIR 2, 2.4% for
+    /// 8-12 at RIR 1 and 2.2% for an isolation at 10-20, so an easy lateral raise was
+    /// corrected about 40% more than its reps justify, and the next session overshot.
+    /// </summary>
+    public static decimal CorrectionPerRirPoint(int repRangeMin, int repRangeMax, int targetRir)
+    {
+        var middleReps = (repRangeMin + repRangeMax) / 2m;
+
+        return 1m / (TrainingConstants.EpleyRepDivisor + middleReps + targetRir);
     }
 
     /// <summary>
@@ -214,18 +252,34 @@ public sealed class ProgressionEngine
     /// five steps: rounding away from zero lifts exactly half a step up, so +10% on 10 kg
     /// becomes 12.) A lateral raise at 10 kg done for 5, 4 and 4 reps of an 8-12 range asked
     /// for 9 kg and got 10, session after session - the lifter stayed below the range until
-    /// the reps crept back up on their own. A correction that reached the cap is the
-    /// strongest signal the rule knows, so when rounding erases it the load moves down by
-    /// one step instead - unless that would leave an externally loaded lift empty (a 2 kg
-    /// dumbbell has no lighter one), where the load stays. Upward the same erasure is left
-    /// alone: holding the load there only means the reps keep climbing toward the step.
+    /// the reps crept back up on their own. A session that could not reach the range at
+    /// all - below its floor even counting the reserve - and fell at least
+    /// <see cref="TrainingConstants.StepDownRirShortfall"/> reps short of its target is the
+    /// strongest signal the rule acts on, so when rounding erases its correction the load
+    /// moves down by one step instead - unless that would leave an externally loaded lift
+    /// empty (a 2 kg dumbbell has no lighter one), where the load stays. Upward the same
+    /// erasure is left alone: holding the load there only means the reps keep climbing
+    /// toward the step.
+    ///
+    /// The trigger used to be "the correction reached the -10% cap", which at 3% a point
+    /// meant a shortfall of 3.33 reps. With the Epley rate the cap sits at 3.5-4.9 reps across
+    /// the built-in prescriptions, and the very case above (5, 4 and 4 at RIR 1, a shortfall
+    /// of 3.67) stopped reaching it and went back to holding 10 kg. The decision is about the
+    /// session, so it is now stated in reps rather than read off the arithmetic of the load.
+    ///
+    /// Both halves are needed. The shortfall alone fired inside the range whenever the target
+    /// reserve is large: an isolation at 10-20 with a target of RIR 3 (the early weeks of a
+    /// strength block) done for 15 reps at RIR 0 is three short, and a 10 kg dumbbell went to
+    /// 8 kg, overshot the range there and came back - 10, 8, 10. A lifter inside the range
+    /// builds reps at the load they have. Found in review.
     /// </summary>
     private static decimal ApplyCorrection(
         decimal usedTotalKg,
         decimal correction,
         decimal stepKg,
         decimal bodyweightLoadKg,
-        decimal usedWeightKg)
+        decimal usedWeightKg,
+        bool farHarderThanPlanned = false)
     {
         if (correction == 0)
         {
@@ -240,9 +294,9 @@ public sealed class ProgressionEngine
         }
 
         var lowered = Math.Min(rounded, usedWeightKg);
-        var erasedAtTheCap = lowered >= usedWeightKg && correction <= -TrainingConstants.MaxCorrection;
+        var erasedFarHarderThanPlanned = lowered >= usedWeightKg && farHarderThanPlanned;
 
-        if (!erasedAtTheCap)
+        if (!erasedFarHarderThanPlanned)
         {
             return lowered;
         }

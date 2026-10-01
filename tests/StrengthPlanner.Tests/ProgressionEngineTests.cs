@@ -8,7 +8,8 @@ public class ProgressionEngineTests
 
     [Theory]
     [InlineData(100.0, 12, 3, 12, 3, 12, 3, 1, 8, 12, 107.5, true)]
-    // Korekcija +3% bez vrha opsega: težina jeste porasla, pa strelica stoji iako nije
+    // Korekcija +2.4% (jedan poen, Epley za 8-12 uz RIR 1) bez vrha opsega: težina jeste
+    // porasla, pa strelica stoji iako nije
     // svaka serija stigla do vrha — WeightIncreased govori o brojevima, ne o vrhu.
     [InlineData(100.0, 10, 2, 11, 2, 11, 2, 1, 8, 12, 102.5, true)]
     [InlineData(100.0, 10, 0, 10, 0, 10, 0, 5, 8, 12, 90.0, false)]
@@ -75,7 +76,8 @@ public class ProgressionEngineTests
     [Fact]
     public void ComputeNext_RoundsDownwardCorrectionToExerciseStep()
     {
-        // Prosečan RIR 0 uz cilj 2 => -6%: 40 kg -> 37.6 kg, zaokruženo na korak od 2 kg.
+        // Prosečan RIR 0 uz cilj 2 => -2 / 42 = -4.8% (Epley za 8-12 uz RIR 2): 40 kg ->
+        // 38.1 kg, zaokruženo na korak od 2 kg.
         var workingSets = new List<WorkingSet> { new(10, 0), new(10, 0), new(10, 0) };
 
         var result = _engine.ComputeNext(

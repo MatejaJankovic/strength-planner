@@ -9,20 +9,25 @@ namespace StrengthPlanner.Tests;
 public class FatigueEvaluatorTests
 {
     /// <summary>Nedelja hipertrofije (ciljni RIR 1) koja je prošla tačno po planu.</summary>
+    // Pad snage se od runde 15 računa tek kad ga potvrdi i prethodna nedelja. Pomoćne
+    // funkcije zato zadaju isto čitanje za obe nedelje, osim kad test kaže drugačije, pa
+    // testovi pisani za jedno čitanje zadržavaju značenje.
     private static WeeklyFatigue Hypertrophy(
         decimal rirDeviation = 0m,
         decimal failureShare = 0m,
         decimal e1RmChange = 0m,
-        decimal volumeShare = 0m) =>
-        new(rirDeviation, AchievableRirDeficit: 1m, failureShare, e1RmChange, volumeShare);
+        decimal volumeShare = 0m,
+        decimal? previousE1RmChange = null) =>
+        new(rirDeviation, AchievableRirDeficit: 1m, failureShare, e1RmChange, volumeShare, previousE1RmChange ?? e1RmChange);
 
     /// <summary>Nedelja snage (ciljni RIR 2).</summary>
     private static WeeklyFatigue Strength(
         decimal rirDeviation = 0m,
         decimal failureShare = 0m,
         decimal e1RmChange = 0m,
-        decimal volumeShare = 0m) =>
-        new(rirDeviation, AchievableRirDeficit: 2m, failureShare, e1RmChange, volumeShare);
+        decimal volumeShare = 0m,
+        decimal? previousE1RmChange = null) =>
+        new(rirDeviation, AchievableRirDeficit: 2m, failureShare, e1RmChange, volumeShare, previousE1RmChange ?? e1RmChange);
 
     [Fact]
     public void Score_IsZero_ForAWeekThatWentToPlan()
@@ -178,7 +183,7 @@ public class FatigueEvaluatorTests
         // Prva nedelja nema sa čim da se poredi; nedostatak podatka ne sme da se
         // protumači kao pad performansi.
         var withoutComparison = Hypertrophy(rirDeviation: -0.5m, failureShare: 0.2m, volumeShare: 0.85m);
-        var withDrop = withoutComparison with { E1RmChangeShare = -0.05m };
+        var withDrop = withoutComparison with { E1RmChangeShare = -0.05m, PreviousE1RmChangeShare = -0.05m };
 
         Assert.True(FatigueEvaluator.Score(withDrop) > FatigueEvaluator.Score(withoutComparison));
     }
@@ -195,10 +200,10 @@ public class FatigueEvaluatorTests
     {
         var extremes = new[]
         {
-            new WeeklyFatigue(-100m, 1m, 5m, -5m, 10m),
-            new WeeklyFatigue(100m, 1m, -5m, 5m, -10m),
-            new WeeklyFatigue(0m, 0m, 0m, 0m, 0m),
-            new WeeklyFatigue(-1m, -3m, 0m, 0m, 0m)
+            new WeeklyFatigue(-100m, 1m, 5m, -5m, 10m, PreviousE1RmChangeShare: -5m),
+            new WeeklyFatigue(100m, 1m, -5m, 5m, -10m, PreviousE1RmChangeShare: 5m),
+            new WeeklyFatigue(0m, 0m, 0m, 0m, 0m, PreviousE1RmChangeShare: 0m),
+            new WeeklyFatigue(-1m, -3m, 0m, 0m, 0m, PreviousE1RmChangeShare: 0m)
         };
 
         foreach (var fatigue in extremes)
@@ -308,5 +313,108 @@ public class FatigueEvaluatorTests
         ]);
 
         Assert.Equal(0m, deviation);
+    }
+    // --- runda 15: pad snage se računa tek kad ga potvrdi i prethodna nedelja ---
+
+    /// <summary>
+    /// Jedan slab dan spušta i RIR i procenu snage, pa "dva signala se slažu" bez potvrde
+    /// nije bilo dva nezavisna signala. Nedelja koja škripi na MRV-u uz pad od 5% pokreće
+    /// deload samo ako je i prethodna nedelja bila pad.
+    /// </summary>
+    [Theory]
+    [InlineData(0.01, false)]
+    [InlineData(0.0, false)]
+    // Pad manji od praga granica volumena (1%) nije pad, nego ravna nedelja.
+    [InlineData(-0.005, false)]
+    [InlineData(-0.01, true)]
+    [InlineData(-0.03, true)]
+    public void AStrengthDrop_CountsOnlyWhenThePreviousWeekDeclinedToo(double previous, bool deload)
+    {
+        var week = Hypertrophy(rirDeviation: -1m, e1RmChange: -0.05m, volumeShare: 1m, previousE1RmChange: (decimal)previous);
+
+        Assert.Equal(deload, FatigueEvaluator.ShouldDeload(week));
+        Assert.Equal(deload ? 0.75m : 0.50m, FatigueEvaluator.Score(week));
+    }
+
+    [Fact]
+    public void AConfirmedDrop_KeepsThisWeeksSize()
+    {
+        // Prethodna nedelja samo potvrđuje smer; veličinu nosi tekuće čitanje.
+        var week = Hypertrophy(e1RmChange: -0.025m, previousE1RmChange: -0.10m);
+
+        Assert.Equal(0.025m, FatigueEvaluator.ConfirmedStrengthDrop(week));
+        Assert.Equal(0.125m, FatigueEvaluator.Score(week));
+    }
+
+    /// <summary>
+    /// Zašto je pravilo promenjeno, kao merenje. Model šuma je onaj iz granica volumena
+    /// (runda 14): nivo snage po nedelji ima sd 2.47%, pa čitanje (razlika dve nedelje) ima
+    /// sd oko 3.5%. Vežbač drži zadat broj ponavljanja i iskreno prijavljuje rezervu, pa slab
+    /// dan spušta RIR za jedno ponavljanje na svakih 2.4% snage (Epley za 8-12), uz grešku
+    /// procene sd 0.22 nad nedeljom. Stvaran pad snage se oseti i u RIR-u, jer opterećenje
+    /// dolazi iz prethodne nedelje; napredak ne, jer ga progresija prati.
+    ///
+    /// Struktura je periodizovan blok od šest nedelja: 1. nedelja nema čitanje, a ocena deluje
+    /// posle 2., 3. i 4. (posle 5. je sledeća već deload). Udeo blokova u kojima ocena povuče
+    /// deload, isto kao u docs/simulations/fatigue_signal_noise.py:
+    /// - vežbač koji napreduje 1% nedeljno, nedelje na MAV-u: jedno čitanje ~12.5%, potvrda ~0.3%;
+    /// - isti, nedelje na MRV-u: ~53% naspram ~3%;
+    /// - stvaran pad od 3% nedeljno na MRV-u: ~98% naspram ~55% - ređe, ali i dalje se hvata.
+    /// </summary>
+    [Fact]
+    public void UnderRealisticNoise_AProgressingLifterIsRarelyDeloaded_AndADecliningOneStillIs()
+    {
+        Assert.True(DeloadedBlocks(trend: 0.01m, volumeShare: 0.75m, confirmed: false) > 0.08m);
+        Assert.True(DeloadedBlocks(trend: 0.01m, volumeShare: 0.75m, confirmed: true) < 0.02m);
+        Assert.True(DeloadedBlocks(trend: 0.01m, volumeShare: 1m, confirmed: false) > 0.40m);
+        Assert.True(DeloadedBlocks(trend: 0.01m, volumeShare: 1m, confirmed: true) < 0.08m);
+        Assert.True(DeloadedBlocks(trend: -0.03m, volumeShare: 1m, confirmed: false) > 0.90m);
+        Assert.True(DeloadedBlocks(trend: -0.03m, volumeShare: 1m, confirmed: true) > 0.40m);
+    }
+
+    private static decimal DeloadedBlocks(decimal trend, decimal volumeShare, bool confirmed)
+    {
+        const int Blocks = 3000;
+        const double LevelSd = 0.0247;
+        const double LoadPerRep = 0.024;
+        int[] actionableWeeks = [2, 3, 4];
+        var random = new Random(15);
+        double Gauss(double sd) => Math.Sqrt(-2 * Math.Log(1 - random.NextDouble())) * Math.Cos(2 * Math.PI * random.NextDouble()) * sd;
+
+        var deloaded = 0;
+
+        for (var block = 0; block < Blocks; block++)
+        {
+            var lastLevel = Gauss(LevelSd);
+            var previousReading = 0m;
+            var hit = false;
+
+            for (var week = 1; week <= actionableWeeks.Max(); week++)
+            {
+                var level = Gauss(LevelSd);
+                var change = level - lastLevel;
+                lastLevel = level;
+
+                // Prva nedelja bloka nema sa čim da se poredi.
+                var reading = week == 1 ? 0m : trend + (decimal)change;
+                var rirDeviation = (decimal)(change / LoadPerRep + Gauss(0.22))
+                                   + (trend < 0 ? trend / (decimal)LoadPerRep : 0m);
+
+                var fatigue = Hypertrophy(
+                    rirDeviation: rirDeviation,
+                    e1RmChange: reading,
+                    volumeShare: volumeShare,
+                    // Staro pravilo je svaki pad brojalo odmah, što je isto što i prethodna
+                    // nedelja koja uvek potvrđuje.
+                    previousE1RmChange: confirmed ? previousReading : -1m);
+
+                hit |= actionableWeeks.Contains(week) && FatigueEvaluator.ShouldDeload(fatigue);
+                previousReading = reading;
+            }
+
+            deloaded += hit ? 1 : 0;
+        }
+
+        return (decimal)deloaded / Blocks;
     }
 }

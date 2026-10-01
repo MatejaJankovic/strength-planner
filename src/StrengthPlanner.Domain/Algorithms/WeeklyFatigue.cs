@@ -31,6 +31,14 @@ namespace StrengthPlanner.Domain.Algorithms;
 /// against, which correctly contributes nothing rather than reading a missing value as
 /// a decline.
 /// </param>
+/// <param name="PreviousE1RmChangeShare">
+/// The same reading one comparable week earlier: the previous training week against the one
+/// before it, zero when there is nothing to compare. A drop in <paramref name="E1RmChangeShare"/>
+/// counts toward the score only when this one was a decline too
+/// (<see cref="FatigueEvaluator.ConfirmedStrengthDrop"/>).
+/// Required rather than defaulted: a default of zero would switch the strength term off for any
+/// caller that forgot it, without a word.
+/// </param>
 /// <param name="VolumeVsMrvShare">
 /// Highest ratio of performed weekly sets to MRV across all muscle groups. 1.0 means at
 /// least one muscle group sat exactly on its ceiling.
@@ -40,4 +48,5 @@ public sealed record WeeklyFatigue(
     decimal AchievableRirDeficit,
     decimal FailureShare,
     decimal E1RmChangeShare,
-    decimal VolumeVsMrvShare);
+    decimal VolumeVsMrvShare,
+    decimal PreviousE1RmChangeShare);

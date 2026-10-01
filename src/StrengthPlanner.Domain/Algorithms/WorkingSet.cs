@@ -30,8 +30,8 @@ public sealed record WorkingSet(int Reps, int Rir, bool IsFailure = false)
     /// range. That is what made downward correction so much narrower than upward
     /// correction: at a target RIR of 1 the worst possible signal was -1 point, or -3%
     /// per session. Counting reps missed against the bottom of the range as negative RIR
-    /// makes the signal symmetric — failing five reps short reads as -5 and reaches the
-    /// same 10% cap that an easy session reaches upward.
+    /// makes the signal symmetric — failing five reps short reads as -5, and the same
+    /// deviation moves the load as far down as it would move it up.
     ///
     /// The same measure applies below the floor when reserve was left. An earlier version
     /// returned the logged RIR untouched there, on the grounds that the lifter stopped on

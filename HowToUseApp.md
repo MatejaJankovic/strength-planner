@@ -564,9 +564,9 @@ naduvane vrednosti ako ih ima; plan ih ne koristi (vidi „Start novog bloka").
 **Nedeljni volumen.** Za izabrani mezociklus i nedelju, po mišićnim grupama: koliko si
 stimulativnih serija odradio i gde to pada u odnosu na tvoje granice.
 
-- **MEV** — minimum ispod kog nema stimulusa
+- **MEV** — procena minimuma koji još donosi rast
 - **MAV** — naučena ciljna vrednost mišića
-- **MRV** — plafon iznad kog nema oporavka
+- **MRV** — procena plafona preko kog oporavak ne stiže
 
 Marker cilja prati **nedelju**, a ne MAV. U bloku hipertrofije nedelja sa više serija od
 osnovne gađa iznad MAV-a (do MRV-a), a nedelja sa manje serija ispod njega; u linearnom bloku
@@ -579,6 +579,20 @@ serija sa RIR 0–3 (ili do otkaza) ulazi cela, RIR 4 ulazi upola, a serija dalj
 donosi zamor ali ne i volumen. Granice se **uče iz tvojih podataka** — posle svake završene
 nedelje pomeraju se najviše za jednu seriju, i najviše 50% od podrazumevane vrednosti.
 Dugme **„Vrati podrazumevane granice"** poništava naučeno.
+
+> Oba pravila su opreznija nego što istraživanja tvrde. Granica brojanja dolazi iz priručnika
+> („minimalno RIR 4"). Novija istraživanja nalaze da rast mišića sa procenjenom rezervom opada
+> postepeno, a ne stepenicom (Robinson i sar. 2024). Uz izjednačen volumen, otkaz i serija blizu
+> otkaza daju sličan rast (Refalo i sar. 2023), ali te studije ne govore o seriji sa četiri ili
+> pet ponavljanja u rezervi. Trenažne nedelje ne idu preko RIR 3, pa se serija odrađena po planu
+> tamo uvek broji cela. Deload bloka snage propisuje RIR 4, pa se tamo i serija po planu broji
+> upola.
+>
+> Ni MEV, MAV i MRV nisu izmerene vrednosti, nego polazna procena iz priručnika koju aplikacija
+> dalje uči. Pregled istraživanja o dozi volumena nalazi da hipertrofija raste sa nedeljnim serijama
+> uz opadajući prinos, bez jasnog plafona u ispitanom opsegu, a da se snaga zasiti mnogo ranije
+> (Pelland i sar. 2025). MRV je zato zaštita oporavka koju aplikacija poštuje, a ne granica
+> preko koje rast prestaje.
 
 Svaka granica uči iz onoga što njoj pripada. **MRV** (plafon oporavka) čita umor: rezervu u
 RIR-u, otkaze i pad snage. **MAV** i **MEV** čitaju **napredak** — da li je ono što dižeš
@@ -759,22 +773,42 @@ lek finiji korak na ekranu „Vežbe" ili opseg umesto fiksnog broja.
 **Sopstvena masa je opterećenje.** Zgib, sklek i iskorak nose deo tvoje telesne mase: 100%,
 64% i 85% redom. Sve računice — korekcija, procena maksimuma, deload, tonaža — rade sa
 **ukupnim** opterećenjem, a prikazuje se i unosi ono što je *dodato*. Zato zgib sa +10 kg
-uz korekciju od 6% ne dobija 0.6 kg nego 5.4 kg: procenat se meri na celom poslu, ne na
+uz korekciju od 4.9% ne dobija 0.5 kg nego 4.4 kg: procenat se meri na celom poslu, ne na
 pojasu. Kada pravilo traži manje od tvog tela, predlog stane na sopstvenoj masi — dalje se
 napreduje ponavljanjima. Plank nema udeo (izdržaj nema ponavljanje čije bi se opterećenje
 merilo) i ne koristi ga nijedan ugrađen šablon.
 
-**Korekcija po RIR-u.** Sledeće opterećenje se koriguje za `(prosečan RIR − ciljni RIR) × 3%`,
-ograničeno na **±10%**. Lakše nego traženo → težina raste; teže → pada. Serija ispod
-donje granice opsega meri se kapacitetom: ponavljanja plus RIR, u odnosu na donju granicu.
-5 ponavljanja sa RIR 2 u opsegu 8–12 je isto što i otkaz na 7, pa sledeći put težina pada.
-Zato korekcija naniže može da dosegne isti plafon kao naviše.
+**Korekcija po RIR-u.** Sledeće opterećenje se koriguje za onoliko koliko po Epley-u vredi
+razlika između prosečnog i ciljnog RIR-a, ograničeno na **±10%**:
+`(prosečan RIR − ciljni RIR) / (30 + sredina opsega + ciljni RIR)`. Lakše nego traženo →
+težina raste; teže → pada. Jedno ponavljanje rezerve vredi manje opterećenja u dužoj seriji:
+
+| Propis | Jedan RIR vredi |
+|---|---|
+| snaga 3–6, RIR 2 | 2.7% |
+| hipertrofija 8–12, RIR 1 | 2.4% |
+| izolacija 10–20, RIR 1 | 2.2% |
+
+> Priručnik kaže da je jedno ponavljanje „otprilike 2–3%" opterećenja, i tabela ostaje u tom
+> rasponu. Ravnih 3% za svaku vežbu, gornja ivica raspona, lakoj seriji izolacije je davalo
+> oko 40% veću korekciju nego što njena ponavljanja opravdavaju: sajla od 50 kg posle 3 × 15
+> sa RIR 4 je išla na 55 kg, a po Epley-u tih 15 ponavljanja sa RIR 1 ide na 53.3 (predlog je
+> sada 52.5). Ista kriva sada važi za korekciju, procenu maksimuma, radnu težinu i korak.
+
+Serija ispod donje granice opsega meri se kapacitetom: ponavljanja plus RIR, u odnosu na
+donju granicu. 5 ponavljanja sa RIR 2 u opsegu 8–12 je isto što i otkaz na 7, pa sledeći put
+težina pada. Zato isto odstupanje vredi isto u oba smera, a otkaz daleko ispod opsega stiže i
+do granice od −10%. Naviše granicu dostižu samo nedelje sa malo ponavljanja i ciljnim RIR-om 1
+(npr. 6–10 ili 3–5): RIR na ekranu ide do 5, a četiri poena iznad cilja su u 8–12 oko 9.8%.
 
 Korak tega ograničava koliko fino korekcija može da se izrazi: do pet koraka težine (bučice
 do 10 kg, šipka i sajla do 12.5 kg, mašina do 25 kg) čak i punih −10% zaokruživanje vraća na
-istu težinu. Kad se to desi sa korekcijom naniže na punom plafonu — sesija daleko ispod
-opsega — težina se spušta za **jedan korak**, osim kad bi tako ostala prazna ruka (bučica od
-2 kg nema lakšu). Manja korekcija naniže tu ostavlja težinu, pa se napreduje ponavljanjima.
+istu težinu. Kad se to desi posle sesije koja je bila **ispod dna opsega** i bar **tri ponavljanja** teža
+od ciljnog RIR-a — na primer 5, 4 i 4 sa RIR 1 u opsegu 8–12 — težina se spušta za **jedan
+korak**, osim kad bi tako ostala prazna ruka (bučica od 2 kg nema lakšu). Manja razlika tu
+ostavlja težinu (otkaz na 7, jedno ispod dna), pa se napreduje ponavljanjima. Sesija u opsegu
+nikad ne spušta težinu za korak, ni kad je ciljna rezerva velika: 15 ponavljanja bez rezerve u
+10–20 sa ciljem RIR 3 ostaje na istoj bučici.
 
 **Procena maksimuma (e1RM).** Epley formula preko efektivnih ponavljanja
 (`ponavljanja + RIR`), samo za serije do 12 ponavljanja **i sa RIR-om do 3**. Serija sa
@@ -792,9 +826,17 @@ ničega, uzima se najnoviji zapis ikada.
 signala: odstupanje RIR-a, udeo serija do otkaza, pad procenjenog 1RM i volumen u odnosu na
 MRV. Nijedan signal sam ne može da pokrene deload — najteži nosi 0.35 naspram praga 0.60, pa
 se bar dva moraju složiti, i to **i u krajnjem slučaju**: nedelja u kojoj je baš svaka serija
-išla do otkaza nosi taj jedan signal (0.25) i sama ne pokreće deload; uz stvaran pad snage
-ili volumen na MRV-u ga pokreće. Kad se pokrene: serije prepolovljene, opterećenje 90%
+išla do otkaza nosi taj jedan signal (0.25) i sama ne pokreće deload. Ne pokreće ga ni uz
+potvrđen pad snage (0.50) ni uz volumen na MRV-u (0.40), nego tek uz oba (0.65). Kad se pokrene: serije prepolovljene, opterećenje 90%
 stvarno korišćenog, ciljni RIR podignut za dva. Pokreće se najviše jednom po bloku.
+
+Pad snage se računa tek kad ga potvrdi i **prethodna uporediva nedelja**, padom od bar 1% (ista
+mera kao kod granica volumena). Jedan slab dan spušta i rezervu i procenu maksimuma, pa bi „dva
+signala se slažu" bila jedna loša nedelja izbrojana dvaput. Nedelja hipertrofije koja je pala
+6% uz RIR jedan ispod cilja zato sama ne pokreće deload (0.35), a ista takva nedelja posle još
+jednog pada ga pokreće (0.60). U ravnom bloku od četiri nedelje pad snage zato ne može da
+povuče deload: druga nedelja nema potvrdu, a posle treće ionako sledi planirani deload. Otkazi i
+rezerva i dalje mogu.
 
 **Deload rasterećuje i napor.** Ciljni RIR deload nedelje je tvoj ciljni RIR **+2**
 (hipertrofija 3, snaga 4). Pad opterećenja od 10% po Epley-u vredi oko tri ponavljanja, pa

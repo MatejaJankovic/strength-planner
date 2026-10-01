@@ -102,3 +102,10 @@ takvu nedelju, a linearan tri.
 - Granice uče sporije: kratak blok daje jednu ili dve odluke.
 - Vežbač koji stoji i dalje gubi oko dve serije MAV-a za godinu dana, jer „ravno" zahteva da
   oba čitanja budu u ±1%, što je uz šum retko, a pad zaredom se ipak desi.
+
+## Kasnije (runda 15)
+
+Ocena umora sada računa pad snage tek kad ga potvrdi i prethodna uporediva nedelja. Jedan slab
+dan spušta i RIR i procenu maksimuma, pa ta dva signala nisu bila nezavisna: vežbač koji
+napreduje 1% nedeljno dobijao je lažan deload u 20% blokova na MAV-u i 73% na MRV-u (simulacija
+sa šumom iz runde 14). Vidi [fatigue-signal-noise.md](fatigue-signal-noise.md).

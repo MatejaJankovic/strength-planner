@@ -126,6 +126,17 @@ ono što je ispod 20 kg, ono što blok radi kroz nedelje i ono što se tvrdi o v
 | [Deload početnika](beginner-deload.md) | Ravan blok početnika je četvrtinu vremena provodio u rasterećenju, iako priručnik kaže da početnici o deload-u ne treba da razmišljaju; sada je i četvrta nedelja trenažna | #93 |
 | [Šum u signalu snage](landmark-signal-noise.md) | Jedno nedeljno čitanje snage je pretežno šum, pa su MAV i MRV vežbača koji napreduje klizili do poda; sada se dve uzastopne nedelje moraju složiti | #94 |
 
+## Petnaesti krug — revizija posle runde 14
+
+Nalazi G1–G5 iz pregleda posle runde 14. Odluke: G1 se radi, G3 samo kao komentar i
+uputstvo, G5 (pauze između serija) ostaje van opsega.
+
+| Grana | O čemu je | PR |
+|---|---|---|
+| [Korekcija po RIR-u čita Epley krivu](rir-correction-from-epley.md) | Korekcija je bila ravnih 3% po poenu za svaki propis, pa je laka izolacija dobijala oko 40% veću korekciju nego što njena ponavljanja opravdavaju (sajla 50 kg → 55 umesto 52.5) | #95 |
+| [Pad snage u oceni umora traži dve nedelje](fatigue-signal-noise.md) | Jedan slab dan je punio i RIR i pad snage, pa je vežbač koji napreduje dobijao lažan deload u 12.5% periodizovanih blokova (na MRV-u u više od polovine); sada 0.3% i 3%, uz cenu da u ravnom bloku pad snage više ne povlači deload | #95 |
+| [Šta je procena, a šta merenje](evidence-notes.md) | Stepenica stimulativnog volumena (RIR 4 upola, RIR 5 ništa) i granice MEV/MAV/MRV su procene iz priručnika, a ne izmerene vrednosti; komentar i uputstvo to sada kažu, pravila ostaju | #95 |
+
 ## Ako čitaš samo jedno
 
 [Periodizacija po nedeljama](periodization-models.md) — to je bio najveći raskorak između
