@@ -41,9 +41,15 @@ namespace StrengthPlanner.Domain.Algorithms;
 /// a block, or a week whose rep counts do not line up with the previous one. A missing
 /// measurement moves nothing.
 /// </param>
+/// <param name="PreviousStrengthChangeShare">
+/// The same reading one comparable week earlier: the previous training week against the one
+/// before it. The limits act on strength only when the two readings agree
+/// (<see cref="VolumeAdaptation"/>), because a single week's reading is mostly noise.
+/// </param>
 public sealed record VolumeResponse(
     decimal PerformedSets,
     decimal RawSets,
     decimal AverageRirDeviation,
     decimal FailureShare,
-    decimal? StrengthChangeShare = null);
+    decimal? StrengthChangeShare = null,
+    decimal? PreviousStrengthChangeShare = null);

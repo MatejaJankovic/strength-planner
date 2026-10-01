@@ -52,14 +52,16 @@ public static class VolumeAdaptation
     public const int MinBandWidth = 2;
 
     /// <summary>
-    /// How much the estimated strength of a muscle group's lifts must move before the week
+    /// How much the estimated strength of a muscle group's lifts must move before a reading
     /// counts as progress or as a decline.
     ///
     /// One percent, which sits below the smallest real move a lifter can make and above
     /// pure arithmetic noise: the weight step is 2.5 kg, so a single step is 2.5% of a
     /// 100 kg lift and 5% of a 40 kg one. Anything smaller than a step is rounding, and
-    /// between the two thresholds the week is read as flat — no evidence either way, rather
-    /// than weak evidence in a direction.
+    /// between the two thresholds the reading is flat.
+    ///
+    /// A single reading is not enough, and that is the part round 14 changed: see
+    /// <see cref="Agree"/>.
     /// </summary>
     public const decimal StrengthChangeThreshold = 0.01m;
 
@@ -187,28 +189,55 @@ public static class VolumeAdaptation
         return new VolumeLandmarkValues(safeMev, ClampTarget(mav, safeMev, safeMrv, seed), safeMrv);
     }
 
-    /// <summary>Week that produced measurable progress in what the muscle's lifts carry.</summary>
+    /// <summary>Two comparable weeks in a row of measurable progress.</summary>
     private static bool Progressed(VolumeResponse response)
     {
-        return response.StrengthChangeShare >= StrengthChangeThreshold;
+        return Agree(response, change => change >= StrengthChangeThreshold);
     }
 
-    /// <summary>Week that lost measurable strength.</summary>
+    /// <summary>Two comparable weeks in a row of measurable decline.</summary>
     private static bool Declined(VolumeResponse response)
     {
-        return response.StrengthChangeShare <= -StrengthChangeThreshold;
+        return Agree(response, change => change <= -StrengthChangeThreshold);
     }
 
     /// <summary>
-    /// Week that had a comparable measurement and moved less than one weight step either
-    /// way. A week with <b>no</b> measurement is not flat — it is silent, and silence
-    /// moves nothing.
+    /// Two comparable weeks in a row that each moved less than one weight step either way.
+    /// A week with <b>no</b> measurement is not flat — it is silent, and silence moves
+    /// nothing.
     /// </summary>
     private static bool Flat(VolumeResponse response)
     {
-        return response.StrengthChangeShare is not null
-               && !Progressed(response)
-               && !Declined(response);
+        return Agree(response, change => Math.Abs(change) < StrengthChangeThreshold);
+    }
+
+    /// <summary>
+    /// Whether this week's strength reading and the previous comparable week's both say the
+    /// same thing.
+    ///
+    /// One reading is mostly noise. Misjudging the reserve by one rep moves an e1RM by
+    /// 1 / (30 + effective reps), about 2.4% for a set of 8-12 at RIR 1-2, and lifters
+    /// misjudge it by about a rep on average with wide spread (Halperin et al. 2022). Day to
+    /// day, a one-rep max itself varies by a median 4.2% (Grgic et al. 2020). A weekly reading
+    /// compares two such weeks, so its noise is several times the true progress of an
+    /// intermediate lifter (well under 1% a week).
+    ///
+    /// Simulated with a lifter who truly progresses 1% a week, a misjudgement of 1 rep and a
+    /// day-to-day spread of 2%, a single reading said "decline" in 30% of weeks. Every one of
+    /// those weeks lowered MRV, and MRV rises only near itself with reps to spare, so the
+    /// recovery ceiling of a lifter who was progressing ratcheted down. Requiring two readings
+    /// in a row to agree cut false declines to 3% of weeks, at the price of reacting more
+    /// slowly to a real one (a true 2% weekly decline is caught in 29% of weeks rather than
+    /// 61%). The limits move one set a week at most anyway; being slow is the cheaper error.
+    /// The fatigue score keeps the single reading: it already needs two independent signals
+    /// before it deloads.
+    /// </summary>
+    private static bool Agree(VolumeResponse response, Func<decimal, bool> says)
+    {
+        return response.StrengthChangeShare is { } current
+               && response.PreviousStrengthChangeShare is { } previous
+               && says(current)
+               && says(previous);
     }
 
     /// <summary>

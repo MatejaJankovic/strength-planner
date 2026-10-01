@@ -180,3 +180,9 @@ njih MAV uglavnom ne uči — a nedelja intenziteta, koja stoji na MEV-u, uči o
 Zapisano zato što se iz koda ne vidi: pravila adaptacije se nisu menjala, promenilo se koje
 nedelje ih uopšte dodiruju. Da li je RIR dobar signal za granice volumena je zaseban nalaz
 (odeljak C), i nije rađen.
+
+## Kasnije (runda 14)
+
+Snaga sada pomera granice tek kad se **dve uzastopne uporedive nedelje** slože. Jedno čitanje
+je pretežno šum, i uz njega su granice vežbača koji napreduje klizile naniže (MAV 16 → 11,
+MRV 22 → 12 za godinu dana u simulaciji). Vidi [landmark-signal-noise.md](landmark-signal-noise.md).
