@@ -907,6 +907,17 @@ Measurements from this round that contradicted the expectation:
    guide said an all-failure week deloads with a strength drop *or* volume at MRV, which was
    false before this round too (0.50 and 0.40; only both give 0.65).
 
+**G6 was built and then refuted by measurement, before a PR.** Review of G2 noted that the
+advanced threshold (0.50) is reached by RIR (0.35) plus volume at MRV (0.15), so G6 measured
+the volume signal from the week's prescription instead of from MRV alone. It worked live
+(0.375 → 0.35). But its justification, "65% of blocks falsely deloaded", assumed a week at
+exactly MRV, and across every built-in training week an advanced *proposal* (sets after
+balancing, which caps at MRV) never reaches MRV (at most 0.98); the raw prescription does, up
+to 1.20, but never reaches the lifter. At the shares the proposal really reaches, it traded
+about 3-4 points fewer false deloads for 10-28 points fewer real declines caught, so it was dropped and the reasoning kept
+at the end of `fatigue-signal-noise.md`. The second time in one round a model's rate was
+taken for the app's.
+
 Process notes from this round, because the environment differed from the usual one: the
 container had .NET SDK 8.0.131 (from Ubuntu) where `global.json` pins 8.0.422 with
 `latestFeature`, so `global.json` was overridden locally and kept out of every commit with

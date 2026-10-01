@@ -19,9 +19,10 @@ računa posle 2. i 3. nedelje, a deluje samo ona posle 2. Periodizovan blok (6 n
 6.): deluju ocene posle 2., 3. i 4. nedelje. "Pet nedelja" je model bez strukture, kojim je
 izbor pravila prvo napravljen.
 
-Pokretanje: python3 docs/simulations/fatigue_signal_noise.py
+Pokretanje: python3 docs/simulations/fatigue_signal_noise.py (runda 15), sa --g6 za odbačeni nalaz G6.
 """
 import random
+import sys
 
 RATE = 0.024
 LEVEL_SD = 0.0247
@@ -79,7 +80,26 @@ STRUCTURES = {
     "ravan, 4 nedelje": {2},
 }
 
+def g6_table():
+    """Nalaz G6, odbačen: da li signal volumena treba da broji samo serije preko propisa.
+    Nedelja odrađena po predlogu bi tada imala udeo 0.8 (dno opsega). Udeli su oni koje predlog
+    (posle balansiranja) ugrađenih šablona stvarno dostiže: napredni najviše 0.98, srednji 1.0.
+    Svaka nedelja u kojoj ocena deluje stavlja se na taj najveći udeo, pa je ovo gornja granica
+    koristi od G6."""
+    weeks = STRUCTURES["periodizovan, 6 nedelja"]
+    print("\n## G6 (odbačen): periodizovan blok, ponašanje (A), sa potvrdom pada snage")
+    print("| Nivo (prag) | Udeo predloga | Signal | +1%/ned. (lažni) | -3%/ned. (uhvaćen) |")
+    print("|---|---|---|---|---|")
+    for threshold, label, planned in ((0.50, "napredni (0.50)", 0.98), (0.60, "srednji (0.60)", 1.0)):
+        for volume, name in ((planned, "udeo prema MRV-u (zadržano)"), (0.8, "preko propisa (odbačeno)")):
+            cells = [deloaded_share("confirmed", trend, volume, weeks, threshold) for trend in (0.01, -0.03)]
+            print(f"| {label} | {planned} | {name} | " + " | ".join(f"{cell:.1%}" for cell in cells) + " |")
+
+
 if __name__ == "__main__":
+    if "--g6" in sys.argv:
+        g6_table()
+        raise SystemExit
     for threshold, label in ((0.60, "srednji nivo, prag 0.60"), (0.50, "napredni nivo, prag 0.50")):
         print(f"\n## {label}, ponašanje (A): udeo blokova sa deload-om iz ocene umora")
         print("| Struktura | Pravilo | +1%/ned., MAV | +1%, MRV | -2%/ned., MAV | -3%, MRV |")
