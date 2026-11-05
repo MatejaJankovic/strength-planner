@@ -828,7 +828,11 @@ otkaza** je sam maksimum: 100 kg × 1 uz RIR 0 daje 100, a ne 103.3 koliko bi re
 — poslednji zapis može biti sa lošeg dana. Dva izuzetka: ako najbolja stoji više od **5%**
 iznad druge po redu, uzima se druga (to je jedna omašena procena, a ne napredak), i ako si u
 tom prozoru **ručno** uneo maksimum, starije procene se ne računaju. Ako u prozoru nema
-ničega, uzima se najnoviji zapis ikada.
+ničega, uzima se najnoviji zapis ikada, da se posle pauze ne krene od praznih opterećenja.
+Taj broj opisuje tebe od pre pauze, pa ekran treninga tada navodi vežbe i koliko im je
+maksimum star, a ekran maksimuma piše starost uz red. Za koliko je preteško sistem ne
+procenjuje, jer za to nema pouzdanog broja: prvi trening uzmi opreznije ili uradi
+test-seriju. Prvi završen trening upisuje novu procenu i napomena nestaje.
 
 **Automatski deload.** Iz svake završene nedelje se računa ocena umora (0–1) iz četiri
 signala: odstupanje RIR-a, udeo serija do otkaza, pad procenjenog 1RM i volumen u odnosu na
