@@ -22,19 +22,25 @@ Iz revizije nauke o treningu (odeljak F), nalazi F13 i F17.
   - granica od RIR 3 (`E1RmMaxRir`) već drži ekstrapolaciju na najviše tri ponavljanja;
   - granica na efektivnim ponavljanjima bi odbila i seriju od 10 uz RIR 3, najobičniju seriju
     hipertrofije;
-  - procena RIR-a je nešto tačnija do 12 ponavljanja do otkaza (Halperin i sar. 2022), pa je
-    ekstrapolacija namerno kratka.
+  - procena RIR-a je nešto tačnija do 12 ponavljanja do otkaza (Halperin i sar. 2022), a
+    ekstrapolaciju kratkom drži upravo granica od RIR 3.
+- `StrengthChange` (signal snage za granice volumena i ocenu umora) poredi procene preko
+  `ImpliedOneRepMax`, jer je promena odnos dve tačke na krivoj. Inače bi par 100 × 2 pa 100 × 1
+  čitao pad od 6.25% umesto oko 3.1%. Na to je ukazao pregled PR-a.
 
 ## Provera
 
 - Razvojna baza: nijedna od 8.073 serije nema 1 ponavljanje, pa se nijedna sačuvana procena ne
-  pomera.
-- `dotnet test`: **848** (bilo 843). Novi testovi:
+  pomera. Ranija test-serija 100 × 1 je sačuvana kao 103.3, a zapis maksimuma ne čuva
+  ponavljanja, pa se takvi zapisi ne mogu naknadno prepoznati i ispraviti. Njih zameni sledeća
+  test-serija ili prozor od 56 dana.
+- `dotnet test`: **849** (bilo 843). Novi testovi:
   - 100 × 1 uz RIR 0 je 100;
   - 1 × RIR 1, 1 × RIR 2 i 2 × RIR 0 i dalje računaju Epley;
-  - jedno ponavljanje do otkaza nikad ne čita više od istog ponavljanja uz rezervu.
+  - jedno ponavljanje do otkaza nikad ne čita više od istog ponavljanja uz rezervu;
+  - par 100 × 2 pa 100 × 1 u `StrengthChange` čita oko −3.1%, ne −6.25%.
 - Stari test koji je zakucavao 100 × 1 = 103.33 sada proverava formulu na pet ponavljanja.
-- Merenje vraćanjem (commit, pravilo uklonjeno, rebuild): obara **1** od 848.
+- Merenje vraćanjem (commit, pravilo uklonjeno, rebuild): obara **1** od 848 (pre ispravke iz pregleda).
 - Uživo:
   - API: 100 kg × 1 uz RIR 0 → 100 kg; × 1 uz RIR 1 → 106.7 kg; × 3 uz RIR 0 → 110 kg.
   - Ekran maksimuma (375 px, bez prelivanja): test-serija 100 × 1 uz RIR 0 je poslata sa

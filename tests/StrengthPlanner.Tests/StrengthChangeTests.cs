@@ -228,4 +228,21 @@ public class StrengthChangeTests
         Assert.True(change!.Value < 0m, $"Promena je {change.Value}.");
         Assert.Equal(-10m / 110m, change.Value, precision: 10);
     }
+
+    /// <summary>
+    /// Promena je odnos dve tačke na Epley krivoj, pa jedno ponavljanje do otkaza ne izlazi
+    /// sa nje. Procena maksimuma ga čita kao samu težinu (100 × 1 je 100 kg, ne 103.3), ali
+    /// bi tada par 100 × 2 pa 100 × 1 čitao pad od 6.25% - dvostruko od onoga što kriva kaže
+    /// za jedno ponavljanje manje na istoj težini.
+    /// </summary>
+    [Fact]
+    public void ASingleAfterADouble_ReadsTheCurve_NotTheShortcutForTheMaximum()
+    {
+        var change = StrengthChange.ChangeShare(
+            [new StrengthSample(Bench, 1, 0, 100m)],
+            [new StrengthSample(Bench, 2, 0, 100m)]);
+
+        Assert.Equal((31m / 30m - 32m / 30m) / (32m / 30m), change!.Value, precision: 10);
+        Assert.True(change.Value > -0.032m, $"Promena je {change.Value:P2}.");
+    }
 }

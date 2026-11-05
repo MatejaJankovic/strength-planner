@@ -177,7 +177,7 @@ public class E1RmCalculatorTests
     }
 
     [Fact]
-    public void ASingleToFailure_NeverReadsAboveAHeavierSingleWithReserve()
+    public void ASingleToFailure_NeverReadsAboveTheSameSingleWithReserve()
     {
         // 100 × 1 @0 ne sme da pređe 100 × 1 @1: više rezerve ne sme da da manju procenu.
         Assert.True(_calculator.EstimateOneRepMax(100m, 1, 0) < _calculator.EstimateOneRepMax(100m, 1, 1));

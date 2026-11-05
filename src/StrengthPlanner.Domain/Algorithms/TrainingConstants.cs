@@ -41,7 +41,8 @@ public static class TrainingConstants
     /// at most, and only for a set that was itself inside the range. Capping effective reps at
     /// 12 instead would refuse a set of 10 at RIR 3, the most ordinary hypertrophy set there
     /// is. RIR predictions are somewhat more accurate at 12 reps to failure or fewer
-    /// (Halperin et al. 2022), which is the reason the extrapolation is kept short.
+    /// (Halperin et al. 2022), and keeping the reserve at three or less is what keeps the
+    /// extrapolation short.
     /// </summary>
     public const int EpleyRepCap = 12;
 
