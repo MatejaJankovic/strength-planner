@@ -111,10 +111,11 @@ public static class OneRepMaxBaseline
     ///
     /// Generating a block keeps such a value on purpose, so a lifter returning after a pause
     /// does not start from empty loads. But it is a statement about the lifter as they were
-    /// then, and after weeks without training strength declines by an amount the literature
-    /// does not pin to a number that could be subtracted here. So the value is kept and the
-    /// lifter is told how old it is: the first completed session writes a fresh estimate,
-    /// and a test set replaces it before that.
+    /// then, and how much strength is lost over a pause depends on its length and on training
+    /// status (Bosquet et al. 2013), so no single percentage could be subtracted here. The
+    /// value is kept and the lifter is told how old it is. A new record replaces it as the
+    /// maximum but does not rewrite loads already stored in the plan; after the first
+    /// completed session with the exercise, its next load comes from the sets lifted.
     /// </summary>
     public static bool IsOutsideLookback(OneRepMaxSample sample, DateTime now, int lookbackDays)
     {

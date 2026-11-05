@@ -53,14 +53,16 @@
           <mat-icon aria-hidden="true">history</mat-icon>
           <span>
             Za {{ stale.length === 1 ? 'ovu vežbu' : 'ove vežbe' }} plan polazi od starog
-            maksimuma, jer novijeg nema: <strong>{{ staleMaxSummary() }}</strong>. Ako je
-            u međuvremenu nisi radio, snaga je verovatno manja, pa prvi trening uzmi
-            opreznije ili uradi test-seriju. Prvi završen trening upisuje novu procenu.
+            maksimuma, jer novijeg nema: <strong>{{ staleMaxSummary() }}</strong>. Ako
+            {{ stale.length === 1 ? 'je' : 'ih' }} u međuvremenu nisi radio, snaga je
+            verovatno manja: prvi trening {{ stale.length === 1 ? 'sa njom' : 'sa njima' }}
+            odradi opreznije i spusti težinu ako treba. Kad odradiš taj dan, sledeće nedelje
+            se opterećenje računa iz onoga što si stvarno digao.
           </span>
         </p>
         <button class="missing__action" type="button" (click)="openOneRepMaxSetup()">
           <mat-icon aria-hidden="true">tune</mat-icon>
-          Uradi test-seriju
+          Pogledaj maksimume
         </button>
       </section>
     }

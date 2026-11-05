@@ -8,8 +8,8 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  *
  * Plan i posle pauze polazi od poslednjeg poznatog maksimuma, da blok ne krene od praznih
  * opterećenja. Do sada to nije pisalo nigde, a broj opisuje vežbača od pre pauze. Procenat
- * pada se ne izmišlja: literatura ga ne daje kao broj koji bi se mogao oduzeti, pa ekran
- * kaže samo koliko je zapis star.
+ * pada se ne oduzima: pad zavisi od dužine pauze i od treniranosti (meta-analiza Bosquet i
+ * sar. 2013), pa jedan broj za sve ne bi bio tačan. Ekran kaže samo koliko je zapis star.
  *
  * Da li je zapis star odlučuje server (`isOutsideLookback`); ovde se samo broje nedelje
  * za tekst, zaokruženo naniže, jer „8 nedelja" za zapis od 62 dana nije preterivanje.

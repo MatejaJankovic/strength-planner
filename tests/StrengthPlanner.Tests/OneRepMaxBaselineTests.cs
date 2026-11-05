@@ -181,4 +181,37 @@ public class OneRepMaxBaselineTests
         Assert.Equal(outside, OneRepMaxBaseline.IsOutsideLookback(sample, Now, TrainingConstants.OneRepMaxLookbackDays));
         Assert.Equal(outside, Select([sample]) is null);
     }
+
+    /// <summary>
+    /// Ista vrednost u prozoru i van njega: prikazuje se najsvežiji zapis, pa maksimum nije
+    /// star, iako stariji zapis sa istim brojem jeste.
+    /// </summary>
+    [Fact]
+    public void AnEqualValueInsideTheWindow_IsNotReportedAsStale()
+    {
+        var chosen = OneRepMaxBaseline.SelectSample(
+            [Estimated(120m, 90), Estimated(120m, 10)],
+            Now,
+            TrainingConstants.OneRepMaxLookbackDays,
+            allowStaleFallback: true);
+
+        Assert.False(OneRepMaxBaseline.IsOutsideLookback(chosen!, Now, TrainingConstants.OneRepMaxLookbackDays));
+    }
+
+    /// <summary>
+    /// Noviji zapis od 0 kg nije procena, pa ne osvežava maksimum: plan polazi od starog, i
+    /// ekran mora da kaže da je star.
+    /// </summary>
+    [Fact]
+    public void ANewerZeroRecord_DoesNotMakeAStaleMaximumFresh()
+    {
+        var chosen = OneRepMaxBaseline.SelectSample(
+            [Estimated(0m, 5), Estimated(100m, 70)],
+            Now,
+            TrainingConstants.OneRepMaxLookbackDays,
+            allowStaleFallback: true);
+
+        Assert.Equal(100m, chosen!.ValueKg);
+        Assert.True(OneRepMaxBaseline.IsOutsideLookback(chosen, Now, TrainingConstants.OneRepMaxLookbackDays));
+    }
 }

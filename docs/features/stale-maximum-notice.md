@@ -19,26 +19,47 @@ vežbača od pre pauze, a snaga posle nekoliko nedelja bez treninga opada.
   da ga je izabrao rezervni put, jer novijeg nema.
 - `OneRepMaxDto.IsOutsideLookback` nosi odgovor, i to samo kod trenutnih maksimuma
   (`GET` trenutnih vrednosti), gde to pitanje ima smisla.
-- **Ekran treninga:** ispod spiska vežbi bez maksimuma stoji napomena sa vežbama iz bloka čiji
-  je maksimum star, uz starost u nedeljama („Barbell Row (10 nedelja)"). Predlaže opreznije
-  prvi trening ili test-seriju, i kaže da prvi završen trening upisuje novu procenu. Dugme vodi
-  na ekran maksimuma.
-- **Ekran maksimuma:** uz red piše „Star 10 nedelja - plan ga koristi jer novijeg nema".
+- **Ekran treninga:** ispod spiska vežbi bez maksimuma stoji napomena sa vežbama čija
+  opterećenja još stoje na starom maksimumu, uz starost („Barbell Row (star 10 nedelja)").
+  Broji se vežba koja čeka u nekom treningu, a na tom danu bloka još nije odrađena
+  (`features/workout/stale-max-exercises.ts`): završen trening prepisuje opterećenje iste
+  vežbe za isti dan sledeće nedelje, i to iz dignutih serija, pa za odrađen dan tvrdnja „plan
+  polazi od starog maksimuma" više ne važi. Napomena predlaže da se prvi trening odradi
+  opreznije i da se težina spusti ako treba.
+- **Ekran maksimuma:** uz red piše „Star 10 nedelja, jer novijeg zapisa nema", i da nov unos
+  ili test-serija menja maksimum, ali ne i opterećenja već upisana u plan.
 - Uputstvo, odeljak „Start novog bloka", to sada kaže.
 
-**Procenat pada se ne nudi.** Literatura o prestanku treninga ne daje broj koji bi se mogao
-oduzeti od maksimuma (pad zavisi od dužine pauze, iskustva i vrste snage), a izmišljen
-procenat bi izgledao kao proračun. Zato ekran kaže samo koliko je zapis star.
+**Procenat pada se ne nudi.** Pad snage posle pauze zavisi od njene dužine i od treniranosti
+(meta-analiza Bosquet i sar. 2013), pa jedan procenat za sve ne bi bio tačan, a izgledao bi
+kao proračun. Zato ekran kaže samo koliko je zapis star.
+
+## Posle pregleda
+
+Prva verzija je napomenu vezivala za zapise, a ne za plan, i obećavala više nego što radi:
+
+- Predlagala je test-seriju, i test-serija je zaista uklanjala napomenu, ali **ne i
+  opterećenja**: ciljevi prve nedelje se upisuju pri generisanju i novi zapis ih ne prepisuje.
+  Provera uživo je gledala napomenu, a ne cilj. Tekst sada kaže da se upisana opterećenja ne
+  menjaju, a dugme vodi na pregled maksimuma umesto na „Uradi test-seriju".
+- Navodila je i vežbe koje je plan već prestao da vodi po maksimumu (odrađene u bloku), i
+  tvrdila da „prvi završen trening upisuje novu procenu". To ne važi za drugi dan iste nedelje,
+  za izolacije iznad 12 ponavljanja ni za deload nedelju. Sada se gleda par dan + vežba.
+  Prvi ispravak je gledao samo vežbu, i tada bi završen Upper A sakrio bench iz Upper B iste
+  nedelje, koji i dalje stoji na starom maksimumu: sledeći plan se traži po `DayLabel`.
+- „Ako je nisi radio" je stajalo i uz više vežbi; sada „ako ih".
 
 Da li je zapis star odlučuje server, jer samo on zna prozor. Klijent samo broji nedelje za tekst
 (`shared/stale-max-age.ts`, zaokruženo naniže, sa ispravnim padežom).
 
 ## Provera
 
-- `dotnet test`: **854** (bilo 849). Novi testovi: rezervni izbor je izvan prozora, i granica
-  (0, 55, 56, 57 dana) je ista kao u `Select`.
+- `dotnet test`: **856** (bilo 849). Novi testovi: rezervni izbor je izvan prozora; granica
+  (0, 55, 56, 57 dana) je ista kao u `Select`; ista vrednost u prozoru nije stara; noviji zapis
+  od 0 kg ne osvežava stari maksimum.
 - Merenje vraćanjem (commit, `IsOutsideLookback` uvek `false`, rebuild): obara **2** od 854.
-- Klijent: **195** (bilo 192), za brojanje nedelja i padež.
+- Klijent: **201** (bilo 192): brojanje nedelja i padež, i pravilo napomene (vežba koja čeka,
+  odrađen dan, drugi dan, preskočen trening, svež maksimum, redosled).
 - Uživo, na 375 px, nalog za testiranje kome su zapisi za Barbell Row pomereni 70 dana unazad:
   - ekran treninga: „Za ovu vežbu plan polazi od starog maksimuma, jer novijeg nema: Barbell
     Row (10 nedelja)", bez prelivanja;
@@ -50,7 +71,10 @@ Da li je zapis star odlučuje server, jer samo on zna prozor. Klijent samo broji
 
 ## Šta ostaje
 
+- Serverski deo koji postavlja `IsOutsideLookback` u `OneRepMaxService` nema test: projekat
+  nema harness na nivou servisa (isto kao u rundi 12). Proveren je uživo.
+- Test-serija ne prepisuje već upisana opterećenja. Da bi to radila, novi zapis bi morao da
+  preračuna ciljeve treninga koji čekaju i još nisu vođeni progresijom; to je veća izmena i
+  ovde nije urađena.
 - Napomena ne zna da li je vežbač stvarno pravio pauzu. Vežba koja dva meseca nije bila u
   bloku dobija istu napomenu, i tu je ona jednako tačna: broj je star.
-- Serija koja ne prolazi `CanEstimateFrom` (npr. RIR 4) ne upisuje procenu, pa napomena tada
-  ostaje i posle odrađenog treninga.
