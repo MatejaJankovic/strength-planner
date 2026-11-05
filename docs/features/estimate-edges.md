@@ -40,7 +40,7 @@ Iz revizije nauke o treningu (odeljak F), nalazi F13 i F17.
   - jedno ponavljanje do otkaza nikad ne čita više od istog ponavljanja uz rezervu;
   - par 100 × 2 pa 100 × 1 u `StrengthChange` čita oko −3.1%, ne −6.25%.
 - Stari test koji je zakucavao 100 × 1 = 103.33 sada proverava formulu na pet ponavljanja.
-- Merenje vraćanjem (commit, pravilo uklonjeno, rebuild): obara **1** od 848 (pre ispravke iz pregleda).
+- Merenje vraćanjem (commit, pravilo uklonjeno, rebuild): obara **1** od 848 (pre ispravke iz pregleda). Vraćanje `EstimateOneRepMax` u `StrengthChange` obara **1** od 849.
 - Uživo:
   - API: 100 kg × 1 uz RIR 0 → 100 kg; × 1 uz RIR 1 → 106.7 kg; × 3 uz RIR 0 → 110 kg.
   - Ekran maksimuma (375 px, bez prelivanja): test-serija 100 × 1 uz RIR 0 je poslata sa
