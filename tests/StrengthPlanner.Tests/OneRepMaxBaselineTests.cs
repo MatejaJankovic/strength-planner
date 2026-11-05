@@ -149,4 +149,36 @@ public class OneRepMaxBaselineTests
 
         Assert.True(TrainingConstants.OneRepMaxOutlierTolerance < (atMaxRir / toFailure) - 1);
     }
+
+    /// <summary>
+    /// Vežbač koji se vraća posle pauze zadržava stari maksimum - blok tako ne kreće od
+    /// praznih opterećenja - ali taj broj opisuje vežbača od pre pauze, pa ekran mora da zna
+    /// da je izabran zato što novijeg nema.
+    /// </summary>
+    [Fact]
+    public void AValueChosenByTheStaleFallback_IsOutsideTheLookback()
+    {
+        var chosen = OneRepMaxBaseline.SelectSample(
+            [Estimated(140m, 90), Manual(130m, 70)],
+            Now,
+            TrainingConstants.OneRepMaxLookbackDays,
+            allowStaleFallback: true);
+
+        Assert.Equal(130m, chosen!.ValueKg);
+        Assert.True(OneRepMaxBaseline.IsOutsideLookback(chosen, Now, TrainingConstants.OneRepMaxLookbackDays));
+    }
+
+    /// <summary>Granica je ista kao u Select: zapis star tačno 56 dana je još u prozoru.</summary>
+    [Theory]
+    [InlineData(0, false)]
+    [InlineData(55, false)]
+    [InlineData(56, false)]
+    [InlineData(57, true)]
+    public void TheLookbackEdge_MatchesTheWindowSelectUses(int daysAgo, bool outside)
+    {
+        var sample = Estimated(120m, daysAgo);
+
+        Assert.Equal(outside, OneRepMaxBaseline.IsOutsideLookback(sample, Now, TrainingConstants.OneRepMaxLookbackDays));
+        Assert.Equal(outside, Select([sample]) is null);
+    }
 }

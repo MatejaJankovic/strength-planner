@@ -44,6 +44,11 @@ export interface OneRepMaxDto {
   valueKg: number;
   source: 'Manual' | 'Estimated' | string;
   recordedAt: string;
+  /**
+   * Maksimum od koga plan polazi je stariji od prozora (56 dana): izabran je zato što
+   * novijeg nema. Server je jedini koji zna prozor, pa ovo nije računica u komponenti.
+   */
+  isOutsideLookback?: boolean;
 }
 
 /**

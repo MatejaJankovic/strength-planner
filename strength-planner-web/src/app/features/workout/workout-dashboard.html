@@ -46,6 +46,26 @@
     }
   }
 
+  @if (exercisesWithStaleMax(); as stale) {
+    @if (stale.length > 0) {
+      <section class="missing" role="note">
+        <p class="missing__text">
+          <mat-icon aria-hidden="true">history</mat-icon>
+          <span>
+            Za {{ stale.length === 1 ? 'ovu vežbu' : 'ove vežbe' }} plan polazi od starog
+            maksimuma, jer novijeg nema: <strong>{{ staleMaxSummary() }}</strong>. Ako je
+            u međuvremenu nisi radio, snaga je verovatno manja, pa prvi trening uzmi
+            opreznije ili uradi test-seriju. Prvi završen trening upisuje novu procenu.
+          </span>
+        </p>
+        <button class="missing__action" type="button" (click)="openOneRepMaxSetup()">
+          <mat-icon aria-hidden="true">tune</mat-icon>
+          Uradi test-seriju
+        </button>
+      </section>
+    }
+  }
+
   <div class="weeks">
     @for (week of plan.weeks; track week.id) {
       <section class="week" [class.week--deload]="week.isDeload">

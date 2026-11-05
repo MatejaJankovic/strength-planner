@@ -10,6 +10,7 @@ import { Goal, WorkoutSessionDto } from '../../core/models/training.models';
 import { StatChip, StatChipTone } from '../../shared/components/stat-chip/stat-chip';
 import { EmptyState } from '../../shared/components/empty-state/empty-state';
 import { Loading } from '../../shared/components/loading/loading';
+import { staleMaxAgeWeeks, weeksLabel } from '../../shared/stale-max-age';
 
 interface StatusMeta {
   label: string;
@@ -84,6 +85,56 @@ export class WorkoutDashboard {
     }
 
     return `${names.slice(0, MISSING_NAMES_SHOWN).join(', ')} i još ${names.length - MISSING_NAMES_SHOWN}`;
+  });
+
+  /**
+   * Vežbe iz ovog bloka čiji maksimum potiče iz vremena pre prozora od kog plan inače
+   * polazi.
+   *
+   * Plan tada namerno uzima poslednji poznati maksimum, da vežbač koji se vraća posle
+   * pauze ne krene od praznih opterećenja. Ali taj broj opisuje vežbača od pre pauze, a do
+   * sada to nije pisalo nigde: opterećenje je izgledalo kao da je izvedeno iz svežeg
+   * zapisa. Procenat za koliko je preteško se ne nudi, jer ga literatura ne daje.
+   */
+  protected readonly exercisesWithStaleMax = computed<{ name: string; weeks: number }[]>(() => {
+    const plan = this.mesocycle();
+    if (!plan) {
+      return [];
+    }
+
+    const now = new Date();
+    const ageByExercise = new Map<string, number>();
+    for (const record of this.oneRepMaxService.oneRepMaxes()) {
+      const weeks = staleMaxAgeWeeks(record, now);
+      if (weeks !== null) {
+        ageByExercise.set(record.exerciseId, weeks);
+      }
+    }
+
+    const stale = new Map<string, { name: string; weeks: number }>();
+    for (const week of plan.weeks) {
+      for (const session of week.sessions) {
+        for (const item of session.exercisePlans) {
+          const weeks = ageByExercise.get(item.exerciseId);
+          if (weeks !== undefined) {
+            stale.set(item.exerciseId, { name: item.exerciseName, weeks });
+          }
+        }
+      }
+    }
+
+    return [...stale.values()].sort((a, b) => a.name.localeCompare(b.name));
+  });
+
+  protected readonly staleMaxSummary = computed<string>(() => {
+    const entries = this.exercisesWithStaleMax().map(
+      (entry) => `${entry.name} (${weeksLabel(entry.weeks)})`,
+    );
+    if (entries.length <= MISSING_NAMES_SHOWN) {
+      return entries.join(', ');
+    }
+
+    return `${entries.slice(0, MISSING_NAMES_SHOWN).join(', ')} i još ${entries.length - MISSING_NAMES_SHOWN}`;
   });
 
   protected openOneRepMaxSetup(): void {

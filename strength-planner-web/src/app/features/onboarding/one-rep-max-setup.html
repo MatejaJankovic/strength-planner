@@ -48,6 +48,12 @@
                   Trenutno: {{ row.savedValueKg | number: '1.0-1' }} kg
                 </span>
               }
+              @if (row.savedAgeWeeks !== null) {
+                <span class="lift__current">
+                  Star {{ weeksLabel(row.savedAgeWeeks) }} - plan ga koristi jer novijeg nema.
+                  Nov unos ili test-serija ga zamenjuje.
+                </span>
+              }
             </div>
 
             @if (row.isBodyweight) {
