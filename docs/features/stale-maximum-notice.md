@@ -66,6 +66,11 @@ Da li je zapis star odlučuje server, jer samo on zna prozor. Klijent samo broji
   - „Uradi test-seriju" otvara ekran maksimuma, gde red kaže „Star 10 nedelja";
   - test-serija 55 kg × 5 uz RIR 1 upisuje svež zapis: oznaka nestaje sa reda, a napomena sa
     ekrana treninga.
+- Posle pregleda: merenje vraćanjem pravila dan + vežba (samo vežba) obara **1** od 201 na
+  klijentu. Uživo, na bloku u kome je Barbell Row odrađen na svom danu, a svi zapisi su mu
+  stari 70 dana, napomena se **ne** prikazuje, jer plan tu vežbu više ne vodi po maksimumu.
+  Pozitivan slučaj na novom planu (prva nedelja iz starog maksimuma) posle ove izmene još nije
+  proveren uživo.
 - Stilovi nisu dodati: napomena koristi postojeće klase, pa se upozorenja o budžetu
   stilova nisu promenila.
 
