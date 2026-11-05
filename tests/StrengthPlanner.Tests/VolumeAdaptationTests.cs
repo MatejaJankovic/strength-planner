@@ -671,7 +671,7 @@ public class VolumeAdaptationTests
     /// - vežbač koji slabi 2% nedeljno gubi i cilj i plafon.
     ///
     /// Pravilo iz #94 (oba čitanja preko 1%) je u ovoj strukturi odlučivalo oko šest puta
-    /// godišnje, vežbaču koji stoji je cilj padao (15.3), a onome koji slabi plafon je ostajao
+    /// godišnje, vežbaču koji stoji je cilj padao (15.2), a onome koji slabi plafon je ostajao
     /// na 14.5 - review #94, docs/simulations/landmark_signal_noise.py.
     /// </summary>
     [Fact]

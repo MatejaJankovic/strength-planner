@@ -163,18 +163,35 @@ def run(rule, trend, shape_weeks, availability=1.0, at="mav", years=1, seeds=400
     return tuple(round(x / n, 1) for x in sums), decisions / n / years, declines / n / years
 
 
+def sweep():
+    """Prag proseka dva čitanja, ravan i linearan blok, dostupnost 100%."""
+    print("\n## Prag proseka dva čitanja (dostupnost 100%)")
+    print("| Blok | Pravilo | +1%/ned. MAV / MRV | stoji | -2%/ned. | padova godišnje (+0.5%) |")
+    print("|---|---|---|---|---|---|")
+    rules = [("dva se slažu (#94)", rule_agree)] + [(f"prosek, {t:.1%}", rule_mean(t)) for t in (0.015, 0.02, 0.025, 0.03)]
+    for shape, weeks in (("ravan", 4), ("linearan", 6)):
+        for name, rule in rules:
+            up, _, _ = run(rule, 0.01, weeks)
+            flat, _, _ = run(rule, 0.0, weeks)
+            down, _, _ = run(rule, -0.02, weeks)
+            _, _, false_declines = run(rule, 0.005, weeks)
+            print(f"| {shape} | {name} | {up[1]} / {up[2]} | {flat[1]} / {flat[2]} | {down[1]} / {down[2]} | {false_declines:.2f} |")
+
+
 if __name__ == "__main__":
     for availability in (1.0, 2 / 3):
         print(f"\n## Na MAV-u, godinu dana, dostupnost čitanja {availability:.0%} (seme 10/16/22)")
-        print("| Struktura | Pravilo | +1%/ned. MAV / MRV | stoji | -2%/ned. | odluka godišnje (+1%) | padova godišnje (+1%) |")
+        print("| Struktura | Pravilo | +1%/ned. MAV / MRV | stoji | -2%/ned. | odluka godišnje (+1%) | padova godišnje (+0.5%) |")
         print("|---|---|---|---|---|---|---|")
         for shape, weeks in SHAPES.items():
             for name, rule in RULES.items():
-                up, d_up, f_up = run(rule, 0.01, weeks, availability)
+                up, decisions, _ = run(rule, 0.01, weeks, availability)
                 flat, _, _ = run(rule, 0.0, weeks, availability)
                 down, _, _ = run(rule, -0.02, weeks, availability)
+                _, _, false_declines = run(rule, 0.005, weeks, availability)
                 print(f"| {shape} | {name} | {up[1]} / {up[2]} | {flat[1]} / {flat[2]} | {down[1]} / {down[2]} "
-                      f"| {d_up:.1f} | {f_up:.1f} |")
+                      f"| {decisions:.1f} | {false_declines:.2f} |")
+    sweep()
     print("\n## Na MEV-u (minimum), linearan blok, dostupnost 100%: MEV posle godinu dana")
     print("| Pravilo | +1%/ned. | stoji | -2%/ned. |")
     print("|---|---|---|---|")

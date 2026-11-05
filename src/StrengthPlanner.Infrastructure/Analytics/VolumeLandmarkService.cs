@@ -140,8 +140,8 @@ public sealed class VolumeLandmarkService
             trainingWeekId,
             cancellationToken);
 
-        // Isto čitanje nedelju ranije: granice se po snazi pomeraju tek kad se dva uzastopna
-        // čitanja slože, jer je jedno pretežno šum (VolumeAdaptation.Agree).
+        // Isto čitanje nedelju ranije: granice se po snazi sude iz proseka dva uzastopna
+        // čitanja, jer je jedno pretežno šum (VolumeAdaptation.TwoWeekChangeThreshold).
         var previousWeekId = await ComparableWeek.PreviousTrainingWeekIdAsync(
             _db,
             userId,

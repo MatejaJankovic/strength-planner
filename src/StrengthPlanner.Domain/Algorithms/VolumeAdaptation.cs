@@ -57,11 +57,11 @@ public static class VolumeAdaptation
     ///
     /// One percent, which sits below the smallest real move a lifter can make and above
     /// pure arithmetic noise: the weight step is 2.5 kg, so a single step is 2.5% of a
-    /// 100 kg lift and 5% of a 40 kg one. Anything smaller than a step is rounding, and
-    /// between the two thresholds the reading is flat.
+    /// 100 kg lift and 5% of a 40 kg one.
     ///
-    /// A single reading is not enough, and that is the part round 14 changed: see
-    /// <see cref="Agree"/>.
+    /// The volume limits no longer use it: they judge the mean of two readings against
+    /// <see cref="TwoWeekChangeThreshold"/>. It stays as the fatigue score's test of whether
+    /// the previous comparable week also declined (FatigueEvaluator, round 15).
     /// </summary>
     public const decimal StrengthChangeThreshold = 0.01m;
 
@@ -74,7 +74,7 @@ public static class VolumeAdaptation
     /// (sd about 1.75% against 3.5% in the model of docs/simulations/landmark_signal_noise.py).
     /// 2.5% is the threshold at which it gives as few false declines as the rule it replaced
     /// (two readings that each had to cross 1%) - and, measured over real block structure,
-    /// it then catches a real decline better, decides four to eight times as often, and lets
+    /// it then catches a real decline better, decides about four times as often, and lets
     /// a lifter who has stalled read as flat, so the target rises as the table of rules says.
     /// See <see cref="TwoWeekChange"/>.
     /// </summary>
@@ -257,6 +257,19 @@ public static class VolumeAdaptation
             : null;
     }
 
+    /// <summary>
+    /// Drži cilj unutar pojasa i na razumnom odstojanju od plafona.
+    ///
+    /// Prag za pomeranje MAV-a je slabiji od praga za MRV (jer je MAV niži), pa MAV raste
+    /// na svakoj dobroj nedelji na kojoj raste i MRV — i na nizu onih na kojima MRV ne
+    /// raste. Bez ograničenja bi se vremenom slepio za plafon i ekran bi kao cilj nudio
+    /// volumen jednu seriju ispod onoga koji je sistem proglasio nepodnošljivim, što je
+    /// tačno suprotno od definicije MAV-a ("bez ulaska u prekomeran zamor").
+    ///
+    /// Granica je zato mesto koje seed propisuje u pojasu, uvećano za dozvoljeno lutanje.
+    /// Bez tog dodatka MAV ne bi bio naučen nego samo izveden iz MEV-a i MRV-a, pa ne bi
+    /// ni imao smisla kao zasebna vrednost.
+    /// </summary>
     private static int ClampTarget(int value, int mev, int mrv, VolumeLandmarkValues seed)
     {
         var seedBand = seed.Mrv - seed.Mev;
