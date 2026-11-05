@@ -67,6 +67,7 @@ I sa upola manjim šumom (sd čitanja 1.8%) staro pravilo vežbaču koji napredu
 - Odbačene varijante iz probe: prag od 3% (lažni padovi i dalje 14%) i prosek dva čitanja sa
   pragom od 1% (lažni padovi 14%).
 - Ocena umora i dalje čita jedno čitanje, jer za deload već traži dva nezavisna signala.
+  *(Ne važi od runde 15 - vidi „Kasnije (runda 15)".)*
 - `VolumeLandmarkService` računa prethodno čitanje preko nove
   `ComparableWeek.PreviousTrainingWeekIdAsync`. Nedelje deload-a se preskaču kao i do sada.
 
@@ -99,13 +100,87 @@ takvu nedelju, a linearan tri.
 
 - Šum je modelovan iz literature, a ne izmeren na stvarnim korisnicima. Pravilo je izabrano
   tako da bude ispravno i uz upola manji šum.
-- Granice uče sporije: kratak blok daje jednu ili dve odluke.
+- Granice uče sporije: kratak blok daje jednu ili dve odluke. *(Ispravljeno posle review-a: u
+  stvarnim blokovima je bilo oko tri odluke godišnje u ravnom bloku - vidi ispod.)*
 - Vežbač koji stoji i dalje gubi oko dve serije MAV-a za godinu dana, jer „ravno" zahteva da
-  oba čitanja budu u ±1%, što je uz šum retko, a pad zaredom se ipak desi.
+  oba čitanja budu u ±1%, što je uz šum retko, a pad zaredom se ipak desi. *(Rešeno posle
+  review-a, vidi ispod.)*
 
 ## Kasnije (runda 15)
 
 Ocena umora sada računa pad snage tek kad ga potvrdi i prethodna uporediva nedelja. Jedan slab
 dan spušta i RIR i procenu maksimuma, pa ta dva signala nisu bila nezavisna: vežbač koji
-napreduje 1% nedeljno dobijao je lažan deload u 20% blokova na MAV-u i 73% na MRV-u (simulacija
-sa šumom iz runde 14). Vidi [fatigue-signal-noise.md](fatigue-signal-noise.md).
+napreduje 1% nedeljno dobijao je lažan deload u 12.5% šestonedeljnih blokova na MAV-u i 52.8% na
+MRV-u, a sa potvrdom 0.3% i 3.0% (`docs/simulations/fatigue_signal_noise.py`; ranije navedenih
+20% i 73% je bio međuzbir koji skripta ne daje). Vidi [fatigue-signal-noise.md](fatigue-signal-noise.md).
+
+## Posle review-a #94: prosek dva čitanja
+
+Review #94 je izmerio pravilo „oba čitanja preko 1%" u strukturi blokova kakvu aplikacija zaista
+ima. Čitanje postoji tek od druge nedelje bloka, deload nema ni čitanje ni odluku, a svaki blok
+kreće ispočetka. Tabele iznad su pretpostavljale čitanje u svakoj od 52 nedelje, pa su govorile
+o modelu, a ne o aplikaciji. U stvarnim blokovima to pravilo:
+
+- odlučuje oko **3** puta godišnje u ravnom bloku i **6** u linearnom (1.4 i 2.8 kad čitanje
+  postoji u dve trećine nedelja, kako je runda 11 izmerila);
+- vežbaču koji stoji spušta cilj (15.8 / 15.2) umesto da ga digne, kako tabela pravila kaže;
+- slab pad hvata slabo: vežbač koji godinu dana gubi 2% nedeljno ostaje na MRV 18 u ravnom i
+  14.5 u linearnom bloku, a ne „na podu";
+- ni staro pravilo, sa jednim čitanjem, u stvarnim blokovima ne spušta granice „do poda".
+  Napredujućem vežbaču ostavlja MAV 12.7 i MRV 14.7 u ravnom bloku, odnosno 11.6 i 12.9 u
+  linearnom. Šteta je bila stvarna, samo manja nego što su tabele iznad pokazivale.
+
+`docs/simulations/landmark_signal_noise.py` tačno prenosi `VolumeAdaptation.Adjust` i poredi
+pravila na ravnim i linearnim blokovima (godinu dana na MAV-u, seme 16 / 22, 400 semena). Izbor
+je **prosek dva uzastopna čitanja, prag 2.5%** (`VolumeAdaptation.TwoWeekChangeThreshold`).
+Prosek dva uzastopna čitanja je pola promene kroz dve nedelje, jer se nedelja u sredini skrati,
+pa ima upola manji šum od jednog čitanja. Rezultat je MAV / MRV posle godinu dana:
+
+| Blok | Pravilo | napreduje 1%/ned. | stoji | slabi 2%/ned. | odluka godišnje | lažnih padova godišnje (napredak 0.5%) |
+|---|---|---|---|---|---|---|
+| ravan | oba preko 1% (#94) | 16.3 / 21.7 | 15.8 / 21.0 | 12.6 / 18.0 | 3.2 | 0.63 |
+| ravan | prosek, 2.5% | 17.7 / 21.7 | 17.2 / 21.0 | 14.4 / 16.8 | 13.0 | 0.57 |
+| linearan | oba preko 1% (#94) | 16.3 / 21.3 | 15.2 / 20.0 | 11.4 / 14.5 | 6.4 | 1.17 |
+| linearan | prosek, 2.5% | 17.5 / 21.3 | 16.6 / 20.0 | 11.6 / 12.7 | 26.0 | 1.16 |
+
+Svi brojevi u ovom odeljku su izlaz skripte (`python3 docs/simulations/landmark_signal_noise.py`),
+uključujući i tabelu pragova.
+
+- **Lažnih padova je isto malo**, a prag je izabran baš tako. Na 1.5% ih je skoro tri puta
+  više, a na 2% oko 1.7 puta. Na 3% ih je još manje, ali pravilo slabije hvata stvaran pad
+  (MRV 14.6 posle godinu dana pada u linearnom bloku).
+- **Stvaran pad hvata jače**, bar za plafon (MRV 12.7 umesto 14.5 u linearnom bloku). U ravnom
+  bloku cilj vežbača koji slabi pada sporije (14.4 umesto 12.6), a plafon brže.
+- **Vežbač koji stoji dobija „cilj gore"**, a odluka ima oko četiri puta više u bloku istog
+  oblika.
+- **Cena:** vežbaču koji napreduje cilj blago raste, za oko 1.5 serije, do granice koju
+  `ClampTarget` dozvoljava. Uz realan šum, „napreduje polako" i „stoji" se iz dve nedelje ne
+  razlikuju, pa pravilo za oba bira više stimulusa. Plafon ostaje na mestu.
+- **MEV** se ponaša ispravno (linearan blok, trening na minimumu): kod vežbača koji napreduje
+  pada na 6.1, kod onog koji stoji ostaje 10.0, a kod onog koji slabi raste na 15.0. Odbačen je
+  hibrid u kome pad traži da se oba čitanja slože, a ostalo se sudi po proseku od 1%: on je
+  minimum vežbača koji stoji spuštao sa 10 na 5.9.
+
+Prag od 1% (`StrengthChangeThreshold`) ostaje za potvrdu pada u oceni umora (runda 15).
+
+### Provera
+
+- `dotnet test`: **843** (bilo 838). Pravilo iz #94 vraćeno uz sve ostalo isto obara **5**:
+  - prag se pomerio na 2.5% (2% je sada „stoji");
+  - čitanja koja se ne slažu se uprosečavaju (+3% pa −3% je „stoji", cilj raste);
+  - test sa šumom sada modeluje stvarne linearne blokove, sa vežbačem koji napreduje, stoji i
+    slabi.
+- **Uživo, u oba smera** (rebuild i restart između): srednji nivo, ravan Upper/Lower, sve serije
+  10 × RIR 2, opterećenje 100% → 103% → 100%, dakle čitanja od oko +3% pa −3%. Po pravilu iz
+  #94 se posle treće nedelje ne pomera ništa, jer se čitanja ne slažu. Po novom grudi idu
+  MAV 16 → 17 i leđa 18 → 19, a MRV stoji.
+
+### Šta ostaje
+
+- Šum je i dalje model iz literature, a ne mera stvarnih korisnika. Koliko vežbačeva procena
+  RIR-a varira iz nedelje u nedelju je pretpostavka modela, ne podatak iz Halperin i sar. 2022,
+  koji meri prosečnu grešku (potcenjivanje od oko jednog ponavljanja).
+- Nedelja bez poređenja ućutkuje i nedelju posle sebe, a potpuno preskočena nedelja i dve
+  posle sebe (prva nema čitanje, druga nema prethodno). Uputstvo to sada kaže.
+- Kad nema dovoljno uporedivih serija, odluka nema, ma koje pravilo bilo.
+

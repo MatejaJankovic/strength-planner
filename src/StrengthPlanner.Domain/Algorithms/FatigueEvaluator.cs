@@ -124,8 +124,8 @@ public static class FatigueEvaluator
     /// <summary>
     /// The week's drop in strength as the score reads it: the drop itself, but only when the
     /// previous comparable week was a decline as well (by
-    /// <see cref="VolumeAdaptation.StrengthChangeThreshold"/>, the definition the volume
-    /// limits use); otherwise zero.
+    /// <see cref="VolumeAdaptation.StrengthChangeThreshold"/>; the volume limits now judge the
+    /// mean of two readings against a threshold of their own); otherwise zero.
     ///
     /// The "two signals must agree" rule assumes the signals are independent, and a single
     /// strength reading is not independent of the RIR signal. One weak day lowers both: the
