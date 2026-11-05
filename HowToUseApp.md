@@ -818,6 +818,12 @@ većom rezervom ne daje procenu: 100 kg × 12 sa RIR 5 „čita" 157 kg tamo gde
 otkaza čita 140. Serije iz deload nedelje se namerno **ne** upisuju — submaksimalne su, pa
 bi veštački oborile trend.
 
+Granica od 12 važi za **odrađena** ponavljanja, ne za efektivna. Serija od 12 sa RIR 3 vredi 15
+efektivnih i daje procenu: rezerva se dodaje kao ponavljanja koja serija nije uradila, a
+granica od RIR 3 drži tu ekstrapolaciju kratkom. Granica na efektivnim ponavljanjima bi
+odbila i seriju od 10 sa RIR 3, najobičniju seriju hipertrofije. **Jedno ponavljanje do
+otkaza** je sam maksimum: 100 kg × 1 uz RIR 0 daje 100, a ne 103.3 koliko bi rekao Epley.
+
 **Start novog bloka.** Uzima se **najbolja** procena iz poslednjih **56 dana**, ne poslednja
 — poslednji zapis može biti sa lošeg dana. Dva izuzetka: ako najbolja stoji više od **5%**
 iznad druge po redu, uzima se druga (to je jedna omašena procena, a ne napredak), i ako si u

@@ -222,9 +222,13 @@ public static class StrengthChange
                 usable[sample.ExerciseId] = list;
             }
 
+            // Promena je odnos dve tacke na istoj krivoj, pa se cita ImpliedOneRepMax, a ne
+            // EstimateOneRepMax: jedno ponavljanje do otkaza bi inace izaslo sa Epley krive i
+            // par 100 x 2 pa 100 x 1 bi procitao pad od 6.25% umesto oko 3.1%. Granicu
+            // ponavljanja vec cuva CanEstimateFrom iznad.
             list.Add(new Estimate(
                 sample.Reps + sample.Rir,
-                calculator.EstimateOneRepMax(sample.TotalLoadKg, sample.Reps, sample.Rir)));
+                calculator.ImpliedOneRepMax(sample.TotalLoadKg, sample.Reps, sample.Rir)));
         }
 
         return usable;

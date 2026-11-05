@@ -9,9 +9,10 @@ public class E1RmCalculatorTests
     [Fact]
     public void EstimateOneRepMax_UsesEpleyFormula_ForValidRepCount()
     {
-        var result = _calculator.EstimateOneRepMax(100m, 1);
+        // Ranije 100 × 1 = 103.33; jedno ponavljanje do otkaza je sada sam maksimum (F13).
+        var result = _calculator.EstimateOneRepMax(100m, 5);
 
-        AssertWithinTolerance(103.33m, result, 0.01m);
+        AssertWithinTolerance(116.67m, result, 0.01m);
     }
 
     [Fact]
@@ -153,5 +154,32 @@ public class E1RmCalculatorTests
         Assert.True(
             Math.Abs(expected - actual) <= tolerance,
             $"Expected {actual} to be within {tolerance} of {expected}.");
+    }
+
+    /// <summary>
+    /// Jedno ponavljanje do otkaza je sam maksimum. Epley bi 100 kg × 1 pročitao kao 103.3,
+    /// težinu koju vežbač upravo nije mogao da digne dvaput.
+    /// </summary>
+    [Fact]
+    public void OneRepToFailure_IsTheMaximumItself()
+    {
+        Assert.Equal(100m, _calculator.EstimateOneRepMax(100m, 1, 0));
+    }
+
+    /// <summary>Jedno ponavljanje uz rezervu i dalje kaže da je vežbač imao više.</summary>
+    [Theory]
+    [InlineData(1, 1)]
+    [InlineData(1, 2)]
+    [InlineData(2, 0)]
+    public void AnythingBeyondOneRepToFailure_StillReadsEpley(int reps, int rir)
+    {
+        Assert.Equal(100m * (1 + (reps + rir) / 30m), _calculator.EstimateOneRepMax(100m, reps, rir));
+    }
+
+    [Fact]
+    public void ASingleToFailure_NeverReadsAboveTheSameSingleWithReserve()
+    {
+        // 100 × 1 @0 ne sme da pređe 100 × 1 @1: više rezerve ne sme da da manju procenu.
+        Assert.True(_calculator.EstimateOneRepMax(100m, 1, 0) < _calculator.EstimateOneRepMax(100m, 1, 1));
     }
 }

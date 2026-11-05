@@ -10,6 +10,12 @@ public sealed class E1RmCalculator
     /// 1RM = weight * (1 + (reps + rir) / 30). Epley assumes a set to failure, so reps
     /// left in reserve count as additional effective reps. Supported only up to the
     /// configured rep cap (actual reps), above which the estimate is unreliable.
+    ///
+    /// A single rep to failure is the maximum itself, not an estimate of it. Epley would
+    /// read 100 kg x 1 at RIR 0 as 103.3 kg - a load the lifter has just shown they cannot
+    /// lift twice, inflated by a formula meant to extrapolate from sets of several reps. The
+    /// test-set screen accepts one rep, so this is the case it would otherwise get wrong. A
+    /// single rep with reserve left still goes through Epley: it says the lifter had more.
     /// </summary>
     public decimal EstimateOneRepMax(decimal weight, int reps, int rir = 0)
     {
@@ -18,6 +24,11 @@ public sealed class E1RmCalculator
             throw new ArgumentException(
                 $"Epley estimate is supported only for {TrainingConstants.EpleyRepCap} reps or fewer.",
                 nameof(reps));
+        }
+
+        if (reps == 1 && rir == 0)
+        {
+            return weight;
         }
 
         return ImpliedOneRepMax(weight, reps, rir);

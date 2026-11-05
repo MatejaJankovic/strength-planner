@@ -31,7 +31,19 @@ public static class TrainingConstants
     // Stvarni korak po vežbi dolazi iz EquipmentWeightStep ili korisničkog override-a.
     public const decimal WeightStepKg = 2.5m;
     public const decimal DeloadWeightFactor = 0.90m;
-    // 12 pokriva ceo hipertrofija rep-opseg (8-12); preko toga Epley procena nije pouzdana.
+    /// <summary>
+    /// Most reps <b>performed</b> a set may have and still give an e1RM estimate.
+    ///
+    /// 12 covers the compound hypertrophy range (8-12); above it the Epley estimate stops
+    /// being reliable. The cap is on reps done, not on effective reps (reps + reserve), and
+    /// that is deliberate: <see cref="E1RmMaxRir"/> already limits how far the estimate may
+    /// extrapolate past the set - at most three reps of reserve - so effective reps reach 15
+    /// at most, and only for a set that was itself inside the range. Capping effective reps at
+    /// 12 instead would refuse a set of 10 at RIR 3, the most ordinary hypertrophy set there
+    /// is. RIR predictions are somewhat more accurate at 12 reps to failure or fewer
+    /// (Halperin et al. 2022), and keeping the reserve at three or less is what keeps the
+    /// extrapolation short.
+    /// </summary>
     public const int EpleyRepCap = 12;
 
     /// <summary>
