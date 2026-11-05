@@ -596,9 +596,10 @@ Dugme **„Vrati podrazumevane granice"** poništava naučeno.
 
 Svaka granica uči iz onoga što njoj pripada. **MRV** (plafon oporavka) čita umor: rezervu u
 RIR-u, otkaze i pad snage. **MAV** i **MEV** čitaju **napredak** — da li je ono što dižeš
-poraslo u odnosu na poslednju uporedivu nedelju. Snaga se računa tek kad je kažu **dve
-uporedive nedelje zaredom**: „raste" znači da je porasla obe nedelje, „pada" da je pala obe.
-Jedna nedelja je pretežno šum. Pogrešno procenjena rezerva za jedno ponavljanje pomera
+poraslo u odnosu na poslednju uporedivu nedelju. Snaga se čita iz **dve uporedive nedelje
+zaredom**, kao njihov prosek: „raste" znači da je prosek dva čitanja bar +2.5%, „pada" da je
+najviše −2.5%, a „stoji" sve između. Nedelja od +3% pa nedelja od −3% je dakle „stoji".
+Jedna nedelja je pretežno šum: pogrešno procenjena rezerva za jedno ponavljanje pomera
 procenu maksimuma za oko 2.4%, a i sam maksimum varira iz dana u dan više nego što
 vežbač u nedelji stvarno napreduje.
 
@@ -617,7 +618,8 @@ i listovi, koje treniraju samo izolacije, prestali da uče granice.
 
 Nedelja koja nema sa čim da se uporedi — prva u bloku, ili ona čija se ponavljanja ne
 poklapaju sa prethodnom, ili, kod izolacije, nedelja posle koraka težine — **ne pomera** ni
-cilj ni minimum. Ranije je granice pomerao
+cilj ni minimum. Ne pomera ni nedelja **posle** nje, jer joj fali prethodno čitanje: zato
+snaga prvi put deluje u trećoj nedelji bloka, a preskočena nedelja ućutkuje i dve posle sebe. Ranije je granice pomerao
 osećaj serija (RIR), ali to je iskaz o **težini tegova**, a nju već ispravlja progresija:
 lagana nedelja je značila i teže tegove i više serija, iz istog podatka.
 

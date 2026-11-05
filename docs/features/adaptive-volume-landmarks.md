@@ -184,5 +184,7 @@ nedelje ih uopšte dodiruju. Da li je RIR dobar signal za granice volumena je za
 ## Kasnije (runda 14)
 
 Snaga sada pomera granice tek kad se **dve uzastopne uporedive nedelje** slože. Jedno čitanje
-je pretežno šum, i uz njega su granice vežbača koji napreduje klizile naniže (MAV 16 → 11,
-MRV 22 → 12 za godinu dana u simulaciji). Vidi [landmark-signal-noise.md](landmark-signal-noise.md).
+je pretežno šum, i uz njega su granice vežbača koji napreduje klizile naniže (u stvarnim
+linearnim blokovima MAV 16 → 11.6 i MRV 22 → 12.9 za godinu dana u simulaciji). Posle review-a
+#94 snaga se sudi po proseku dva uzastopna čitanja, uz prag od 2.5%. Vidi
+[landmark-signal-noise.md](landmark-signal-noise.md).
