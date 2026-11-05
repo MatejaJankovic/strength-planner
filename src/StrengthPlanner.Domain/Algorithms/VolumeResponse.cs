@@ -43,8 +43,9 @@ namespace StrengthPlanner.Domain.Algorithms;
 /// </param>
 /// <param name="PreviousStrengthChangeShare">
 /// The same reading one comparable week earlier: the previous training week against the one
-/// before it. The limits act on strength only when the two readings agree
-/// (<see cref="VolumeAdaptation"/>), because a single week's reading is mostly noise.
+/// before it. The limits act on strength only through the mean of the two readings
+/// (<see cref="VolumeAdaptation.TwoWeekChangeThreshold"/>), because a single week's reading is
+/// mostly noise.
 /// </param>
 public sealed record VolumeResponse(
     decimal PerformedSets,

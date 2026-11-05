@@ -65,6 +65,21 @@ public static class VolumeAdaptation
     /// </summary>
     public const decimal StrengthChangeThreshold = 0.01m;
 
+    /// <summary>
+    /// How far the mean of two consecutive comparable readings must move before the limits
+    /// read it as progress or as a decline; anything closer to zero is flat.
+    ///
+    /// The mean of two consecutive readings is half of the change across two weeks, because
+    /// the week in the middle cancels out, so its noise is about half that of one reading
+    /// (sd about 1.75% against 3.5% in the model of docs/simulations/landmark_signal_noise.py).
+    /// 2.5% is the threshold at which it gives as few false declines as the rule it replaced
+    /// (two readings that each had to cross 1%) - and, measured over real block structure,
+    /// it then catches a real decline better, decides four to eight times as often, and lets
+    /// a lifter who has stalled read as flat, so the target rises as the table of rules says.
+    /// See <see cref="TwoWeekChange"/>.
+    /// </summary>
+    public const decimal TwoWeekChangeThreshold = 0.025m;
+
     // Volumen ispod ovog udela MRV-a ne govori ništa o gornjoj granici: lakoća na
     // pola posla nije dokaz da bi i pun posao bio podnošljiv.
     private const decimal NearMrvShare = 0.90m;
@@ -189,70 +204,59 @@ public static class VolumeAdaptation
         return new VolumeLandmarkValues(safeMev, ClampTarget(mav, safeMev, safeMrv, seed), safeMrv);
     }
 
-    /// <summary>Two comparable weeks in a row of measurable progress.</summary>
+    /// <summary>Two comparable weeks whose mean reading shows measurable progress.</summary>
     private static bool Progressed(VolumeResponse response)
     {
-        return Agree(response, change => change >= StrengthChangeThreshold);
+        return TwoWeekChange(response) >= TwoWeekChangeThreshold;
     }
 
-    /// <summary>Two comparable weeks in a row of measurable decline.</summary>
+    /// <summary>Two comparable weeks whose mean reading shows a measurable decline.</summary>
     private static bool Declined(VolumeResponse response)
     {
-        return Agree(response, change => change <= -StrengthChangeThreshold);
+        return TwoWeekChange(response) <= -TwoWeekChangeThreshold;
     }
 
     /// <summary>
-    /// Two comparable weeks in a row that each moved less than one weight step either way.
-    /// A week with <b>no</b> measurement is not flat — it is silent, and silence moves
+    /// Two comparable weeks whose mean reading moved less than the threshold either way. A
+    /// week with <b>no</b> pair of readings is not flat — it is silent, and silence moves
     /// nothing.
     /// </summary>
     private static bool Flat(VolumeResponse response)
     {
-        return Agree(response, change => Math.Abs(change) < StrengthChangeThreshold);
+        return TwoWeekChange(response) is { } change && Math.Abs(change) < TwoWeekChangeThreshold;
     }
 
     /// <summary>
-    /// Whether this week's strength reading and the previous comparable week's both say the
-    /// same thing.
+    /// The mean of this week's strength reading and the previous comparable week's, or null
+    /// when either is missing.
     ///
     /// One reading is mostly noise. Misjudging the reserve by one rep moves an e1RM by
-    /// 1 / (30 + effective reps), about 2.4% for a set of 8-12 at RIR 1-2, and lifters
-    /// misjudge it by about a rep on average with wide spread (Halperin et al. 2022). Day to
-    /// day, a one-rep max itself varies by a median 4.2% (Grgic et al. 2020). A weekly reading
-    /// compares two such weeks, so its noise is several times the true progress of an
-    /// intermediate lifter (well under 1% a week).
+    /// 1 / (30 + effective reps), about 2.4% for a set of 8-12 at RIR 1-2; lifters do misjudge
+    /// it, on average by underpredicting about one rep and with wide heterogeneity (Halperin et
+    /// al. 2022), and a one-rep max itself varies day to day by a median 4.2% (Grgic et al.
+    /// 2020). How much a lifter's own misjudgement varies from week to week is a modelling
+    /// assumption, not a figure from either paper: the simulation gives one reading an sd of
+    /// about 3.5%, while true progress is well under 1% a week.
     ///
-    /// Simulated with a lifter who truly progresses 1% a week, a misjudgement of 1 rep and a
-    /// day-to-day spread of 2%, a single reading said "decline" in 30% of weeks. Every one of
-    /// those weeks lowered MRV, and MRV rises only near itself with reps to spare, so the
-    /// recovery ceiling of a lifter who was progressing ratcheted down. Requiring two readings
-    /// in a row to agree cut false declines to 3% of weeks, at the price of reacting more
-    /// slowly to a real one (a true 2% weekly decline is caught in 29% of weeks rather than
-    /// 61%). The limits move one set a week at most anyway; being slow is the cheaper error.
-    /// The fatigue score keeps the single reading: it already needs two independent signals
-    /// before it deloads.
+    /// Round 14 (#94) first required both readings to cross 1% in the same direction. The
+    /// review of #94 re-measured it with the block structure the app really has - a reading
+    /// only from the second week of a block, none in a deload, a fresh start each block - and
+    /// that rule decided about three times a year in a flat block, let a stalled lifter drift
+    /// down, and caught a real decline weakly. The mean at 2.5% keeps the same low rate of
+    /// false declines and fixes the other three (docs/features/landmark-signal-noise.md).
+    ///
+    /// The fatigue score uses its own confirmation: a strength drop counts only when the
+    /// previous comparable reading also fell past <see cref="StrengthChangeThreshold"/>
+    /// (FatigueEvaluator, round 15).
     /// </summary>
-    private static bool Agree(VolumeResponse response, Func<decimal, bool> says)
+    private static decimal? TwoWeekChange(VolumeResponse response)
     {
         return response.StrengthChangeShare is { } current
                && response.PreviousStrengthChangeShare is { } previous
-               && says(current)
-               && says(previous);
+            ? (current + previous) / 2
+            : null;
     }
 
-    /// <summary>
-    /// Drži cilj unutar pojasa i na razumnom odstojanju od plafona.
-    ///
-    /// Prag za pomeranje MAV-a je slabiji od praga za MRV (jer je MAV niži), pa MAV raste
-    /// na svakoj dobroj nedelji na kojoj raste i MRV — i na nizu onih na kojima MRV ne
-    /// raste. Bez ograničenja bi se vremenom slepio za plafon i ekran bi kao cilj nudio
-    /// volumen jednu seriju ispod onoga koji je sistem proglasio nepodnošljivim, što je
-    /// tačno suprotno od definicije MAV-a ("bez ulaska u prekomeran zamor").
-    ///
-    /// Granica je zato mesto koje seed propisuje u pojasu, uvećano za dozvoljeno lutanje.
-    /// Bez tog dodatka MAV ne bi bio naučen nego samo izveden iz MEV-a i MRV-a, pa ne bi
-    /// ni imao smisla kao zasebna vrednost.
-    /// </summary>
     private static int ClampTarget(int value, int mev, int mrv, VolumeLandmarkValues seed)
     {
         var seedBand = seed.Mrv - seed.Mev;

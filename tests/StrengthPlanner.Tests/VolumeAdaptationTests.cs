@@ -540,13 +540,15 @@ public class VolumeAdaptationTests
     }
 
     /// <summary>
-    /// Prag razdvaja promenu od zaokruživanja: ispod jednog procenta nedelja je ravna, jer
-    /// je najmanji stvaran pomak jedan korak tega (2.5 kg je 2.5% na stotinu).
+    /// Prag nad prosekom dva čitanja je 2.5%: prosek je pola promene kroz dve nedelje, pa
+    /// ima upola manji šum od jednog čitanja, a 2.5% daje isto malo lažnih padova kao pravilo
+    /// iz #94 (docs/simulations/landmark_signal_noise.py).
     /// </summary>
     [Theory]
     [InlineData(0.005, 17)]   // ispod praga: ravna nedelja, cilj raste
-    [InlineData(0.02, 16)]    // napredak: cilj stoji
-    [InlineData(-0.02, 15)]   // pad: cilj se spušta
+    [InlineData(0.02, 17)]    // i 2% je ispod praga: ravna
+    [InlineData(0.03, 16)]    // napredak: cilj stoji
+    [InlineData(-0.03, 15)]   // pad: cilj se spušta
     public void TheThresholdSeparatesAChangeFromRounding(double change, int expectedMav)
     {
         var response = new VolumeResponse(
@@ -626,16 +628,24 @@ public class VolumeAdaptationTests
         }
     }
 
-    [Fact]
-    public void TwoReadingsThatDisagree_MoveNoLimit()
+    /// <summary>
+    /// Sudi se prosek dva čitanja, ne svako posebno: +3% pa -3% je ravna nedelja, a jedan
+    /// skok uz malo ispod nule je i dalje napredak samo ako prosek pređe prag.
+    /// </summary>
+    [Theory]
+    [InlineData(0.03, -0.03, 17, 22)]   // prosek 0: ravno, cilj raste
+    [InlineData(0.05, 0.01, 16, 22)]    // prosek 3%: napredak, cilj stoji
+    [InlineData(0.04, -0.01, 17, 22)]   // prosek 1.5%: ravno
+    [InlineData(-0.04, -0.01, 15, 21)]  // prosek -2.5%: pad - cilj i plafon dole
+    [InlineData(-0.05, 0.02, 17, 22)]   // prosek -1.5%: ravno, iako je tekuća nedelja pala 5%
+    public void TheTwoReadingsAreAveraged(double current, double previous, int expectedMav, int expectedMrv)
     {
-        foreach (var (current, previous) in new[] { (0.03m, -0.03m), (-0.03m, 0.03m), (0m, -0.03m), (0.03m, 0m) })
-        foreach (var performed in new[] { 9m, 16m, 21m })
-        {
-            var response = new VolumeResponse(performed, performed, 0m, 0m, current, previous);
+        var response = new VolumeResponse(16m, 16m, 0m, 0m, (decimal)current, (decimal)previous);
 
-            Assert.Equal(Seed, VolumeAdaptation.Adjust(Seed, Seed, response));
-        }
+        var result = VolumeAdaptation.Adjust(Seed, Seed, response);
+
+        Assert.Equal(expectedMav, result.Mav);
+        Assert.Equal(expectedMrv, result.Mrv);
     }
 
     /// <summary>
@@ -652,35 +662,39 @@ public class VolumeAdaptationTests
     }
 
     /// <summary>
-    /// Zašto je pravilo promenjeno, kao merenje. Vežbač koji stvarno napreduje 1% nedeljno i
-    /// trenira na MAV-u, uz šum čitanja od 3.5% (greška procene RIR-a od oko jednog
-    /// ponavljanja i dnevno variranje snage), godinu dana. Po starom pravilu, kad je jedno
-    /// čitanje bilo dovoljno, MAV i MRV su skliznuli do poda (prosek preko 500 semena: MAV 11,
-    /// MRV 12 od 16 i 22), iako je vežbač napredovao. Po novom ostaju blizu polazne vrednosti.
-    /// A vežbač koji stvarno slabi 2% nedeljno i dalje do kraja godine stiže do poda - pravilo
-    /// je sporije, ali nije slepo.
+    /// Pravilo pod šumom, u strukturi bloka kakvu aplikacija zaista ima: linearan blok od šest
+    /// nedelja, čitanje tek od druge nedelje, deload bez čitanja i odluke, svaki blok ispočetka.
+    /// Godinu dana na MAV-u, šum čitanja oko 3.5%, prosek preko 100 semena (seme 16 / 22):
+    ///
+    /// - vežbač koji napreduje 1% nedeljno zadržava plafon;
+    /// - vežbač koji stoji dobija cilj gore, kako tabela pravila kaže;
+    /// - vežbač koji slabi 2% nedeljno gubi i cilj i plafon.
+    ///
+    /// Pravilo iz #94 (oba čitanja preko 1%) je u ovoj strukturi odlučivalo oko šest puta
+    /// godišnje, vežbaču koji stoji je cilj padao (15.3), a onome koji slabi plafon je ostajao
+    /// na 14.5 - review #94, docs/simulations/landmark_signal_noise.py.
     /// </summary>
     [Fact]
-    public void UnderRealisticNoise_AProgressingLifterKeepsTheLimits_AndADecliningOneDoesNot()
+    public void UnderRealisticNoise_InRealBlocks_TheLimitsFollowWhatTheLifterDoes()
     {
-        var (progressingMav, progressingMrv) = MeanAfterAYear(trend: 0.01m, singleReading: false);
-        var (oldMav, oldMrv) = MeanAfterAYear(trend: 0.01m, singleReading: true);
-        var (decliningMav, decliningMrv) = MeanAfterAYear(trend: -0.02m, singleReading: false);
+        var (progressingMav, progressingMrv) = MeanAfterAYearOfLinearBlocks(trend: 0.01m);
+        var (stalledMav, stalledMrv) = MeanAfterAYearOfLinearBlocks(trend: 0m);
+        var (decliningMav, decliningMrv) = MeanAfterAYearOfLinearBlocks(trend: -0.02m);
 
-        Assert.True(progressingMav >= 15m && progressingMrv >= 20m, $"novo pravilo: MAV {progressingMav}, MRV {progressingMrv}");
-        Assert.True(oldMav <= 12m && oldMrv <= 13m, $"staro pravilo: MAV {oldMav}, MRV {oldMrv}");
-        Assert.True(decliningMav <= 12m && decliningMrv <= 13m, $"pad: MAV {decliningMav}, MRV {decliningMrv}");
+        Assert.True(progressingMav >= 16.5m && progressingMrv >= 20.5m, $"napreduje: MAV {progressingMav}, MRV {progressingMrv}");
+        Assert.True(stalledMav >= 16m && stalledMrv >= 19m, $"stoji: MAV {stalledMav}, MRV {stalledMrv}");
+        Assert.True(decliningMav <= 13m && decliningMrv <= 14.5m, $"slabi: MAV {decliningMav}, MRV {decliningMrv}");
     }
 
     /// <summary>
-    /// Prosek MAV-a i MRV-a posle 52 nedelje na MAV-u, preko 100 semena. Šum je po nedelji
-    /// (sd 2.47%), pa čitanje - razlika dve nedelje - ima sd oko 3.5%, a dva uzastopna čitanja
-    /// dele nedelju u sredini, kao u stvarnosti. <paramref name="singleReading"/> oponaša
-    /// staro pravilo tako što prethodno čitanje izjednači sa tekućim.
+    /// Prosek MAV-a i MRV-a posle 52 nedelje uzastopnih linearnih blokova (6 nedelja, deload u
+    /// šestoj). Šum je po nedelji (sd 2.47%), pa čitanje - razlika dve nedelje - ima sd oko
+    /// 3.5%, a dva uzastopna čitanja dele nedelju u sredini, kao u stvarnosti.
     /// </summary>
-    private static (decimal Mav, decimal Mrv) MeanAfterAYear(decimal trend, bool singleReading)
+    private static (decimal Mav, decimal Mrv) MeanAfterAYearOfLinearBlocks(decimal trend)
     {
         const int Runs = 100;
+        const int BlockWeeks = 6;
         decimal mavSum = 0m, mrvSum = 0m;
 
         for (var run = 0; run < Runs; run++)
@@ -692,12 +706,23 @@ public class VolumeAdaptationTests
             var current = Seed;
             decimal? previous = null;
             var lastLevel = Level();
+            var weekInBlock = 0;
 
             for (var week = 0; week < 52; week++)
             {
+                weekInBlock++;
                 var level = Level();
-                var reading = trend + level - lastLevel;
+                var change = level - lastLevel;
                 lastLevel = level;
+
+                if (weekInBlock == BlockWeeks)
+                {
+                    weekInBlock = 0;
+                    previous = null;
+                    continue;
+                }
+
+                decimal? reading = weekInBlock == 1 ? null : trend + change;
 
                 var response = new VolumeResponse(
                     current.Mav,
@@ -705,7 +730,7 @@ public class VolumeAdaptationTests
                     AverageRirDeviation: 0m,
                     FailureShare: 0.05m,
                     StrengthChangeShare: reading,
-                    PreviousStrengthChangeShare: singleReading ? reading : previous);
+                    PreviousStrengthChangeShare: previous);
 
                 current = VolumeAdaptation.Adjust(current, Seed, response);
                 previous = reading;
