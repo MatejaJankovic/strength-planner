@@ -9,6 +9,7 @@ import {
   AddSetLogRequest,
   CompletedExerciseSummaryDto,
   CompleteSessionResultDto,
+  ExerciseAlternativeDto,
   ExercisePlanDto,
   SetLogDto,
   WorkoutSessionDto,
@@ -56,6 +57,13 @@ export class WorkoutSession {
   protected readonly error = signal<string | null>(null);
   protected readonly starting = signal(false);
   protected readonly skipping = signal(false);
+
+  // Zamena vežbe za ostatak bloka: koja kartica je otvorila izbor, šta je ponuđeno i šta je
+  // izabrano. Ponuda je null dok se učitava.
+  protected readonly swapPlanId = signal<string | null>(null);
+  protected readonly swapOptions = signal<ExerciseAlternativeDto[] | null>(null);
+  protected readonly swapChoice = signal('');
+  protected readonly swapping = signal(false);
   protected readonly completing = signal(false);
   protected readonly actionError = signal<string | null>(null);
   protected readonly toast = signal<string | null>(null);
@@ -103,19 +111,23 @@ export class WorkoutSession {
   private initDrafts(session: WorkoutSessionDto): void {
     const drafts: Record<string, SetDraft> = {};
     for (const plan of session.exercisePlans) {
-      // Double progression: cilj je postepeno +1 ka vrhu opsega, pa je default
-      // poslednja odrađena serija (ili donja granica opsega), a ne rep-max.
-      const lastLog = plan.setLogs[plan.setLogs.length - 1];
-      drafts[plan.id] = {
-        weightKg: lastLog?.weightKg ?? plan.targetWeightKg ?? 0,
-        reps: lastLog?.reps ?? plan.repRangeMin,
-        rir: lastLog?.rir ?? plan.targetRir,
-        // Otkaz se ne prenosi na sledeću seriju: to je izuzetak, ne podrazumevano stanje.
-        // Kalibraciona serija je jedini slučaj u kome je otkaz propisan.
-        isFailure: isCalibrationEntry(plan),
-      };
+      drafts[plan.id] = this.initialDraft(plan);
     }
     this.drafts.set(drafts);
+  }
+
+  private initialDraft(plan: ExercisePlanDto): SetDraft {
+    // Double progression: cilj je postepeno +1 ka vrhu opsega, pa je default
+    // poslednja odrađena serija (ili donja granica opsega), a ne rep-max.
+    const lastLog = plan.setLogs[plan.setLogs.length - 1];
+    return {
+      weightKg: lastLog?.weightKg ?? plan.targetWeightKg ?? 0,
+      reps: lastLog?.reps ?? plan.repRangeMin,
+      rir: lastLog?.rir ?? plan.targetRir,
+      // Otkaz se ne prenosi na sledeću seriju: to je izuzetak, ne podrazumevano stanje.
+      // Kalibraciona serija je jedini slučaj u kome je otkaz propisan.
+      isFailure: isCalibrationEntry(plan),
+    };
   }
 
   /**
@@ -275,6 +287,70 @@ export class WorkoutSession {
   }
 
   // --- start / complete -----------------------------------------------------
+
+  /**
+   * Vežba se menja samo u treningu koji čeka i dok na njoj nema upisane serije - server traži
+   * isto. Odrađen ili preskočen trening je istorija.
+   */
+  protected canSwap(plan: ExercisePlanDto): boolean {
+    return (this.isPlanned() || this.isInProgress()) && plan.setLogs.length === 0;
+  }
+
+  protected openSwap(plan: ExercisePlanDto): void {
+    this.swapPlanId.set(plan.id);
+    this.swapOptions.set(null);
+    this.swapChoice.set('');
+    this.actionError.set(null);
+
+    // Odgovor za karticu koja više nije otvorena se odbacuje: inače bi ponuda jedne vežbe
+    // stigla pod drugu (pregled #111).
+    this.sessionService.alternatives(plan.id).subscribe({
+      next: (options) => {
+        if (this.swapPlanId() !== plan.id) {
+          return;
+        }
+        this.swapOptions.set(options);
+        this.swapChoice.set(options[0]?.exerciseId ?? '');
+      },
+      error: (err: unknown) => {
+        if (this.swapPlanId() !== plan.id) {
+          return;
+        }
+        this.swapPlanId.set(null);
+        this.actionError.set(extractErrorMessage(err, 'Ne mogu da učitam vežbe za zamenu.'));
+      },
+    });
+  }
+
+  protected cancelSwap(): void {
+    this.swapPlanId.set(null);
+  }
+
+  protected confirmSwap(plan: ExercisePlanDto): void {
+    const exerciseId = this.swapChoice();
+    if (!exerciseId || this.swapping()) {
+      return;
+    }
+    this.swapping.set(true);
+
+    this.sessionService.substitute(plan.id, exerciseId).subscribe({
+      next: (session) => {
+        this.session.set(session);
+        // Samo zamenjena kartica dobija nov unos; nesačuvani unosi na ostalim karticama ostaju.
+        const swapped = session.exercisePlans.find((candidate) => candidate.id === plan.id);
+        if (swapped) {
+          this.patchDraft(plan.id, this.initialDraft(swapped));
+        }
+        this.swapping.set(false);
+        this.swapPlanId.set(null);
+        this.toast.set('Vežba je zamenjena do kraja bloka.');
+      },
+      error: (err: unknown) => {
+        this.swapping.set(false);
+        this.actionError.set(extractErrorMessage(err, 'Zamena nije sačuvana. Pokušaj ponovo.'));
+      },
+    });
+  }
 
   /**
    * Trening koji se neće odraditi. Ništa se ne briše — propis ostaje, a „Vrati na plan"

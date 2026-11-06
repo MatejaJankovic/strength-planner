@@ -182,6 +182,18 @@
   width: 100%;
 }
 
+.swap {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.swap__select {
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  font: inherit;
+  padding: 0.6rem;
+}
+
 // Preskakanje nosi oblik glavne akcije, ali tiši ton: to je izlaz, a ne ravnopravan izbor.
 .cta--quiet {
   background: none;

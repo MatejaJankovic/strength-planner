@@ -107,16 +107,26 @@ public sealed class WeeklyVolumeTargetResolver
                            && plan.WorkoutSession.TrainingWeek.WeekNumber == weekNumber
                            && !plan.WorkoutSession.TrainingWeek.IsDeload
                            && plan.WorkoutSession.TrainingWeek.Mesocycle.UserId == userId)
-            .SelectMany(plan => plan.Exercise.Muscles.Select(muscle => new
-            {
-                muscle.MuscleGroupId,
-                Sets = muscle.Contribution * plan.PrescribedSets
-            }))
+            // Join, a ne SelectMany preko navigacije: to drugo SQLite prevodi u APPLY, koji ne
+            // podržava, pa balansiranje nije moglo u test nad bazom (vidi CalibrationSets, #110).
+            .Join(
+                _db.ExerciseMuscles,
+                plan => plan.ExerciseId,
+                muscle => muscle.ExerciseId,
+                (plan, muscle) => new
+                {
+                    muscle.MuscleGroupId,
+                    muscle.Contribution,
+                    plan.PrescribedSets
+                })
             .ToListAsync(cancellationToken);
 
+        // Množi se u memoriji: SQLite decimal čuva kao tekst i ne ume da ga množi u upitu.
         return contributions
             .GroupBy(contribution => contribution.MuscleGroupId)
-            .ToDictionary(group => group.Key, group => group.Sum(item => item.Sets));
+            .ToDictionary(
+                group => group.Key,
+                group => group.Sum(item => item.Contribution * item.PrescribedSets));
     }
 }
 

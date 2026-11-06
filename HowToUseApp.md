@@ -519,6 +519,16 @@ Grešku ispravljaš ikonicama pored serije: **olovka** za izmenu, **kanta** za b
 > obrnutog bloka hipertrofije (8–12 uz RIR 1); linearni blok, koji čarobnjak predlaže, i svaki
 > blok snage je imaju.
 
+> **Zamena vežbe.** Ako ti neka vežba ne odgovara (sprava je zauzeta, boli te zglob, nemaš
+> šipku), dugme **„Zameni vežbu"** na kartici nudi vežbe koje blok može da propiše isto: isti
+> glavni mišić, isti tip (složena ili izolaciona) i, za složenu, isti opseg (vežba na jednoj nozi
+> ne zamenjuje čučanj u bloku snage). Vežba se menja u tom treningu i u svakom sledećem treningu
+> istog dana **do kraja bloka**. Opseg, rezerva i serije ostaju, a težina se računa iz maksimuma
+> nove vežbe; ako maksimuma nema, unesi ga ili prvi put upiši težinu po osećaju. Odrađeni,
+> započeti i preskočeni treninzi ostaju sa vežbom koju su imali (preskočen trening je zadržava i
+> kad ga vratiš na plan), a zamena nije moguća kad na vežbi već postoji upisana serija. Trening
+> koji novu vežbu već ima zadržava staru, da je ne bi imao dvaput.
+
 > **Kad predlog stane na sopstvenoj masi.** Ako je vežba bila preteška, pravilo bi htelo
 > opterećenje manje od tvog tela — a tu nema šta da se skine. Predlog tada ostaje na
 > „TM", a u rezimeu piše da sledeći put napreduješ kroz ponavljanja, ne kroz kilograme.
