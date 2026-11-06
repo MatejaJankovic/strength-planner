@@ -59,7 +59,13 @@ sa Face Pull-om je našao pregled; ovde je ponovo izmerena.
 
 ## Provera
 
-- `dotnet test`: **867** (bilo 866). Klijent 204, bez izmena.
+- `dotnet test`: **869** (bilo 866). Klijent 204, bez izmena.
+- Merenje vraćanjem:
+  - dan B nazad na Rear Delt Fly: obara **1** (spisak rupa naprednog);
+  - dan C nazad, Face Pull pre Hammer Curl-a: obara **2** (`FullBody_GivesABeginnerADirectBicepsExercise`,
+    za oba cilja). Pre tog testa je ova izmena prolazila neprimećeno.
+- Početnik je pre izmene stajao ispod MEV-a za biceps u 28 od 36 nedelja Full Body šablona
+  (13 u bloku snage, 15 u hipertrofiji); svih 28 je nestalo.
 - Nijedna nedelja iznad MRV-a, pre ni posle.
 - Novi test formatira broj serija nezavisno od kulture (na `sr-Latn-RS` bi `11.0` bilo `11,0`).
   Mišiće bez cilja ne preskače neprimećeno: posebno proverava da su to tačno trbuh i listovi.
