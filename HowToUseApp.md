@@ -864,8 +864,8 @@ radna serija. Opseg ponavljanja se ne dira, jer bi to promenilo i sam pokret.
 pad snage 0.25, volumen 0.15) i pragovi (0.60 za srednji nivo, 0.50 za napredni) ne potiču iz
 literature: nijedno istraživanje ne daje formulu po kojoj se ovi signali sabiraju u odluku o
 deload-u. Izabrani su tako da nijedan signal sam ne pokreće deload, a lažni deload-ovi i
-propušteni padovi su izmereni simulacijom sa šumom iz literature
-(`docs/simulations/fatigue_signal_noise.py`). Ako ti deload dolazi prerano ili prekasno, to je
+propušteni padovi su izmereni simulacijom (`docs/simulations/fatigue_signal_noise.py`). Šum u
+njoj je modelovan prema literaturi, ali deo je pretpostavka modela, ne izmeren podatak. Ako ti deload dolazi prerano ili prekasno, to je
 podešavanje, a ne greška u tvom treningu.
 
 Deload je lakši od težine iz koje je izveden kad god korak to dozvoljava. Kod lakog tega 90%

@@ -925,12 +925,13 @@ container had .NET SDK 8.0.131 (from Ubuntu) where `global.json` pins 8.0.422 wi
 PostgreSQL was 16, not 18. None of it is in the history.
 
 **Round 16 — closing the round-14 audit.** The open findings of section F (F8, F13,
-F15-F19) and one found along the way (N1). Six branches, all merged, each with a revert
-measurement and a live check at 375 px.
+F15-F19) and one found along the way (follow-template on a built-in template). Six branches,
+all merged; every branch that changed code has a revert measurement, and every branch a live
+check at 375 px.
 
 | Branch | What it fixed | PR |
 |---|---|---|
-| `fix/landmark-signal-noise` (follow-up) | #94's rule decided about three times a year in a flat block and let a stalled lifter drift down; the limits now read the mean of two readings at 2.5% | #97 |
+| `fix/landmark-rule-by-block` | #94's rule decided about three times a year in a flat block and let a stalled lifter drift down; the limits now read the mean of two readings at 2.5% | #97 |
 | `fix/estimate-edges` | A 100 kg × 1 test set to failure was estimated at 103.3 kg; the rep cap had no stated reason | #98 |
 | `feature/stale-maximum-notice` | A block silently started from a maximum older than the 56-day window | #99 |
 | `fix/muscle-contributions-2` | The deadlift filled the back budget instead of the glutes, and Hip Thrust the hamstrings | #100 |
@@ -975,15 +976,15 @@ Measurements from this round that contradicted the expectation, each recorded in
    app has (a reading only from week 2, none in a deload, a fresh start each block), the
    "both must agree" rule decided about 3 times a year in a flat block and 6 in a linear one,
    a stalled lifter's target fell instead of rising, and a real decline was caught weakly.
-   The simulation (`docs/simulations/landmark_signal_noise.py`) is a port of `Adjust` checked
-   against the C# on 984,000 cases.
+   The simulation (`docs/simulations/landmark_signal_noise.py`) is a port of `Adjust`, checked
+   against the C# implementation before its numbers were used.
 2. **The single-rep rule leaked into a ratio.** Found by review of #98, not by a test.
 3. **The stale-maximum test set removed the warning and left the stale loads.** Found by
    review of #99. The first fix keyed the notice by exercise, which would have hidden Upper
    B's bench once Upper A was done; keyed by day and exercise, a revert fails 1 of 201.
 4. **The row credit fixed nothing and broke the guide's PPL table.** Without it the table
-   is exact again and the session-ceiling test is back to `main`'s exceptions. The deadlift
-   change alone moved weeks below MEV from 498 to 491, but opened a new gap: Full Body back in
+   is exact again and the session-ceiling test is back to `main`'s exceptions. The branch
+   moved weeks below MEV from 498 to 491, but the deadlift change opened a new gap: Full Body back in
    an advanced strength block is 11 against MEV 12. The Hip Thrust change fails 0 tests when
    reverted; its effect is measured instead (Leg Curl +387 sets).
 5. **A number carried over from #92 was stale.** The MRV counts for following a built-in

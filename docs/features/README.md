@@ -141,8 +141,9 @@ propisa) je napravljen pa odbačen merenjem; obrazloženje je na kraju
 
 ## Šesnaesti krug — zatvaranje revizije iz runde 14
 
-Ostatak nalaza iz odeljka F (F8, F13, F15–F19) i jedan nov nalaz tokom rada. Svaka grana ima
-merenje vraćanjem i proveru uživo na 375 px.
+Ostatak nalaza iz odeljka F (F8, F13, F15–F19) i jedan nov nalaz tokom rada („Prati moj šablon"
+uz ugrađeni šablon). Svaka grana sa izmenom koda ima merenje vraćanjem, a svaka proveru uživo na
+375 px. Dopuna #94 (#97) stoji u tabeli četrnaestog kruga.
 
 | Grana | O čemu je | PR |
 |---|---|---|
@@ -150,7 +151,7 @@ merenje vraćanjem i proveru uživo na 375 px.
 | [Star maksimum](stale-maximum-notice.md) | Blok je tiho polazio od maksimuma starijeg od 56 dana; sada ekran kaže koliko je star | #99 |
 | [Doprinosi mišića, drugi deo](muscle-contributions-2.md) | Mrtvo dizanje je punilo leđa umesto gluteusa, a Hip Thrust zadnju ložu; udeo veslanja u ramenima je odbačen jer je sekao bočno podizanje | #100 |
 | [„Prati moj šablon" samo za lični šablon](allocation-follow-template.md) | Uz ugrađeni šablon je propisivao nedelje iznad MRV-a, a ekran je govorio samo „može ostati ispod cilja" | #101 |
-| [Zatvaranje runde 14](round-14-closure.md) | „Ispod MEV-a nema stimulusa" na ekranu; ocena umora nije bila nazvana heuristikom; rečenice teze koje više ne opisuju aplikaciju nisu bile na jednom mestu ([teza-uskladjivanje.md](../teza-uskladjivanje.md)) | — |
+| [Zatvaranje runde 14](round-14-closure.md) | „Ispod MEV-a nema stimulusa" na ekranu; ocena umora nije bila nazvana heuristikom; rečenice teze koje više ne opisuju aplikaciju nisu bile na jednom mestu ([teza-uskladjivanje.md](../teza-uskladjivanje.md)) | #102 |
 
 ## Ako čitaš samo jedno
 

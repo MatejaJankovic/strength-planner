@@ -1,7 +1,7 @@
 # Usklađivanje teze sa aplikacijom
 
 Teza (`Diplomski - Mateja Jankovic - verzija 2.1.docx`) opisuje aplikaciju kakva je bila pre
-prve runde rada. Od tada je spojeno više od sto PR-ova, i dobar deo rečenica u tezi više ne
+prve runde rada. Od tada je spojeno više od osamdeset PR-ova, i dobar deo rečenica u tezi više ne
 opisuje ono što aplikacija radi. Ovaj dokument skuplja ta mesta na jedno mesto: za svako je dat
 navod iz teze, šta aplikacija radi danas (sa PR-om), i predlog novog teksta.
 
@@ -14,12 +14,15 @@ izvučenom tekstu dokumenta, samo da se mesto lakše nađe.
 
 ## 1. Trajanje bloka i deload
 
-**Gde:** slučaj korišćenja 4 (¶265), 5.2.1 `Mesocycle` (¶307), poglavlje 6 uz listing 6.4
-(¶399), opis slike 7.7, odeljak 4.4.
+**Gde:** uvod (¶188), 4.4 (¶235), slučaj korišćenja 4 (¶265), 5.2.1 `Mesocycle` (¶307),
+poglavlje 6 uz listing 6.4 (¶399), slike 7.6 i 7.7 (¶559, ¶561), zaključak (¶573).
 
-**Teza:** „креира четири недеље - три акумулационе и завршну deload недељу"; „Mesocycle
-представља тренажни блок од четири недеље"; „четврта недеља аутоматски означена као недеља за
-рестерећење".
+**Teza:** „аутоматски генерише четворонедељни мезоциклус са планираном недељом растерећења"
+(¶188); „три недеље прогресивног повећања оптерећења праћене су четвртом, недељом планираног
+растерећења" (¶235); „креира четири недеље - три акумулационе и завршну deload недељу" (¶265);
+„Mesocycle представља тренажни блок од четири недеље" (¶307); „четврта недеља аутоматски
+означена као недеља за рестерећење" (¶399); „Четврта недеља носи ознаку DELOAD" (¶561);
+„аутоматски гради четворонедељне мезоциклусе" (¶573).
 
 **Danas:**
 
@@ -27,15 +30,23 @@ izvučenom tekstu dokumenta, samo da se mesto lakše nađe.
   postojeće blokove i stari linearan (6). Predlaže se linearan za svaki blok (#11, #90).
 - Ravan blok početnika nema planirani deload: četiri trenažne nedelje (#93).
 - Deload može da se pomeri i ranije, kad ocena umora pređe prag, najviše jednom po bloku (#5,
-  #90).
+  #90). Početnik taj prag nema (#9).
 
 **Predlog (5.2.1):** „Mesocycle представља тренажни блок са једним циљем (снага или
 хипертрофија) и моделом периодизације: раван блок траје четири недеље, а линеарни и обрнути
 шест. Последња недеља је планирано растерећење, осим у равном блоку почетника, а систем може да
-уведе растерећење и раније, када процена умора пређе праг."
+уведе растерећење и раније, када процена умора пређе праг (осим за почетника, који праг нема)."
 
 **Predlog (slučaj korišćenja 4):** „... и креира недеље блока према изабраном моделу
-периодизације, са завршном deload недељом."
+периодизације, са завршном deload недељом (осим у равном блоку почетника)."
+
+**Predlog (4.4):** „У раду су примењена три модела периодизације: раван, у коме је свака
+тренажна недеља иста, линеарни, у коме серије расту а понављања и резерва падају кроз блок, и
+обрнути. Блок се завршава недељом планираног растерећења (осим равног блока почетника), у којој
+се број радних серија преполовљава, а тежине смањују на око 90% стварно коришћених."
+
+**Predlog (7.7 i uvod):** „четворонедељни" zameniti sa „мезоциклус према изабраном моделу
+периодизације", a „Четврта недеља носи ознаку DELOAD" sa „Последња недеља носи ознаку DELOAD".
 
 ## 2. Korak opterećenja
 
@@ -60,8 +71,9 @@ kad ga sve serije apsorbuju (#85).
 
 **Danas:**
 
-- Korekcija čita Epley krivu: jedan RIR vredi 1 / (30 + efektivna ponavljanja). To je oko 2.7%
-  za 3–6, 2.4% za 8–12 i 2.2% za izolaciju na 10–20 (#95). Granica od ±10% ostaje.
+- Korekcija čita Epley krivu: jedan RIR vredi 1 / (30 + sredina propisanog opsega + ciljni
+  RIR), dakle po propisu, a ne po ponavljanjima sesije. To je oko 2.7% za 3–6, 2.4% za 8–12 i
+  2.2% za izolaciju na 10–20 (#95). Granica od ±10% ostaje.
 - Neuspela ponavljanja se beleže, pa korekcija naniže nije ograničena nulom RIR skale (#3, #7).
 - Polazna težina progresije je najteža dignuta, a ne prosek težina sesije (#61).
 
@@ -93,7 +105,7 @@ zaključak (¶575).
 **Predlog (4.6):** „... минимални ефективни волумен (MEV), испод кога је напредак мали,
 максимални адаптивни волумен (MAV), на коме је напредак највећи, и максимални опорављиви
 волумен (MRV), изнад кога се вежбач више не опоравља адекватно. Вредности су оријентационе
-процене [18], па их систем полази од њих и учи из корисниковог одговора на волумен."
+процене [18], па систем полази од њих и учи их из корисниковог одговора на волумен."
 
 ## 5. Registracija i profil
 
@@ -107,15 +119,16 @@ početnih maksimuma (#49). Profil ima
 i visinu, ime za prikaz i sliku (#49, #50).
 
 **Predlog (slučaj korišćenja 1):** „Кораци: корисник одговара на седам питања, по једно на
-сваком екрану (име за приказ, адреса е-поште и лозинка, пол, телесна маса, висина, узраст и
-ниво искуства); налог се креира тек после последњег одговора, а корисник се преусмерава на
+сваком екрану (име за приказ, адреса е-поште и лозинка, пол (опционо), телесна маса, висина,
+узраст и ниво искуства); налог се креира тек после последњег одговора, а корисник се преусмерава на
 унос почетних максимума, осми корак." Iz `Profile` izbaciti „жељени број тренинга недељно".
 
 ## 6. Šabloni
 
 **Gde:** slučaj korišćenja 4 (¶265), poglavlje 6 (¶399), opis slike 7.5 (¶557).
 
-**Teza:** „Понуђена су три шаблона - Full Body, Upper/Lower и Push/Pull/Legs".
+**Teza:** „Понуђена су три шаблона - Full Body (три тренинга недељно), Upper/Lower (четири) и
+Push/Pull/Legs (три)".
 
 **Danas:** devet ugrađenih šablona (#10 i kasnije) i lični šabloni (#41). „Prati moj šablon"
 se nudi samo uz lični šablon (#101).
@@ -141,7 +154,8 @@ se nudi samo uz lični šablon (#101).
 
 **Predlog:** „Изузеци: већ постоји активан план - систем га именује и тражи потврду пре него што
 га угаси; за неку вежбу не постоји процена 1RM - систем то наводи и нуди унос максимума или
-тест-серију, а вежбач може и да први пут упише тежину по осећају."
+тест-серију (за вежбу са сопственом масом само тест-серију), а вежбач може и да први пут
+упише тежину по осећају."
 
 ## 8. Deload i opterećenje (slučaj korišćenja 6)
 
@@ -174,7 +188,7 @@ se nudi samo uz lični šablon (#101).
 - Kad u prozoru nema ničega, uzima se najnoviji zapis, a ekran to kaže (#99).
 
 **Predlog (6.1):** posle opisa `EstimateOneRepMax` dodati „Процена се прави само из серије до 12
-понављања и највише 3 понављања у резерви, јер се даље екстраполација не може веровати;
+понављања и највише 3 понављања у резерви, јер се даљој екстраполацији не може веровати;
 једно понављање до отказа је сам максимум."
 
 ## 10. Ocena umora i automatski deload
@@ -184,21 +198,25 @@ se nudi samo uz lični šablon (#101).
 **Danas:**
 
 - Ocena umora sabira četiri signala: RIR 0.35, otkaze 0.25, pad snage 0.25 i volumen 0.15.
-  Prag je 0.60, a za naprednog 0.50.
+  Prag je 0.60, a za naprednog 0.50. Početnik prag nema, pa ni automatski deload.
 - Nijedan signal sam ne pokreće deload, a pad snage traži potvrdu prethodne nedelje (#5, #70,
   #95).
 - Težine i pragovi su heuristika sistema. Lažni i propušteni deload-ovi su izmereni simulacijom
-  (`docs/simulations/fatigue_signal_noise.py`).
+  (`docs/simulations/fatigue_signal_noise.py`). Šum u njoj je modelovan prema literaturi, ali
+  deo je pretpostavka modela: koliko vežbačeva procena RIR-a varira iz nedelje u nedelju nijedan
+  od korišćenih radova ne meri.
 
 **Predlog (novi pasus u 4.x):** „Аутоматски deload се покреће када недељна процена умора пређе
-праг. Процена сабира четири сигнала - одступање RIR-а, удео серија до отказа, потврђен пад
+праг; почетник праг нема. Процена сабира четири сигнала - одступање RIR-а, удео серија до отказа, потврђен пад
 процењене снаге и волумен према MRV-у - са тежинама изабраним тако да ниједан сигнал сам не
 покреће растерећење. Тежине и прагови су хеуристика система, а не резултат истраживања;
-провераване су симулацијом са шумом процене RIR-а и дневне варијације снаге из литературе."
+провераване су симулацијом са шумом процене RIR-а и дневне варијације снаге моделованим према
+литератури, при чему је део тог шума претпоставка модела."
 
 ## 11. Listinzi
 
-**Gde:** listinzi 6.1–6.5.
+**Gde:** listinzi 6.1–6.5 i tekst uz listing 6.5 (¶415): „прогресија полази од просека тежина
+које је корисник стварно користио".
 
 Listinzi prikazuju kod iz v2.1. Najveće razlike:
 
@@ -206,7 +224,8 @@ Listinzi prikazuju kod iz v2.1. Najveće razlike:
 - 6.2: korekcija po Epley-u, ne 3% po poenu (#95), i pravilo gornjeg kraja opsega (#60);
 - 6.3: `WeightStepKg = 2.5m` više nije jedan korak za sve (#2);
 - 6.4: deload po modelu, a ne „četvrta nedelja" (#11, #93);
-- 6.5: polazna težina je najteža dignuta, ne prosek (#61).
+- 6.5: polazna težina je najteža dignuta, ne prosek (#61); lakša serija se računa samo ako je
+  išla do otkaza. U ¶415 „од просека тежина" zameniti sa „од најтеже стварно коришћене тежине".
 
 **Predlog:** listinge zameniti fragmentima iz trenutnog koda, ili ih zadržati uz napomenu da
 prikazuju prvu verziju algoritma, a da su kasnije izmene opisane u tekstu.
@@ -215,7 +234,8 @@ prikazuju prvu verziju algoritma, a da su kasnije izmene opisane u tekstu.
 
 **Gde:** ¶575–576.
 
-Svih pet ograničenja iz ¶575 je rešeno, kao i dva pravca razvoja iz ¶576 (makrociklusi):
+Četiri od pet ograničenja iz ¶575 su rešena u rundi 1, a od ostalih pravaca razvoja iz ¶576
+urađeni su makrociklusi (#6, #46):
 
 | Ograničenje iz teze | Rešeno u |
 |---|---|
@@ -241,7 +261,34 @@ među vežbačima (#93).
 Van obima su ostali: višejezičnost, analitika cele istorije, talasasta periodizacija, PWA,
 slanje e-pošte i tamna tema.
 
-## 13. Literatura
+## 13. Ostala mesta
+
+**Preskakanje treninga.** ¶309: „са ознаком дана и статусом (планиран, у току, завршен)". Od #75
+trening može biti i preskočen: nedelja se tada zatvara, ali ne uči granice volumena. Predlog:
+„... и статусом (планиран, у току, завршен, прескочен)", a u slučaj korišćenja 5 dodati korak
+„корисник може да прескочи тренинг који неће одрадити".
+
+**Model podataka.** ¶300 i slika 5.2 nemaju `Macrocycle`, `MacrocycleBlock` ni
+`UserWorkoutTemplate`, a ¶307 kaže da `IsActive` „обезбеђује да корисник у сваком тренутку има
+највише један активан мезоциклус". Danas je aktivan plan (makrociklus), a blokovi se generišu
+kad dođu na red (#6, #46), uz lične šablone (#41). Predlog: dijagram dopuniti tim entitetima, a
+`IsActive` opisati na planu.
+
+**Završetak treninga.** ¶317 i ¶565 (slika 5.4) nabrajaju procenu e1RM, progresiju i upis
+predloga. Danas završetak radi i ovo: računa ocenu umora i može da povuče deload (#5),
+balansira serije ostatka nedelje ka cilju volumena (#37) i, kad je nedelja gotova, uči granice
+volumena (#4). Sve i dalje u jednoj transakciji. Predlog: tačke (4)–(6) dodati u ¶317.
+
+**Opsezi ponavljanja.** ¶559: „за хипертрофију: 8-12 понављања по серији са једним понављањем у
+резерви". Danas izolacije nose 10–20 u oba cilja (#91), a raspored pomera opseg iz nedelje u
+nedelju (#65, #67). Predlog: „за хипертрофију: 8-12 понављања на вишезглобним вежбама и 10-20
+на изолацијама, уз један до два понављања у резерви, а распоред помера опсег кроз блок".
+
+**Stranice klijenta.** ¶498 navodi stranicu „мезоциклус" i `MesocycleService`. Stranica
+`/mesocycle` je uklonjena u #46, a trening se pravi samo kroz plan. Predlog: „мезоциклус"
+zameniti sa „план".
+
+## 14. Literatura
 
 Teza ne navodi priručnik (*Džepni priručnik o programiranju treninga*), iako je on izvor
 pravila za granice volumena, nivo iskustva i deload (vidi

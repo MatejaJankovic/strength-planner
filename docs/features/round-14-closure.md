@@ -32,8 +32,8 @@ ista.
 ## F19: teza
 
 [`docs/teza-uskladjivanje.md`](../teza-uskladjivanje.md) skuplja svako mesto u tezi v2.1 koje
-više ne opisuje aplikaciju: dvanaest grupa, od trajanja bloka i koraka opterećenja do listinga,
-zaključka i literature. Za svako je dat navod iz teze (proveren nad tekstom dokumenta), šta
+više ne opisuje aplikaciju: četrnaest odeljaka, od trajanja bloka i koraka opterećenja do
+listinga, zaključka, ostalih mesta i literature. Za svako je dat navod iz teze (proveren nad tekstom dokumenta), šta
 aplikacija radi danas sa PR-om, i predlog novog teksta na ćirilici. Pet rečenica iz #93 je
 uključeno. Tezu menja vlasnik.
 
@@ -43,6 +43,23 @@ Dva navoda iz prvobitnog spiska F19 su ispravljena pri proveri:
 - zaključak teze ima ograničenja u jednom pasusu (¶575) i pravce razvoja u sledećem (¶576), a ne
   „pet ograničenja koja su rešena još u rundi 1". Četiri jesu rešena u rundi 1. Peto, da je RIR
   „kod početnika nepouzdan", ne slaže se sa Halperin i sar. 2022.
+
+## Posle pregleda
+
+Pregled je proverio svaki navod skriptom nad tekstom `.docx`; svi su doslovni na navedenom
+mestu osim jednog (šabloni u ¶557, sada ispravljen). Ispravljeno je i:
+
+- „Svih pet ograničenja je rešeno" u istom odeljku u kome tabela kaže da peto nije;
+- „više od sto PR-ova": spojenih je nešto više od osamdeset;
+- predlozi teksta za deload su važili i za početnika, koji automatski deload nema, a ravan blok
+  ni planirani;
+- uputstvo i predlog su govorili o „šumu iz literature", a deo šuma je pretpostavka modela;
+- dodat je odeljak „Ostala mesta": preskakanje treninga, model podataka, završetak treninga,
+  opsezi ponavljanja i stranica mezociklusa, kao i navodi iz uvoda, 4.4, slika 7.6/7.7, zaključka
+  i teksta uz listing 6.5;
+- dve gramatičke greške u predlozima, korekcija po RIR-u opisana po propisu (a ne po
+  ponavljanjima sesije), „пол (опционо)" i test-serija kao jedini unos za vežbu sa sopstvenom
+  masom.
 
 ## Provera
 
