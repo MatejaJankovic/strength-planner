@@ -12,10 +12,12 @@ namespace StrengthPlanner.API.Controllers;
 public class SessionsController : AuthorizedControllerBase
 {
     private readonly ISessionService _sessionService;
+    private readonly IExerciseSubstitutionService _substitutions;
 
-    public SessionsController(ISessionService sessionService)
+    public SessionsController(ISessionService sessionService, IExerciseSubstitutionService substitutions)
     {
         _sessionService = sessionService;
+        _substitutions = substitutions;
     }
 
     /// <summary>Vraća detalj sesije sa planovima i logovima.</summary>
@@ -59,6 +61,35 @@ public class SessionsController : AuthorizedControllerBase
     {
         var session = await _sessionService.SkipAsync(GetUserId(), id, cancellationToken);
         return Ok(session);
+    }
+
+    /// <summary>Vežbe koje mogu da zamene planiranu za ostatak bloka.</summary>
+    [HttpGet("plans/{planId:guid}/alternatives")]
+    [ProducesResponseType(typeof(IReadOnlyList<ExerciseAlternativeDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Alternatives(Guid planId, CancellationToken cancellationToken)
+    {
+        return Ok(await _substitutions.GetAlternativesAsync(GetUserId(), planId, cancellationToken));
+    }
+
+    /// <summary>
+    /// Menja vežbu u ovom i u svakom treningu istog dana koji još čeka, do kraja bloka, i vraća
+    /// trening iz koga je zamena tražena.
+    /// </summary>
+    [HttpPost("plans/{planId:guid}/substitute")]
+    [ProducesResponseType(typeof(WorkoutSessionDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Substitute(
+        Guid planId,
+        [FromBody] SubstituteExerciseRequest request,
+        CancellationToken cancellationToken)
+    {
+        var userId = GetUserId();
+        var sessionId = await _substitutions.SubstituteAsync(userId, planId, request.ExerciseId, cancellationToken);
+        return Ok(await _sessionService.GetByIdAsync(userId, sessionId, cancellationToken));
     }
 
     /// <summary>Vraća preskočen trening na plan.</summary>
