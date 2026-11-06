@@ -1,6 +1,8 @@
 using StrengthPlanner.Domain.Entities;
 using StrengthPlanner.Domain.Enums;
 using StrengthPlanner.Infrastructure.Analytics;
+using StrengthPlanner.Infrastructure.Mesocycles;
+using StrengthPlanner.Infrastructure.TrainingLogs;
 
 namespace StrengthPlanner.Tests.ServiceHarness;
 
@@ -26,6 +28,37 @@ public class CalibrationVolumeTests
         Assert.Equal(1m / 3m, earlierWeek[quads].FailureShare);
     }
 
+    /// <summary>
+    /// Ekran treninga dobija oznaku od servera: samo prva vežba treninga u poslednjoj
+    /// trenažnoj nedelji. Bez ovoga je vraćanje oznake u DTO-u ostavljalo ceo paket zelen.
+    /// </summary>
+    [Fact]
+    public async Task TheWorkoutScreen_MarksOnlyTheFirstLift_OfTheLastTrainingWeek()
+    {
+        using var database = new SqliteDatabase();
+        var (_, weekIds) = await SeedAsync(database, ExperienceLevel.Advanced);
+
+        await using var context = database.NewContext();
+        var landmarks = new VolumeLandmarkService(context);
+        var service = new SessionService(
+            context,
+            landmarks,
+            new DeloadService(context, landmarks),
+            new WeeklySetPlanner(context, landmarks, new WeeklyVolumeTargetResolver(context)),
+            null!);
+
+        var lastWeek = await service.GetByIdAsync(database.UserId, SessionOf(context, weekIds[3]), CancellationToken.None);
+        var earlierWeek = await service.GetByIdAsync(database.UserId, SessionOf(context, weekIds[2]), CancellationToken.None);
+
+        Assert.Equal([true, false], lastWeek.ExercisePlans.Select(plan => plan.IsCalibration));
+        Assert.All(earlierWeek.ExercisePlans, plan => Assert.False(plan.IsCalibration));
+    }
+
+    private static Guid SessionOf(StrengthPlanner.Infrastructure.Persistence.AppDbContext context, Guid weekId)
+    {
+        return context.WorkoutSessions.Single(session => session.TrainingWeekId == weekId).Id;
+    }
+
     /// <summary>Početnik nema kalibraciju, pa je njegov otkaz i u poslednjoj nedelji otkaz.</summary>
     [Fact]
     public async Task ABeginnersFailure_StillCounts()
@@ -44,7 +77,8 @@ public class CalibrationVolumeTests
 
     /// <summary>
     /// Blok snage od četiri nedelje, deload u četvrtoj. U nedeljama 2 i 3 je isti čučanj:
-    /// prva serija 8 ponavljanja do otkaza, pa dve serije 6 uz RIR 2.
+    /// prva serija 8 ponavljanja do otkaza, pa dve serije 6 uz RIR 2, i iza njega još jedna
+    /// složena vežba bez upisanih serija.
     /// </summary>
     private static async Task<(Guid Quads, Dictionary<int, Guid> WeekIds)> SeedAsync(
         SqliteDatabase database,
@@ -105,6 +139,22 @@ public class CalibrationVolumeTests
                 plan.SetLogs.Add(Set(2, reps: 6, rir: 2, isFailure: false));
                 plan.SetLogs.Add(Set(3, reps: 6, rir: 2, isFailure: false));
                 session.ExercisePlans.Add(plan);
+
+                // Druga složena vežba istog treninga: kalibracija je samo prva.
+                session.ExercisePlans.Add(new ExercisePlan
+                {
+                    Id = Guid.NewGuid(),
+                    ExerciseId = squat,
+                    Order = 2,
+                    TargetSets = 3,
+                    PrescribedSets = 3,
+                    RepRangeMin = 3,
+                    RepRangeMax = 6,
+                    BaseRepRangeMin = 3,
+                    BaseRepRangeMax = 6,
+                    TargetRir = 2,
+                    TargetWeightKg = 90m
+                });
                 week.Sessions.Add(session);
             }
         }
