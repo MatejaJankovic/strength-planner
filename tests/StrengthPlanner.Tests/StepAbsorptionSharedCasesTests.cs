@@ -126,6 +126,17 @@ public class StepAbsorptionSharedCasesTests
             reps.Add(Row(added, body, step, min, max, rir, target));
         }
 
+        // Težine na kojima se klijent, koji računa u pokretnom zarezu, slaže sa serverom samo
+        // zahvaljujući toleranciji EPSILON. Nađene pretragom svih težina na dve decimale do 25 kg.
+        foreach (var (added, step) in new[] { (2.28m, 1m), (4.56m, 2m), (3.8m, 1m) })
+        foreach (var body in new[] { 0m, 51.2m })
+        foreach (var (min, max) in ranges)
+        for (var rir = 1; rir <= 3; rir++)
+        {
+            var target = StepAbsorption.RepsToEarnStep(added, body, step, min, max, rir);
+            reps.Add(Row(added, body, step, min, max, rir, target));
+        }
+
         var absorbs = new List<string>();
         foreach (var step in new[] { 1m, 2m, 2.5m })
         foreach (var added in new[] { 3.8m, 8m, 9m, 15m, 22.5m })
