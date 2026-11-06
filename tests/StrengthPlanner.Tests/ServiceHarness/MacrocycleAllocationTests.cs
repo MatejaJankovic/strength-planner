@@ -21,6 +21,11 @@ public class MacrocycleAllocationTests
 {
     private static readonly string CustomKey = CustomTemplateKey.For(Guid.NewGuid());
 
+    /// <summary>
+    /// Ugrađeni blok stoji drugi, na čekanju. Prvi se generiše odmah, pa bi ga upis nazad pri
+    /// generisanju ispravio i bez pravila pri pravljenju; blok na čekanju štiti samo ono.
+    /// Izmereno: sa ugrađenim blokom na prvom mestu vraćanje tog mesta je ostajalo zeleno.
+    /// </summary>
     [Fact]
     public async Task ABuiltInBlock_IsStoredBalanced_ACustomOneKeepsTheChoice()
     {
@@ -35,15 +40,15 @@ public class MacrocycleAllocationTests
             StartDate = new DateTime(2026, 11, 9, 0, 0, 0, DateTimeKind.Utc),
             Blocks =
             [
-                Block("upper-lower", SetAllocation.FollowTemplate),
-                Block(CustomKey, SetAllocation.FollowTemplate)
+                Block(CustomKey, SetAllocation.FollowTemplate),
+                Block("upper-lower", SetAllocation.FollowTemplate)
             ]
         });
 
         Assert.Equal(
-            [SetAllocation.TargetVolume, SetAllocation.FollowTemplate],
+            [SetAllocation.FollowTemplate, SetAllocation.TargetVolume],
             plan.Blocks.OrderBy(block => block.Order).Select(block => block.SetAllocation));
-        Assert.Equal(SetAllocation.TargetVolume, generator.Requests.Single().SetAllocation);
+        Assert.Equal(SetAllocation.FollowTemplate, generator.Requests.Single().SetAllocation);
     }
 
     /// <summary>
