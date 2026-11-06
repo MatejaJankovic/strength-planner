@@ -156,6 +156,7 @@ uz ugrađeni šablon). Svaka grana sa izmenom koda ima merenje vraćanjem, a sva
 | [Test-harness za servise](service-harness.md) | Pravilo u servisu (#74, #99, #101) moglo je da se vrati uz ceo paket zelen; sada ga hvataju testovi nad servisom, osim dva pozivaoca iz #74 | #104 |
 | [Leđa naprednog u bloku snage na Full Body](full-body-strength-back.md) | Leđa 11 naspram MEV-a 12 u lakšim nedeljama; Face Pull umesto Rear Delt Fly ih diže na 12.5 bez nove rupe, a biceps (9.5 naspram 10) je zakucan testom | #105 |
 | [Nov maksimum preračunava prvu nedelju](recompute-pending-targets.md) | Test-serija posle pauze je sklanjala napomenu, a ne i opterećenje prve nedelje, jer je ono upisano pri generisanju | #106 |
+| [Stilovi ekrana treninga](workout-session-styles.md) | `workout-session.scss` je bio na 7.93 od tvrdih 8 kB; spojeni ponovljeni blokovi, 7.48 kB; jedina promena izgleda je beleška ispod unosa (0.8 → 0.82 rem) | #107 |
 
 ## Ako čitaš samo jedno
 
