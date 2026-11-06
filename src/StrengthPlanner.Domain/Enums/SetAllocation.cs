@@ -20,8 +20,10 @@ public enum SetAllocation
     TargetVolume = 0,
 
     /// <summary>
-    /// Serije ostaju onakve kakve ih propis daje. Nedeljni volumen tada može da ostane
-    /// ispod ciljne zone, i sistem ga neće ispravljati — to je i smisao ovog izbora.
+    /// Serije ostaju onakve kakve ih propis daje: broj iz šablona, uz pomeranja izabranog
+    /// rasporeda. Nedeljni volumen tada može da ostane ispod ciljne zone ili da pređe MRV,
+    /// i sistem ga neće ispravljati — to je i smisao ovog izbora. Važi samo uz lični šablon
+    /// (<c>SetAllocationRule</c>).
     /// </summary>
     FollowTemplate = 1
 }

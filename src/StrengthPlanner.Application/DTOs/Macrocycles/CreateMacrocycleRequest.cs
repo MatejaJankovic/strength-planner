@@ -37,8 +37,9 @@ public class CreateMacrocycleBlockDto
     public PeriodizationModel PeriodizationModel { get; set; } = PeriodizationModel.Flat;
 
     /// <summary>
-    /// Ko odlučuje o broju serija: ciljni volumen po mišiću, ili propis iz šablona
-    /// doslovno. Izostavljeno znači ciljni volumen — zatečeno ponašanje.
+    /// Ko odlučuje o broju serija: ciljni volumen po mišiću, ili propis iz šablona (uz
+    /// pomeranja izabranog rasporeda). Izostavljeno znači ciljni volumen — zatečeno
+    /// ponašanje. Uz ugrađeni šablon se „prati šablon" zanemaruje i blok se balansira.
     /// </summary>
     [DefinedEnum]
     public SetAllocation SetAllocation { get; set; } = SetAllocation.TargetVolume;

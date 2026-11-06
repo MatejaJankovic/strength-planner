@@ -146,7 +146,7 @@ export class PlanHome {
       value: SetAllocation.FollowTemplate,
       label: 'Prati moj šablon',
       effect:
-        'Ostaje tačno onoliko serija koliko si uneo. Nedeljni volumen može ostati ispod cilja i sistem ga neće ispravljati.',
+        'Serije polaze od tvog šablona i menjaju se samo po izabranom rasporedu. Sistem ih ne prilagođava cilju, pa nedelja može ostati ispod cilja ili preći granicu oporavka (MRV).',
     },
   ];
 

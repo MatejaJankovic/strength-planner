@@ -247,6 +247,19 @@ describe('PlanHome - sadržaj šablona u čarobnjaku', () => {
     expect(component().offersAllocationChoice('custom:abc')).toBe(true);
   });
 
+  it('polje „Broj serija" prikazuje samo uz lični šablon', async () => {
+    openWizard();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const field = () => fixture.nativeElement.querySelector('#block-sets-0');
+    expect(field()).toBeNull();
+
+    component().setBlockTemplate(0, 'custom:abc');
+    fixture.detectChanges();
+    expect(field()).not.toBeNull();
+  });
+
   it('prelaz na ugrađeni šablon vraća balansiranje', async () => {
     openWizard();
     await fixture.whenStable();

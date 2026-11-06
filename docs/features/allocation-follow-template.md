@@ -2,17 +2,31 @@
 
 **Grana:** `fix/allocation-follow-template`
 
-Iz revizije nauke o treningu (odeljak F), nalaz N1. Odluka vlasnika (5. 11. 2026): izbor samo
-za lični šablon; za ugrađeni server uvek balansira, a klijent opciju ne prikazuje.
+Problem je zabeležen kao zaseban zadatak u
+[experience-volume-consistency.md](experience-volume-consistency.md) (runda 14). Odluka vlasnika
+(5. 11. 2026): izbor samo za lični šablon; za ugrađeni server uvek balansira, a klijent opciju
+ne prikazuje.
 
 ## Problem
 
 Izbor „Broj serija → Prati moj šablon" ([set-allocation-choice.md](set-allocation-choice.md))
 uveden je zbog ličnog šablona: otkucano „3 serije" je namera. Ali čarobnjak ga je nudio uz
 svaki šablon. Ugrađeni šablon nosi raspored vežbi, a ne nameru o volumenu, i njegov propis
-nije pravljen da poštuje granicu oporavka. Kad se prati doslovno, nedelje prelaze MRV na
-svakom nivou: u reviziji je to bilo 68 nedelja-mišića za naprednog, 305 za srednji nivo i 244
-za početnika. Tekst uz izbor je pritom govorio samo da volumen „može ostati ispod cilja".
+nije pravljen da poštuje granicu oporavka. Kad se prati doslovno, periodizovani blokovi prelaze
+MRV na svakom nivou. Izmereno na ovoj grani, preko svih ugrađenih trenažnih nedelja (propis
+pre balansiranja naspram MRV-a nivoa, broj nedelja-mišića):
+
+| Model | Napredni | Srednji | Početnik |
+|---|---|---|---|
+| ravan | 0 | 0 | 0 |
+| linearan (rastući, predlog) | 10 | 72 | 48 |
+| obrnut | 19 | 90 | 69 |
+| linearan (stari) | 38 | 122 | 106 |
+| **ukupno** | **67** | **284** | **223** |
+
+U modelima koje čarobnjak nudi to je 29 / 162 / 117. (Beleška iz #92 je navodila 68 / 305 /
+244; doprinosi mišića su se od tada menjali, pa je broj izmeren ponovo.) Tekst uz izbor je
+pritom govorio samo da volumen „može ostati ispod cilja".
 
 ## Šta je urađeno
 
@@ -24,11 +38,18 @@ za početnika. Tekst uz izbor je pritom govorio samo da volumen „može ostati 
     uz ugrađeni šablon. Blok se generiše tek kad mu dođe red, pa ovo pokriva i takve blokove.
 - Čarobnjak plana prikazuje polje „Broj serija" samo uz lični šablon. Prelaz bloka na ugrađeni
   šablon vraća izbor na balansiranje, da ne ostane upisan izbor koji meni više ne prikazuje.
-- Uputstvo, u pitanju o ličnom šablonu, to sada kaže.
+- Pravilo se primenjuje na jednom mestu u servisu (`AllocationFor`), a pri generisanju se
+  ispravljen izbor upisuje i nazad na blok, da blok i mezociklus ne kažu dve različite stvari.
+- **Tekst uz izbor je ispravljen i za lični šablon.** Ranije je govorio „ostaje tačno onoliko
+  serija koliko si uneo", ali raspored i dalje pomera broj serija (linearan: 2 / 3 / 3 / 4 / 4 uz
+  unetih 3), a bez balansiranja nema ni granice po treningu ni MRV-a. Sada kaže da serije
+  polaze od šablona, menjaju se po rasporedu i mogu ostati ispod cilja ili preći MRV. Isto
+  kaže i uputstvo, u pitanju o ličnom šablonu.
 
 **Već generisani blokovi se ne prepisuju.** U razvojnoj bazi 10 blokova nosi „Prati moj
 šablon" uz ugrađeni šablon. Svi su već generisani, a 3 su aktivna. Pravilo iz runde 12 važi i
-ovde: blok koji je već propisan se ne menja ispod vežbača.
+ovde: blok koji je već propisan se ne menja ispod vežbača. Cena je da ta 3 aktivna bloka do
+kraja zadržavaju nedelje iznad MRV-a, bez balansiranja.
 
 ## Provera
 

@@ -28,8 +28,9 @@ public class MacrocycleBlock
 
     /// <summary>
     /// Ko odlučuje o broju serija u ovom bloku. Bira se po bloku, kao i model
-    /// periodizacije: isti plan sme da ima blok koji prati lični šablon doslovno i blok
-    /// koji cilja volumen.
+    /// periodizacije: isti plan sme da ima blok koji prati lični šablon i blok koji cilja
+    /// volumen. Uz ugrađeni šablon je uvek <see cref="SetAllocation.TargetVolume"/>
+    /// (<c>SetAllocationRule</c>).
     /// </summary>
     public SetAllocation SetAllocation { get; set; } = SetAllocation.TargetVolume;
 
