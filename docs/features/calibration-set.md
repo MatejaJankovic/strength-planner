@@ -108,8 +108,15 @@ završi propisom koji ne staje u 12 ponavljanja, i tada kalibracije nema.
 |---|---|
 | kalibracija i za početnika | 2 |
 | bez granice od 12 ponavljanja | 4 |
-| kalibracioni otkaz opet u udelu otkaza | 1 |
+| kalibracioni otkaz opet u udelu otkaza (granice) | 1 |
+| kalibracioni otkaz opet u udelu otkaza (ocena umora) | 1 |
+| uslov „prva serija" uklonjen | 2 (pre pregleda 0) |
 | oznaka u DTO-u ekrana uvek netačna | 1 (pre servisnog testa 0) |
+| kalibraciona serija opet u poređenju snage (granice, pa ocena umora) | **0 i 0** |
+
+Poslednji red je rupa koja ostaje: da bi se izmerio, test bi morao da napravi dve nedelje sa
+namerno uporedivim serijama i, kod ocene umora, potvrđen pad kroz dve nedelje. Izmena je jedan
+`Where` nad istim skupom koji drže testovi iznad.
 
 - Uživo, na 375 px, nalog za testiranje, novi blok snage (Upper/Lower, ravan, srednji nivo),
   trening Upper A treće nedelje:
@@ -117,7 +124,10 @@ završi propisom koji ne staje u 12 ponavljanja, i tada kalibracije nema.
   - polje piše „Ponavljanja · do otkaza", a kvačica je uključena;
   - 7 ponavljanja do otkaza ne daje napomenu ispod unosa;
   - posle upisa nema napomene o kalibraciji, polje piše „cilj 6", a kvačica je isključena;
-  - nema prelivanja.
+  - nema prelivanja;
+  - posle pregleda: brisanje upisane kalibracione serije vraća natpis „do otkaza", kvačicu i
+    napomenu, a izmena upisane prve serije (12 do otkaza na 3-6) zadržava „do otkaza" i ne daje
+    napomenu ispod unosa.
 
 ## Šta ovo ne rešava
 
