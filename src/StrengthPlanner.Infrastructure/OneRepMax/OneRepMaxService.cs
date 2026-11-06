@@ -66,6 +66,7 @@ public class OneRepMaxService : IOneRepMaxService
 
         _db.OneRepMaxRecords.Add(record);
         await _db.SaveChangesAsync(cancellationToken);
+        await RefreshWeekOneTargetsAsync(userId, request.ExerciseId, cancellationToken);
 
         return ToDto(record, exercise.Name);
     }
@@ -121,6 +122,7 @@ public class OneRepMaxService : IOneRepMaxService
 
         _db.OneRepMaxRecords.Add(record);
         await _db.SaveChangesAsync(cancellationToken);
+        await RefreshWeekOneTargetsAsync(userId, request.ExerciseId, cancellationToken);
 
         return ToDto(record, exercise.Name);
     }
@@ -130,14 +132,23 @@ public class OneRepMaxService : IOneRepMaxService
         Guid recordId,
         CancellationToken cancellationToken = default)
     {
+        var exerciseId = await _db.OneRepMaxRecords
+            .Where(record => record.Id == recordId && record.UserId == userId)
+            .Select(record => (Guid?)record.ExerciseId)
+            .FirstOrDefaultAsync(cancellationToken);
+
         var removed = await _db.OneRepMaxRecords
             .Where(record => record.Id == recordId && record.UserId == userId)
             .ExecuteDeleteAsync(cancellationToken);
 
-        if (removed == 0)
+        if (removed == 0 || exerciseId is null)
         {
             throw new TrainingLogException(TrainingLogErrorType.NotFound, "One-rep max record was not found.");
         }
+
+        // Obrisan zapis menja i to od kog maksimuma plan polazi, pa i opterećenja koja iz
+        // njega još stoje.
+        await RefreshWeekOneTargetsAsync(userId, exerciseId.Value, cancellationToken);
     }
 
     public async Task<IReadOnlyList<OneRepMaxDto>> GetCurrentAsync(
@@ -220,6 +231,71 @@ public class OneRepMaxService : IOneRepMaxService
                 RecordedAt = record.RecordedAt
             })
             .ToListAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Rewrites the stored week-one targets of this exercise that still follow the maximum
+    /// (<see cref="GeneratedTarget.FollowsTheMaximum"/>), from the maximum the planner would
+    /// now start from, by the same rule the generator used (<see cref="StartingLoad"/>).
+    ///
+    /// Without this a new maximum or test set changed the notice on the workout screen but
+    /// not the load on the bar: week one is the only week whose target is written at
+    /// generation, and nothing rewrote it.
+    /// </summary>
+    private async Task RefreshWeekOneTargetsAsync(Guid userId, Guid exerciseId, CancellationToken cancellationToken)
+    {
+        var candidates = await _db.ExercisePlans
+            .Include(plan => plan.WorkoutSession)
+                .ThenInclude(session => session.TrainingWeek)
+            .Where(plan => plan.ExerciseId == exerciseId
+                           && plan.TargetWeightKg != null
+                           && plan.WorkoutSession.TrainingWeek.Mesocycle.UserId == userId
+                           && plan.WorkoutSession.TrainingWeek.Mesocycle.IsActive)
+            .ToListAsync(cancellationToken);
+
+        var plans = candidates
+            .Where(plan => GeneratedTarget.FollowsTheMaximum(
+                plan.WorkoutSession.TrainingWeek.WeekNumber,
+                plan.WorkoutSession.Status))
+            .ToList();
+
+        if (plans.Count == 0)
+        {
+            return;
+        }
+
+        var samples = await _db.OneRepMaxRecords
+            .AsNoTracking()
+            .Where(record => record.UserId == userId && record.ExerciseId == exerciseId)
+            .Select(record => new OneRepMaxSample(record.ValueKg, record.Source, record.RecordedAt))
+            .ToListAsync(cancellationToken);
+
+        // Isti izbor kao pri generisanju bloka: prazan prozor pada na najnoviji zapis ikada.
+        var oneRepMax = OneRepMaxBaseline.Select(
+            samples,
+            DateTime.UtcNow,
+            TrainingConstants.OneRepMaxLookbackDays,
+            allowStaleFallback: true);
+
+        var stepKg = WeightStepResolver.StepFor(
+            await WeightStepResolver.ResolveAsync(_db, userId, [exerciseId], cancellationToken),
+            exerciseId);
+        var bodyweightLoadKg = BodyweightPortionResolver.PortionFor(
+            await BodyweightPortionResolver.ResolveAsync(_db, userId, [exerciseId], cancellationToken),
+            exerciseId);
+
+        foreach (var plan in plans)
+        {
+            plan.TargetWeightKg = StartingLoad.FromOneRepMax(
+                _calculator,
+                oneRepMax,
+                plan.RepRangeMin,
+                plan.TargetRir,
+                bodyweightLoadKg,
+                stepKg);
+        }
+
+        await _db.SaveChangesAsync(cancellationToken);
     }
 
     private static OneRepMaxDto ToDto(OneRepMaxRecord record, string exerciseName)
