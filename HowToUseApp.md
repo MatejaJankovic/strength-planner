@@ -584,6 +584,9 @@ Prednji i zadnji deltoid broje samo direktan rad (potisak iznad glave, odnosno R
 Face Pull), a minimum im je **nula**: potisci za grudi rade prednji deltoid, a veslanja zadnji,
 pa direktan rad za njih nije obavezan nego dodatak. Bočni deltoid gradi samo bočno podizanje
 (potisak iznad glave mu daje pola serije), pa ga ugrađeni šabloni imaju bar dva puta nedeljno.
+Gde u treningu nije bilo mesta, ustupili su trbuh ili listovi. Na oba Full Body šablona sada
+nijedan nivo nema vežbu za trbuh (ranije ju je dobijao samo napredni u hipertrofiji), na Full Body nijedan nivo
+nema ni vežbu za listove, a početnik na Push/Pull/Legs nema vežbu za trbuh.
 Leđa su i dalje jedna grupa za latove, gornja leđa i opružače.
 
 Boja trake govori da li si ispod, u zoni ili iznad. **Ne broji se svaka serija isto**:
@@ -991,7 +994,8 @@ volumen jednog mišića pada u jedan trening, a u jednom treningu korisno staje 
 Biceps gubi i pola serije sa svakom skinutom serijom veslanja ili zgiba, a zadnji deltoid
 seriju Face Pull-a kad granica skida rad za leđa. Kod početnika je Barbell Curl druga izolacija
 Pull dana, pa biceps ni u jednoj nedelji ne pada ispod minimuma (MEV 6); u nedeljama volumena
-granica ga spušta sa 13,5 na 10,5. Za više volumena uzmi
+granica ga spušta sa 13,5 na 10,5. Cena je trbuh: Cable Crunch je ustupio mesto drugom bočnom
+podizanju, pa početnik na ovom šablonu nema vežbu za trbuh. Za više volumena uzmi
 šablon koji mišić trenira dva puta nedeljno (Upper/Lower, Full Body, Push/Pull/Legs x2).
 
 **Promenio sam nivo iskustva usred bloka.**

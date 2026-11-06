@@ -71,7 +71,7 @@ runde 13.
 | Full Body (2 dana) | Day B: bočno podizanje posle pregiba (ispred bi srednjem nivou uzelo jedini biceps) |
 | Full Body | Day A: bočno podizanje prva izolacija; dodato na Day B i Day C (na C posle Hammer Curl-a, zbog #105) |
 | Push/Pull/Legs | Push: bočno podizanje prva izolacija; Pull: umesto Cable Crunch-a |
-| Upper/Lower | Upper A: posle Triceps Pushdown-a; Lower A: umesto Leg Extension-a |
+| Upper/Lower | Lower A: umesto Leg Extension-a, posle listova (pre pregleda je stajalo ispred njih, pa je početnik ostajao bez listova) |
 | Upper/Lower + PPL | Lower: umesto Leg Extension-a (ostaje na Legs danu) |
 | Push/Pull/Legs x2 | Legs A: umesto Leg Extension-a (ostaje na Legs B) |
 | Legs Specialization | Legs A: dodato bočno podizanje (dan za noge ima vremena, a nema volumena za noge, runda 13) |
@@ -79,11 +79,20 @@ runde 13.
 
 ### Rezultat, parovi nedelja-mišić
 
-| | ispod MEV-a, bočni deltoid / rame | ispod MEV-a, svi mišići | iznad MRV-a |
-|---|---|---|---|
-| zbirna grupa, stari šabloni | 58 (rame) | 803 | 0 |
-| glave, stari šabloni | 486 | 1230 | 0 |
-| **glave, novi šabloni** | **70** | **684** | **0** |
+Brojano na dva načina. Prva kolona broji samo mišiće koje nedelja trenira, kako je merila
+pretraga. Druga mišić bez ijedne serije broji kao nula serija, dakle ispod MEV-a. Pregled je
+pokazao da prvi način ne vidi trbuh ili listove koje izmena izbaci u celosti.
+
+| | bočni deltoid / rame | svi mišići, samo trenirani | svi mišići, i netrenirani | iznad MRV-a |
+|---|---|---|---|---|
+| zbirna grupa, stari šabloni | 58 (rame) | 803 | 1451 | 0 |
+| glave, stari šabloni | 486 | 1231 | 1879 | 0 |
+| **glave, novi šabloni** | **70** | **716** | **1454** | **0** |
+
+Ukupno je to **ravno**: 1451 → 1454. Izmena ne popravlja volumen celog tela, nego ga preraspodeljuje.
+Bočni deltoid, koji je zbirna grupa samo skrivala, dobija rad, a plaćaju ga trbuh i listovi, po
+pravilu koje šabloni već imaju: kad u treningu nema mesta, oni ustupaju. Prema istim šablonima
+bez izmene (1879), izmena je jasno bolja.
 
 Bočno podizanje preko svih ugrađenih nedelja: 4598 → 9246 serija. Srednji nivo, hipertrofija, ravan
 blok: bočni deltoid 15 uz cilj 16 na Full Body, PPL, Upper/Lower + PPL i PPL x2, a 12 na
@@ -92,12 +101,21 @@ i Upper/Lower x3 su već imali dva bočna podizanja (15 i 12), pa nisu menjani.
 
 ### Cena, rečena testovima
 
+- **Pet parova nivo × cilj bez ijedne serije trbuha ili listova**: trbuh naprednog u
+  hipertrofiji na Full Body i Full Body (2 dana), listovi naprednog u hipertrofiji na Full Body
+  i trbuh početnika na Push/Pull/Legs, u hipertrofiji i u snazi. Na oba Full Body šablona
+  trbuh je i pre ove grane imao samo napredni u hipertrofiji, pa ga sada nema nijedan nivo; na
+  Full Body isto važi i za listove. Nivo koji uzima manje vežbi više
+  ne stigne do vežbe ispred koje je stalo bočno podizanje. Test
+  `OnlyAbsAndCalves_AreEverLeftWithoutASet` drži tačan spisak (41 par, ranije 36) i pravilo
+  da bez serija smeju ostati samo trbuh i listovi. Na Upper/Lower je početnik prvo ostajao bez
+  listova; posle pregleda bočno podizanje na Lower A stoji posle njih, i ta rupa ne postoji.
 - **Trbuh na Push/Pull/Legs, srednji nivo, propis 4 naspram MEV-a 6.** Srednji nivo uzima dve
   složene vežbe i četiri izolacije po treningu, pa tri dana imaju dvanaest mesta za izolacije, i
   sva su bila zauzeta. Drugo bočno podizanje je moralo nekome da uzme mesto. Uzelo ga je od
   trbuha, po istom pravilu koje testovi već imaju za listove i trbuh: kad nema mesta, oni ustupaju.
   `TemplatesOfThreeDaysOrMore_ReachMevAtTheReferenceLevel` ga ima kao imenovan izuzetak, a
-  izuzetak mora i da postoji.
+  izuzetak mora i da postoji, sa tačno tim brojem.
 - **Napredni u bloku snage na Full Body:** leđa 11.5 i zadnja loža 6.5, svaki u tri nedelje
   (prva nedelja linearnog modela, prve dve obrnutog). Zadnja loža: bočno podizanje na Day C stoji ispred Leg Curl-a,
   a napredni uzima četiri izolacije. Leđa: cilj zadnjeg deltoida u bloku snage je na pola puta od
@@ -122,7 +140,8 @@ vežbi i nijedan red lične vežbe.
   Prednji i zadnji deltoid polaze od svojih seed vrednosti, jer o njima zasebno ništa nije
   naučeno.
 - Lična vežba sa udelom „Shoulders" prelazi na bočni deltoid: ostaje u istom budžetu, sa istim
-  brojevima. Koju glavu lična vežba radi, iz reda se ne vidi, a vežbač može da je izmeni.
+  brojevima. Koju glavu lična vežba radi, iz reda se ne vidi. Aplikacija nema izmenu mišića
+  postojeće vežbe, pa vežbač koji želi drugu glavu pravi vežbu ponovo.
 - „Shoulders" se briše. Kaskada nosi njen seed, naučene granice i redove sistemskih vežbi, a
   usklađivanje kataloga pri startu (`ReconcileSystemExercisesAsync`) upisuje doprinose glava.
 - `Down` vraća sve u jednu grupu: naučene granice bočnog deltoida postaju granice ramena, a lična
@@ -134,11 +153,25 @@ Provera posle primene: naučene granice bočnog deltoida su red po red iste kao 
 
 Analitika ne čuva zbirove, nego ih računa pri čitanju, pa se i istorija sada prikazuje po glavama.
 
+## Šta je pregled još našao
+
+- **Učenje granica sa MEV-om nula.** Pravilo koje spušta MRV traži da je nedelja trenirala bar
+  na minimumu. Sa minimumom nula to uvek prolazi, pa su tri teške serije prednjeg deltoida
+  spuštale MRV svake nedelje (10 → 5 za pet nedelja), a MAV za njim, bez ikakvog dokaza o
+  snazi. Za mišić sa MEV-om nula o oporavku sada govori samo nedelja blizu cilja (90% MAV-a),
+  isto kao za sam cilj. Svaki MEV veći od nule zadržava staro pravilo. Vraćanje obara 1 test.
+- Komentari u šablonima su govorili da jedno podizanje nedeljno daje 6 serija. To je propis;
+  posle balansiranja je 9, uz cilj 16.
+- Prikaz: prednji deltoid sa 0 serija je zelen („optimalno"), jer je minimum nula. To je
+  namera, ali ume da izgleda čudno kad plan nema nijedan potisak iznad glave (srednji nivo na
+  Upper/Lower uzima samo dve složene vežbe). Ostavljeno tako.
+
 ## Provera
 
-- `dotnet test`: **891** (bilo 885); `npm test`: 209; `npm run build` prolazi.
-- Novi testovi: MEV nula ostaje nula pri skaliranju (3 nivoa) i pri učenju granica; podela
-  zadržava seed ramena na bočnom deltoidu; samo direktan rad ulazi u prednji i zadnji deltoid.
+- `dotnet test`: **893** (bilo 885); `npm test`: 209; `npm run build` prolazi.
+- Novi testovi: MEV nula ostaje nula pri skaliranju (3 nivoa) i pri učenju granica; laka teška
+  nedelja ne spušta MRV mišiću sa MEV-om nula; podela zadržava seed ramena na bočnom deltoidu;
+  samo direktan rad ulazi u prednji i zadnji deltoid; bez serija ostaju samo trbuh i listovi.
 - Merenje vraćanjem, jedna izmena po merenju:
 
 | Vraćeno | Obara |

@@ -154,6 +154,8 @@ public class SessionVolumeCeilingTests
             changedWithoutCause.SequenceEqual(breachedOnlyInThePrescription),
             string.Join(Environment.NewLine, changedWithoutCause.Take(20)));
 
+        // Prazan spisak ovu petlju trenutno čini praznom; ostaje da bi nova nedelja na spisku
+        // morala da dokaže da propis zaista prelazi granicu.
         foreach (var week in TemplateWeekSimulation.EveryTrainingWeek().Where(week => breachedOnlyInThePrescription.Contains(week.Name)))
         {
             var prescribed = week.Slots.ToDictionary(slot => slot.Id, slot => slot.PrescribedSets);

@@ -16,7 +16,8 @@ namespace StrengthPlanner.Infrastructure.Persistence.Migrations
     /// from their own seeds: nothing was ever learned about them separately.</item>
     /// <item>A custom exercise's "Shoulders" contribution moves to "Side Delts", which keeps
     /// it in the same budget, with the same numbers, as before. Which head a lifter's own
-    /// exercise trains cannot be read from the row; the lifter can edit it.</item>
+    /// exercise trains cannot be read from the row, and the app has no way to edit an
+    /// exercise's muscles, so a lifter who wants another head recreates the exercise.</item>
     /// <item>System exercises lose their "Shoulders" rows with the group, and the seeder's
     /// reconciliation writes the head contributions from the catalogue on the next start,
     /// as it does for every catalogue change.</item>

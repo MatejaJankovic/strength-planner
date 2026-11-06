@@ -420,7 +420,7 @@ public class WorkoutTemplateCatalogTests
     [Fact]
     public void TemplatesOfThreeDaysOrMore_ReachMevAtTheReferenceLevel()
     {
-        const string NoRoomForAbs = "Intermediate Hypertrophy push-pull-legs/Abs:";
+        const string NoRoomForAbs = "Intermediate Hypertrophy push-pull-legs/Abs: 4.0 serija je ispod MEV 6.";
 
         var breaches = Breaches(
             ExperienceLevel.Intermediate,
@@ -429,8 +429,8 @@ public class WorkoutTemplateCatalogTests
             band => band.Mev,
             template => template.Days.Count >= 3);
 
-        Assert.Contains(breaches, breach => breach.StartsWith(NoRoomForAbs, StringComparison.Ordinal));
-        breaches.RemoveAll(breach => breach.StartsWith(NoRoomForAbs, StringComparison.Ordinal));
+        Assert.Contains(NoRoomForAbs, breaches);
+        breaches.Remove(NoRoomForAbs);
         Assert.True(breaches.Count == 0, string.Join(Environment.NewLine, breaches));
     }
 
@@ -465,6 +465,57 @@ public class WorkoutTemplateCatalogTests
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Kad u treningu nema mesta, ustupaju trbuh i listovi (vidi gore), i samo oni smeju da
+    /// ostanu bez ijedne serije. Prethodni test proverava samo da li šablon mišić uopšte ima,
+    /// a nivo koji uzima manje vežbi ume da ga izgubi u celosti; to se ovde broji na predlogu,
+    /// po paru nivo × cilj, u osnovnoj nedelji ravnog bloka.
+    ///
+    /// Spisak je zabeležen tačno. Podela ramena (R5) mu je dodala pet parova: trbuh naprednog
+    /// u hipertrofiji na oba Full Body šablona, listove naprednog na Full Body i trbuh
+    /// početnika na Push/Pull/Legs, jer je drugo bočno podizanje uzelo mesto vežbe koju taj
+    /// nivo više ne stigne (pregled #109).
+    /// </summary>
+    [Fact]
+    public void OnlyAbsAndCalves_AreEverLeftWithoutASet()
+    {
+        var untrained = new SortedDictionary<string, int>();
+
+        foreach (var template in WorkoutTemplateCatalog.GetAll())
+        foreach (var level in Enum.GetValues<ExperienceLevel>())
+        foreach (var goal in Enum.GetValues<Goal>())
+        {
+            var week = TemplateWeekSimulation.Build(template, level, goal, PeriodizationModel.Flat, 1);
+
+            foreach (var seed in ExerciseCatalog.VolumeLandmarks.Where(seed => seed.Mev > 0))
+            {
+                if (week.Weekly(seed.Muscle) == 0m)
+                {
+                    var key = $"{template.Key}/{seed.Muscle}";
+                    untrained[key] = untrained.GetValueOrDefault(key) + 1;
+                }
+            }
+        }
+
+        var recorded = new SortedDictionary<string, int>
+        {
+            ["full-body/Abs"] = 6,
+            ["full-body/Calves"] = 6,
+            ["full-body-2/Abs"] = 6,
+            ["full-body-2/Calves"] = 5,
+            ["full-body-4/Abs"] = 5,
+            ["full-body-4/Calves"] = 5,
+            ["push-pull-legs/Abs"] = 2,
+            ["push-pull-legs/Calves"] = 2,
+            ["push-pull-legs-6/Abs"] = 2,
+            ["upper-lower-ppl/Abs"] = 2,
+        };
+
+        Assert.Equal(
+            recorded.Select(entry => $"{entry.Key}: {entry.Value}"),
+            untrained.Select(entry => $"{entry.Key}: {entry.Value}"));
     }
 
     /// <summary>

@@ -103,8 +103,9 @@ public static class WorkoutTemplateCatalog
             [
                 // Bočno podizanje je prva izolacija Push dana i dodato je na Pull dan, umesto
                 // Cable Crunch-a (trbuh ostaje na Legs danu). Sa jednim podizanjem nedeljno bočni
-                // deltoid nije mogao preko 6 serija, jer ga balansiranje pomera najviše za dve
-                // serije. Face Pull je ostao: to je jedini direktan rad za zadnji deltoid (R5).
+                // deltoid je imao 6 serija u propisu i 9 posle balansiranja, uz cilj 16:
+                // balansiranje vežbu pomera najviše za dve serije. Face Pull je ostao, jer je to
+                // jedini direktan rad za zadnji deltoid. Početnik zato ovde nema trbuh (R5).
                 new("Push",
                 [
                     "Bench Press", "Overhead Press", "Incline Bench Press",
@@ -134,15 +135,16 @@ public static class WorkoutTemplateCatalog
                 new("Upper A",
                 [
                     "Bench Press", "Barbell Row", "Overhead Press",
-                    "Cable Fly", "Triceps Pushdown", "Lateral Raise", "Barbell Curl", "Face Pull"
+                    "Cable Fly", "Lateral Raise", "Triceps Pushdown", "Barbell Curl", "Face Pull"
                 ]),
                 // Bočno podizanje na danu za noge, umesto Leg Extension-a: na Upper B je svaka
                 // izolacija jedina za svoj mišić u danu, a kvadriceps ostaje iznad MEV-a od
-                // čučnjeva, iskoraka i Leg Extension-a na Lower B (R5, izmereno).
+                // čučnjeva, iskoraka i Leg Extension-a na Lower B (R5, izmereno). Stoji posle
+                // listova: početnik uzima dve izolacije, a ovo su mu jedini listovi u nedelji.
                 new("Lower A",
                 [
                     "Back Squat", "Romanian Deadlift", "Bulgarian Split Squat",
-                    "Lateral Raise", "Leg Curl", "Calf Raise", "Machine Crunch", "Cable Crunch"
+                    "Leg Curl", "Calf Raise", "Lateral Raise", "Machine Crunch", "Cable Crunch"
                 ]),
                 new("Upper B",
                 [
@@ -203,7 +205,8 @@ public static class WorkoutTemplateCatalog
                     "Cable Fly", "Barbell Curl", "Triceps Pushdown", "Cable Crunch"
                 ]),
                 // Bočno podizanje umesto Leg Extension-a, koji ostaje na Legs danu: jedno podizanje
-                // nedeljno (Push) je bočnom deltoidu davalo 6 serija naspram MEV-a 8 (R5).
+                // nedeljno (Push) je bočnom deltoidu davalo 6 serija u propisu i 9 posle
+                // balansiranja, uz cilj 16 (R5).
                 new("Lower",
                 [
                     "Back Squat", "Romanian Deadlift",
