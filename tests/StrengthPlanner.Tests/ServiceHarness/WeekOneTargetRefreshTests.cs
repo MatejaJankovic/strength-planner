@@ -40,6 +40,24 @@ public class WeekOneTargetRefreshTests
     }
 
     [Fact]
+    public async Task AManualMaximum_RewritesTheWeekOneLoadToo()
+    {
+        using var database = new SqliteDatabase();
+        var row = database.AddExercise("Barbell Row");
+        var plans = await SeedBlockAsync(database, row);
+
+        await using (var db = database.NewContext())
+        {
+            await new OneRepMaxService(db).AddManualAsync(database.UserId, new() { ExerciseId = row, ValueKg = 80m });
+        }
+
+        await using var read = database.NewContext();
+        Assert.Equal(
+            StartingLoad.FromOneRepMax(new E1RmCalculator(), 80m, 8, 1, 0m, 2.5m),
+            await TargetOf(read, plans.WeekOnePlanned));
+    }
+
+    [Fact]
     public async Task DeletingTheOnlyMaximum_LeavesTheWeekOneLoadToBeComputedOnRead()
     {
         using var database = new SqliteDatabase();
