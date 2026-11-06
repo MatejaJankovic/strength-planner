@@ -45,7 +45,7 @@ public static class WorkoutTemplateCatalog
                 new("Day A",
                 [
                     "Back Squat", "Bench Press", "Barbell Row",
-                    "Leg Curl", "Cable Fly", "Lateral Raise", "Triceps Pushdown", "Calf Raise"
+                    "Seated Leg Curl", "Cable Fly", "Lateral Raise", "Triceps Pushdown", "Calf Raise"
                 ]),
                 // Drugo bočno podizanje je dodato kad je rame podeljeno na glave (R5): bočni
                 // deltoid gradi samo ono, a sa jednim podizanjem nedeljno nije stizao do MEV-a
@@ -75,7 +75,7 @@ public static class WorkoutTemplateCatalog
                 new("Day A",
                 [
                     "Back Squat", "Bench Press", "Barbell Row",
-                    "Lateral Raise", "Leg Curl", "Straight-Arm Pulldown", "Cable Fly", "Triceps Pushdown"
+                    "Lateral Raise", "Seated Leg Curl", "Straight-Arm Pulldown", "Cable Fly", "Triceps Pushdown"
                 ]),
                 // Face Pull umesto Rear Delt Fly: isto radi zadnji deltoid, a daje i pola serije
                 // za leđa. Bez toga napredni u bloku snage, koji uzima samo dve složene vežbe,
@@ -89,12 +89,12 @@ public static class WorkoutTemplateCatalog
                 ]),
                 // Hammer Curl pre Face Pull-a: početnik uzima samo dve izolacije, i ovako dobija
                 // prvu direktnu vežbu za biceps u celom šablonu. Bočno podizanje zato stoji tek
-                // posle njega, jer bi ispred početniku opet uzelo jedini biceps. Cena je Leg Curl
+                // posle njega, jer bi ispred početniku opet uzelo jedini biceps. Cena je Seated Leg Curl
                 // naprednog u bloku snage (vidi AnAdvancedStrengthBlockOnFullBody_...).
                 new("Day C",
                 [
                     "Pull-up", "Front Squat", "Dumbbell Bench Press",
-                    "Dumbbell Fly", "Hammer Curl", "Lateral Raise", "Face Pull", "Leg Curl", "Calf Raise"
+                    "Dumbbell Fly", "Hammer Curl", "Lateral Raise", "Face Pull", "Seated Leg Curl", "Calf Raise"
                 ])
             ]),
         new(
@@ -119,7 +119,7 @@ public static class WorkoutTemplateCatalog
                 new("Legs",
                 [
                     "Back Squat", "Romanian Deadlift", "Goblet Squat",
-                    "Leg Extension", "Leg Curl", "Calf Raise", "Machine Crunch", "Cable Crunch"
+                    "Leg Extension", "Seated Leg Curl", "Calf Raise", "Machine Crunch", "Cable Crunch"
                 ])
             ],
             // Svaki mišić jednom nedeljno, pa ceo nedeljni volumen grudi pada u Push dan.
@@ -144,7 +144,7 @@ public static class WorkoutTemplateCatalog
                 new("Lower A",
                 [
                     "Back Squat", "Romanian Deadlift", "Bulgarian Split Squat",
-                    "Leg Curl", "Calf Raise", "Lateral Raise", "Machine Crunch", "Cable Crunch"
+                    "Seated Leg Curl", "Calf Raise", "Lateral Raise", "Machine Crunch", "Cable Crunch"
                 ]),
                 new("Upper B",
                 [
@@ -157,7 +157,7 @@ public static class WorkoutTemplateCatalog
                 new("Lower B",
                 [
                     "Deadlift", "Front Squat", "Hip Thrust",
-                    "Leg Extension", "Cable Crunch", "Leg Curl", "Calf Raise", "Machine Crunch"
+                    "Leg Extension", "Cable Crunch", "Seated Leg Curl", "Calf Raise", "Machine Crunch"
                 ])
             ]),
         new(
@@ -167,7 +167,7 @@ public static class WorkoutTemplateCatalog
                 new("Day A",
                 [
                     "Back Squat", "Bench Press",
-                    "Leg Curl", "Cable Fly", "Lateral Raise", "Triceps Pushdown", "Cable Crunch"
+                    "Seated Leg Curl", "Cable Fly", "Lateral Raise", "Triceps Pushdown", "Cable Crunch"
                 ]),
                 new("Day B",
                 [
@@ -177,7 +177,7 @@ public static class WorkoutTemplateCatalog
                 new("Day C",
                 [
                     "Overhead Press", "Leg Press",
-                    "Leg Curl", "Dumbbell Fly", "Rear Delt Fly", "Skull Crusher", "Machine Crunch"
+                    "Seated Leg Curl", "Dumbbell Fly", "Rear Delt Fly", "Skull Crusher", "Machine Crunch"
                 ]),
                 new("Day D",
                 [
@@ -210,7 +210,7 @@ public static class WorkoutTemplateCatalog
                 new("Lower",
                 [
                     "Back Squat", "Romanian Deadlift",
-                    "Leg Curl", "Lateral Raise", "Calf Raise", "Machine Crunch"
+                    "Seated Leg Curl", "Lateral Raise", "Calf Raise", "Machine Crunch"
                 ]),
                 new("Push",
                 [
@@ -225,7 +225,7 @@ public static class WorkoutTemplateCatalog
                 new("Legs",
                 [
                     "Leg Press", "Hip Thrust",
-                    "Leg Extension", "Leg Curl", "Calf Raise", "Cable Crunch"
+                    "Leg Extension", "Seated Leg Curl", "Calf Raise", "Cable Crunch"
                 ])
             ]),
         new(
@@ -247,7 +247,7 @@ public static class WorkoutTemplateCatalog
                 new("Legs A",
                 [
                     "Back Squat", "Romanian Deadlift",
-                    "Leg Curl", "Lateral Raise", "Calf Raise", "Cable Crunch"
+                    "Seated Leg Curl", "Lateral Raise", "Calf Raise", "Cable Crunch"
                 ]),
                 new("Push B",
                 [
@@ -262,7 +262,7 @@ public static class WorkoutTemplateCatalog
                 new("Legs B",
                 [
                     "Leg Press", "Hip Thrust",
-                    "Leg Extension", "Leg Curl", "Calf Raise", "Machine Crunch"
+                    "Leg Extension", "Seated Leg Curl", "Calf Raise", "Machine Crunch"
                 ])
             ]),
         new(
@@ -287,7 +287,7 @@ public static class WorkoutTemplateCatalog
                 new("Lower B",
                 [
                     "Deadlift", "Front Squat",
-                    "Leg Curl", "Calf Raise", "Machine Crunch", "Cable Crunch"
+                    "Seated Leg Curl", "Calf Raise", "Machine Crunch", "Cable Crunch"
                 ]),
                 new("Upper C",
                 [
@@ -297,7 +297,7 @@ public static class WorkoutTemplateCatalog
                 new("Lower C",
                 [
                     "Bulgarian Split Squat", "Hip Thrust",
-                    // Ovaj dan nema izolaciju za noge: Leg Curl i Leg Extension su svaki
+                    // Ovaj dan nema izolaciju za noge: Seated Leg Curl i Leg Extension su svaki
                     // jednom potrošeni na Lower A/B, a treći put bi gurnuo kvadriceps ili
                     // zadnju ložu preko MRV na tri treninga za noge nedeljno (izmereno).
                     //
@@ -349,7 +349,7 @@ public static class WorkoutTemplateCatalog
                 new("Legs B",
                 [
                     "Single-Leg Romanian Deadlift", "Front Squat",
-                    "Leg Curl", "Calf Raise", "Machine Crunch", "Cable Crunch"
+                    "Seated Leg Curl", "Calf Raise", "Machine Crunch", "Cable Crunch"
                 ]),
                 new("Upper B",
                 [
@@ -359,7 +359,7 @@ public static class WorkoutTemplateCatalog
                 new("Legs C",
                 [
                     "Step-Up", "Hip Thrust",
-                    // Leg Curl i Leg Extension su svaki jednom potrošeni na Legs A/B; treći
+                    // Seated Leg Curl i Leg Extension su svaki jednom potrošeni na Legs A/B; treći
                     // put bi na tri treninga za noge nedeljno gurnuo kvadriceps ili zadnju
                     // ložu preko MRV (izmereno). Kao i kod Upper/Lower x3, mesto mora da
                     // popuni vežba za gornje telo.

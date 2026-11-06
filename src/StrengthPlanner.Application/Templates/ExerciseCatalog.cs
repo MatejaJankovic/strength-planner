@@ -89,6 +89,12 @@ public static class ExerciseCatalog
             [new("Glutes", 1.0m)]),
         new("Leg Curl", ExerciseType.Isolation, "Machine",
             [new("Hamstrings", 1.0m)]),
+        // Sedeći pregib radi zadnju ložu u izduženom položaju, jer je kuk savijen. Uz isti
+        // volumen dao je veći rast zadnje lože od ležećeg (Maeo i sar. 2021), pa ga ugrađeni
+        // šabloni koriste umesto Leg Curl-a. Leg Curl ostaje zbog zatečenih planova i ličnih
+        // šablona.
+        new("Seated Leg Curl", ExerciseType.Isolation, "Machine",
+            [new("Hamstrings", 1.0m)]),
         new("Leg Extension", ExerciseType.Isolation, "Machine",
             [new("Quads", 1.0m)]),
         new("Calf Raise", ExerciseType.Isolation, "Machine",
@@ -170,6 +176,11 @@ public static class ExerciseCatalog
         new("Dumbbell Curl", ExerciseType.Isolation, "Dumbbell",
             [new("Biceps", 1.0m)]),
         new("Hammer Curl", ExerciseType.Isolation, "Dumbbell",
+            [new("Biceps", 1.0m)]),
+        // Pregib na kosoj klupi radi biceps sa ramenom iza tela, dakle u izduženom položaju.
+        // Dokaz da to daje više rasta je slabiji nego za sedeći pregib nogu, pa po odluci D1
+        // ostaje samo u katalogu: dostupan je kroz zamenu vežbe i lične šablone.
+        new("Incline Dumbbell Curl", ExerciseType.Isolation, "Dumbbell",
             [new("Biceps", 1.0m)]),
         new("Triceps Pushdown", ExerciseType.Isolation, "Cable",
             [new("Triceps", 1.0m)]),

@@ -468,6 +468,27 @@ public class WorkoutTemplateCatalogTests
     }
 
     /// <summary>
+    /// Pregib za zadnju ložu u ugrađenim šablonima je sedeći (A3): uz isti volumen dao je veći
+    /// rast od ležećeg (Maeo i sar. 2021). Udeli su isti, pa nijedan test volumena ne vidi
+    /// razliku; ovaj drži samu odluku. Leg Curl ostaje u katalogu zbog zatečenih planova.
+    /// Incline Dumbbell Curl je samo u katalogu, jer je dokaz za njega slabiji (odluka D1).
+    /// </summary>
+    [Fact]
+    public void BuiltInTemplates_CurlTheHamstringsSeated()
+    {
+        var exercises = WorkoutTemplateCatalog.GetAll()
+            .SelectMany(template => template.Days)
+            .SelectMany(day => day.Exercises)
+            .ToList();
+
+        Assert.DoesNotContain("Leg Curl", exercises);
+        Assert.Contains("Seated Leg Curl", exercises);
+        Assert.DoesNotContain("Incline Dumbbell Curl", exercises);
+        Assert.NotNull(ExerciseCatalog.Find("Leg Curl"));
+        Assert.NotNull(ExerciseCatalog.Find("Incline Dumbbell Curl"));
+    }
+
+    /// <summary>
     /// Kad u treningu nema mesta, ustupaju trbuh i listovi (vidi gore), i samo oni smeju da
     /// ostanu bez ijedne serije. Prethodni test proverava samo da li šablon mišić uopšte ima,
     /// a nivo koji uzima manje vežbi ume da ga izgubi u celosti; to se ovde broji na predlogu,
@@ -730,7 +751,7 @@ public class WorkoutTemplateCatalogTests
         }
 
         // Leđa i zadnja loža su na spisku od podele ramena (R5), svaki za pola serije. Bočno
-        // podizanje na danu C stoji ispred Leg Curl-a, pa ga napredni, koji uzima četiri
+        // podizanje na danu C stoji ispred Seated Leg Curl-a, pa ga napredni, koji uzima četiri
         // izolacije, više ne dobija. A cilj zadnjeg deltoida u bloku snage stoji na pola puta od
         // MEV-a 0 do MAV-a, pa balansiranje skida seriju Face Pull-a, a sa njom pola serije leđa.
         Assert.Equal(
