@@ -17,7 +17,7 @@ public sealed record RirSample(WorkingSet Set, int RepRangeMin, int TargetRir, d
 /// Scores accumulated fatigue from one completed training week and decides whether the
 /// next week should become a deload.
 ///
-/// The planned deload is tied to the calendar — week four of four — which is a guess
+/// The planned deload is tied to the calendar — the last week of the block — which is a guess
 /// about when fatigue will have accumulated, not a measurement of it. A lifter who
 /// stalls in week two carries that fatigue for a fortnight; one still progressing in
 /// week four is deloaded for no reason. The calendar deload stays as a floor, but a
