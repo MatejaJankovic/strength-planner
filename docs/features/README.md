@@ -159,6 +159,7 @@ uz ugrađeni šablon). Svaka grana sa izmenom koda ima merenje vraćanjem, a sva
 | [Stilovi ekrana treninga](workout-session-styles.md) | `workout-session.scss` je bio na 7.93 od tvrdih 8 kB; spojeni ponovljeni blokovi, 7.48 kB; jedina promena izgleda je beleška ispod unosa (0.8 → 0.82 rem) | #107 |
 | [Pravilo koraka: jedna tabela za server i ekran](step-absorption-shared-cases.md) | Kartica je na težini van mreže koraka tražila više ponavljanja nego što progresija traži (9 kg: 16 umesto 12); kopiju pravila na ekranu sada drži zajednička tabela od 5066 slučajeva i test nad samom progresijom | #108 |
 | [Rame po glavama](shoulder-heads.md) | Zbirno „Shoulders" je krilo da bočni deltoid dobija 6–9 serija; sada tri glave sa RP granicama (MEV prednjeg i zadnjeg nula), drugo bočno podizanje u sedam šablona, bočni ispod MEV-a 486 → 70 parova | #109 |
+| [Kalibraciona serija](calibration-set.md) | Svaka procena maksimuma počivala je na proceni rezerve; sada u poslednjoj trenažnoj nedelji prva serija prve vežbe ide do otkaza (srednji i napredni nivo, gde se serija može očitati), a granice volumena taj otkaz ne čitaju kao umor | — |
 
 ## Ako čitaš samo jedno
 

@@ -498,6 +498,25 @@ pravilo.
 
 Grešku ispravljaš ikonicama pored serije: **olovka** za izmenu, **kanta** za brisanje.
 
+> **Kalibraciona serija.** U poslednjoj trenažnoj nedelji bloka (pre deload-a) prva vežba
+> svakog treninga nosi oznaku **„Kalibracija"**, za srednji i napredni nivo. Prvu seriju te
+> vežbe odradi **do otkaza** na predloženoj težini, koliko god ponavljanja stigneš: polje
+> tada piše „Ponavljanja · do otkaza", a kvačica „Serija do otkaza" je već uključena. Ostale
+> serije idu po planu.
+>
+> Svaka druga procena maksimuma počiva na tvojoj proceni rezerve, a ona u proseku greši za
+> oko jedno ponavljanje (Halperin i sar. 2022). Serija do otkaza nema rezervu koju treba
+> proceniti, pa je njena procena najtačnija u bloku. Upisuje se kao i svaka druga procena:
+> ako izađe viša od ostalih, sledeći blok kreće od nje; ako izađe niža, ne poništava ih, jer
+> je poslednja trenažna nedelja ona u kojoj si najumorniji. Granice volumena ovaj otkaz ne
+> čitaju kao znak umora, jer ga je plan propisao.
+>
+> Oznake nema za početnika (opterećenje mu ionako raste svake nedelje), ni gde serija ne bi
+> mogla da se pročita: na propisanoj težini serija do otkaza staje oko vrha opsega plus ciljni
+> RIR, a iznad 12 ponavljanja se procena ne uzima. Zato je nema u poslednjoj nedelji ravnog i
+> obrnutog bloka hipertrofije (8–12 uz RIR 1); linearni blok, koji čarobnjak predlaže, i svaki
+> blok snage je imaju.
+
 > **Kad predlog stane na sopstvenoj masi.** Ako je vežba bila preteška, pravilo bi htelo
 > opterećenje manje od tvog tela — a tu nema šta da se skine. Predlog tada ostaje na
 > „TM", a u rezimeu piše da sledeći put napreduješ kroz ponavljanja, ne kroz kilograme.
