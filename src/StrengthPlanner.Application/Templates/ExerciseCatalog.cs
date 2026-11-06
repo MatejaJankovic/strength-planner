@@ -67,11 +67,12 @@ public static class ExerciseCatalog
             [new("Quads", 1.0m), new("Glutes", 0.5m)]),
         new("Romanian Deadlift", ExerciseType.Compound, "Barbell",
             [new("Hamstrings", 1.0m), new("Glutes", 0.5m), new("Back", 0.5m)]),
-        // Mrtvo dizanje je opružanje kuka: gluteusi i zadnja loža se skraćuju pod
-        // opterećenjem, a leđa (opružači, latovi, trapez) drže kičmu i šipku izometrijski.
-        // Po istom pravilu kao čučanj iznad, pun udeo pripada mišiću koji vrši pokret, pa
-        // je primarni gluteus, a leđa zadržavaju pola zbog opružača. Dok je Back bio 1.0,
-        // Upper/Lower x3 je dostizao MEV za leđa samo kroz mrtvo dizanje (F16).
+        // Mrtvo dizanje je opružanje kuka, i pokret nosi gluteus. Zadnja loža dobija pola, a
+        // ne pun udeo kao u rumunskom mrtvom dizanju: koleno se opruža zajedno sa kukom, pa
+        // se taj dvozglobni mišić malo menja po dužini. Leđa zadržavaju pola: opružači rade
+        // izometrijski, ali pod velikom napetošću, a za razliku od zadnje lože u čučnju tu
+        // napetost i nose. Dok je Back bio 1.0, Upper/Lower x3 je dostizao MEV za leđa samo
+        // kroz mrtvo dizanje (F16).
         new("Deadlift", ExerciseType.Compound, "Barbell",
             [new("Glutes", 1.0m), new("Hamstrings", 0.5m), new("Back", 0.5m), new("Quads", 0.5m)]),
         // Zadnja loža u potisku kukom radi uz savijeno koleno, skraćena i sa malo opterećenja;
@@ -139,9 +140,12 @@ public static class ExerciseCatalog
         new("Face Pull", ExerciseType.Isolation, "Cable",
             [new("Shoulders", 1.0m), new("Back", 0.5m)]),
 
-        // Horizontalno veslanje povlači lakat iza tela, i tu zadnji deltoid radi dinamički -
-        // to je deo „Shoulders" na koji se troši budžet ramena, kao i kod Face Pull-a i Rear
-        // Delt Fly-a. Vertikalno povlačenje ga ne radi, pa zgib i Lat Pulldown udeo nemaju.
+        // Veslanje ne dobija udeo u ramenima, iako zadnji deltoid u njemu radi dinamički.
+        // „Shoulders" je zbirna grupa, i čim veslanje puni njen budžet, balansiranje skida
+        // serije sa bočnog podizanja - jedine vežbe za bočni deltoid, koji veslanje ne radi.
+        // Izmereno preko svih ugrađenih nedelja: Lateral Raise 4604 → 4138 serija, a u bloku
+        // snage srednjeg nivoa Push/Pull/Legs pada na dve serije. Isti kvar kao potisak u
+        // rundi 13, pa i isti odgovor (F16, docs/features/muscle-contributions-2.md).
         //
         // Zgib podiže celo telo.
         new("Pull-up", ExerciseType.Compound, "Bodyweight",
@@ -149,9 +153,9 @@ public static class ExerciseCatalog
         new("Lat Pulldown", ExerciseType.Compound, "Machine",
             [new("Back", 1.0m), new("Biceps", 0.5m)]),
         new("Barbell Row", ExerciseType.Compound, "Barbell",
-            [new("Back", 1.0m), new("Biceps", 0.5m), new("Shoulders", 0.5m)]),
+            [new("Back", 1.0m), new("Biceps", 0.5m)]),
         new("Seated Cable Row", ExerciseType.Compound, "Cable",
-            [new("Back", 1.0m), new("Biceps", 0.5m), new("Shoulders", 0.5m)]),
+            [new("Back", 1.0m), new("Biceps", 0.5m)]),
         new("Straight-Arm Pulldown", ExerciseType.Isolation, "Cable",
             [new("Back", 1.0m)]),
 
