@@ -68,15 +68,23 @@ public static class WorkoutTemplateCatalog
                     "Back Squat", "Bench Press", "Barbell Row",
                     "Leg Curl", "Straight-Arm Pulldown", "Cable Fly", "Lateral Raise", "Triceps Pushdown"
                 ]),
+                // Face Pull umesto Rear Delt Fly: isto radi zadnji deltoid, a daje i pola serije
+                // za leđa. Bez toga napredni u bloku snage, koji uzima samo dve složene vežbe,
+                // ostaje na 11 serija leđa naspram MEV-a 12, jer mrtvo dizanje leđima daje pola
+                // (F16). Vežba za leđa na mestu Leg Extension ili posle nje bi istisnula Skull
+                // Crusher, jedinu vežbu za triceps ovog dana (izmereno).
                 new("Day B",
                 [
                     "Overhead Press", "Deadlift", "Lat Pulldown",
-                    "Leg Extension", "Rear Delt Fly", "Barbell Curl", "Skull Crusher", "Cable Crunch"
+                    "Leg Extension", "Face Pull", "Barbell Curl", "Skull Crusher", "Cable Crunch"
                 ]),
+                // Hammer Curl pre Face Pull-a: početnik uzima samo dve izolacije, i ovako dobija
+                // prvu direktnu vežbu za biceps u celom šablonu. Srednji i napredni nivo uzimaju
+                // sve četiri, pa im redosled ne menja ništa.
                 new("Day C",
                 [
                     "Pull-up", "Front Squat", "Dumbbell Bench Press",
-                    "Dumbbell Fly", "Face Pull", "Hammer Curl", "Leg Curl", "Calf Raise"
+                    "Dumbbell Fly", "Hammer Curl", "Face Pull", "Leg Curl", "Calf Raise"
                 ])
             ]),
         new(

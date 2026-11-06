@@ -1,3 +1,4 @@
+using System.Globalization;
 using StrengthPlanner.Application.Templates;
 using StrengthPlanner.Domain.Algorithms;
 using StrengthPlanner.Domain.Enums;
@@ -609,6 +610,97 @@ public class WorkoutTemplateCatalogTests
                 "upper-lower Strength Inverse w2 Biceps",
             }.Order(),
             belowMev.Order());
+    }
+
+    /// <summary>
+    /// Blok snage na Full Body (3 dana) naprednom ostavlja biceps na 9.5 naspram MEV-a 10, samo
+    /// u nedeljama koje nose seriju manje: prvoj linearnog i prve dve obrnutog.
+    ///
+    /// Leđa su tu stajala na 11 naspram 12, od #100 (mrtvo dizanje više ne puni leđa punim
+    /// udelom). Ispravljena su tako što je na danu B Rear Delt Fly zamenjen sa Face Pull, koji
+    /// isto radi zadnji deltoid a daje i pola serije za leđa, i tako što na danu C Hammer Curl
+    /// stoji pre Face Pull-a. Izmereno nad svim ugrađenim nedeljama: parova nedelja-mišić ispod
+    /// MEV-a ima 491 → 459, nijedan novi, i nijedna nedelja iznad MRV-a. Vežba za leđa umesto
+    /// Leg Extension ili posle nje je istiskivala Skull Crusher, pa je padao triceps.
+    ///
+    /// Za biceps naprednog nije nađena zamena koja ne obara drugi mišić u istim nedeljama.
+    /// </summary>
+    [Fact]
+    public void AnAdvancedStrengthBlockOnFullBody_FallsBelowMev_OnlyWhereRecorded()
+    {
+        var offered = new[] { PeriodizationModel.Flat, PeriodizationModel.LinearRising, PeriodizationModel.Inverse };
+        var template = WorkoutTemplateCatalog.GetByKey(WorkoutTemplateCatalog.FullBodyKey)!;
+        var belowMev = new List<string>();
+        var untargeted = new SortedSet<string>();
+
+        foreach (var model in offered)
+        {
+            for (var weekNumber = 1; weekNumber <= Periodization.DurationWeeks(model); weekNumber++)
+            {
+                if (Periodization.ForWeek(model, weekNumber, 8, 12, 1, 3).IsDeload)
+                {
+                    continue;
+                }
+
+                var week = TemplateWeekSimulation.Build(template, ExperienceLevel.Advanced, Goal.Strength, model, weekNumber);
+
+                foreach (var seed in ExerciseCatalog.VolumeLandmarks)
+                {
+                    // Mišić koji nijedna vežba nedelje ne trenira nema cilj. Ne broji se kao
+                    // rupa, ali se proverava ispod: mišić koji izgubi svaku vežbu ne sme da
+                    // nestane iz testa neprimećeno.
+                    if (week.TargetFor(seed.Muscle) is null)
+                    {
+                        untargeted.Add(seed.Muscle);
+                        continue;
+                    }
+
+                    var mev = ExperienceProgramming
+                        .ScaleLandmarks(new VolumeLandmarkValues(seed.Mev, seed.Mav, seed.Mrv), ExperienceLevel.Advanced)
+                        .Mev;
+
+                    if (week.Weekly(seed.Muscle) < mev)
+                    {
+                        var sets = week.Weekly(seed.Muscle).ToString("0.0", CultureInfo.InvariantCulture);
+                        belowMev.Add($"{model} w{weekNumber} {seed.Muscle} {sets}");
+                    }
+                }
+            }
+        }
+
+        Assert.Equal(
+            new[]
+            {
+                "LinearRising w1 Biceps 9.5",
+                "Inverse w1 Biceps 9.5",
+                "Inverse w2 Biceps 9.5",
+            }.Order(),
+            belowMev.Order());
+
+        // Trbuh i listovi su na danima B i C osmi po redu, pa ih naprednom u bloku snage sastav
+        // treninga ne uzme.
+        Assert.Equal(["Abs", "Calves"], untargeted);
+    }
+
+    /// <summary>
+    /// Početnik na Full Body uzima samo dve izolacije po danu. Dok je na danu C Face Pull stajao
+    /// pre Hammer Curl-a, nijedna od njegovih vežbi nije bila vežba za biceps, i biceps je stajao
+    /// ispod MEV-a u 28 od 36 nedelja. Hammer Curl sada stoji pre Face Pull-a.
+    /// </summary>
+    [Theory]
+    [InlineData(Goal.Hypertrophy)]
+    [InlineData(Goal.Strength)]
+    public void FullBody_GivesABeginnerADirectBicepsExercise(Goal goal)
+    {
+        var template = WorkoutTemplateCatalog.GetByKey(WorkoutTemplateCatalog.FullBodyKey)!;
+
+        var exercises = template.Days
+            .SelectMany(day => SessionComposition.ForLevel(day.Exercises, ExerciseCatalog.IsCompound, ExperienceLevel.Beginner, goal))
+            .Select(name => ExerciseCatalog.Find(name)!);
+
+        Assert.Contains(
+            exercises,
+            exercise => exercise.Muscles.Any(muscle => muscle.Muscle == "Biceps" && muscle.Contribution == 1.0m));
     }
 
     /// <summary>
