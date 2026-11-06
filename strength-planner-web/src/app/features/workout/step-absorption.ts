@@ -62,9 +62,8 @@ export function isNarrowRange(repRangeMin: number, repRangeMax: number, targetRi
 }
 
 /**
- * Ponavljanja ka kojima se radi pre koraka: vrh opsega, osim kad korak ne staje u sirok
- * opseg - tada najmanji broj koji ga uz ciljnu rezervu upija (8 kg, korak 2 kg, 8-12 @RIR1:
- * 17). Uzak ili fiksan propis se ne produzava.
+ * Ponavljanja ka kojima se radi pre koraka, za tezinu na mrezi koraka i bez dela telesne
+ * mase. Vidi `repsToEarnStepFor`.
  */
 export function repsToEarnStep(
   totalKg: number,
@@ -73,6 +72,28 @@ export function repsToEarnStep(
   repRangeMax: number,
   targetRir: number,
 ): number {
+  return repsToEarnStepFor(totalKg, 0, stepKg, repRangeMin, repRangeMax, targetRir);
+}
+
+/**
+ * Ponavljanja ka kojima se radi pre koraka: vrh opsega, osim kad korak ne staje u sirok
+ * opseg - tada najmanji broj koji uz ciljnu rezervu upija put do sledece tezine na stalku
+ * (8 kg, korak 2 kg, 8-12 @RIR1: 17). Uzak ili fiksan propis se ne produzava.
+ *
+ * Isto pitanje kao ProgressionEngine na serveru: da li korak staje sudi se po punom koraku,
+ * a da li ga serija upija po putu do `stepAbove(dodato)`. Na tezini van mreze taj put je
+ * manji od koraka (9 kg na koraku od 2 kg ide na 10), a cilj je ranije racunao pun korak:
+ * 16 ponavljanja za 9 kg, iako je 3 x 12 uz RIR 1 vec donosilo korak.
+ */
+export function repsToEarnStepFor(
+  addedKg: number,
+  bodyweightLoadKg: number,
+  stepKg: number,
+  repRangeMin: number,
+  repRangeMax: number,
+  targetRir: number,
+): number {
+  const totalKg = addedKg + bodyweightLoadKg;
   if (
     isNarrowRange(repRangeMin, repRangeMax, targetRir) ||
     stepFitsAtTarget(totalKg, stepKg, repRangeMin, repRangeMax, targetRir)
@@ -80,8 +101,9 @@ export function repsToEarnStep(
     return repRangeMax;
   }
 
-  let reps = repRangeMax + 1;
-  while (!absorbsStep(totalKg, stepKg, repRangeMin, reps, targetRir)) {
+  const climbKg = stepAbove(addedKg, stepKg) - addedKg;
+  let reps = repRangeMax;
+  while (!absorbsStep(totalKg, climbKg, repRangeMin, reps, targetRir)) {
     reps++;
   }
 
@@ -106,8 +128,9 @@ export function repTargetFor(plan: RepTargetPlan, weightKg: number, isDeload: bo
     return plan.repRangeMax;
   }
 
-  return repsToEarnStep(
-    weightKg + plan.bodyweightLoadKg,
+  return repsToEarnStepFor(
+    weightKg,
+    plan.bodyweightLoadKg,
     plan.weightStepKg,
     plan.repRangeMin,
     plan.repRangeMax,

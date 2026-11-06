@@ -87,17 +87,9 @@ public static class StepAbsorption
     }
 
     /// <summary>
-    /// The rep count to aim at before the step comes: <paramref name="repRangeMax"/> when the
-    /// step fits the prescription or the range is narrow, otherwise the smallest rep count
-    /// whose set, at the target reserve, absorbs the step (17 for 8 kg on a 2 kg step in
-    /// 8-12 at RIR 1). A guide for the screen; progression itself judges the sets that were
-    /// actually done, with the reserve they actually left.
+    /// <see cref="RepsToEarnStep(decimal, decimal, decimal, int, int, int)"/> for a load on
+    /// the step grid with no body portion, where the next weight is exactly one step away.
     /// </summary>
-    /// <param name="totalLoadKg">Load being lifted, body portion included.</param>
-    /// <param name="stepKg">Smallest load increment of the exercise.</param>
-    /// <param name="repRangeMin">Floor of the prescribed range.</param>
-    /// <param name="repRangeMax">Top of the prescribed range.</param>
-    /// <param name="targetRir">Prescribed reps in reserve.</param>
     public static int RepsToEarnStep(
         decimal totalLoadKg,
         decimal stepKg,
@@ -105,25 +97,51 @@ public static class StepAbsorption
         int repRangeMax,
         int targetRir)
     {
+        return RepsToEarnStep(totalLoadKg, 0m, stepKg, repRangeMin, repRangeMax, targetRir);
+    }
+
+    /// <summary>
+    /// The rep count to aim at before the step comes: <paramref name="repRangeMax"/> when the
+    /// step fits the prescription or the range is narrow, otherwise the smallest rep count
+    /// whose set, at the target reserve, absorbs the climb to the next weight on the rack (17
+    /// for 8 kg on a 2 kg step in 8-12 at RIR 1). A guide for the screen; progression itself
+    /// judges the sets that were actually done, with the reserve they actually left.
+    ///
+    /// It asks exactly what <see cref="ProgressionEngine"/> asks of a session at the top of
+    /// the range: whether the step fits is judged on the full step, and whether a set absorbs
+    /// it on the climb to <see cref="WeightMath.StepAbove"/> of the added load. On a weight off
+    /// the grid that climb is smaller than a step - 9 kg on a 2 kg step goes to 10, not 11 -
+    /// and the target used to read the full step there: 16 reps for 9 kg, while three sets
+    /// of 12 at RIR 1 already earned the step (review of #108).
+    /// </summary>
+    /// <param name="addedKg">Load on the bar, belt or stack, the number the lifter enters.</param>
+    /// <param name="bodyweightLoadKg">Body portion the exercise carries; 0 for external load.</param>
+    /// <param name="stepKg">Smallest load increment of the exercise.</param>
+    /// <param name="repRangeMin">Floor of the prescribed range.</param>
+    /// <param name="repRangeMax">Top of the prescribed range.</param>
+    /// <param name="targetRir">Prescribed reps in reserve.</param>
+    public static int RepsToEarnStep(
+        decimal addedKg,
+        decimal bodyweightLoadKg,
+        decimal stepKg,
+        int repRangeMin,
+        int repRangeMax,
+        int targetRir)
+    {
+        var totalLoadKg = addedKg + bodyweightLoadKg;
+
         if (IsNarrow(repRangeMin, repRangeMax, targetRir)
             || FitsAtTarget(totalLoadKg, stepKg, repRangeMin, repRangeMax, targetRir))
         {
             return repRangeMax;
         }
 
-        var required = (totalLoadKg + stepKg) * (TrainingConstants.EpleyRepDivisor + repRangeMin);
-        var estimate = (int)Math.Ceiling(
-            (required / totalLoadKg) - TrainingConstants.EpleyRepDivisor - targetRir);
-        var reps = Math.Max(repRangeMax + 1, estimate);
+        var climbKg = WeightMath.StepAbove(addedKg, stepKg) - addedKg;
+        var reps = repRangeMax;
 
-        while (!Absorbs(totalLoadKg, stepKg, repRangeMin, reps, targetRir))
+        while (!Absorbs(totalLoadKg, climbKg, repRangeMin, reps, targetRir))
         {
             reps++;
-        }
-
-        while (reps - 1 > repRangeMax && Absorbs(totalLoadKg, stepKg, repRangeMin, reps - 1, targetRir))
-        {
-            reps--;
         }
 
         return reps;

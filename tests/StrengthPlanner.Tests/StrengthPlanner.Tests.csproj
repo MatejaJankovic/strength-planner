@@ -34,6 +34,14 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <!-- Zbog StepAbsorptionSharedCasesTests: isti slučajevi koje proverava i klijent. Kopira se
+       uz test, pa se ne traži penjanjem po folderima (worktree bi tako pročitao tuđu kopiju). -->
+  <ItemGroup>
+    <None Include="../../strength-planner-web/src/app/features/workout/step-absorption.cases.json"
+          Link="step-absorption.cases.json"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\src\StrengthPlanner.Domain\StrengthPlanner.Domain.csproj" />
     <ProjectReference Include="..\..\src\StrengthPlanner.Application\StrengthPlanner.Application.csproj" />

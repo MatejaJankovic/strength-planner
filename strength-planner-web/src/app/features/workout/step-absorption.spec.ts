@@ -1,24 +1,47 @@
-import { absorbsStep, repTargetFor, repsToEarnStep, stepAbove } from './step-absorption';
+import { absorbsStep, repTargetFor, repsToEarnStep, repsToEarnStepFor, stepAbove } from './step-absorption';
 import sharedCases from './step-absorption.cases.json';
 
 /**
- * Ekran prikazuje cilj ponavljanja, a o koraku odlučuje server. Tabela ispod je ista kao u
- * StepAbsorptionTests na serveru (RepsToEarnStep_IsTheTopOfTheRange_...): kad se pravilo
- * menja na jednom mestu, ova tabela je ono što pada na drugom.
- *
- * Uz nju obe strane čitaju i `step-absorption.cases.json`, 3328 slučajeva generisanih iz
- * serverskog pravila (StepAbsorptionSharedCasesTests). Ručno prepisana tabela je pokrivala
- * dvanaest slučajeva; kopija pravila na klijentu sada mora da se slaže sa serverom svuda.
+ * Ekran prikazuje cilj ponavljanja, a o koraku odlučuje server. Obe strane proveravaju isti
+ * fajl, `step-absorption.cases.json`, generisan iz serverskog pravila
+ * (StepAbsorptionSharedCasesTests): cilj ponavljanja, i za težine van mreže koraka i za vežbe
+ * sa telesnom masom; upijanje koraka sa rezervom 0-8; i sledeću težinu na stalku. Ručno
+ * prepisana tabela je pokrivala dvanaest slučajeva, i nijedan van mreže koraka.
  */
 describe('step-absorption, zajednički slučajevi sa serverom', () => {
-  it('daje isti cilj kao server u svakom slučaju iz zajedničkog fajla', () => {
-    const cases = sharedCases as number[][];
-    const failures = cases
-      .filter(([load, step, min, max, rir, expected]) => repsToEarnStep(load, step, min, max, rir) !== expected)
+  const cases = sharedCases as { repsToEarnStep: number[][]; absorbs: number[][]; stepAbove: number[][] };
+
+  it('cilj ponavljanja je isti kao na serveru', () => {
+    const failures = cases.repsToEarnStep
+      .filter(([added, body, step, min, max, rir, expected]) => repsToEarnStepFor(added, body, step, min, max, rir) !== expected)
       .slice(0, 20);
 
-    expect(cases.length).toBeGreaterThan(3000);
+    expect(cases.repsToEarnStep.length).toBeGreaterThan(1000);
     expect(failures).toEqual([]);
+  });
+
+  it('upijanje koraka je isto kao na serveru', () => {
+    const failures = cases.absorbs
+      .filter(([total, climb, min, reps, rir, expected]) => absorbsStep(total, climb, min, reps, rir) !== (expected === 1))
+      .slice(0, 20);
+
+    expect(cases.absorbs.length).toBeGreaterThan(500);
+    expect(failures).toEqual([]);
+  });
+
+  it('sledeća težina na stalku je ista kao na serveru', () => {
+    const failures = cases.stepAbove
+      .filter(([weight, step, expected]) => Math.abs(stepAbove(weight, step) - expected) > 1e-9)
+      .slice(0, 20);
+
+    expect(cases.stepAbove.length).toBeGreaterThan(40);
+    expect(failures).toEqual([]);
+  });
+
+  it('težina van mreže koraka traži manje ponavljanja: 9 kg na koraku od 2 kg ide na 10', () => {
+    // Progresija na serveru posle 3 x 12 uz RIR 1 diže 9 kg na 10; kartica je ranije tražila 16.
+    expect(repsToEarnStepFor(9, 0, 2, 8, 12, 1)).toBe(12);
+    expect(repsToEarnStepFor(8, 0, 2, 8, 12, 1)).toBe(17);
   });
 });
 

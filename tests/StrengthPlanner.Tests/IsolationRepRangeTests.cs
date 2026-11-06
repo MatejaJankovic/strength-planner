@@ -96,8 +96,13 @@ public class IsolationRepRangeTests
 
         Assert.True(StepAbsorption.FitsAtTarget(8m, 2m, Isolation.RepRangeMin, Isolation.RepRangeMax, Isolation.TargetRir));
         Assert.Equal(20, StepAbsorption.RepsToEarnStep(8m, 2m, Isolation.RepRangeMin, Isolation.RepRangeMax, Isolation.TargetRir));
-        // Bučica od 5 kg: korak od 2 kg je 40%, pa ni 10-20 ne upija. Uputstvo navodi ovaj broj.
-        Assert.Equal(25, StepAbsorption.RepsToEarnStep(5m, 2m, Isolation.RepRangeMin, Isolation.RepRangeMax, Isolation.TargetRir));
+        // Bučica od 6 kg: korak od 2 kg je 33%, pa ni 10-20 ne upija. Uputstvo navodi ovaj broj.
+        Assert.Equal(23, StepAbsorption.RepsToEarnStep(6m, 2m, Isolation.RepRangeMin, Isolation.RepRangeMax, Isolation.TargetRir));
+
+        // Bučica od 5 kg nije na mreži koraka od 2 kg: sledeća težina je 6, pa je put jedan
+        // kilogram, i 20 ponavljanja ga upija. Ranije je ovde stajalo 25, kao da je sledeća 7;
+        // progresija je posle 3 x 20 uz RIR 1 i tada dizala na 6 (pregled #108).
+        Assert.Equal(20, StepAbsorption.RepsToEarnStep(5m, 2m, Isolation.RepRangeMin, Isolation.RepRangeMax, Isolation.TargetRir));
     }
 
     /// <summary>
