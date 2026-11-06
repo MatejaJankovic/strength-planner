@@ -41,9 +41,17 @@ public sealed record VolumeLandmarkSeed(string Muscle, int Mev, int Mav, int Mrv
 /// </summary>
 public static class ExerciseCatalog
 {
+    // Rame je dugo bilo jedna zbirna grupa, "Shoulders", sa jednim ciljem za tri glave koje
+    // rade različite vežbe. Taj cilj su punili potisak iznad glave i rad za zadnji deltoid, pa
+    // je grupa stajala u zoni dok je bočni deltoid, koji gradi samo bočno podizanje, dobijao
+    // 6-9 serija nedeljno (docs/features/shoulder-heads.md).
+    public const string FrontDelts = "Front Delts";
+    public const string SideDelts = "Side Delts";
+    public const string RearDelts = "Rear Delts";
+
     public static readonly IReadOnlyList<string> MuscleGroupNames =
     [
-        "Chest", "Back", "Shoulders", "Quads", "Hamstrings",
+        "Chest", "Back", FrontDelts, SideDelts, RearDelts, "Quads", "Hamstrings",
         "Glutes", "Biceps", "Triceps", "Calves", "Abs"
     ];
 
@@ -103,15 +111,14 @@ public static class ExerciseCatalog
         new("Single-Leg Romanian Deadlift", ExerciseType.Compound, "Dumbbell",
             [new("Hamstrings", 1.0m), new("Glutes", 0.5m)], SuitsLowReps: false),
 
-        // Horizontalni potisak ne ulazi u budžet ramena. Prednji deltoid u njemu radi i
-        // raste — ali „Shoulders" je zbirna grupa, a njen MAV se troši na bočni i zadnji
-        // deltoid, koje potisak ne radi. Dok je potisak punio taj budžet, balansiranje je
-        // mišić videlo blizu cilja i skidalo serije sa bočnog podizanja: sa jedne vežbe
-        // koja te glave zaista gradi.
+        // Horizontalni potisak ne ulazi ni u budžet prednjeg deltoida. Prednji deltoid u njemu
+        // radi i raste, ali granice za njega (RP) važe za direktan rad POVRH potisaka za grudi:
+        // MEV mu je nula upravo zato što potisak već daje stimulus. Da potisak puni i budžet,
+        // MRV od 10 serija bi prešla sama nedelja grudi.
         //
-        // I ovde je katalog sam sebi protivrečio: Push-up je isti obrazac pokreta i nikada
-        // nije imao udeo u ramenima. Vertikalni potisci (Overhead Press, Dumbbell Shoulder
-        // Press) zadržavaju rame kao PRIMARNI mišić — oni bočni deltoid zaista opterećuju.
+        // Push-up je isti obrazac pokreta i nikada nije imao udeo u ramenima. Vertikalni
+        // potisci (Overhead Press, Dumbbell Shoulder Press) su direktan rad za prednji deltoid,
+        // a bočni opterećuju upola.
         new("Bench Press", ExerciseType.Compound, "Barbell",
             [new("Chest", 1.0m), new("Triceps", 0.5m)]),
         new("Incline Bench Press", ExerciseType.Compound, "Barbell",
@@ -130,22 +137,21 @@ public static class ExerciseCatalog
             [new("Chest", 1.0m)]),
 
         new("Overhead Press", ExerciseType.Compound, "Barbell",
-            [new("Shoulders", 1.0m), new("Triceps", 0.5m)]),
+            [new(FrontDelts, 1.0m), new(SideDelts, 0.5m), new("Triceps", 0.5m)]),
         new("Dumbbell Shoulder Press", ExerciseType.Compound, "Dumbbell",
-            [new("Shoulders", 1.0m), new("Triceps", 0.5m)]),
+            [new(FrontDelts, 1.0m), new(SideDelts, 0.5m), new("Triceps", 0.5m)]),
         new("Lateral Raise", ExerciseType.Isolation, "Dumbbell",
-            [new("Shoulders", 1.0m)]),
+            [new(SideDelts, 1.0m)]),
         new("Rear Delt Fly", ExerciseType.Isolation, "Dumbbell",
-            [new("Shoulders", 1.0m)]),
+            [new(RearDelts, 1.0m)]),
         new("Face Pull", ExerciseType.Isolation, "Cable",
-            [new("Shoulders", 1.0m), new("Back", 0.5m)]),
+            [new(RearDelts, 1.0m), new("Back", 0.5m)]),
 
-        // Veslanje ne dobija udeo u ramenima, iako zadnji deltoid u njemu radi dinamički.
-        // „Shoulders" je zbirna grupa, i čim veslanje puni njen budžet, balansiranje skida
-        // serije sa bočnog podizanja - jedine vežbe za bočni deltoid, koji veslanje ne radi.
-        // Izmereno preko svih ugrađenih nedelja: Lateral Raise 4604 → 4138 serija, a u bloku
-        // snage srednjeg nivoa Push/Pull/Legs pada na dve serije. Isti kvar kao potisak u
-        // rundi 13, pa i isti odgovor (F16, docs/features/muscle-contributions-2.md).
+        // Veslanje ne dobija udeo u zadnjem deltoidu, iako on u njemu radi dinamički. Granice
+        // za zadnji deltoid (RP) važe za direktan rad povrh rada za leđa, i MEV mu je nula
+        // upravo zato što veslanje daje stimulus; da veslanje puni i budžet, balansiranje bi
+        // skidalo serije sa jedine direktne vežbe. Dok je rame bilo zbirna grupa, isti kredit
+        // je skidao serije sa bočnog podizanja (F16, docs/features/muscle-contributions-2.md).
         //
         // Zgib podiže celo telo.
         new("Pull-up", ExerciseType.Compound, "Bodyweight",
@@ -186,11 +192,23 @@ public static class ExerciseCatalog
     ];
 
     // MAV je ciljna vrednost; priručnik je smešta u raspon 8-20 serija nedeljno.
+    //
+    // Priručnik ne deli rame na glave, pa su granice glava RP procene za srednji nivo
+    // (rpstrength.com, članci o prednjem, bočnom i zadnjem deltoidu), date kao rasponi.
+    // MAV i MRV su sredina raspona. MEV prednjeg i zadnjeg deltoida je nula, kao u RP: prvi
+    // dobija stimulus od potisaka za grudi, drugi od veslanja, a model te serije glavama
+    // namerno ne pripisuje (vidi komentare uz potiske i veslanja), pa direktan rad za njih
+    // nije minimum nego dodatak. Bočni deltoid od složenih vežbi dobija samo pola potiska
+    // iznad glave; on zadržava stare vrednosti zbirne grupe, koje su u njegovim rasponima
+    // (MEV 6-8, MAV 8-24, MRV 24-30), pa se naučene granice ramena na njega prenose bez
+    // preračuna.
     public static readonly IReadOnlyList<VolumeLandmarkSeed> VolumeLandmarks =
     [
         new("Chest", 10, 16, 22),
         new("Back", 10, 18, 25),
-        new("Shoulders", 8, 16, 26),
+        new(FrontDelts, 0, 6, 10),
+        new(SideDelts, 8, 16, 26),
+        new(RearDelts, 0, 8, 16),
         new("Quads", 8, 14, 20),
         new("Hamstrings", 6, 11, 16),
         new("Glutes", 4, 10, 16),

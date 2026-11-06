@@ -308,7 +308,7 @@ public class WorkoutTemplateCatalogTests
 
         var primary = muscles.First(muscle => muscle.Contribution == 1.0m).Muscle;
 
-        return primary is "Chest" or "Shoulders" ? "guranje" : "povlačenje";
+        return primary is "Chest" or ExerciseCatalog.FrontDelts or ExerciseCatalog.SideDelts ? "guranje" : "povlačenje";
     }
 
     [Fact]
@@ -408,10 +408,20 @@ public class WorkoutTemplateCatalogTests
     /// Početnik i napredni vežbač ostaju ispod MEV za pojedine grupe. Za naprednog je spisak
     /// zabeležen, sa uzrokom - vidi
     /// <see cref="AnAdvancedHypertrophyWeek_FallsBelowMev_OnlyWhereRecorded"/>.
+    ///
+    /// Jedan izuzetak, imenom: trbuh na Push/Pull/Legs. Srednji nivo uzima dve složene vežbe
+    /// i četiri izolacije po treningu, pa tri dana imaju dvanaest mesta za izolacije, i sva su
+    /// zauzeta. Kad je rame podeljeno na glave (R5), bočnom deltoidu je trebalo drugo bočno
+    /// podizanje, jer jedno sa pola potiska iznad glave daje 6 serija naspram MEV-a 8. Mesto je
+    /// uzeo Cable Crunch sa Pull dana, po istom pravilu kao u
+    /// <see cref="EveryTemplate_TrainsEveryMajorMuscleGroup"/>: kad nema mesta, ustupaju
+    /// trbuh i listovi.
     /// </summary>
     [Fact]
     public void TemplatesOfThreeDaysOrMore_ReachMevAtTheReferenceLevel()
     {
+        const string NoRoomForAbs = "Intermediate Hypertrophy push-pull-legs/Abs:";
+
         var breaches = Breaches(
             ExperienceLevel.Intermediate,
             (sets, band) => sets < band.Mev,
@@ -419,6 +429,8 @@ public class WorkoutTemplateCatalogTests
             band => band.Mev,
             template => template.Days.Count >= 3);
 
+        Assert.Contains(breaches, breach => breach.StartsWith(NoRoomForAbs, StringComparison.Ordinal));
+        breaches.RemoveAll(breach => breach.StartsWith(NoRoomForAbs, StringComparison.Ordinal));
         Assert.True(breaches.Count == 0, string.Join(Environment.NewLine, breaches));
     }
 
@@ -434,7 +446,7 @@ public class WorkoutTemplateCatalogTests
     public void EveryTemplate_TrainsEveryMajorMuscleGroup()
     {
         string[] major =
-            ["Chest", "Back", "Shoulders", "Quads", "Hamstrings", "Glutes", "Biceps", "Triceps"];
+            ["Chest", "Back", ExerciseCatalog.SideDelts, "Quads", "Hamstrings", "Glutes", "Biceps", "Triceps"];
 
         foreach (var level in Enum.GetValues<ExperienceLevel>())
         {
@@ -518,8 +530,6 @@ public class WorkoutTemplateCatalogTests
             ["push-pull-legs/Glutes"] = Composition,
             ["full-body-4/Glutes"] = Composition,
             ["upper-lower-ppl/Back"] = SessionCeiling,
-            ["upper-lower-ppl/Glutes"] = Composition,
-            ["push-pull-legs-6/Glutes"] = Composition,
         };
 
         var found = new Dictionary<string, string>();
@@ -668,12 +678,22 @@ public class WorkoutTemplateCatalogTests
             }
         }
 
+        // Leđa i zadnja loža su na spisku od podele ramena (R5), svaki za pola serije. Bočno
+        // podizanje na danu C stoji ispred Leg Curl-a, pa ga napredni, koji uzima četiri
+        // izolacije, više ne dobija. A cilj zadnjeg deltoida u bloku snage stoji na pola puta od
+        // MEV-a 0 do MAV-a, pa balansiranje skida seriju Face Pull-a, a sa njom pola serije leđa.
         Assert.Equal(
             new[]
             {
                 "LinearRising w1 Biceps 9.5",
                 "Inverse w1 Biceps 9.5",
                 "Inverse w2 Biceps 9.5",
+                "LinearRising w1 Back 11.5",
+                "Inverse w1 Back 11.5",
+                "Inverse w2 Back 11.5",
+                "LinearRising w1 Hamstrings 6.5",
+                "Inverse w1 Hamstrings 6.5",
+                "Inverse w2 Hamstrings 6.5",
             }.Order(),
             belowMev.Order());
 
