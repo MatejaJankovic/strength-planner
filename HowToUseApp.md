@@ -120,7 +120,9 @@ najviše oko 11 serija jednog mišića:
   dobijaju samo jedno veslanje (oko 9);
 - **Upper/Lower + Push/Pull/Legs:** Upper dan zadržava bench, pa se leđa treniraju samo na
   Pull danu i staju na 11;
-- gluteusi ostaju ispod MEV-a na većini šablona, a listovi i trbuh na Full Body.
+- gluteusi ostaju ispod MEV-a na većini šablona, a listovi i trbuh na Full Body;
+- u bloku snage Full Body (3 dana) leđa staju na 11 naspram MEV-a 12 u lakšim nedeljama
+  periodizovanog bloka (prva linearnog, prve dve obrnutog).
 
 Jedini šablon koji naprednom daje MEV za svaki mišić u svakoj nedelji je **Upper/Lower x3**,
 ali traži šest treninga. Od šablona sa pet dana ili manje najbolji je **Upper/Lower (4 dana)**:

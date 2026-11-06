@@ -96,7 +96,8 @@ ova grana): **498 → 491**.
   - četiri nedelje gluteusa ispod MEV-a za naprednog na Upper/Lower;
   - tri nedelje bicepsa za početnika u bloku snage na Full Body.
 - **Novo:** Full Body (3 dana), napredni, blok snage: leđa **11** naspram MEV-a **12** u prvoj
-  nedelji linearnog, prve dve obrnutog i petoj nedelji linearnog bloka. Na istim nedeljama su
+  nedelji linearnog, prve dve obrnutog i petoj nedelji starog linearnog modela („Linearan
+  (stari)", koji čarobnjak više ne nudi). Na istim nedeljama su
   ranije bili gluteusi (4.5 naspram 5). Nijedan test to ne pokriva, jer testovi MEV-a gledaju
   hipertrofiju ili dva Upper/Lower šablona. Uputstvo to sada kaže.
 - **Dublje:** Upper/Lower, početnik, blok snage: leđa 7 → 6 naspram MEV-a 8 u istim lakšim
@@ -110,9 +111,9 @@ vežba koja zadnju ložu gradi, i sada mu više mesta ne uzima potisak kukom.
 
 - `dotnet test`: **856** (bez novih testova; ažuriran je spisak u testu MEV-a i komentar
   u testu granice po treningu, gde su najveći treninzi sada 11, 9 i 8 serija, a ne 11, 8 i 7).
-- Merenje vraćanjem, svaka izmena sama (izmereno na verziji sa udelom veslanja; deadlift i
-  Lower C ne zavise od njega):
-  - Deadlift po starom: obara **2**;
+- Merenje vraćanjem, svaka izmena sama, na konačnoj verziji:
+  - Deadlift po starom: obara **1** (na verziji sa udelom veslanja 2, jer je drugi pad dolazio
+    od tog udela);
   - Face Pull nazad na „Lower C": obara **1**;
   - Hip Thrust sa zadnjom ložom: obara **0**. Tu izmenu ne drži nijedan test, a izmereni
     učinak (Leg Curl +387) je zapisan iznad.
