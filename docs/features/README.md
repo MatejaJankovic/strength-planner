@@ -125,10 +125,6 @@ ono što je ispod 20 kg, ono što blok radi kroz nedelje i ono što se tvrdi o v
 | [Volumen naprednog nivoa](experience-volume-consistency.md) | Napredni je imao najviše granice volumena (×1.2) i najmanje serija (3), pa je propis bio ispod MEV-a u 153 od 240 nedelja-mišića i balansiranje ga je krpilo; sada kreće sa 4 | #92 |
 | [Deload početnika](beginner-deload.md) | Ravan blok početnika je četvrtinu vremena provodio u rasterećenju, iako priručnik kaže da početnici o deload-u ne treba da razmišljaju; sada je i četvrta nedelja trenažna | #93 |
 | [Šum u signalu snage](landmark-signal-noise.md) | Jedno nedeljno čitanje snage je pretežno šum, pa su MAV i MRV vežbača koji napreduje klizili naniže; snaga se sada sudi po proseku dve uzastopne nedelje (prag 2.5%, posle review-a #94) | #94, #97 |
-| [Ivice procene maksimuma](estimate-edges.md) | Test-serija 100 × 1 do otkaza je davala 103.3 kg; granica od 12 ponavljanja nije bila obrazložena kao izbor | #98 |
-| [Star maksimum](stale-maximum-notice.md) | Blok je tiho polazio od maksimuma starijeg od 56 dana; sada ekran kaže koliko je star | #99 |
-| [Doprinosi mišića, drugi deo](muscle-contributions-2.md) | Mrtvo dizanje je punilo leđa umesto gluteusa, a Hip Thrust zadnju ložu; udeo veslanja u ramenima je odbačen jer je sekao bočno podizanje | #100 |
-| [„Prati moj šablon" samo za lični šablon](allocation-follow-template.md) | Uz ugrađeni šablon je propisivao nedelje iznad MRV-a, a ekran je govorio samo „može ostati ispod cilja" | #101 |
 
 ## Petnaesti krug — revizija posle runde 14
 
@@ -142,6 +138,20 @@ propisa) je napravljen pa odbačen merenjem; obrazloženje je na kraju
 | [Korekcija po RIR-u čita Epley krivu](rir-correction-from-epley.md) | Korekcija je bila ravnih 3% po poenu za svaki propis, pa je laka izolacija dobijala oko 40% veću korekciju nego što njena ponavljanja opravdavaju (sajla 50 kg → 55 umesto 52.5) | #95 |
 | [Pad snage u oceni umora traži dve nedelje](fatigue-signal-noise.md) | Jedan slab dan je punio i RIR i pad snage, pa je vežbač koji napreduje dobijao lažan deload u 12.5% periodizovanih blokova (na MRV-u u više od polovine); sada 0.3% i 3%, uz cenu da u ravnom bloku pad snage više ne povlači deload | #95 |
 | [Šta je procena, a šta merenje](evidence-notes.md) | Stepenica stimulativnog volumena (RIR 4 upola, RIR 5 ništa) i granice MEV/MAV/MRV su procene iz priručnika, a ne izmerene vrednosti; komentar i uputstvo to sada kažu, pravila ostaju | #95 |
+
+## Šesnaesti krug — zatvaranje revizije iz runde 14
+
+Ostatak nalaza iz odeljka F (F8, F13, F15–F19) i jedan nov nalaz tokom rada („Prati moj šablon"
+uz ugrađeni šablon). Svaka grana sa izmenom koda ima merenje vraćanjem, a svaka proveru uživo na
+375 px. Dopuna #94 (#97) stoji u tabeli četrnaestog kruga.
+
+| Grana | O čemu je | PR |
+|---|---|---|
+| [Ivice procene maksimuma](estimate-edges.md) | Test-serija 100 × 1 do otkaza je davala 103.3 kg; granica od 12 ponavljanja nije bila obrazložena kao izbor | #98 |
+| [Star maksimum](stale-maximum-notice.md) | Blok je tiho polazio od maksimuma starijeg od 56 dana; sada ekran kaže koliko je star | #99 |
+| [Doprinosi mišića, drugi deo](muscle-contributions-2.md) | Mrtvo dizanje je punilo leđa umesto gluteusa, a Hip Thrust zadnju ložu; udeo veslanja u ramenima je odbačen jer je sekao bočno podizanje | #100 |
+| [„Prati moj šablon" samo za lični šablon](allocation-follow-template.md) | Uz ugrađeni šablon je propisivao nedelje iznad MRV-a, a ekran je govorio samo „može ostati ispod cilja" | #101 |
+| [Zatvaranje runde 14](round-14-closure.md) | „Ispod MEV-a nema stimulusa" na ekranu; ocena umora nije bila nazvana heuristikom; rečenice teze koje više ne opisuju aplikaciju nisu bile na jednom mestu ([teza-uskladjivanje.md](../teza-uskladjivanje.md)) | #102 |
 
 ## Ako čitaš samo jedno
 
