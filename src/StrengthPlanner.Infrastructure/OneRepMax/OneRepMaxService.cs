@@ -64,9 +64,20 @@ public class OneRepMaxService : IOneRepMaxService
             RecordedAt = DateTime.UtcNow
         };
 
+        // Zapis i preračun prve nedelje dele sudbinu: bez transakcije bi pad preračuna
+        // vratio grešku za zapis koji je već upisan, a ponovni pokušaj bi ga udvostručio.
+        await using var transaction = _db.Database.CurrentTransaction is null
+            ? await _db.Database.BeginTransactionAsync(cancellationToken)
+            : null;
+
         _db.OneRepMaxRecords.Add(record);
         await _db.SaveChangesAsync(cancellationToken);
         await RefreshWeekOneTargetsAsync(userId, request.ExerciseId, cancellationToken);
+
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+        }
 
         return ToDto(record, exercise.Name);
     }
@@ -120,9 +131,20 @@ public class OneRepMaxService : IOneRepMaxService
             RecordedAt = DateTime.UtcNow
         };
 
+        // Zapis i preračun prve nedelje dele sudbinu: bez transakcije bi pad preračuna
+        // vratio grešku za zapis koji je već upisan, a ponovni pokušaj bi ga udvostručio.
+        await using var transaction = _db.Database.CurrentTransaction is null
+            ? await _db.Database.BeginTransactionAsync(cancellationToken)
+            : null;
+
         _db.OneRepMaxRecords.Add(record);
         await _db.SaveChangesAsync(cancellationToken);
         await RefreshWeekOneTargetsAsync(userId, request.ExerciseId, cancellationToken);
+
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+        }
 
         return ToDto(record, exercise.Name);
     }
@@ -132,6 +154,10 @@ public class OneRepMaxService : IOneRepMaxService
         Guid recordId,
         CancellationToken cancellationToken = default)
     {
+        await using var transaction = _db.Database.CurrentTransaction is null
+            ? await _db.Database.BeginTransactionAsync(cancellationToken)
+            : null;
+
         var exerciseId = await _db.OneRepMaxRecords
             .Where(record => record.Id == recordId && record.UserId == userId)
             .Select(record => (Guid?)record.ExerciseId)
@@ -149,6 +175,11 @@ public class OneRepMaxService : IOneRepMaxService
         // Obrisan zapis menja i to od kog maksimuma plan polazi, pa i opterećenja koja iz
         // njega još stoje.
         await RefreshWeekOneTargetsAsync(userId, exerciseId.Value, cancellationToken);
+
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+        }
     }
 
     public async Task<IReadOnlyList<OneRepMaxDto>> GetCurrentAsync(
@@ -245,18 +276,25 @@ public class OneRepMaxService : IOneRepMaxService
     private async Task RefreshWeekOneTargetsAsync(Guid userId, Guid exerciseId, CancellationToken cancellationToken)
     {
         var candidates = await _db.ExercisePlans
-            .Include(plan => plan.WorkoutSession)
-                .ThenInclude(session => session.TrainingWeek)
+            .AsNoTracking()
             .Where(plan => plan.ExerciseId == exerciseId
                            && plan.TargetWeightKg != null
+                           && plan.WorkoutSession.TrainingWeek.WeekNumber == GeneratedTarget.StoredWeek
                            && plan.WorkoutSession.TrainingWeek.Mesocycle.UserId == userId
                            && plan.WorkoutSession.TrainingWeek.Mesocycle.IsActive)
+            .Select(plan => new
+            {
+                plan.Id,
+                plan.RepRangeMin,
+                plan.TargetRir,
+                plan.WorkoutSession.TrainingWeek.WeekNumber,
+                plan.WorkoutSession.Status,
+                HasLoggedSets = plan.SetLogs.Any()
+            })
             .ToListAsync(cancellationToken);
 
         var plans = candidates
-            .Where(plan => GeneratedTarget.FollowsTheMaximum(
-                plan.WorkoutSession.TrainingWeek.WeekNumber,
-                plan.WorkoutSession.Status))
+            .Where(plan => GeneratedTarget.FollowsTheMaximum(plan.WeekNumber, plan.Status, plan.HasLoggedSets))
             .ToList();
 
         if (plans.Count == 0)
@@ -286,16 +324,25 @@ public class OneRepMaxService : IOneRepMaxService
 
         foreach (var plan in plans)
         {
-            plan.TargetWeightKg = StartingLoad.FromOneRepMax(
+            var target = StartingLoad.FromOneRepMax(
                 _calculator,
                 oneRepMax,
                 plan.RepRangeMin,
                 plan.TargetRir,
                 bodyweightLoadKg,
                 stepKg);
-        }
 
-        await _db.SaveChangesAsync(cancellationToken);
+            // Uslov se ponavlja u samom upisu: trening započet između čitanja i upisa ne sme
+            // da dobije novo opterećenje ispod ruku.
+            await _db.ExercisePlans
+                .Where(item => item.Id == plan.Id
+                               && !item.SetLogs.Any()
+                               && (item.WorkoutSession.Status == SessionStatus.Planned
+                                   || item.WorkoutSession.Status == SessionStatus.Skipped))
+                .ExecuteUpdateAsync(
+                    setters => setters.SetProperty(item => item.TargetWeightKg, target),
+                    cancellationToken);
+        }
     }
 
     private static OneRepMaxDto ToDto(OneRepMaxRecord record, string exerciseName)

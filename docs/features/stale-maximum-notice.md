@@ -83,7 +83,8 @@ Da li je zapis star odlučuje server, jer samo on zna prozor. Klijent samo broji
   nema harness na nivou servisa (isto kao u rundi 12). Proveren je uživo.
 - Test-serija ne prepisuje već upisana opterećenja. Da bi to radila, novi zapis bi morao da
   preračuna ciljeve treninga koji čekaju i još nisu vođeni progresijom; to je veća izmena i
-  ovde nije urađena.
+  ovde nije urađena. *(Kasnije: urađeno, vidi
+  [recompute-pending-targets.md](recompute-pending-targets.md).)*
 - Napomena ne zna da li je vežbač stvarno pravio pauzu. Vežba koja dva meseca nije bila u
   bloku dobija istu napomenu, i tu je ona jednako tačna: broj je star.
 

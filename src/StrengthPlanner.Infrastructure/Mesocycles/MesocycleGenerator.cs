@@ -330,7 +330,7 @@ public class MesocycleGenerator : IMesocycleGenerator
         decimal weightStepKg,
         decimal bodyweightLoadKg)
     {
-        if (weekNumber != 1)
+        if (weekNumber != GeneratedTarget.StoredWeek)
         {
             return null;
         }
