@@ -104,7 +104,10 @@ public class MacrocycleService : IMacrocycleService
                 Goal = block.Goal,
                 TemplateKey = block.TemplateKey,
                 PeriodizationModel = block.PeriodizationModel,
-                SetAllocation = block.SetAllocation
+                // „Prati moj šablon" važi samo za lični šablon; ugrađeni se uvek balansira.
+                SetAllocation = SetAllocationRule.For(
+                    block.SetAllocation,
+                    CustomTemplateKey.TryParse(block.TemplateKey, out _))
             });
         }
 
@@ -487,8 +490,12 @@ public class MacrocycleService : IMacrocycleService
             Goal = block.Goal,
             PeriodizationModel = block.PeriodizationModel,
             // Blok se generiše tek kada dođe na red, pa izbor mora da preživi u bazi i da
-            // se tada pročita odavde — ne iz zahteva koji ga je davno napravio.
-            SetAllocation = block.SetAllocation,
+            // se tada pročita odavde — ne iz zahteva koji ga je davno napravio. Pravilo se
+            // primenjuje i ovde, jer blokovi upisani pre njega mogu nositi „Prati moj šablon"
+            // uz ugrađeni šablon.
+            SetAllocation = SetAllocationRule.For(
+                block.SetAllocation,
+                CustomTemplateKey.TryParse(block.TemplateKey, out _)),
             Name = BuildBlockName(macrocycle.Name, block.Order, blockCount, templateName),
             StartDate = startDate
         };

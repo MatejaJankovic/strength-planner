@@ -130,6 +130,11 @@ export class PlanHome {
    * Balansiranje po ciljnom volumenu je zateceno ponasanje i ostaje podrazumevano, jer
    * ugradjeni sabloni nose raspored vezbi a ne nameru o volumenu. Kod licnog sablona je
    * obrnuto: otkucano "3 serije" je namera, i menjati je tiho je bilo pogresno.
+   *
+   * Zato se izbor nudi samo uz licni sablon (`offersAllocationChoice`). Ugradjeni sablon
+   * doslovno je propisivao nedelje iznad MRV-a na svakom nivou, a tekst je govorio samo da
+   * volumen "moze ostati ispod cilja". Server isto pravilo primenjuje i sam
+   * (`SetAllocationRule`), pa ovaj meni nije jedina brana.
    */
   protected readonly allocationOptions = [
     {
@@ -324,9 +329,25 @@ export class PlanHome {
   }
 
   protected setBlockTemplate(index: number, templateKey: string): void {
+    // Prelaz na ugrađeni šablon vraća balansiranje: izbor koji meni više ne prikazuje ne sme
+    // da ostane upisan u blok.
+    const keepsChoice = this.offersAllocationChoice(templateKey);
     this.blocks.update((blocks) =>
-      blocks.map((block, i) => (i === index ? { ...block, templateKey } : block)),
+      blocks.map((block, i) =>
+        i === index
+          ? {
+              ...block,
+              templateKey,
+              setAllocation: keepsChoice ? block.setAllocation : SetAllocation.TargetVolume,
+            }
+          : block,
+      ),
     );
+  }
+
+  /** „Prati moj šablon" postoji samo uz lični šablon; vidi `allocationOptions`. */
+  protected offersAllocationChoice(templateKey: string): boolean {
+    return this.templates().some((template) => template.key === templateKey && template.isCustom);
   }
 
   protected setBlockModel(index: number, raw: string): void {
