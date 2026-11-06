@@ -612,6 +612,63 @@ public class WorkoutTemplateCatalogTests
     }
 
     /// <summary>
+    /// Blok snage na Full Body (3 dana) naprednom ostavlja leđa na 11 naspram MEV-a 12 i biceps
+    /// na 9.5 naspram 10, samo u nedeljama koje nose seriju manje: prvoj linearnog i prve dve
+    /// obrnutog. Uzrok je u #100: mrtvo dizanje više ne puni leđa punim udelom.
+    ///
+    /// Ispravka nije napravljena, i to je izmereno, ne pretpostavljeno. Straight-Arm Pulldown na
+    /// danu B diže leđa iznad MEV-a, ali istiskuje Skull Crusher, pa triceps pada ispod MEV-a na
+    /// sva tri nivoa, i referentni nivo više ne dostiže MEV. Ukupno nedelja ispod MEV-a: 491 bez
+    /// izmene, 526 i 530 sa dve varijante. Test drži da rupa ostane tačno ovolika.
+    /// </summary>
+    [Fact]
+    public void AnAdvancedStrengthBlockOnFullBody_FallsBelowMev_OnlyWhereRecorded()
+    {
+        var offered = new[] { PeriodizationModel.Flat, PeriodizationModel.LinearRising, PeriodizationModel.Inverse };
+        var template = WorkoutTemplateCatalog.GetByKey(WorkoutTemplateCatalog.FullBodyKey)!;
+        var belowMev = new List<string>();
+
+        foreach (var model in offered)
+        {
+            for (var weekNumber = 1; weekNumber <= Periodization.DurationWeeks(model); weekNumber++)
+            {
+                if (Periodization.ForWeek(model, weekNumber, 8, 12, 1, 3).IsDeload)
+                {
+                    continue;
+                }
+
+                var week = TemplateWeekSimulation.Build(template, ExperienceLevel.Advanced, Goal.Strength, model, weekNumber);
+
+                foreach (var seed in ExerciseCatalog.VolumeLandmarks)
+                {
+                    var mev = ExperienceProgramming
+                        .ScaleLandmarks(new VolumeLandmarkValues(seed.Mev, seed.Mav, seed.Mrv), ExperienceLevel.Advanced)
+                        .Mev;
+
+                    // Mišić koji nijedna vežba nedelje ne trenira nema cilj (trbuh i listovi kad
+                    // ih sastav treninga ne uzme); o njemu ovaj test ne govori.
+                    if (week.TargetFor(seed.Muscle) is not null && week.Weekly(seed.Muscle) < mev)
+                    {
+                        belowMev.Add($"{model} w{weekNumber} {seed.Muscle} {week.Weekly(seed.Muscle)}");
+                    }
+                }
+            }
+        }
+
+        Assert.Equal(
+            new[]
+            {
+                "LinearRising w1 Back 11.0",
+                "LinearRising w1 Biceps 9.5",
+                "Inverse w1 Back 11.0",
+                "Inverse w1 Biceps 9.5",
+                "Inverse w2 Back 11.0",
+                "Inverse w2 Biceps 9.5",
+            }.Order(),
+            belowMev.Order());
+    }
+
+    /// <summary>
     /// Dva treninga nedeljno ne mogu da dostignu MEV za većinu grupa — nema dovoljno
     /// mesta u nedelji. To nije greška šablona nego posledica frekvencije, pa šablon
     /// nosi upozorenje umesto da se pravi da je pun plan. Test postoji da bi ta razlika
