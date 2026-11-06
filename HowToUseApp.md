@@ -528,6 +528,14 @@ Grešku ispravljaš ikonicama pored serije: **olovka** za izmenu, **kanta** za b
 > započeti i preskočeni treninzi ostaju sa vežbom koju su imali (preskočen trening je zadržava i
 > kad ga vratiš na plan), a zamena nije moguća kad na vežbi već postoji upisana serija. Trening
 > koji novu vežbu već ima zadržava staru, da je ne bi imao dvaput.
+>
+> Ugrađeni šabloni za zadnju ložu koriste **sedeći** pregib (Seated Leg Curl): u njemu je kuk
+> savijen, pa mišić radi izdužen, i uz isti volumen dao je veći rast od ležećeg (Maeo i sar.
+> 2021). Ako tvoj blok još ima Leg Curl, zamena vežbe ti nudi sedeći. Sledeći blok postojećeg
+> plana dobija sedeći pregib **bez maksimuma**: ležeći se ne prenosi, jer se opterećenja dve
+> sprave razlikuju, pa prvo opterećenje unesi ili upiši po osećaju. Incline Dumbbell Curl
+> (pregib na kosoj klupi) je u katalogu za zamenu i za lične šablone; dokaz da je bolji od
+> običnog pregiba je slabiji, pa ga šabloni ne nameću.
 
 > **Kad predlog stane na sopstvenoj masi.** Ako je vežba bila preteška, pravilo bi htelo
 > opterećenje manje od tvog tela — a tu nema šta da se skine. Predlog tada ostaje na
