@@ -531,7 +531,9 @@ Grešku ispravljaš ikonicama pored serije: **olovka** za izmenu, **kanta** za b
 >
 > Ugrađeni šabloni za zadnju ložu koriste **sedeći** pregib (Seated Leg Curl): u njemu je kuk
 > savijen, pa mišić radi izdužen, i uz isti volumen dao je veći rast od ležećeg (Maeo i sar.
-> 2021). Ako tvoj blok još ima Leg Curl, zamena vežbe ti nudi sedeći. Incline Dumbbell Curl
+> 2021). Ako tvoj blok još ima Leg Curl, zamena vežbe ti nudi sedeći. Sledeći blok postojećeg
+> plana dobija sedeći pregib **bez maksimuma**: ležeći se ne prenosi, jer se opterećenja dve
+> sprave razlikuju, pa prvo opterećenje unesi ili upiši po osećaju. Incline Dumbbell Curl
 > (pregib na kosoj klupi) je u katalogu za zamenu i za lične šablone; dokaz da je bolji od
 > običnog pregiba je slabiji, pa ga šabloni ne nameću.
 
