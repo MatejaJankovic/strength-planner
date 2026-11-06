@@ -301,7 +301,7 @@ mestom gde je svaki upotrebljen:
 | Halperin i sar. 2022 | tačnost procene RIR-a, granica od 12 ponavljanja | beginner-deload.md, estimate-edges.md |
 | Grgic i sar. 2020 | dnevna varijacija 1RM (medijana CV 4.2%) | landmark-signal-noise.md |
 | Remmert i sar. 2025 (**preprint**, SportRxiv, nije recenziran) | granica od oko 11 serija jednog mišića po treningu | session-volume-ceiling.md |
-| Pelland i sar., *Sports Medicine* (online 2025, u štampi 2026, 56(2):481–505; DOI 10.1007/s40279-025-02344-w) | doza volumena i učestalost; pomoćni mišić broji pola serije | evidence-notes.md, session-volume-ceiling.md |
+| Pelland i sar., *Sports Medicine* (online 2025, u štampi 2026, 56(2):481–505; DOI 10.1007/s40279-025-02344-w) | doza volumena i učestalost; pomoćni mišić broji pola serije | evidence-notes.md, session-volume-ceiling.md, strength-block-composition.md, analiza-prirucnika.md |
 | Prestes i sar. 2009, González-Ravé i sar. 2022 | linearan model kao predlog | periodization-shapes.md |
 | Pancar i sar. 2026, Coleman i sar. 2024 | deload početnika i trenirani vežbači | beginner-deload.md |
 | Bosquet i sar. 2013 | pad snage posle pauze nije jedan broj | stale-maximum-notice.md |

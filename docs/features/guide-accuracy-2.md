@@ -32,6 +32,18 @@ se ne menja.
   2026, 56(2):481–505, DOI 10.1007/s40279-025-02344-w. „Pelland i sar. 2025" u uputstvu je
   tačno (godina online izdanja). Dokument za tezu sada ima i DOI i obe godine.
 
+## Posle pregleda
+
+Pregled je potvrdio sve četiri rečenice i oba komentara nad kodom. Ispravljeno je i:
+
+- komentar u `one-rep-max-setup.html` je i dalje govorio da ekran „sa profila stiže
+  samostalno";
+- Korak 2 uputstva je za ponovno otvaranje ekrana pominjao samo adresu, ne i dugme iz napomene;
+- „Prati moj šablon" menja serije po rasporedu **i deload-u**: auto-deload polovi i takav blok;
+- `FatigueEvaluator` je i u sledećoj rečenici govorio o „četvrtoj nedelji";
+- `analiza-prirucnika.md` je bio jedini dokument u kome Remmert i sar. nije označen kao
+  preprint.
+
 ## Provera
 
 - `dotnet test`: 860, bez izmena. `npm test` i `npm run build` prolaze. Menja se samo tekst.

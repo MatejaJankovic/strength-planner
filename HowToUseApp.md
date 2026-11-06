@@ -191,7 +191,8 @@ baš onu vrednost od koje plan polazi, brisanje je način da pogrešno unet broj
 bude ta vrednost. Ako iza njega stoji stariji zapis, on dolazi na njegovo mesto.
 
 > **Kasnija izmena:** ovaj ekran nema stavku u navigaciji. Ako hoćeš da ga ponovo otvoriš
-> (npr. posle pauze, da resetuješ startna opterećenja), idi ručno na adresu `/onboarding`.
+> (npr. posle pauze, da resetuješ startna opterećenja), idi na adresu `/onboarding`, ili klikni
+> dugme u napomeni na ekranu „Trening" kad nekoj vežbi bloka maksimum fali ili je star.
 > Novi unos ne briše stari, ali **ono što ručno upišeš poništava starije procene** — tako se
 > naduvana procena može ispraviti naniže. Test-serija to **ne** radi: ona je i sama procena,
 > iste vrste kao one iz odrađenih treninga, pa se sa njima nadmeće po istom pravilu (najbolja
@@ -905,7 +906,8 @@ tamo koliko taj trening može da primi; ostatak otpada, pa nedelja ostaje ispod 
 se drži u istom prozoru kao i ostalo balansiranje — najviše dve serije od propisa i najviše šest
 po vežbi — pa trening čiji je propis mnogo veći ostaje iznad nje: kod ugrađenih šablona najviše
 12, a lični šablon sa mnogo serija za jedan mišić u danu i više. Kod izbora „Prati moj šablon"
-balansiranje se ne pokreće, pa ni ova granica: serije tada menja samo raspored kroz nedelje.
+balansiranje se ne pokreće, pa ni ova granica: serije tada menjaju samo raspored kroz nedelje
+i deload.
 
 **Periodizovane nedelje.** Kad se propis menja iz nedelje u nedelju (linearan i obrnut
 model), opterećenje se ne prenosi kroz „+ jedan korak" nego se ponovo izvodi iz najsvežije
@@ -992,7 +994,7 @@ unosa, ne od nivoa.
 
 Ako ne želiš da se tvoj broj serija pomera ka cilju volumena, u bloku izaberi **Broj serija
 → Prati moj šablon**. Serije tada polaze od tvog unosa i menjaju se samo po izabranom
-rasporedu, kao gore, a sistem ih ne ispravlja ni ka cilju ni ispod granice oporavka (MRV):
+rasporedu i deload-u, kao gore, a sistem ih ne ispravlja ni ka cilju ni ispod granice oporavka (MRV):
 nedelja može da ostane ispod cilja ili da je pređe. Taj izbor se nudi samo uz lični šablon.
 Ugrađeni šabloni nose raspored vežbi, a ne nameru o volumenu, i u periodizovanom bloku bi
 doslovno propisivali nedelje iznad MRV-a, pa se uvek prilagođavaju ciljnom volumenu.
