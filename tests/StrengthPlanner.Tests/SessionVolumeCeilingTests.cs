@@ -120,19 +120,29 @@ public class SessionVolumeCeilingTests
     /// Granica menja samo nedelje u kojima bi neki trening bez nje prešao granicu. Svaka
     /// druga nedelja svakog šablona dobija isti predlog kao pre.
     ///
-    /// Dva izuzetka, imenom: u nedeljama 4 i 5 linearnog modela Full Body (4 dana) za
-    /// početnika u bloku snage propis već stavlja 12 serija jednog mišića u trening. Predlog
-    /// bez granice završi na 11, ali drugim putem - granica ceni već prvi korak pretrage.
-    /// Uzrok postoji, samo ga predlog bez granice ne pokazuje. Spisak mora da se poklopi
-    /// tačno: nedelja koja prestane da bude izuzetak mora i da se skine sa njega.
+    /// Izuzeci, imenom: u tim nedeljama propis već stavlja više od 11 serija jednog mišića u
+    /// trening, a predlog bez granice završi ispod nje, ali drugim putem - granica ceni već
+    /// prvi korak pretrage. Uzrok postoji, samo ga predlog bez granice ne pokazuje. Spisak
+    /// mora da se poklopi tačno: nedelja koja prestane da bude izuzetak mora i da se skine
+    /// sa njega, a petlja ispod proverava da svaka zaista ima taj uzrok.
+    ///
+    /// Svih šest je doneo udeo veslanja u ramenima (F16): u Upper C srednjeg nivoa ramena u
+    /// propisu dolaze do 12.5, a u Pull danu Push/Pull/Legs x2 početnika leđa i biceps su na
+    /// 12 i ranije, ali je tek novi udeo pomerio raspodelu tako da se predlog sa granicom i
+    /// bez nje razlikuje. Do F16 su na spisku bile nedelje 4 i 5 linearnog Full Body (4 dana)
+    /// početnika u bloku snage; sa novim doprinosima predlog bez granice tamo završava isto.
     /// </summary>
     [Fact]
     public void TheCeiling_ChangesOnlyWeeksThatWouldBreachIt()
     {
         var breachedOnlyInThePrescription = new[]
         {
-            "full-body-4 Beginner Strength LinearRising w4",
-            "full-body-4 Beginner Strength LinearRising w5",
+            "push-pull-legs-6 Beginner Hypertrophy Inverse w4",
+            "push-pull-legs-6 Beginner Hypertrophy LinearRising w4",
+            "push-pull-legs-6 Beginner Hypertrophy LinearRising w5",
+            "upper-lower-x3 Intermediate Hypertrophy Inverse w4",
+            "upper-lower-x3 Intermediate Hypertrophy LinearRising w4",
+            "upper-lower-x3 Intermediate Hypertrophy LinearRising w5",
         };
         var changedWithoutCause = new List<string>();
 

@@ -562,8 +562,9 @@ public class WorkoutTemplateCatalogTests
     /// <summary>
     /// Ono što uputstvo naprednom preporučuje, drži test. Upper/Lower x3 mu daje MEV za
     /// svaki mišić u svakoj trenažnoj nedelji svakog modela koji čarobnjak nudi. Upper/Lower
-    /// (4 dana) ispod MEV-a pada samo u prvoj nedelji linearnog bloka (gluteusi, a u bloku
-    /// snage biceps) i u prve dve nedelje obrnutog.
+    /// (4 dana) ispod MEV-a pada samo u bloku snage, za biceps, u prvoj nedelji linearnog
+    /// bloka i u prve dve nedelje obrnutog. Gluteusi su tu padali dok je mrtvo dizanje
+    /// bilo vežba za leđa (F16).
     /// </summary>
     [Fact]
     public void TheTemplatesTheGuideRecommends_GiveAnAdvancedLifterMev_WhereTheGuideSays()
@@ -606,9 +607,6 @@ public class WorkoutTemplateCatalogTests
                 "upper-lower Strength LinearRising w1 Biceps",
                 "upper-lower Strength Inverse w1 Biceps",
                 "upper-lower Strength Inverse w2 Biceps",
-                "upper-lower Hypertrophy LinearRising w1 Glutes",
-                "upper-lower Hypertrophy Inverse w1 Glutes",
-                "upper-lower Hypertrophy Inverse w2 Glutes",
             }.Order(),
             belowMev.Order());
     }

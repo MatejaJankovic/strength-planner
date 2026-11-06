@@ -67,8 +67,15 @@ public static class ExerciseCatalog
             [new("Quads", 1.0m), new("Glutes", 0.5m)]),
         new("Romanian Deadlift", ExerciseType.Compound, "Barbell",
             [new("Hamstrings", 1.0m), new("Glutes", 0.5m), new("Back", 0.5m)]),
+        // Mrtvo dizanje je opružanje kuka: gluteusi i zadnja loža se skraćuju pod
+        // opterećenjem, a leđa (opružači, latovi, trapez) drže kičmu i šipku izometrijski.
+        // Po istom pravilu kao čučanj iznad, pun udeo pripada mišiću koji vrši pokret, pa
+        // je primarni gluteus, a leđa zadržavaju pola zbog opružača. Dok je Back bio 1.0,
+        // Upper/Lower x3 je dostizao MEV za leđa samo kroz mrtvo dizanje (F16).
         new("Deadlift", ExerciseType.Compound, "Barbell",
             [new("Glutes", 1.0m), new("Hamstrings", 0.5m), new("Back", 0.5m), new("Quads", 0.5m)]),
+        // Zadnja loža u potisku kukom radi uz savijeno koleno, skraćena i sa malo opterećenja;
+        // gluteus nosi pokret. Udeo od 0.5 je punio budžet zadnje lože koji pregib gradi.
         new("Hip Thrust", ExerciseType.Compound, "Barbell",
             [new("Glutes", 1.0m)]),
         new("Leg Curl", ExerciseType.Isolation, "Machine",
@@ -132,6 +139,10 @@ public static class ExerciseCatalog
         new("Face Pull", ExerciseType.Isolation, "Cable",
             [new("Shoulders", 1.0m), new("Back", 0.5m)]),
 
+        // Horizontalno veslanje povlači lakat iza tela, i tu zadnji deltoid radi dinamički -
+        // to je deo „Shoulders" na koji se troši budžet ramena, kao i kod Face Pull-a i Rear
+        // Delt Fly-a. Vertikalno povlačenje ga ne radi, pa zgib i Lat Pulldown udeo nemaju.
+        //
         // Zgib podiže celo telo.
         new("Pull-up", ExerciseType.Compound, "Bodyweight",
             [new("Back", 1.0m), new("Biceps", 0.5m)], BodyweightShare: 1.00m),
