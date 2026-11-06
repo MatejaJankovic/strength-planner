@@ -84,3 +84,5 @@ Da li je zapis star odlučuje server, jer samo on zna prozor. Klijent samo broji
   ovde nije urađena.
 - Napomena ne zna da li je vežbač stvarno pravio pauzu. Vežba koja dva meseca nije bila u
   bloku dobija istu napomenu, i tu je ona jednako tačna: broj je star.
+
+  *(Kasnije: pokriveno testom nad servisom, vidi [service-harness.md](service-harness.md).)*

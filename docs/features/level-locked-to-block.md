@@ -77,6 +77,8 @@ opseg izolacija iz desete: tačno pravilo, zeleni testovi, i samo živa aplikaci
 Zato je merenje gore uzeto u oba smera — sa ispravkom i sa vraćenim starim pravilom, uz
 ponovni build i restart API-ja između, pošto `git checkout --` vraća izvor a ne binarni
 izlaz.
+*(Kasnije: `BlockExperienceLevel` je pokriven testom nad servisnim slojem, vidi
+[service-harness.md](service-harness.md).)*
 
 Tri nova testa (`MesocycleLevelTests`) pokrivaju ono što se odavde može pokriti: da kolona
 postoji, da je nenullable i istog tipa kao u profilu, i koliko tačno pomera pojas i prag —
