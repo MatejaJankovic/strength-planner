@@ -28,6 +28,8 @@ vežbača od pre pauze, a snaga posle nekoliko nedelja bez treninga opada.
   opreznije i da se težina spusti ako treba.
 - **Ekran maksimuma:** uz red piše „Star 10 nedelja, jer novijeg zapisa nema", i da nov unos
   ili test-serija menja maksimum, ali ne i opterećenja već upisana u plan.
+  *(Kasnije: od [recompute-pending-targets.md](recompute-pending-targets.md) nov zapis
+  preračunava i opterećenja prve nedelje koja još nisu započeta.)*
 - Uputstvo, odeljak „Start novog bloka", to sada kaže.
 
 **Procenat pada se ne nudi.** Pad snage posle pauze zavisi od njene dužine i od treniranosti
