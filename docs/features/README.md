@@ -154,7 +154,7 @@ uz ugrađeni šablon). Svaka grana sa izmenom koda ima merenje vraćanjem, a sva
 | [Zatvaranje runde 14](round-14-closure.md) | „Ispod MEV-a nema stimulusa" na ekranu; ocena umora nije bila nazvana heuristikom; rečenice teze koje više ne opisuju aplikaciju nisu bile na jednom mestu ([teza-uskladjivanje.md](../teza-uskladjivanje.md)) | #102 |
 | [Uputstvo i komentari, drugi prolaz](guide-accuracy-2.md) | Četiri rečenice uputstva i dva komentara u kodu više nisu opisivali aplikaciju; Remmert i sar. nije bio označen kao preprint | #103 |
 | [Test-harness za servise](service-harness.md) | Pravilo u servisu (#74, #99, #101) moglo je da se vrati uz ceo paket zelen; sada ga hvataju testovi nad servisom, osim dva pozivaoca iz #74 | #104 |
-| [Leđa naprednog u bloku snage na Full Body](full-body-strength-back.md) | Leđa 11 naspram MEV-a 12 u lakšim nedeljama; obe ispravke šablona su oborile triceps na svakom nivou, pa je rupa zakucana testom | — |
+| [Leđa naprednog u bloku snage na Full Body](full-body-strength-back.md) | Leđa 11 naspram MEV-a 12 u lakšim nedeljama; Face Pull umesto Rear Delt Fly ih diže na 12.5 bez nove rupe, a biceps (9.5 naspram 10) je zakucan testom | #105 |
 
 ## Ako čitaš samo jedno
 

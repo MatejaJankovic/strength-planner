@@ -1,3 +1,4 @@
+using System.Globalization;
 using StrengthPlanner.Application.Templates;
 using StrengthPlanner.Domain.Algorithms;
 using StrengthPlanner.Domain.Enums;
@@ -612,14 +613,17 @@ public class WorkoutTemplateCatalogTests
     }
 
     /// <summary>
-    /// Blok snage na Full Body (3 dana) naprednom ostavlja leđa na 11 naspram MEV-a 12 i biceps
-    /// na 9.5 naspram 10, samo u nedeljama koje nose seriju manje: prvoj linearnog i prve dve
-    /// obrnutog. Uzrok je u #100: mrtvo dizanje više ne puni leđa punim udelom.
+    /// Blok snage na Full Body (3 dana) naprednom ostavlja biceps na 9.5 naspram MEV-a 10, samo
+    /// u nedeljama koje nose seriju manje: prvoj linearnog i prve dve obrnutog.
     ///
-    /// Ispravka nije napravljena, i to je izmereno, ne pretpostavljeno. Straight-Arm Pulldown na
-    /// danu B diže leđa iznad MEV-a, ali istiskuje Skull Crusher, pa triceps pada ispod MEV-a na
-    /// sva tri nivoa, i referentni nivo više ne dostiže MEV. Ukupno nedelja ispod MEV-a: 491 bez
-    /// izmene, 526 i 530 sa dve varijante. Test drži da rupa ostane tačno ovolika.
+    /// Leđa su tu stajala na 11 naspram 12, od #100 (mrtvo dizanje više ne puni leđa punim
+    /// udelom). Ispravljena su tako što je na danu B Rear Delt Fly zamenjen sa Face Pull, koji
+    /// isto radi zadnji deltoid a daje i pola serije za leđa, i tako što na danu C Hammer Curl
+    /// stoji pre Face Pull-a. Izmereno nad svim ugrađenim nedeljama: parova nedelja-mišić ispod
+    /// MEV-a ima 491 → 459, nijedan novi, i nijedna nedelja iznad MRV-a. Vežba za leđa umesto
+    /// Leg Extension ili posle nje je istiskivala Skull Crusher, pa je padao triceps.
+    ///
+    /// Za biceps naprednog nije nađena zamena koja ne obara drugi mišić u istim nedeljama.
     /// </summary>
     [Fact]
     public void AnAdvancedStrengthBlockOnFullBody_FallsBelowMev_OnlyWhereRecorded()
@@ -627,6 +631,7 @@ public class WorkoutTemplateCatalogTests
         var offered = new[] { PeriodizationModel.Flat, PeriodizationModel.LinearRising, PeriodizationModel.Inverse };
         var template = WorkoutTemplateCatalog.GetByKey(WorkoutTemplateCatalog.FullBodyKey)!;
         var belowMev = new List<string>();
+        var untargeted = new SortedSet<string>();
 
         foreach (var model in offered)
         {
@@ -641,15 +646,23 @@ public class WorkoutTemplateCatalogTests
 
                 foreach (var seed in ExerciseCatalog.VolumeLandmarks)
                 {
+                    // Mišić koji nijedna vežba nedelje ne trenira nema cilj. Ne broji se kao
+                    // rupa, ali se proverava ispod: mišić koji izgubi svaku vežbu ne sme da
+                    // nestane iz testa neprimećeno.
+                    if (week.TargetFor(seed.Muscle) is null)
+                    {
+                        untargeted.Add(seed.Muscle);
+                        continue;
+                    }
+
                     var mev = ExperienceProgramming
                         .ScaleLandmarks(new VolumeLandmarkValues(seed.Mev, seed.Mav, seed.Mrv), ExperienceLevel.Advanced)
                         .Mev;
 
-                    // Mišić koji nijedna vežba nedelje ne trenira nema cilj (trbuh i listovi kad
-                    // ih sastav treninga ne uzme); o njemu ovaj test ne govori.
-                    if (week.TargetFor(seed.Muscle) is not null && week.Weekly(seed.Muscle) < mev)
+                    if (week.Weekly(seed.Muscle) < mev)
                     {
-                        belowMev.Add($"{model} w{weekNumber} {seed.Muscle} {week.Weekly(seed.Muscle)}");
+                        var sets = week.Weekly(seed.Muscle).ToString("0.0", CultureInfo.InvariantCulture);
+                        belowMev.Add($"{model} w{weekNumber} {seed.Muscle} {sets}");
                     }
                 }
             }
@@ -658,14 +671,15 @@ public class WorkoutTemplateCatalogTests
         Assert.Equal(
             new[]
             {
-                "LinearRising w1 Back 11.0",
                 "LinearRising w1 Biceps 9.5",
-                "Inverse w1 Back 11.0",
                 "Inverse w1 Biceps 9.5",
-                "Inverse w2 Back 11.0",
                 "Inverse w2 Biceps 9.5",
             }.Order(),
             belowMev.Order());
+
+        // Trbuh i listovi su na danima B i C osmi po redu, pa ih naprednom u bloku snage sastav
+        // treninga ne uzme.
+        Assert.Equal(["Abs", "Calves"], untargeted);
     }
 
     /// <summary>
