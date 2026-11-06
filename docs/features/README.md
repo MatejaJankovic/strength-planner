@@ -160,7 +160,7 @@ uz ugrađeni šablon). Svaka grana sa izmenom koda ima merenje vraćanjem, a sva
 | [Pravilo koraka: jedna tabela za server i ekran](step-absorption-shared-cases.md) | Kartica je na težini van mreže koraka tražila više ponavljanja nego što progresija traži (9 kg: 16 umesto 12); kopiju pravila na ekranu sada drži zajednička tabela od 5066 slučajeva i test nad samom progresijom | #108 |
 | [Rame po glavama](shoulder-heads.md) | Zbirno „Shoulders" je krilo da bočni deltoid dobija 6–9 serija; sada tri glave sa RP granicama (MEV prednjeg i zadnjeg nula), drugo bočno podizanje u sedam šablona, bočni ispod MEV-a 486 → 70 parova | #109 |
 | [Kalibraciona serija](calibration-set.md) | Svaka procena maksimuma počivala je na proceni rezerve; sada u poslednjoj trenažnoj nedelji prva serija prve vežbe ide do otkaza (srednji i napredni nivo, gde se serija može očitati), a granice volumena taj otkaz ne čitaju kao umor | #110 |
-| [Zamena vežbe za ostatak bloka](exercise-substitution.md) | Generisan blok nije mogao da promeni vežbu; sada se menja u svakom treningu istog dana koji čeka, samo vežbom kojoj bi blok propisao isto (isti mišić, tip i opseg) | — |
+| [Zamena vežbe za ostatak bloka](exercise-substitution.md) | Generisan blok nije mogao da promeni vežbu; sada se menja u svakom treningu istog dana koji čeka, samo vežbom kojoj bi blok propisao isto (isti mišić, tip i opseg) | #111 |
 
 ## Ako čitaš samo jedno
 
