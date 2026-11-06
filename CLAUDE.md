@@ -1002,19 +1002,21 @@ went to a scratch file first.
 
 **Round 17 — a review after round 16, and what it opened.** A whole-app review against the
 guide, the training documentation and the literature produced a plan in steps. The owner chose:
-the plan in order, plus R3, R5 and A1-A3; undulating periodization stayed out. Ten branches, all
-merged; R3 was closed by measurement without a branch.
+the plan in order, plus three items: re-checking old blocks that follow a built-in template
+(closed by measurement: the three such active blocks in the development database are all flat,
+and a flat block never exceeds MRV, #101), splitting the aggregate shoulder (#109), and three
+additions (#110-#112). Undulating periodization stayed out. Ten branches, all merged.
 
 | Branch | What it changed | PR |
 |---|---|---|
 | `docs/guide-accuracy-2` | Four guide sentences and two code comments that no longer described the app; a preprint cited as a paper | #103 |
 | `test/service-harness` | A real `AppDbContext` over in-memory SQLite, so a rule that lives in a service can fail a test | #104 |
-| `fix/full-body-strength-back` | Back 11 against MEV 12 for an advanced strength block on Full Body | #105 |
-| `feature/recompute-pending-targets` | A new maximum now recomputes week-one loads of sessions not yet started | #106 |
-| `chore/workout-session-styles` | `workout-session.scss` from 7.93 to 7.48 kB of a hard 8 | #107 |
+| `fix/full-body-strength-back` | Back 11 against MEV 12 for an advanced strength block on Full Body; raised to 12.5, then #109 took it back to 11.5 in three weeks, and biceps 9.5 against 10 stays recorded | #105 |
+| `feature/recompute-pending-targets` | A new or deleted maximum record now recomputes the stored week-one loads of sessions with no logged set | #106 |
+| `chore/workout-session-styles` | `workout-session.scss` from 7.93 to 7.48 kB of a hard 8 (7.61 after #111) | #107 |
 | `refactor/step-absorption-from-server` | The card's rep target off the step grid disagreed with progression (9 kg: 16 reps where progression steps at 12); one case file now tests the server and the client copy | #108 |
-| `feature/shoulder-heads` | "Shoulders" split into front, side and rear delt with RP's ranges; a second lateral raise in seven templates | #109 |
-| `feature/calibration-set` | In the last training week the first set of each session's main lift goes to failure | #110 |
+| `feature/shoulder-heads` | "Shoulders" split into front, side and rear delt with RP's ranges; a second lateral raise in seven templates (a second and third in Full Body) | #109 |
+| `feature/calibration-set` | In the last training week the first set of each session's first lift goes to failure, for intermediate and advanced lifters, where such a set can be read | #110 |
 | `feature/exercise-substitution` | An exercise can be swapped for the rest of the block | #111 |
 | `feature/lengthened-variants` | Seated leg curl in every template (Maeo et al. 2021); incline curl in the catalogue only | #112 |
 
@@ -1022,9 +1024,9 @@ merged; R3 was closed by measurement without a branch.
 
 The finding that shaped the round: **an aggregate hides exactly what it aggregates.** With
 "Shoulders" as one group, the target was filled by the overhead press and rear-delt work while
-the side delt, built only by the lateral raise, got 6-9 sets a week. Split into heads with the
+the side delt, whose only direct work is the lateral raise, got 6-9 sets a week. Split into heads with the
 old templates, the side delt sat below MEV in 486 week-muscle pairs against 58 for the
-aggregate; with one more lateral raise per template, 70. The same blindness then hit my own
+aggregate; with the added lateral raises, 70. The same blindness then hit my own
 probe: it counted only muscles a week trains, so the abs and calves the new lateral raises
 pushed out entirely were invisible. Counting an untrained muscle as zero sets, the whole body
 is flat (1451 → 1454): the change moves volume to the side delt and abs and calves pay for it,
@@ -1033,18 +1035,21 @@ list.
 
 Decisions worth keeping:
 
-- **MEV may be zero, and then it means "no direct work needed".** RP gives the front and rear
-  delt an MEV of zero because pressing and rowing already stimulate them, and the model
+- **MEV may be zero, and then it means "no direct work needed".** RP's MEV range for the front
+  and rear delt starts at zero because pressing and rowing already stimulate them, and the model
   deliberately does not credit those sets to the heads. A zero stays zero through level
   scaling and learning, and such a muscle lowers MRV only from a week near its target.
-- **A calibration is read, not trusted more.** It applies only where a set to failure can be
-  read (`RepRangeMax + TargetRir` at most 12), is stored as an ordinary estimate, and does not
+- **A calibration is read, not trusted more.** It applies to intermediate and advanced lifters,
+  on a session's first lift if it is a compound that suits low reps, and only where a set to
+  failure can be read (`RepRangeMax + TargetRir` at most 12), is stored as an ordinary estimate, and does not
   override the others: the last training week is the block's most fatigued. One helper
   (`CalibrationSets`) names the calibration sets, and the volume limits and the fatigue score
-  leave them out of the failure share and the strength comparison.
+  leave them out of the failure share and the strength comparison (the strength exclusion is
+  not test-covered: reverting it fails 0).
 - **A swap changes the exercise and nothing else,** so only an exercise the block would
   prescribe the same is offered: the same primary muscles, the same type, and for a compound
-  the same `SuitsLowReps`. Past, started and skipped sessions keep theirs, and a deload reads a
+  the same `SuitsLowReps`. Past, started and skipped sessions keep theirs (except the session
+  the swap is made from, while its exercise has no sets), and a deload reads a
   swapped slot's base sets by its order in the base week.
 - **The literature moves a template only where it is clearly on the other side (D1).** The
   seated leg curl has a direct within-subject comparison; the incline curl's only one found
@@ -1063,7 +1068,7 @@ Measurements from this round that contradicted the expectation, each recorded in
    translates to APPLY, which SQLite lacks; the volume limits and the weekly target resolver
    were rewritten as equivalent joins. A harness only covers what it can execute.
 5. **"A higher calibration becomes the next start" was false** whenever it stands more than 5%
-   above the next best estimate: the baseline's outlier rule sets it aside. Written into the
+   above the next best estimate (with at least three estimates on file): the baseline's outlier rule sets it aside. Written into the
    guide, the screen and the domain comment first; corrected after review of #110.
 6. **The inverse hypertrophy block does not end at RIR 0.** `Periodization.MinRir` is 1, so it
    ends at 8-12 at RIR 1 and cannot be calibrated, like the flat block. My expectation; a test
@@ -1071,8 +1076,9 @@ Measurements from this round that contradicted the expectation, each recorded in
 7. **Rules keyed on (day, exercise) did not survive the exercise changing.** After a swap the
    deload could not find the slot's base sets and fell back to the derivation rounds 10 and 14
    had replaced; found by review of #111.
-8. **#108's rule had no production caller.** The card checked against `RepsToEarnStep`, which
-   progression never calls; progression measures the climb to the next weight on the rack.
+8. **#108's first version tested the card against a function progression never calls.**
+   `RepsToEarnStep` had no production caller; progression measures the climb to the next weight
+   on the rack, and off the step grid the two disagreed. Found by review of #108.
 
 Process notes:
 
@@ -1080,8 +1086,8 @@ Process notes:
   was locked, `dotnet test` failed to build, and five "measurements" printed no test results
   at all. Stop the API before building, and read the build line before believing a count.
 - **Two reviews hit the usage limit mid-run** and were resumed rather than restarted; a third
-  ran for two hours on experiments until asked to report. A review prompt now asks for a report
-  within a stated time.
+  ran for two hours on experiments until asked to report. Give a review agent a time to report
+  in.
 - **Many files are CRLF and some carry a BOM;** exact-string edits from a script failed until the
   script normalised line endings and wrote them back as found.
 
