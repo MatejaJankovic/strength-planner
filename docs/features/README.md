@@ -117,7 +117,7 @@ ono što je ispod 20 kg, ono što blok radi kroz nedelje i ono što se tvrdi o v
 |---|---|---|
 | [Korak mora da stane u opseg](load-step-absorption.md) | Bučica 8 → 10 kg (+25%) posle 3 × 12 ostavljala je 3–4 ponavljanja u opsegu 8–12; korekcija i deload lakih tegova su se zaokruživali nazad na istu težinu | #85 |
 | [Slične vežbe ne idu u uzastopne dane](session-spacing.md) | Legs Specialization je stavljao noge tri dana zaredom, a Full Body (4 dana) čučanj pa RDL i leg press pa front squat u uzastopne dane | #86 |
-| [Granica serija po treningu](session-volume-ceiling.md) | Balansiranje je gledalo samo nedelju, pa je Push dan Push/Pull/Legs nosio 16–18 serija za grudi; sada jedan mišić dobija najviše ~11 u jednom treningu (Remmert i sar. 2025) | #87 |
+| [Granica serija po treningu](session-volume-ceiling.md) | Balansiranje je gledalo samo nedelju, pa je Push dan Push/Pull/Legs nosio 16–18 serija za grudi; sada jedan mišić dobija najviše ~11 u jednom treningu (Remmert i sar. 2025, preprint) | #87 |
 | [Tekst na ekranu](ui-copy.md) | Upozorenje na 0 kg je pominjalo praznu šipku i uz sajlu i bučice (ispravka iz runde 13 nije stigla u kod); sedam tekstova (čarobnjak plana, registracija) bilo je bez dijakritika | #88 |
 | [Sastav bloka snage](strength-block-composition.md) | Napredni je i u bloku snage dobijao jednu složenu vežbu po treningu, iskoraci su nosili 3–6, a balansiranje je seklo bench pre razvlačenja (373 puta) | #89 |
 | [Linearan model po priručniku](periodization-shapes.md) | Linearan model je spuštao serije kroz blok, pa je hipertrofija gađala MRV u dve najsvežije nedelje; predlog „obrnut za hipertrofiju" nije imao oslonac. Sada se za svaki blok predlaže linearan, a umor povlači deload najviše jednom po bloku | #90 |
@@ -152,6 +152,7 @@ uz ugrađeni šablon). Svaka grana sa izmenom koda ima merenje vraćanjem, a sva
 | [Doprinosi mišića, drugi deo](muscle-contributions-2.md) | Mrtvo dizanje je punilo leđa umesto gluteusa, a Hip Thrust zadnju ložu; udeo veslanja u ramenima je odbačen jer je sekao bočno podizanje | #100 |
 | [„Prati moj šablon" samo za lični šablon](allocation-follow-template.md) | Uz ugrađeni šablon je propisivao nedelje iznad MRV-a, a ekran je govorio samo „može ostati ispod cilja" | #101 |
 | [Zatvaranje runde 14](round-14-closure.md) | „Ispod MEV-a nema stimulusa" na ekranu; ocena umora nije bila nazvana heuristikom; rečenice teze koje više ne opisuju aplikaciju nisu bile na jednom mestu ([teza-uskladjivanje.md](../teza-uskladjivanje.md)) | #102 |
+| [Uputstvo i komentari, drugi prolaz](guide-accuracy-2.md) | Četiri rečenice uputstva i dva komentara u kodu više nisu opisivali aplikaciju; Remmert i sar. nije bio označen kao preprint | #103 |
 
 ## Ako čitaš samo jedno
 

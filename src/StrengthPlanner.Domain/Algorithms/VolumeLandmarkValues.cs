@@ -3,7 +3,7 @@ namespace StrengthPlanner.Domain.Algorithms;
 /// <summary>
 /// Weekly working-set limits for one muscle group.
 ///
-/// The handbook names three, not two: below MEV nothing happens, above MRV recovery
+/// The handbook names three, not two: below MEV growth is small, above MRV recovery
 /// fails, and MAV is the volume actually worth aiming for in between —
 /// <i>"Optimalan volumen treninga pri kojem se telo adekvatno oporavlja i stimuliše
 /// hipertrofiju, bez ulaska u prekomeran zamor"</i>. Without MAV the optimal band for
