@@ -279,8 +279,9 @@ public static class WorkoutTemplateCatalog
                     // Ranije je ovde bio Face Pull. Kad mrtvo dizanje više ne puni leđa punim
                     // udelom, šablon nema nijednu izolaciju za leđa i napredni vežbač pada na
                     // 10.5 serija naspram MEV-a 12 u lakšim nedeljama periodizovanog bloka. Uz
-                    // Straight-Arm Pulldown je 15; ramena se ne pomeraju, jer veslanja sada
-                    // daju udeo zadnjem deltoidu (F16).
+                    // Straight-Arm Pulldown je 15. Ramena u tim i u ravnim nedeljama ostaju na
+                    // 14 i 19 (dva bočna podizanja, Rear Delt Fly i Face Pull na Upper C), a u
+                    // najtežim nedeljama padaju na 23, i dalje iznad MAV-a (F16).
                     "Straight-Arm Pulldown", "Calf Raise", "Machine Crunch", "Cable Crunch"
                 ])
             ],
