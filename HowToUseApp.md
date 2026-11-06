@@ -978,6 +978,11 @@ brojeve, pogledaj nedelju koja je osnova rasporeda (kod linearnog i obrnutog mod
 treća). Nivo iskustva ovde **ne** menja broj serija — kod ličnog šablona polazi se od tvog
 unosa, ne od nivoa.
 
+Ako želiš da broj serija ostane tačno tvoj, u bloku izaberi **Broj serija → Prati moj
+šablon**. Taj izbor se nudi samo uz lični šablon. Ugrađeni šabloni nose raspored vežbi, a ne
+nameru o volumenu, i doslovno bi propisivali nedelje iznad granice oporavka (MRV), pa se
+uvek prilagođavaju ciljnom volumenu.
+
 **Ne mogu da obrišem lični šablon.**
 Koristi ga blok dugoročnog plana koji još nije generisan. Obriši taj plan ili sačekaj da
 blok bude odrađen, pa će brisanje proći.
