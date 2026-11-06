@@ -98,6 +98,10 @@ mu grupa stoji u zoni a jedan njen deo zaostaje.
 Isto važi i za `Deadlift → Back 1.0`, koje pregled pominje: u zbirnoj grupi koja uključuje
 opružače leđa, pun kredit za mrtvo dizanje je odbranjiv, pa nije diran.
 
+*(Kasnije: [muscle-contributions-2.md](muscle-contributions-2.md) je ovu odluku promenio. Mrtvo
+dizanje je sada vežba za gluteus (Glutes 1.0, Back 0.5), a Hip Thrust više ne nosi zadnju
+ložu. Razlozi i merenja su tamo.)*
+
 ## Testovi
 
 Nema novih. Zatečeni paket je pokrio izmenu bolje nego što bi je pokrio nov test:

@@ -96,7 +96,7 @@ public class SessionVolumeCeilingTests
 
     /// <summary>
     /// Full Body, Upper/Lower i Upper/Lower x3 na referentnom nivou granicu ne osećaju: njihov
-    /// najveći trening nosi 11, 8 i 7 serija jednog mišića, pa je predlog isti kao pre granice,
+    /// najveći trening nosi 11, 9 i 8 serija jednog mišića, pa je predlog isti kao pre granice,
     /// vežba po vežba. To ne važi za svaki šablon koji mišić trenira dva puta nedeljno - Full
     /// Body (4 dana), Upper/Lower + PPL i Legs Specialization i tu imaju jedan dan preko nje.
     /// </summary>

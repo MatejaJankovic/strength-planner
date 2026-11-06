@@ -22,12 +22,16 @@ obim rada, uz jasnu napomenu ovde da nisu.
 
 | Vežba | Oprema | Mišići | Citat |
 |---|---|---|---|
-| Bulgarian Split Squat | Bučica | Quads 1.0, Glutes 0.5, Hamstrings 0.5 | Vera-Cartagena 2026 ✓, Neto 2020 ✓, Mackey & Riemann 2021 |
+| Bulgarian Split Squat | Bučica | Quads 1.0, Glutes 0.5 | Vera-Cartagena 2026 ✓, Neto 2020 ✓, Mackey & Riemann 2021 |
 | Split Squat | Telesna težina | Quads 1.0, Glutes 0.5 | Vera-Cartagena 2026 ✓ — jedina vežba u katalogu bez ikakve opreme |
-| Walking Lunge | Bučica | Quads 1.0, Glutes 0.5, Hamstrings 0.5 | Vera-Cartagena 2026 ✓, Jeong & Kim 2025 |
+| Walking Lunge | Bučica | Quads 1.0, Glutes 0.5 | Vera-Cartagena 2026 ✓, Jeong & Kim 2025 |
 | Goblet Squat | Bučica | Quads 1.0, Glutes 0.5 | Collins i sar. (2021, J Strength Cond Res 35(10):2661-2668) |
-| Step-Up | Bučica | Glutes 1.0, Quads 0.5, Hamstrings 0.5 | Neto 2020 ✓ (najviši tier aktivacije gluteusa) |
+| Step-Up | Bučica | Glutes 1.0, Quads 0.5 | Neto 2020 ✓ (najviši tier aktivacije gluteusa) |
 | Single-Leg Romanian Deadlift | Bučica | Hamstrings 1.0, Glutes 0.5 | Mo i sar. 2023 ✓ — jedina unilateralna zgibna vežba u katalogu |
+
+*(Kasnije: udeo zadnje lože u iskoracima i Step-Up-u je uklonjen u rundi 13
+([muscle-contributions.md](muscle-contributions.md)), jer zadnja loža tu radi izometrijski.
+Tabela je usklađena sa katalogom u [muscle-contributions-2.md](muscle-contributions-2.md).)*
 
 ✓ = ručno provereno kroz web pretragu, brojevi i nalazi se poklapaju sa izvorom.
 

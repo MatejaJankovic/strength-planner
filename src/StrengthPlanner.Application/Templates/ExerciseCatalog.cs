@@ -67,10 +67,18 @@ public static class ExerciseCatalog
             [new("Quads", 1.0m), new("Glutes", 0.5m)]),
         new("Romanian Deadlift", ExerciseType.Compound, "Barbell",
             [new("Hamstrings", 1.0m), new("Glutes", 0.5m), new("Back", 0.5m)]),
+        // Mrtvo dizanje je opružanje kuka, i pokret nosi gluteus. Zadnja loža dobija pola, a
+        // ne pun udeo kao u rumunskom mrtvom dizanju: koleno se opruža zajedno sa kukom, pa
+        // se taj dvozglobni mišić malo menja po dužini. Leđa zadržavaju pola: opružači rade
+        // izometrijski, ali pod velikom napetošću, a za razliku od zadnje lože u čučnju tu
+        // napetost i nose. Dok je Back bio 1.0, Upper/Lower x3 je dostizao MEV za leđa samo
+        // kroz mrtvo dizanje (F16).
         new("Deadlift", ExerciseType.Compound, "Barbell",
-            [new("Back", 1.0m), new("Glutes", 0.5m), new("Hamstrings", 0.5m), new("Quads", 0.5m)]),
+            [new("Glutes", 1.0m), new("Hamstrings", 0.5m), new("Back", 0.5m), new("Quads", 0.5m)]),
+        // Zadnja loža u potisku kukom radi uz savijeno koleno, skraćena i sa malo opterećenja;
+        // gluteus nosi pokret. Udeo od 0.5 je punio budžet zadnje lože koji pregib gradi.
         new("Hip Thrust", ExerciseType.Compound, "Barbell",
-            [new("Glutes", 1.0m), new("Hamstrings", 0.5m)]),
+            [new("Glutes", 1.0m)]),
         new("Leg Curl", ExerciseType.Isolation, "Machine",
             [new("Hamstrings", 1.0m)]),
         new("Leg Extension", ExerciseType.Isolation, "Machine",
@@ -132,6 +140,13 @@ public static class ExerciseCatalog
         new("Face Pull", ExerciseType.Isolation, "Cable",
             [new("Shoulders", 1.0m), new("Back", 0.5m)]),
 
+        // Veslanje ne dobija udeo u ramenima, iako zadnji deltoid u njemu radi dinamički.
+        // „Shoulders" je zbirna grupa, i čim veslanje puni njen budžet, balansiranje skida
+        // serije sa bočnog podizanja - jedine vežbe za bočni deltoid, koji veslanje ne radi.
+        // Izmereno preko svih ugrađenih nedelja: Lateral Raise 4604 → 4138 serija, a u bloku
+        // snage srednjeg nivoa Push/Pull/Legs pada na dve serije. Isti kvar kao potisak u
+        // rundi 13, pa i isti odgovor (F16, docs/features/muscle-contributions-2.md).
+        //
         // Zgib podiže celo telo.
         new("Pull-up", ExerciseType.Compound, "Bodyweight",
             [new("Back", 1.0m), new("Biceps", 0.5m)], BodyweightShare: 1.00m),

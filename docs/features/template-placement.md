@@ -45,6 +45,11 @@ iskoristi vreme koje nogama više ne treba, i ne takmiče se ni sa čim na tom d
 nema nijedne neiskorišćene izolacije za gornje telo kojom bi se zamenio. Razlog je sada
 zapisan uz sam dan, da sledeći čitalac ne pomisli da je slučajan.
 
+*(Kasnije: u [muscle-contributions-2.md](muscle-contributions-2.md) je `Face Pull` na „Lower C"
+zamenjen sa `Straight-Arm Pulldown`. Kad mrtvo dizanje više ne puni leđa punim udelom, šablon
+je ostao bez izolacije za leđa, a ta vežba se pokazala kao slobodna. Razlog za vežbu gornjeg
+tela na tom danu i dalje važi.)*
+
 ## Šta je provereno
 
 - Svih **613** testova prolazi. Merodavni su `EveryDay_GivesEveryLevelAFullSession`,

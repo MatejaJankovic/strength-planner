@@ -269,13 +269,20 @@ public static class WorkoutTemplateCatalog
                     // jednom potrošeni na Lower A/B, a treći put bi gurnuo kvadriceps ili
                     // zadnju ložu preko MRV na tri treninga za noge nedeljno (izmereno).
                     //
-                    // Face Pull tu stoji jer dan ima mesta u trajanju a nema ga u volumenu za
-                    // noge — i to je provereno, ne pretpostavljeno. Izbaciti ga spušta
-                    // trening naprednog vežbača na četiri vežbe (traži se najmanje pet), a
-                    // zameniti ga vežbom za noge gura kvadriceps preko MRV (16.5 uz MRV 16,
-                    // na skali početnika). Dan je „za noge" po tome šta ga određuje, ne po
-                    // tome da nijedna druga vežba ne sme da uđe.
-                    "Face Pull", "Calf Raise", "Machine Crunch", "Cable Crunch"
+                    // Straight-Arm Pulldown tu stoji jer dan ima mesta u trajanju a nema ga u
+                    // volumenu za noge — i to je provereno, ne pretpostavljeno. Izbaciti vežbu
+                    // spušta trening naprednog vežbača na četiri vežbe (traži se najmanje pet),
+                    // a zameniti je vežbom za noge gura kvadriceps preko MRV (16.5 uz MRV 16, na
+                    // skali početnika). Dan je „za noge" po tome šta ga određuje, ne po tome da
+                    // nijedna druga vežba ne sme da uđe.
+                    //
+                    // Ranije je ovde bio Face Pull. Kad mrtvo dizanje više ne puni leđa punim
+                    // udelom, šablon nema nijednu izolaciju za leđa i napredni vežbač pada na
+                    // 10.5 serija naspram MEV-a 12 u lakšim nedeljama periodizovanog bloka. Uz
+                    // Straight-Arm Pulldown je 15. Ramena u tim i u ravnim nedeljama ostaju na
+                    // 14 i 19 (dva bočna podizanja, Rear Delt Fly i Face Pull na Upper C), a u
+                    // najtežim nedeljama padaju na 23, i dalje iznad MAV-a (F16).
+                    "Straight-Arm Pulldown", "Calf Raise", "Machine Crunch", "Cable Crunch"
                 ])
             ],
             // Šest treninga nedeljno je jedini raspored u katalogu koji dostiže tri puta
