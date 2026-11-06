@@ -24,8 +24,8 @@ bilo ispravljeno.
 - `OneRepMaxService` posle svakog ručnog unosa, test-serije i brisanja zapisa preračunava te
   ciljeve za tu vežbu u aktivnom bloku, u istoj transakciji sa samim zapisom. Upis ponavlja
   uslov (planiran ili preskočen, bez serija), pa trening započet između čitanja i upisa ne dobija
-  novo opterećenje. Generator i preračun čitaju isti broj nedelje (`GeneratedTarget.StoredWeek`). Koristi isti izbor maksimuma kao generator (najbolji u
-  56 dana, prazan prozor pada na najnoviji zapis) i isto pravilo (`StartingLoad`), sa korakom i
+  novo opterećenje. Generator i preračun čitaju isti broj nedelje (`GeneratedTarget.StoredWeek`).
+  Preračun koristi isti izbor maksimuma kao generator (najbolji u 56 dana, prazan prozor pada na najnoviji zapis) i isto pravilo (`StartingLoad`), sa korakom i
   delom telesne mase vežbe. Kad posle brisanja maksimuma više nema, cilj ostaje prazan i računa
   se pri čitanju, kao i za ostale nedelje.
 - Tekst je usklađen: ekran maksimuma kaže da nov unos „preračunava opterećenja prve nedelje koja
@@ -81,3 +81,5 @@ trenutku, ne iz dignutih serija.
   započet) stoji na **55 kg**, izvedeno iz maksimuma od 65.1 kg. Posle ručnog unosa od 120 kg na
   ekranu maksimuma isti cilj je **100 kg** (120 / 1.2 za propis 3–6 uz RIR 3), a kartica na
   ekranu treninga ga prikazuje.
+  Provera je urađena pre ispravki iz pregleda; proveren slučaj (planiran trening bez serija) one
+  ne menjaju, a slučajeve koje dodaju drže testovi nad servisom.
