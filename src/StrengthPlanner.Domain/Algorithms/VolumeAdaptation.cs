@@ -134,7 +134,7 @@ public static class VolumeAdaptation
         {
             mrv += MaxWeeklyStep;
         }
-        else if (response.PerformedSets >= current.Mev && showedFatigue)
+        else if (response.PerformedSets >= RecoveryEvidenceFloor(current) && showedFatigue)
         {
             mrv -= MaxWeeklyStep;
         }
@@ -290,6 +290,18 @@ public static class VolumeAdaptation
         var upper = (int)Math.Floor(seed * (1 + MaxDriftFromSeed));
 
         return Math.Clamp(value, Math.Max(MevFloor(seed), lower), Math.Max(MevFloor(seed), upper));
+    }
+
+    /// <summary>
+    /// The least volume a fatigued week must have done before it may lower MRV. Normally the
+    /// minimum: a week below it trained too little for its fatigue to be about recovering from
+    /// this muscle's work. With an MEV of zero that test is always passed, so a week of three
+    /// front-delt sets would lower MRV every week it was hard; for such a muscle only a week
+    /// near its target speaks about recovery, as it does for the target itself.
+    /// </summary>
+    private static decimal RecoveryEvidenceFloor(VolumeLandmarkValues current)
+    {
+        return current.Mev > 0 ? current.Mev : current.Mav * NearMavShare;
     }
 
     /// <summary>

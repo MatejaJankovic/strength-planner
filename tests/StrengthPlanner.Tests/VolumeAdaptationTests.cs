@@ -290,6 +290,31 @@ public class VolumeAdaptationTests
         }
     }
 
+    /// <summary>
+    /// Pravilo koje spušta MRV traži da je nedelja trenirala bar na minimumu, jer o oporavku
+    /// ništa ne kaže umor nedelje koja je mišić jedva radila. Sa MEV-om nula taj uslov uvek
+    /// prolazi: tri serije prednjeg deltoida uz RIR jedan ispod cilja spuštale su MRV svake
+    /// nedelje, sa 10 na 5 za pet nedelja, a MAV za njim bez ikakvog dokaza o snazi (pregled
+    /// #109). Za takav mišić o oporavku govori samo nedelja blizu cilja.
+    /// </summary>
+    [Fact]
+    public void Adjust_DoesNotLowerAZeroMevMusclesMrv_FromAWeekFarBelowItsTarget()
+    {
+        var seed = new VolumeLandmarkValues(0, 6, 10);
+        var lightAndHard = new VolumeResponse(3m, 3m, -1m, 0m);
+
+        var current = seed;
+        for (var week = 0; week < 8; week++)
+        {
+            current = VolumeAdaptation.Adjust(current, seed, lightAndHard);
+        }
+
+        Assert.Equal(seed, current);
+
+        var nearTargetAndHard = new VolumeResponse(6m, 6m, -1m, 0m);
+        Assert.Equal(9, VolumeAdaptation.Adjust(seed, seed, nearTargetAndHard).Mrv);
+    }
+
     [Fact]
     public void Adjust_ConvergesInsteadOfDriftingForever()
     {
