@@ -156,8 +156,8 @@
   gap: 0.35rem;
 }
 
-// Zašto predlog stoji na sopstvenoj masi: bez ovoga „TM" izgleda kao da je plan zaboravio
-// da upiše težinu.
+// Beleške ispod rezimea i ispod unosa serije. Ona u rezimeu kaže zašto predlog stoji na
+// sopstvenoj masi: bez nje „TM" izgleda kao da je plan zaboravio da upiše težinu.
 .summary__note,
 .entry__hint {
   color: var(--color-muted);
@@ -236,6 +236,7 @@
   gap: 0.5rem;
 }
 
+// Font je u zajedničkom pravilu sa naslovima rezimea (.summary__head h2).
 .card__name {
   font-size: 1.2rem;
   margin: 0;
