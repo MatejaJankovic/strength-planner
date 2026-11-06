@@ -78,6 +78,33 @@ public class ExerciseSubstitutionServiceTests
         Assert.Equal(FrontSquat, read.ExercisePlans.Single(plan => plan.Id == block.WeekThreeSquat).ExerciseId);
     }
 
+    /// <summary>
+    /// Preskočen trening je odgovor, a ne trening koji čeka (runda 12): ostaje sa vežbom koju
+    /// je imao, i kad je kasniji od izabranog.
+    /// </summary>
+    [Fact]
+    public async Task ASkippedLaterSession_KeepsItsExercise()
+    {
+        using var database = new SqliteDatabase();
+        var block = await SeedAsync(database, SetAllocation.FollowTemplate);
+
+        await using (var context = database.NewContext())
+        {
+            var skipped = context.WorkoutSessions.Single(session =>
+                session.ExercisePlans.Any(plan => plan.Id == block.WeekThreeSquat));
+            skipped.Status = SessionStatus.Skipped;
+            await context.SaveChangesAsync();
+        }
+
+        await using (var context = database.NewContext())
+        {
+            await Service(context).SubstituteAsync(database.UserId, block.WeekTwoSquat, FrontSquat);
+        }
+
+        await using var read = database.NewContext();
+        Assert.Equal(BackSquat, read.ExercisePlans.Single(plan => plan.Id == block.WeekThreeSquat).ExerciseId);
+    }
+
     [Fact]
     public async Task OnlyTheSameMuscleTypeAndRange_IsOffered_AndNotWhatTheSessionAlreadyHas()
     {
