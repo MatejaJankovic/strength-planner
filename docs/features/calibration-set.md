@@ -30,14 +30,21 @@ nikada nije tražio.
   kvačica „Serija do otkaza" je unapred uključena, a napomena ispod unosa za tu seriju ćuti: bez
   toga bi 7 ponavljanja do otkaza na opsegu 3-6 dobilo upozorenje o otkazu na vrhu opsega. Posle
   upisane prve serije sve se vraća na plan.
-- **Granice volumena.** Udeo otkaza je za njih znak umora (MRV pada od 0.25 naviše).
-  Kalibraciona serija ulazi u zbir serija, ali ne i u otkaze. Odstupanje RIR-a se ionako računa
-  samo nad dovršenim serijama (runda 11).
+- **Granice volumena i ocena umora.** Koje su serije bloka kalibracione odlučuje jedno mesto
+  (`CalibrationSets`), a čitaju ga oba:
+  - udeo otkaza je za njih znak umora (kod granica MRV pada od 0.25 naviše), pa kalibraciona
+    serija ulazi u zbir serija, ali ne i u otkaze;
+  - poređenje snage je ne vidi. Rezerva joj se ne procenjuje, a serijama prethodne nedelje se
+    procenjuje; uz istu grešku od oko jednog ponavljanja koju kalibracija uklanja, čitala bi se
+    oko 2% jače (pregled #110);
+  - odstupanje RIR-a se ionako računa samo nad dovršenim serijama (runda 11).
 - **Procena.** Bez nove putanje: završen trening upisuje najbolju procenu iz svojih serija kao
   `Estimated`, kao i do sada. Kalibracija **ne nadjačava** ostale procene, isto kao test-serija
   u rundi 12. Poslednja trenažna nedelja je najumornija u bloku, pa bi niža procena iz umora
-  inače spustila start sledećeg bloka. Viša procena (vežbač je potcenjivao rezervu) ionako
-  postaje najbolja u prozoru od 56 dana.
+  inače spustila start sledećeg bloka. Viša procena postaje start, osim ako je više od 5% iznad
+  sledeće najbolje: tada je pravilo o odstupanju (`OneRepMaxBaseline`) odbacuje kao i svaku
+  drugu. Vežbač koji potcenjuje rezervu za dva ponavljanja i više zato od kalibracije ne dobija
+  viši start. Prva verzija beleške i uputstva je tvrdila suprotno; ispravio ih je pregled.
 
 ## Gde je ima, a gde nema
 
@@ -54,8 +61,32 @@ pokazao da nije tako: ciljni RIR namerno ne ide ispod 1 (`Periodization.MinRir`)
 nestao najveći signal ocene umora. Čarobnjak za svaki blok predlaže linearan model (#90), pa
 kalibraciju dobija podrazumevani izbor.
 
-Nedelje umora posle poslednje trenažne nema šta da odlučuje (sledeća je deload, ili je nema),
-pa ocena umora nije menjana.
+Ocena umora posle poslednje trenažne nedelje ne odlučuje ništa (sledeća je deload, ili je
+nema), ali se upisuje i prikazuje uz nedelju, pa i ona kalibracioni otkaz izostavlja.
+
+Tabela opisuje planirani raspored. Kad auto-deload oslobodi planirani, oslobođena nedelja
+preuzima propis zamenjene, pa linearan blok hipertrofije sa ranim auto-deload-om može da
+završi propisom koji ne staje u 12 ponavljanja, i tada kalibracije nema.
+
+## Šta je pregled našao
+
+- Poređenje snage je kalibracionu seriju poredilo sa serijama prethodne nedelje. Sada je ne
+  vidi, ni kod granica ni kod ocene umora.
+- Tvrdnja „viša procena ionako postaje start" nije tačna uz pravilo o odstupanju od 5%.
+  Ispravljeni su beleška, uputstvo, napomena na ekranu i komentar u domenu.
+- Prikazana ocena umora je brojala propisan otkaz. Sada ga ne broji, isto kao granice.
+- Uslov „prva serija" na serveru nije bio pokriven testom: zamena sa „svaka serija" je ostavljala
+  ceo paket zelen (0 od 913). Test sada ima otkaz i na drugoj seriji prve vežbe i na prvoj
+  seriji druge vežbe.
+- Brisanje upisane kalibracione serije je vraćalo natpis „do otkaza" uz isključenu kvačicu.
+  Kvačica se sada vraća.
+- Izmena upisane prve serije nije gasila napomenu o otkazu na vrhu opsega, a grana koja je to
+  trebalo da radi nije mogla da se dogodi. Sada je i izmena prve serije kalibracija.
+- Napomena se prikazivala i na završenom i preskočenom treningu. Sada samo na planiranom i
+  započetom.
+- Ostaje rubni slučaj: ako vežbač započne poslednju trenažnu nedelju pre nego što se ranija
+  zatvori, a auto-deload zatim oslobodi planirani deload, otkaz iz te nedelje se naknadno čita
+  kao umor. Nije mereno da li je to dostižno u normalnoj upotrebi.
 
 ## Šta je usput pronađeno
 
@@ -69,7 +100,7 @@ pa ocena umora nije menjana.
 
 ## Provera
 
-- `dotnet test`: **913** (bilo 893); `npm test`: **213** (bilo 209); `npm run build` prolazi, a
+- `dotnet test`: **914** (bilo 893); `npm test`: **213** (bilo 209); `npm run build` prolazi, a
   `workout-session.scss` je ostao na 7.48 kB (bez novih stilova).
 - Merenje vraćanjem, jedna izmena po merenju:
 

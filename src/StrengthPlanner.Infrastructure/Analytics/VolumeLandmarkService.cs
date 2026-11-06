@@ -288,6 +288,10 @@ public sealed class VolumeLandmarkService
             return [];
         }
 
+        // Kalibraciona serija nije uporediva sa serijama prethodne nedelje: njoj se rezerva ne
+        // procenjuje, a njima jeste (CalibrationSets).
+        var calibration = await CalibrationSets.IdsAsync(_db, userId, week.MesocycleId, cancellationToken);
+
         var samples = await _db.SetLogs
             .AsNoTracking()
             .Where(set => set.ExercisePlan.WorkoutSession.TrainingWeek.MesocycleId == week.MesocycleId
@@ -297,6 +301,7 @@ public sealed class VolumeLandmarkService
             .SelectMany(set => set.ExercisePlan.Exercise.Muscles.Select(muscle => new
             {
                 muscle.MuscleGroupId,
+                SetId = set.Id,
                 IsCurrent = set.ExercisePlan.WorkoutSession.TrainingWeek.WeekNumber == week.WeekNumber,
                 set.ExercisePlan.ExerciseId,
                 set.Reps,
@@ -307,7 +312,7 @@ public sealed class VolumeLandmarkService
 
         var changes = new Dictionary<Guid, decimal>();
 
-        foreach (var group in samples.GroupBy(sample => sample.MuscleGroupId))
+        foreach (var group in samples.Where(sample => !calibration.Contains(sample.SetId)).GroupBy(sample => sample.MuscleGroupId))
         {
             var change = StrengthChange.ChangeShare(
                 group.Where(sample => sample.IsCurrent)
@@ -352,14 +357,10 @@ public sealed class VolumeLandmarkService
                     set.IsFailure,
                     set.ExercisePlan.TargetRir,
                     set.ExercisePlan.RepRangeMin,
-                    set.SetNumber,
-                    set.ExercisePlan.Order,
-                    set.ExercisePlan.Exercise.Type,
-                    set.ExercisePlan.Exercise.SuitsLowReps,
-                    set.ExercisePlan.RepRangeMax))
+                    set.Id))
             .ToListAsync(cancellationToken);
 
-        var calibration = await GetCalibrationContextAsync(userId, trainingWeekId, cancellationToken);
+        var calibration = await CalibrationSetsOfWeekAsync(userId, trainingWeekId, cancellationToken);
 
         return contributions
             .GroupBy(item => item.MuscleGroupId)
@@ -375,15 +376,7 @@ public sealed class VolumeLandmarkService
                             Set = new WorkingSet(item.Reps, item.Rir, item.IsFailure),
                             item.TargetRir,
                             item.RepRangeMin,
-                            IsCalibration = item.SetNumber == CalibrationSet.SetNumber
-                                            && CalibrationSet.AppliesTo(
-                                                calibration.Level,
-                                                calibration.IsLastTrainingWeek,
-                                                item.Order,
-                                                item.Type,
-                                                item.SuitsLowReps,
-                                                item.RepRangeMax,
-                                                item.TargetRir)
+                            IsCalibration = calibration.Contains(item.SetId)
                         })
                         .Select(item => new
                         {
@@ -446,40 +439,21 @@ public sealed class VolumeLandmarkService
                 });
     }
 
-    /// <summary>Nivo bloka i da li je nedelja poslednja trenažna - ono što kalibracija čita.</summary>
-    private async Task<(ExperienceLevel Level, bool IsLastTrainingWeek)> GetCalibrationContextAsync(
+    /// <summary>Kalibracione serije bloka kome nedelja pripada (<see cref="CalibrationSets"/>).</summary>
+    private async Task<HashSet<Guid>> CalibrationSetsOfWeekAsync(
         Guid userId,
         Guid trainingWeekId,
         CancellationToken cancellationToken)
     {
-        var week = await _db.TrainingWeeks
+        var mesocycleId = await _db.TrainingWeeks
             .AsNoTracking()
             .Where(trainingWeek => trainingWeek.Id == trainingWeekId && trainingWeek.Mesocycle.UserId == userId)
-            .Select(trainingWeek => new
-            {
-                trainingWeek.MesocycleId,
-                trainingWeek.WeekNumber,
-                trainingWeek.IsDeload,
-                trainingWeek.Mesocycle.ExperienceLevel
-            })
+            .Select(trainingWeek => (Guid?)trainingWeek.MesocycleId)
             .SingleOrDefaultAsync(cancellationToken);
 
-        if (week is null)
-        {
-            return (ExperienceLevel.Beginner, false);
-        }
-
-        var weeks = await _db.TrainingWeeks
-            .AsNoTracking()
-            .Where(other => other.MesocycleId == week.MesocycleId && other.Mesocycle.UserId == userId)
-            .Select(other => new { other.WeekNumber, other.IsDeload })
-            .ToListAsync(cancellationToken);
-
-        return (week.ExperienceLevel,
-            CalibrationSet.IsLastTrainingWeek(
-                week.WeekNumber,
-                week.IsDeload,
-                weeks.Select(other => (other.WeekNumber, other.IsDeload))));
+        return mesocycleId is null
+            ? []
+            : await CalibrationSets.IdsAsync(_db, userId, mesocycleId.Value, cancellationToken);
     }
 
     private sealed record SetContribution(
@@ -490,11 +464,7 @@ public sealed class VolumeLandmarkService
         bool IsFailure,
         int TargetRir,
         int RepRangeMin,
-        int SetNumber,
-        int Order,
-        ExerciseType Type,
-        bool SuitsLowReps,
-        int RepRangeMax);
+        Guid SetId);
 }
 
 /// <summary>Granice koje važe za korisnika, uz seed vrednosti radi poređenja u UI-ju.</summary>

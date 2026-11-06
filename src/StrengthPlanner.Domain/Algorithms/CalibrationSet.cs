@@ -12,7 +12,9 @@ namespace StrengthPlanner.Domain.Algorithms;
 /// estimate is the cleanest the plan ever gets. It is stored like any other estimate and
 /// competes with them for the next block's start (<see cref="OneRepMaxBaseline"/>): the last
 /// training week is where a block is most fatigued, so a reading that comes out lower than
-/// the rest must not replace them, and one that comes out higher is already the best.
+/// the rest must not replace them. One that comes out higher becomes the start, unless it
+/// stands more than <see cref="TrainingConstants.OneRepMaxOutlierTolerance"/> above the next
+/// best, where the baseline sets it aside as it would any outlier.
 ///
 /// It applies only where the reading is possible and worth the effort:
 /// <list type="bullet">

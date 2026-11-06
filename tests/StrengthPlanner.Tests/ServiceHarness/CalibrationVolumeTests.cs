@@ -24,8 +24,10 @@ public class CalibrationVolumeTests
         var lastTrainingWeek = await service.GetWeeklyResponsesAsync(database.UserId, weekIds[3], CancellationToken.None);
         var earlierWeek = await service.GetWeeklyResponsesAsync(database.UserId, weekIds[2], CancellationToken.None);
 
-        Assert.Equal(0m, lastTrainingWeek[quads].FailureShare);
-        Assert.Equal(1m / 3m, earlierWeek[quads].FailureShare);
+        // Pet serija: otkaz na prvoj seriji prve vežbe (kalibracija), na drugoj seriji prve
+        // vežbe i na prvoj seriji druge vežbe. Samo prvi je propisan.
+        Assert.Equal(2m / 5m, lastTrainingWeek[quads].FailureShare);
+        Assert.Equal(3m / 5m, earlierWeek[quads].FailureShare);
     }
 
     /// <summary>
@@ -51,6 +53,7 @@ public class CalibrationVolumeTests
         var earlierWeek = await service.GetByIdAsync(database.UserId, SessionOf(context, weekIds[2]), CancellationToken.None);
 
         Assert.Equal([true, false], lastWeek.ExercisePlans.Select(plan => plan.IsCalibration));
+        Assert.Equal(SessionStatus.Completed.ToString(), lastWeek.Status);
         Assert.All(earlierWeek.ExercisePlans, plan => Assert.False(plan.IsCalibration));
     }
 
@@ -72,13 +75,36 @@ public class CalibrationVolumeTests
             weekIds[3],
             CancellationToken.None);
 
-        Assert.Equal(1m / 3m, responses[quads].FailureShare);
+        Assert.Equal(3m / 5m, responses[quads].FailureShare);
+    }
+
+    /// <summary>
+    /// I ocena umora, koju ekran prikazuje uz nedelju, ne broji propisan otkaz: dva čitaoca iste
+    /// serije ne smeju da je čitaju različito (pregled #110). Udeo otkaza nosi 0.25 ocene i puni
+    /// se na 0.5, a ostali signali su ovde nula: 2/5 daje 0.20, 3/5 punih 0.25.
+    /// </summary>
+    [Fact]
+    public async Task TheFatigueScore_LeavesThePrescribedFailureOut_Too()
+    {
+        using var database = new SqliteDatabase();
+        var (_, weekIds) = await SeedAsync(database, ExperienceLevel.Advanced);
+
+        await using (var context = database.NewContext())
+        {
+            var landmarks = new VolumeLandmarkService(context);
+            var mesocycleId = context.TrainingWeeks.Single(week => week.Id == weekIds[3]).MesocycleId;
+            await new DeloadService(context, landmarks).EvaluatePendingWeeksAsync(database.UserId, mesocycleId, CancellationToken.None);
+        }
+
+        await using var read = database.NewContext();
+        Assert.Equal(0.25m, read.TrainingWeeks.Single(week => week.Id == weekIds[2]).FatigueScore);
+        Assert.Equal(0.20m, read.TrainingWeeks.Single(week => week.Id == weekIds[3]).FatigueScore);
     }
 
     /// <summary>
     /// Blok snage od četiri nedelje, deload u četvrtoj. U nedeljama 2 i 3 je isti čučanj:
-    /// prva serija 8 ponavljanja do otkaza, pa dve serije 6 uz RIR 2, i iza njega još jedna
-    /// složena vežba bez upisanih serija.
+    /// prva serija 8 ponavljanja do otkaza, druga 6 do otkaza, treća 6 uz RIR 2. Iza njega još
+    /// jedna složena vežba: 6 do otkaza, pa 6 uz RIR 2.
     /// </summary>
     private static async Task<(Guid Quads, Dictionary<int, Guid> WeekIds)> SeedAsync(
         SqliteDatabase database,
@@ -136,12 +162,13 @@ public class CalibrationVolumeTests
                     TargetWeightKg = 100m
                 };
                 plan.SetLogs.Add(Set(1, reps: 8, rir: 0, isFailure: true));
-                plan.SetLogs.Add(Set(2, reps: 6, rir: 2, isFailure: false));
+                plan.SetLogs.Add(Set(2, reps: 6, rir: 0, isFailure: true));
                 plan.SetLogs.Add(Set(3, reps: 6, rir: 2, isFailure: false));
                 session.ExercisePlans.Add(plan);
 
-                // Druga složena vežba istog treninga: kalibracija je samo prva.
-                session.ExercisePlans.Add(new ExercisePlan
+                // Druga složena vežba istog treninga: kalibracija je samo prva, pa otkaz na
+                // njenoj prvoj seriji jeste otkaz.
+                var second = new ExercisePlan
                 {
                     Id = Guid.NewGuid(),
                     ExerciseId = squat,
@@ -154,7 +181,10 @@ public class CalibrationVolumeTests
                     BaseRepRangeMax = 6,
                     TargetRir = 2,
                     TargetWeightKg = 90m
-                });
+                };
+                second.SetLogs.Add(Set(1, reps: 6, rir: 0, isFailure: true));
+                second.SetLogs.Add(Set(2, reps: 6, rir: 2, isFailure: false));
+                session.ExercisePlans.Add(second);
                 week.Sessions.Add(session);
             }
         }

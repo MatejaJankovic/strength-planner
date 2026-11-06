@@ -261,13 +261,13 @@
           </p>
         }
 
-        @if (isCalibrationSet(plan)) {
+        @if ((isPlanned() || isInProgress()) && isCalibrationSet(plan)) {
           <p class="card__hint card__hint--estimate">
             <mat-icon aria-hidden="true">flag</mat-icon>
             <span>
               Kalibracija: prvu seriju odradi do otkaza na predloženoj težini, koliko god
               ponavljanja stigneš. Bez rezerve nema šta da se proceni, pa je ovo najtačnija
-              procena maksimuma u bloku i ulazi u start sledećeg. Ostale serije idu po planu.
+              procena maksimuma u bloku. Ostale serije idu po planu.
             </span>
           </p>
         }

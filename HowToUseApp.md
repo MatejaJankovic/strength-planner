@@ -507,9 +507,11 @@ Grešku ispravljaš ikonicama pored serije: **olovka** za izmenu, **kanta** za b
 > Svaka druga procena maksimuma počiva na tvojoj proceni rezerve, a ona u proseku greši za
 > oko jedno ponavljanje (Halperin i sar. 2022). Serija do otkaza nema rezervu koju treba
 > proceniti, pa je njena procena najtačnija u bloku. Upisuje se kao i svaka druga procena:
-> ako izađe viša od ostalih, sledeći blok kreće od nje; ako izađe niža, ne poništava ih, jer
-> je poslednja trenažna nedelja ona u kojoj si najumorniji. Granice volumena ovaj otkaz ne
-> čitaju kao znak umora, jer ga je plan propisao.
+> ako izađe viša od ostalih, sledeći blok kreće od nje, osim ako je više od 5% iznad sledeće
+> najbolje (tada je pravilo iz „Start novog bloka" tretira kao preteranu i uzima sledeću); ako
+> izađe niža, ne poništava ih, jer je poslednja trenažna nedelja ona u kojoj si najumorniji.
+> Ni granice volumena ni ocena umora ovaj otkaz ne čitaju kao znak umora, jer ga je plan
+> propisao, i ne porede ga sa serijama prethodne nedelje.
 >
 > Oznake nema za početnika (opterećenje mu ionako raste svake nedelje), ni gde serija ne bi
 > mogla da se pročita: na propisanoj težini serija do otkaza staje oko vrha opsega plus ciljni
