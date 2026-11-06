@@ -1,10 +1,27 @@
 import { absorbsStep, repTargetFor, repsToEarnStep, stepAbove } from './step-absorption';
+import sharedCases from './step-absorption.cases.json';
 
 /**
  * Ekran prikazuje cilj ponavljanja, a o koraku odlučuje server. Tabela ispod je ista kao u
  * StepAbsorptionTests na serveru (RepsToEarnStep_IsTheTopOfTheRange_...): kad se pravilo
  * menja na jednom mestu, ova tabela je ono što pada na drugom.
+ *
+ * Uz nju obe strane čitaju i `step-absorption.cases.json`, 3328 slučajeva generisanih iz
+ * serverskog pravila (StepAbsorptionSharedCasesTests). Ručno prepisana tabela je pokrivala
+ * dvanaest slučajeva; kopija pravila na klijentu sada mora da se slaže sa serverom svuda.
  */
+describe('step-absorption, zajednički slučajevi sa serverom', () => {
+  it('daje isti cilj kao server u svakom slučaju iz zajedničkog fajla', () => {
+    const cases = sharedCases as number[][];
+    const failures = cases
+      .filter(([load, step, min, max, rir, expected]) => repsToEarnStep(load, step, min, max, rir) !== expected)
+      .slice(0, 20);
+
+    expect(cases.length).toBeGreaterThan(3000);
+    expect(failures).toEqual([]);
+  });
+});
+
 describe('step-absorption', () => {
   const serverTable: [number, number, number, number, number, number][] = [
     // opterećenje, korak, dno, vrh, ciljni RIR, očekivan cilj
