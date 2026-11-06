@@ -90,4 +90,39 @@ public class ExerciseCatalogTests
 
         Assert.Equal(names.Count, names.Distinct(StringComparer.OrdinalIgnoreCase).Count());
     }
+
+    /// <summary>
+    /// Migracija SplitShoulderHeads prepisuje naučene granice zbirne grupe "Shoulders" na
+    /// bočni deltoid bez preračuna. To je tačno samo dok bočni deltoid nosi iste seed
+    /// vrednosti koje je imala zbirna grupa (8/16/26): naučena granica je pomak od seed-a, i
+    /// sa drugim seed-om bi isti broj značio nešto drugo.
+    /// </summary>
+    [Fact]
+    public void SideDelts_KeepTheSeedTheShoulderGroupHad()
+    {
+        var sideDelts = ExerciseCatalog.VolumeLandmarks.Single(seed => seed.Muscle == ExerciseCatalog.SideDelts);
+
+        Assert.Equal((8, 16, 26), (sideDelts.Mev, sideDelts.Mav, sideDelts.Mrv));
+    }
+
+    /// <summary>
+    /// MEV prednjeg i zadnjeg deltoida je nula zato što ih složene vežbe već stimulišu, a model
+    /// te serije glavama namerno ne pripisuje. Kad bi neka horizontalna potisna ili veslačka
+    /// vežba dobila udeo u tim glavama, ista stimulacija bi se brojala dva puta: jednom u nuli
+    /// MEV-a, jednom u budžetu, iz kog bi balansiranje onda skidalo direktan rad.
+    /// </summary>
+    [Fact]
+    public void OnlyDirectWork_CountsTowardTheFrontAndRearDelts()
+    {
+        var credited = ExerciseCatalog.Exercises
+            .Where(exercise => exercise.Muscles.Any(muscle =>
+                muscle.Muscle is ExerciseCatalog.FrontDelts or ExerciseCatalog.RearDelts))
+            .Select(exercise => exercise.Name)
+            .Order()
+            .ToList();
+
+        Assert.Equal(
+            new[] { "Dumbbell Shoulder Press", "Face Pull", "Overhead Press", "Rear Delt Fly" }.Order(),
+            credited);
+    }
 }

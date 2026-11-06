@@ -622,7 +622,7 @@ namespace StrengthPlanner.Infrastructure.Persistence.Migrations
 
                     b.ToTable("UserVolumeLandmarks", t =>
                         {
-                            t.HasCheckConstraint("CK_UserVolumeLandmarks_LandmarkOrder", "\"Mev\" >= 1 AND \"Mav\" > \"Mev\" AND \"Mrv\" > \"Mav\"");
+                            t.HasCheckConstraint("CK_UserVolumeLandmarks_LandmarkOrder", "\"Mev\" >= 0 AND \"Mav\" > \"Mev\" AND \"Mrv\" > \"Mav\"");
                         });
                 });
 
@@ -732,7 +732,7 @@ namespace StrengthPlanner.Infrastructure.Persistence.Migrations
 
                     b.ToTable("VolumeLandmarks", t =>
                         {
-                            t.HasCheckConstraint("CK_VolumeLandmarks_LandmarkOrder", "\"Mev\" >= 1 AND \"Mav\" > \"Mev\" AND \"Mrv\" > \"Mav\"");
+                            t.HasCheckConstraint("CK_VolumeLandmarks_LandmarkOrder", "\"Mev\" >= 0 AND \"Mav\" > \"Mev\" AND \"Mrv\" > \"Mav\"");
                         });
                 });
 

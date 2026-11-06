@@ -579,6 +579,13 @@ to su nedelje 4 i 5, odnosno prva. Blok snage polazi od sredine između MEV-a i 
 serije koštaju više oporavka, pa i njegove najobimnije nedelje ostaju oko MAV-a. Kada se razlikuju, u redu piše i jedno i drugo: `cilj ove nedelje 22
 (MAV 16)`. U deload nedelji cilja nema — manji volumen je tamo namera.
 
+**Rame se prati po glavama**: prednji, bočni i zadnji deltoid imaju svaki svoje granice.
+Prednji i zadnji deltoid broje samo direktan rad (potisak iznad glave, odnosno Rear Delt Fly i
+Face Pull), a minimum im je **nula**: potisci za grudi rade prednji deltoid, a veslanja zadnji,
+pa direktan rad za njih nije obavezan nego dodatak. Bočni deltoid gradi samo bočno podizanje
+(potisak iznad glave mu daje pola serije), pa ga ugrađeni šabloni imaju bar dva puta nedeljno.
+Leđa su i dalje jedna grupa za latove, gornja leđa i opružače.
+
 Boja trake govori da li si ispod, u zoni ili iznad. **Ne broji se svaka serija isto**:
 serija sa RIR 0–3 (ili do otkaza) ulazi cela, RIR 4 ulazi upola, a serija dalja od otkaza
 donosi zamor ali ne i volumen. Granice se **uče iz tvojih podataka** — posle svake završene
@@ -594,7 +601,8 @@ Dugme **„Vrati podrazumevane granice"** poništava naučeno.
 > upola.
 >
 > Ni MEV, MAV i MRV nisu izmerene vrednosti, nego polazna procena iz priručnika koju aplikacija
-> dalje uči. Pregled istraživanja o dozi volumena nalazi da hipertrofija raste sa nedeljnim serijama
+> dalje uči. Za glave ramena priručnik nema procenu, pa su granice prednjeg, bočnog i zadnjeg
+> deltoida procene Renaissance Periodization za srednji nivo. Pregled istraživanja o dozi volumena nalazi da hipertrofija raste sa nedeljnim serijama
 > uz opadajući prinos, bez jasnog plafona u ispitanom opsegu, a da se snaga zasiti mnogo ranije
 > (Pelland i sar. 2025). MRV je zato zaštita oporavka koju aplikacija poštuje, a ne granica
 > preko koje rast prestaje.
@@ -618,8 +626,8 @@ vežbač u nedelji stvarno napreduje.
 
 Serija preko 12 ponavljanja ne daje procenu maksimuma, pa se izolacija u opsegu 10–20
 poredi drugačije: **na istoj težini**, po ponavljanjima plus rezervi. Više ponavljanja na
-istoj težini je rast snage, i to baš onoliki koliki bi rekle dve procene. Bez toga bi ramena
-i listovi, koje treniraju samo izolacije, prestali da uče granice.
+istoj težini je rast snage, i to baš onoliki koliki bi rekle dve procene. Bez toga bi bočni i
+zadnji deltoid i listovi, koje treniraju samo izolacije, prestali da uče granice.
 
 Nedelja koja nema sa čim da se uporedi — prva u bloku, ili ona čija se ponavljanja ne
 poklapaju sa prethodnom, ili, kod izolacije, nedelja posle koraka težine — **ne pomera** ni
@@ -974,14 +982,16 @@ volumen jednog mišića pada u jedan trening, a u jednom treningu korisno staje 
 |---|---|---|
 | grudi | 16 → 11 | 16 |
 | leđa | 18 → 14 | 18 |
-| ramena | 16 → 15 | 16 |
+| bočni deltoid | 15 → 15 | 16 |
+| zadnji deltoid | 6 → 4 | 8 |
 | kvadriceps | 12 → 11 | 14 |
 | biceps | 12 → 10,5 | 14 |
 | triceps | 12 → 11 | 12 |
 
-Biceps gubi i pola serije sa svakom skinutom serijom veslanja ili zgiba. Kod početnika Pull dan
-nema posebnu vežbu za biceps, pa on na ovom šablonu u većini nedelja stoji ispod minimuma (MEV 6)
-i bez granice; u nedeljama volumena granica ga spušta sa 7,5 na 4,5. Za više volumena uzmi
+Biceps gubi i pola serije sa svakom skinutom serijom veslanja ili zgiba, a zadnji deltoid
+seriju Face Pull-a kad granica skida rad za leđa. Kod početnika je Barbell Curl druga izolacija
+Pull dana, pa biceps ni u jednoj nedelji ne pada ispod minimuma (MEV 6); u nedeljama volumena
+granica ga spušta sa 13,5 na 10,5. Za više volumena uzmi
 šablon koji mišić trenira dva puta nedeljno (Upper/Lower, Full Body, Push/Pull/Legs x2).
 
 **Promenio sam nivo iskustva usred bloka.**
