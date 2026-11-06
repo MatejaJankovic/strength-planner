@@ -66,6 +66,13 @@ public sealed class ExerciseSubstitutionService : IExerciseSubstitutionService
                 "Ova vežba ne može da zameni planiranu: mora da radi isti mišić, da bude istog tipa i da je blok propisuje isto.");
         }
 
+        // Zamena i balansiranje idu zajedno ili nikako: blok sa zamenjenom vežbom a bez
+        // prebalansiranih nedelja bi nosio volumen stare vežbe. U transakciji je i provera da na
+        // vežbi nema serije, pa serija upisana u međuvremenu ne završi na novoj vežbi.
+        await using var transaction = _db.Database.CurrentTransaction is null
+            ? await _db.Database.BeginTransactionAsync(cancellationToken)
+            : null;
+
         // Isti dan bloka od ovog treninga do kraja, u treninzima koji još čekaju. Ovaj plan je
         // uključen i kad je njegov trening započet, ako na njemu još nema serije.
         var targets = await _db.ExercisePlans
@@ -101,6 +108,11 @@ public sealed class ExerciseSubstitutionService : IExerciseSubstitutionService
         {
             await _setPlanner.RebalanceAsync(userId, plan.MesocycleId, cancellationToken);
             await _db.SaveChangesAsync(cancellationToken);
+        }
+
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
         }
 
         return plan.SessionId;
@@ -199,10 +211,12 @@ public sealed class ExerciseSubstitutionService : IExerciseSubstitutionService
             .AsNoTracking()
             .Select(link => new { link.ExerciseId, link.MuscleGroupId, link.Contribution })
             .ToListAsync(cancellationToken);
-        var primaryByExerciseId = muscles
+        var primariesByExerciseId = muscles
             .Where(link => link.Contribution == 1.0m)
             .GroupBy(link => link.ExerciseId)
-            .ToDictionary(group => group.Key, group => group.First().MuscleGroupId);
+            .ToDictionary(
+                group => group.Key,
+                group => (IReadOnlyCollection<Guid>)group.Select(link => link.MuscleGroupId).ToList());
 
         return exercises.ToDictionary(
             exercise => exercise.Id,
@@ -211,7 +225,7 @@ public sealed class ExerciseSubstitutionService : IExerciseSubstitutionService
                     exercise.Id,
                     exercise.Type,
                     exercise.SuitsLowReps,
-                    primaryByExerciseId.TryGetValue(exercise.Id, out var primary) ? primary : null,
+                    primariesByExerciseId.TryGetValue(exercise.Id, out var primaries) ? primaries : [],
                     IsLoadable: !(string.Equals(exercise.Equipment, "Bodyweight", StringComparison.OrdinalIgnoreCase)
                                   && exercise.BodyweightShare == 0m)),
                 exercise.Name,

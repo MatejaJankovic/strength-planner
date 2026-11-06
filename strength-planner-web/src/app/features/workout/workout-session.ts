@@ -111,19 +111,23 @@ export class WorkoutSession {
   private initDrafts(session: WorkoutSessionDto): void {
     const drafts: Record<string, SetDraft> = {};
     for (const plan of session.exercisePlans) {
-      // Double progression: cilj je postepeno +1 ka vrhu opsega, pa je default
-      // poslednja odrađena serija (ili donja granica opsega), a ne rep-max.
-      const lastLog = plan.setLogs[plan.setLogs.length - 1];
-      drafts[plan.id] = {
-        weightKg: lastLog?.weightKg ?? plan.targetWeightKg ?? 0,
-        reps: lastLog?.reps ?? plan.repRangeMin,
-        rir: lastLog?.rir ?? plan.targetRir,
-        // Otkaz se ne prenosi na sledeću seriju: to je izuzetak, ne podrazumevano stanje.
-        // Kalibraciona serija je jedini slučaj u kome je otkaz propisan.
-        isFailure: isCalibrationEntry(plan),
-      };
+      drafts[plan.id] = this.initialDraft(plan);
     }
     this.drafts.set(drafts);
+  }
+
+  private initialDraft(plan: ExercisePlanDto): SetDraft {
+    // Double progression: cilj je postepeno +1 ka vrhu opsega, pa je default
+    // poslednja odrađena serija (ili donja granica opsega), a ne rep-max.
+    const lastLog = plan.setLogs[plan.setLogs.length - 1];
+    return {
+      weightKg: lastLog?.weightKg ?? plan.targetWeightKg ?? 0,
+      reps: lastLog?.reps ?? plan.repRangeMin,
+      rir: lastLog?.rir ?? plan.targetRir,
+      // Otkaz se ne prenosi na sledeću seriju: to je izuzetak, ne podrazumevano stanje.
+      // Kalibraciona serija je jedini slučaj u kome je otkaz propisan.
+      isFailure: isCalibrationEntry(plan),
+    };
   }
 
   /**
@@ -285,11 +289,6 @@ export class WorkoutSession {
   // --- start / complete -----------------------------------------------------
 
   /**
-   * Trening koji se neće odraditi. Ništa se ne briše — propis ostaje, a „Vrati na plan"
-   * ga vraća. Postoji zato što je nedelja sa rupom inače ostajala otvorena zauvek: nije
-   * se ocenjivala, granice iz nje nisu učile, a sledeći blok plana se nije generisao.
-   */
-  /**
    * Vežba se menja samo u treningu koji čeka i dok na njoj nema upisane serije - server traži
    * isto. Odrađen ili preskočen trening je istorija.
    */
@@ -303,12 +302,20 @@ export class WorkoutSession {
     this.swapChoice.set('');
     this.actionError.set(null);
 
+    // Odgovor za karticu koja više nije otvorena se odbacuje: inače bi ponuda jedne vežbe
+    // stigla pod drugu (pregled #111).
     this.sessionService.alternatives(plan.id).subscribe({
       next: (options) => {
+        if (this.swapPlanId() !== plan.id) {
+          return;
+        }
         this.swapOptions.set(options);
         this.swapChoice.set(options[0]?.exerciseId ?? '');
       },
       error: (err: unknown) => {
+        if (this.swapPlanId() !== plan.id) {
+          return;
+        }
         this.swapPlanId.set(null);
         this.actionError.set(extractErrorMessage(err, 'Ne mogu da učitam vežbe za zamenu.'));
       },
@@ -329,7 +336,11 @@ export class WorkoutSession {
     this.sessionService.substitute(plan.id, exerciseId).subscribe({
       next: (session) => {
         this.session.set(session);
-        this.initDrafts(session);
+        // Samo zamenjena kartica dobija nov unos; nesačuvani unosi na ostalim karticama ostaju.
+        const swapped = session.exercisePlans.find((candidate) => candidate.id === plan.id);
+        if (swapped) {
+          this.patchDraft(plan.id, this.initialDraft(swapped));
+        }
         this.swapping.set(false);
         this.swapPlanId.set(null);
         this.toast.set('Vežba je zamenjena do kraja bloka.');
@@ -341,6 +352,11 @@ export class WorkoutSession {
     });
   }
 
+  /**
+   * Trening koji se neće odraditi. Ništa se ne briše — propis ostaje, a „Vrati na plan"
+   * ga vraća. Postoji zato što je nedelja sa rupom inače ostajala otvorena zauvek: nije
+   * se ocenjivala, granice iz nje nisu učile, a sledeći blok plana se nije generisao.
+   */
   protected skip(): void {
     if (this.skipping()) {
       return;

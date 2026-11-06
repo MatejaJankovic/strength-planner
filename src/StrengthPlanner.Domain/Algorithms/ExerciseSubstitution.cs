@@ -8,7 +8,10 @@ namespace StrengthPlanner.Domain.Algorithms;
 /// <param name="ExerciseId">The exercise.</param>
 /// <param name="Type">Compound or isolation.</param>
 /// <param name="SuitsLowReps">Whether a compound takes the strength range.</param>
-/// <param name="PrimaryMuscleGroupId">The muscle with a full share, or null when none has one.</param>
+/// <param name="PrimaryMuscleGroupIds">
+/// The muscles with a full share. A system exercise has exactly one; a lifter's own exercise may
+/// have several.
+/// </param>
 /// <param name="IsLoadable">
 /// Whether the exercise carries a load the plan can prescribe: false for a hold such as the
 /// plank, which carries bodyweight equipment with no bodyweight share.
@@ -17,7 +20,7 @@ public sealed record SubstitutionProfile(
     Guid ExerciseId,
     ExerciseType Type,
     bool SuitsLowReps,
-    Guid? PrimaryMuscleGroupId,
+    IReadOnlyCollection<Guid> PrimaryMuscleGroupIds,
     bool IsLoadable);
 
 /// <summary>
@@ -30,8 +33,9 @@ public sealed record SubstitutionProfile(
 /// compound, whether a compound suits the strength range, and the muscle the slot is there to
 /// train. So the replacement must match all three:
 /// <list type="bullet">
-/// <item>the same primary muscle, or the week's volume would move to another muscle and the
-/// slot would stop doing what the template put it there for;</item>
+/// <item>the same primary muscles, or the week's volume would move to another muscle and the
+/// slot would stop doing what the template put it there for. Compared as a set, so a lifter's
+/// own exercise with two primaries matches only one that has the same two;</item>
 /// <item>the same type, or an isolation would take a compound's place in the session's
 /// compound budget (<see cref="SessionComposition"/>);</item>
 /// <item>for a compound, the same answer to <c>SuitsLowReps</c>, or a split squat would inherit
@@ -49,8 +53,8 @@ public static class ExerciseSubstitution
 
         return candidate.ExerciseId != current.ExerciseId
                && candidate.IsLoadable
-               && current.PrimaryMuscleGroupId is not null
-               && candidate.PrimaryMuscleGroupId == current.PrimaryMuscleGroupId
+               && current.PrimaryMuscleGroupIds.Count > 0
+               && current.PrimaryMuscleGroupIds.ToHashSet().SetEquals(candidate.PrimaryMuscleGroupIds)
                && candidate.Type == current.Type
                && (current.Type == ExerciseType.Isolation || candidate.SuitsLowReps == current.SuitsLowReps);
     }

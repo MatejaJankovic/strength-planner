@@ -144,6 +144,38 @@ public class ExerciseSubstitutionServiceTests
         Assert.Equal(TrainingLogErrorType.Validation, error.ErrorType);
     }
 
+    /// <summary>Tuđ plan ne postoji za ovog korisnika, a tuđa lična vežba nije ponuđena ni prihvaćena.</summary>
+    [Fact]
+    public async Task AnotherUsersPlanOrExercise_IsOutOfReach()
+    {
+        using var database = new SqliteDatabase();
+        var block = await SeedAsync(database, SetAllocation.FollowTemplate);
+        var foreignSquat = Guid.NewGuid();
+
+        await using (var db = database.NewContext())
+        {
+            var foreign = Exercise(foreignSquat, "Box Squat", ExerciseType.Compound, suitsLowReps: true, Quads);
+            foreign.IsCustom = true;
+            foreign.CreatedByUserId = Guid.NewGuid();
+            db.Exercises.Add(foreign);
+            await db.SaveChangesAsync();
+        }
+
+        await using var context = database.NewContext();
+        var service = Service(context);
+
+        var notMine = await Assert.ThrowsAsync<TrainingLogException>(() =>
+            service.SubstituteAsync(Guid.NewGuid(), block.WeekTwoSquat, FrontSquat));
+        Assert.Equal(TrainingLogErrorType.NotFound, notMine.ErrorType);
+
+        Assert.DoesNotContain(
+            await service.GetAlternativesAsync(database.UserId, block.WeekTwoSquat),
+            alternative => alternative.ExerciseId == foreignSquat);
+        var foreignExercise = await Assert.ThrowsAsync<TrainingLogException>(() =>
+            service.SubstituteAsync(database.UserId, block.WeekTwoSquat, foreignSquat));
+        Assert.Equal(TrainingLogErrorType.Validation, foreignExercise.ErrorType);
+    }
+
     private static ExerciseSubstitutionService Service(AppDbContext context)
     {
         var landmarks = new VolumeLandmarkService(context);

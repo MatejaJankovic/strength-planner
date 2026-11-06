@@ -53,6 +53,24 @@ public class ExerciseSubstitutionTests
         Assert.True(Can("Cable Crunch", "Machine Crunch"));
     }
 
+    /// <summary>
+    /// Lična vežba sme da ima više glavnih mišića. Poklapa se ceo skup, pa ishod ne zavisi od
+    /// toga kojim redom baza vrati udele (pregled #111).
+    /// </summary>
+    [Fact]
+    public void ALiftersOwnExerciseWithTwoPrimaries_MatchesOnlyTheSameTwo()
+    {
+        var chest = Guid.NewGuid();
+        var triceps = Guid.NewGuid();
+        var bench = new SubstitutionProfile(Guid.NewGuid(), ExerciseType.Compound, true, [chest], true);
+        var custom = new SubstitutionProfile(Guid.NewGuid(), ExerciseType.Compound, true, [triceps, chest], true);
+        var sameTwo = new SubstitutionProfile(Guid.NewGuid(), ExerciseType.Compound, true, [chest, triceps], true);
+
+        Assert.False(ExerciseSubstitution.CanReplace(bench, custom));
+        Assert.False(ExerciseSubstitution.CanReplace(custom, bench));
+        Assert.True(ExerciseSubstitution.CanReplace(custom, sameTwo));
+    }
+
     [Fact]
     public void AnExercise_DoesNotReplaceItself()
     {
@@ -73,7 +91,7 @@ public class ExerciseSubstitutionTests
             TemplateWeekSimulation.MuscleId(name),
             seed.Type,
             seed.SuitsLowReps,
-            TemplateWeekSimulation.MuscleId(primary),
+            [TemplateWeekSimulation.MuscleId(primary)],
             !(seed.Equipment == "Bodyweight" && seed.BodyweightShare == 0m));
     }
 }

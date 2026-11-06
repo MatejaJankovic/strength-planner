@@ -182,7 +182,6 @@
   width: 100%;
 }
 
-// Preskakanje nosi oblik glavne akcije, ali tiši ton: to je izlaz, a ne ravnopravan izbor.
 .swap {
   display: grid;
   gap: 0.5rem;
@@ -195,6 +194,7 @@
   padding: 0.6rem;
 }
 
+// Preskakanje nosi oblik glavne akcije, ali tiši ton: to je izlaz, a ne ravnopravan izbor.
 .cta--quiet {
   background: none;
   border: 1px solid var(--color-border);
