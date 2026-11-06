@@ -11,7 +11,13 @@
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.0" />
+    <!-- Zbog ServiceHarness: pravi AppDbContext nad SQLite-om u memoriji, jer servisi koriste
+         ExecuteUpdate, ExecuteDelete i transakcije, koje EF InMemory nema. -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.10" />
+    <!-- Stiže tranzitivno kroz EF Sqlite u verziji 2.1.6, čija nativna biblioteka nosi
+         objavljenu ranjivost (GHSA-2m69-gcr7-jv3q), pa bi provera zavisnosti u CI-ju pala.
+         2.1.14 je čista. Ne isporučuje se - ovo je test projekat. -->
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.14" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
     <PackageReference Include="xunit" Version="2.5.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />

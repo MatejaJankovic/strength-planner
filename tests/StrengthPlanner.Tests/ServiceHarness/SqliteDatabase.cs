@@ -30,17 +30,25 @@ internal sealed class SqliteDatabase : IDisposable
         _connection = new SqliteConnection("DataSource=:memory:");
         _connection.Open();
 
-        using var db = NewContext();
-        db.Database.EnsureCreated();
-        db.Users.Add(new ApplicationUser
+        try
         {
-            Id = UserId,
-            UserName = "harness@example.test",
-            NormalizedUserName = "HARNESS@EXAMPLE.TEST",
-            Email = "harness@example.test",
-            NormalizedEmail = "HARNESS@EXAMPLE.TEST"
-        });
-        db.SaveChanges();
+            using var db = NewContext();
+            db.Database.EnsureCreated();
+            db.Users.Add(new ApplicationUser
+            {
+                Id = UserId,
+                UserName = "harness@example.test",
+                NormalizedUserName = "HARNESS@EXAMPLE.TEST",
+                Email = "harness@example.test",
+                NormalizedEmail = "HARNESS@EXAMPLE.TEST"
+            });
+            db.SaveChanges();
+        }
+        catch
+        {
+            _connection.Dispose();
+            throw;
+        }
     }
 
     /// <summary>The one account every row belongs to; the ownership filters read it.</summary>

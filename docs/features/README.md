@@ -153,7 +153,7 @@ uz ugrađeni šablon). Svaka grana sa izmenom koda ima merenje vraćanjem, a sva
 | [„Prati moj šablon" samo za lični šablon](allocation-follow-template.md) | Uz ugrađeni šablon je propisivao nedelje iznad MRV-a, a ekran je govorio samo „može ostati ispod cilja" | #101 |
 | [Zatvaranje runde 14](round-14-closure.md) | „Ispod MEV-a nema stimulusa" na ekranu; ocena umora nije bila nazvana heuristikom; rečenice teze koje više ne opisuju aplikaciju nisu bile na jednom mestu ([teza-uskladjivanje.md](../teza-uskladjivanje.md)) | #102 |
 | [Uputstvo i komentari, drugi prolaz](guide-accuracy-2.md) | Četiri rečenice uputstva i dva komentara u kodu više nisu opisivali aplikaciju; Remmert i sar. nije bio označen kao preprint | #103 |
-| [Test-harness za servise](service-harness.md) | Pravilo u servisu (#74, #99, #101) moglo je da se vrati uz ceo paket zelen; sada svako vraćanje obara test | — |
+| [Test-harness za servise](service-harness.md) | Pravilo u servisu (#74, #99, #101) moglo je da se vrati uz ceo paket zelen; sada ga hvataju testovi nad servisom, osim dva pozivaoca iz #74 | #104 |
 
 ## Ako čitaš samo jedno
 

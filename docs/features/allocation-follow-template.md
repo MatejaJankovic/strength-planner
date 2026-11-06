@@ -67,4 +67,4 @@ kraja zadržavaju nedelje iznad MRV-a, bez balansiranja.
     polje „Broj serija". Kad se prvi blok prebaci na Upper/Lower posle izbora „Prati moj
     šablon", polje nestaje, a drugi blok ga zadržava. Bez prelivanja.
 
-  *(Kasnije: pokriveno testom nad servisom, vidi [service-harness.md](service-harness.md).)*
+*(Kasnije: pokriveno testom nad servisom, vidi [service-harness.md](service-harness.md).)*

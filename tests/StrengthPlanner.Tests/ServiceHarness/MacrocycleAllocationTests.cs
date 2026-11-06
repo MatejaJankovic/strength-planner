@@ -6,6 +6,7 @@ using StrengthPlanner.Application.Templates;
 using StrengthPlanner.Domain.Entities;
 using StrengthPlanner.Domain.Enums;
 using StrengthPlanner.Infrastructure.Mesocycles;
+using StrengthPlanner.Infrastructure.Templates;
 using StrengthPlanner.Infrastructure.Persistence;
 
 namespace StrengthPlanner.Tests.ServiceHarness;
@@ -19,7 +20,24 @@ namespace StrengthPlanner.Tests.ServiceHarness;
 /// </summary>
 public class MacrocycleAllocationTests
 {
-    private static readonly string CustomKey = CustomTemplateKey.For(Guid.NewGuid());
+    /// <summary>
+    /// Lični šablon mora da postoji i da pripada nalogu: pravi resolver (bez lažnjaka) inače
+    /// odbija ključ kao nepoznat šablon.
+    /// </summary>
+    private static async Task<string> AddCustomTemplateAsync(SqliteDatabase database)
+    {
+        var templateId = Guid.NewGuid();
+        await using var db = database.NewContext();
+        db.UserWorkoutTemplates.Add(new UserWorkoutTemplate
+        {
+            Id = templateId,
+            UserId = database.UserId,
+            Name = "Moj šablon",
+            CreatedAt = DateTime.UtcNow
+        });
+        await db.SaveChangesAsync();
+        return CustomTemplateKey.For(templateId);
+    }
 
     /// <summary>
     /// Ugrađeni blok stoji drugi, na čekanju. Prvi se generiše odmah, pa bi ga upis nazad pri
@@ -30,9 +48,10 @@ public class MacrocycleAllocationTests
     public async Task ABuiltInBlock_IsStoredBalanced_ACustomOneKeepsTheChoice()
     {
         using var database = new SqliteDatabase();
+        var customKey = await AddCustomTemplateAsync(database);
         await using var db = database.NewContext();
         var generator = new RecordingGenerator(db);
-        var service = new MacrocycleService(db, generator, new AnyTemplate());
+        var service = new MacrocycleService(db, generator, new WorkoutTemplateResolver(db));
 
         var plan = await service.CreateAsync(database.UserId, new CreateMacrocycleRequest
         {
@@ -40,7 +59,7 @@ public class MacrocycleAllocationTests
             StartDate = new DateTime(2026, 11, 9, 0, 0, 0, DateTimeKind.Utc),
             Blocks =
             [
-                Block(CustomKey, SetAllocation.FollowTemplate),
+                Block(customKey, SetAllocation.FollowTemplate),
                 Block("upper-lower", SetAllocation.FollowTemplate)
             ]
         });
@@ -87,7 +106,7 @@ public class MacrocycleAllocationTests
         await using (var db = database.NewContext())
         {
             var generator = new RecordingGenerator(db);
-            await new MacrocycleService(db, generator, new AnyTemplate()).GetActiveAsync(database.UserId);
+            await new MacrocycleService(db, generator, new WorkoutTemplateResolver(db)).GetActiveAsync(database.UserId);
 
             Assert.Equal(SetAllocation.TargetVolume, generator.Requests.Single().SetAllocation);
         }
@@ -109,6 +128,11 @@ public class MacrocycleAllocationTests
         };
     }
 
+    /// <summary>
+    /// Beleži zahtev i upisuje prazan mezociklus u kontekst servisa. Za razliku od pravog
+    /// generatora ne čuva sam, ne baca <c>MesocycleGenerationException</c> i ne upisuje nivo
+    /// iskustva; test koji zavisi od bilo čega od toga mora da koristi pravi generator.
+    /// </summary>
     private sealed class RecordingGenerator : IMesocycleGenerator
     {
         private readonly AppDbContext _db;
@@ -140,26 +164,6 @@ public class MacrocycleAllocationTests
             _db.Mesocycles.Add(mesocycle);
 
             return Task.FromResult(new MesocycleDto { Id = mesocycle.Id, Name = mesocycle.Name });
-        }
-    }
-
-    private sealed class AnyTemplate : IWorkoutTemplateResolver
-    {
-        public Task<ResolvedTemplate?> ResolveAsync(
-            Guid userId,
-            string templateKey,
-            Goal goal,
-            CancellationToken cancellationToken = default)
-        {
-            return Task.FromResult<ResolvedTemplate?>(null);
-        }
-
-        public Task<string?> NameForAsync(
-            Guid userId,
-            string templateKey,
-            CancellationToken cancellationToken = default)
-        {
-            return Task.FromResult<string?>(templateKey);
         }
     }
 }

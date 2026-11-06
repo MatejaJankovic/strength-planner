@@ -32,6 +32,9 @@ public class OneRepMaxServiceTests
         Assert.False(current.Single(dto => dto.ExerciseId == bench).IsOutsideLookback);
     }
 
+    /// <summary>
+    /// Drži izbor prozora, a ne red iz #99: prolazi i bez njega, jer je tada oznaka uvek false.
+    /// </summary>
     [Fact]
     public async Task AFreshTestSet_TakesTheOldMaximumOutOfTheNotice()
     {

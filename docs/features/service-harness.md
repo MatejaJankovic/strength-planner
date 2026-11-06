@@ -28,10 +28,11 @@ Prvi testovi:
 |---|---|
 | `OneRepMaxServiceTests` | maksimum stariji od 56 dana nosi `IsOutsideLookback`, a svež ne; test-serija ga skida (#99) |
 | `MacrocycleAllocationTests` | ugrađeni blok se upisuje balansiran, a lični zadržava izbor; blok upisan pre pravila se generiše balansiran, i ispravka se upisuje nazad (#101) |
-| `BlockExperienceLevelTests` | blok se sudi po nivou sa kojim je generisan, a ne po profilu promenjenom usred bloka (#74) |
+| `BlockExperienceLevelTests` | pomoćna klasa i pozivalac `VolumeLandmarkService`: blok se sudi po nivou sa kojim je generisan, a ne po profilu promenjenom usred bloka (#74) |
 
 `MacrocycleService` dobija lažni generator: on beleži šta mu je poslato i upisuje prazan
-mezociklus, jer blok na njega pokazuje stranim ključem.
+mezociklus, jer blok na njega pokazuje stranim ključem. Resolver šablona je pravi, nad ličnim
+šablonom upisanim za nalog, pa test prolazi i proveru ključa i vlasništva.
 
 ## Šta je merenje pokazalo
 
@@ -40,23 +41,46 @@ pravljenju bloka je ostalo zeleno**. Prvi blok se generiše odmah, a upis nazad 
 ga ispravi i bez tog pravila. Pravilo pri pravljenju štiti samo blokove koji čekaju red. Sada
 ugrađeni blok stoji drugi, na čekanju.
 
+## Posle pregleda
+
+- **Paket koji bi oborio CI.** EF Sqlite vuče `SQLitePCLRaw.lib.e_sqlite3` 2.1.6, sa objavljenom
+  ranjivošću (GHSA-2m69-gcr7-jv3q), a provera zavisnosti u CI-ju pada na svaki nalaz, i u test
+  projektu. Verzija je podignuta na 2.1.14, uz komentar kao kod ostalih takvih referenci.
+- **#74 je bio prikazan kao zatvoren, a nije.** Prvi test je pokrivao samo telo pomoćne klase.
+  Pregled je izmerio da vraćanje prave ispravke iz #74 - pozivaoci opet čitaju profil - ostaje
+  zeleno, kao i izbacivanje upisa nivoa u generatoru. Dodat je test kroz
+  `VolumeLandmarkService.GetEffectiveAsync`; `DeloadService` i generator su navedeni pod
+  „Šta ostaje".
+- Lažni resolver koji prihvata svaki ključ je zamenjen pravim.
+
 ## Provera
 
-- `dotnet test`: **865** (bilo 860). Klijent 204, bez izmena.
+- `dotnet test`: **866** (bilo 860). Klijent 204, bez izmena.
 - Merenje vraćanjem, svaka izmena sama, uz rebuild posle svakog vraćanja:
 
 | Vraćeno | Obara |
 |---|---|
-| oznaka u `GetCurrentAsync` (#99) | 1 od 865 |
-| pravilo pri pravljenju bloka (#101) | 1 od 865 (na prvoj verziji testa 0) |
-| upis nazad pri generisanju (#101) | 1 od 865 |
-| nivo iz profila umesto sa bloka (#74) | 1 od 865 |
+| oznaka u `GetCurrentAsync` (#99) | 1 |
+| pravilo pri pravljenju bloka (#101) | 1 (na prvoj verziji testa 0) |
+| upis nazad pri generisanju (#101) | 1 |
+| telo `BlockExperienceLevel` (nivo iz profila) (#74) | 2 |
+| `VolumeLandmarkService` čita profil umesto bloka (#74) | 1 |
+| `DeloadService` čita profil umesto bloka (#74) | 0 |
+| generator ne upisuje nivo na blok (#74) | 0 |
 
 ## Šta ostaje
 
-- `BlockExperienceLevel` je pokriven, ali ne i to da ga `VolumeLandmarkService` i
-  `DeloadService` zaista zovu. Za to je potrebna cela odrađena nedelja sa serijama. Sada postoji
-  harness u kome se ti testovi mogu napisati.
-- Filteri vlasništva (EF `HasQueryFilter`) na SQLite-u rade isto kao na PostgreSQL-u, ali
-  ponašanje specifično za PostgreSQL (tipovi kolona, poređenje datuma sa vremenskom zonom) ovaj
-  harness ne vidi. Za to ostaje provera uživo.
+- Za #74 nisu pokriveni pozivalac `DeloadService` i upis nivoa u `MesocycleGenerator`: vraćanje
+  svakog obara 0 testova. Prvi traži odrađenu nedelju sa serijama, a drugi pravi generator.
+- Razlike SQLite-a u odnosu na PostgreSQL, koje harness ne vidi:
+  - `HasPrecision(6,2)` se ne primenjuje: 66.6666 se čita kao 66.6666, a PostgreSQL bi vratio
+    66.67. Test koji proverava upisanu procenu može da se razlikuje od produkcije.
+  - `DateTime` se čita sa `Kind=Unspecified` (Npgsql vraća Utc), a SQLite prihvata i vreme koje
+    nije UTC, koje Npgsql 8 odbija za `timestamptz`.
+  - `Max` i `OrderBy` nad decimalom bacaju `NotSupportedException`: budući test nad težinama će
+    pući glasno, ne lažno proći.
+  - `EnsureCreated` ne izvršava `Sql(...)` iz migracija ni seeder, pa su katalog i granice
+    prazni dok ih test ne upiše.
+  - Strani ključevi se proveravaju (`PRAGMA foreign_keys=1`), kao i na PostgreSQL-u.
+- Nativna SQLite biblioteka se ne učitava ako je putanja do repozitorijuma predugačka
+  (`DllNotFoundException ... 0x800700CE`). Do sada je ceo paket bio čist upravljani kod.
