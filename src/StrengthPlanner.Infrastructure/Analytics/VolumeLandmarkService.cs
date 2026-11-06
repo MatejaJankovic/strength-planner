@@ -288,6 +288,10 @@ public sealed class VolumeLandmarkService
             return [];
         }
 
+        // Kalibraciona serija nije uporediva sa serijama prethodne nedelje: njoj se rezerva ne
+        // procenjuje, a njima jeste (CalibrationSets).
+        var calibration = await CalibrationSets.IdsAsync(_db, userId, week.MesocycleId, cancellationToken);
+
         var samples = await _db.SetLogs
             .AsNoTracking()
             .Where(set => set.ExercisePlan.WorkoutSession.TrainingWeek.MesocycleId == week.MesocycleId
@@ -297,6 +301,7 @@ public sealed class VolumeLandmarkService
             .SelectMany(set => set.ExercisePlan.Exercise.Muscles.Select(muscle => new
             {
                 muscle.MuscleGroupId,
+                SetId = set.Id,
                 IsCurrent = set.ExercisePlan.WorkoutSession.TrainingWeek.WeekNumber == week.WeekNumber,
                 set.ExercisePlan.ExerciseId,
                 set.Reps,
@@ -307,7 +312,7 @@ public sealed class VolumeLandmarkService
 
         var changes = new Dictionary<Guid, decimal>();
 
-        foreach (var group in samples.GroupBy(sample => sample.MuscleGroupId))
+        foreach (var group in samples.Where(sample => !calibration.Contains(sample.SetId)).GroupBy(sample => sample.MuscleGroupId))
         {
             var change = StrengthChange.ChangeShare(
                 group.Where(sample => sample.IsCurrent)
@@ -334,19 +339,28 @@ public sealed class VolumeLandmarkService
         Guid trainingWeekId,
         CancellationToken cancellationToken)
     {
+        // Spoj sa mišićima je join, a ne SelectMany preko navigacije: to drugo SQLite ne ume
+        // da prevede (APPLY), pa ovaj upit nije mogao da uđe u test nad bazom.
         var contributions = await _db.SetLogs
             .AsNoTracking()
             .Where(set => set.ExercisePlan.WorkoutSession.TrainingWeekId == trainingWeekId
                           && set.ExercisePlan.WorkoutSession.TrainingWeek.Mesocycle.UserId == userId)
-            .SelectMany(set => set.ExercisePlan.Exercise.Muscles.Select(muscle => new SetContribution(
-                muscle.MuscleGroupId,
-                muscle.Contribution,
-                set.Reps,
-                set.Rir,
-                set.IsFailure,
-                set.ExercisePlan.TargetRir,
-                set.ExercisePlan.RepRangeMin)))
+            .Join(
+                _db.ExerciseMuscles,
+                set => set.ExercisePlan.ExerciseId,
+                muscle => muscle.ExerciseId,
+                (set, muscle) => new SetContribution(
+                    muscle.MuscleGroupId,
+                    muscle.Contribution,
+                    set.Reps,
+                    set.Rir,
+                    set.IsFailure,
+                    set.ExercisePlan.TargetRir,
+                    set.ExercisePlan.RepRangeMin,
+                    set.Id))
             .ToListAsync(cancellationToken);
+
+        var calibration = await CalibrationSetsOfWeekAsync(userId, trainingWeekId, cancellationToken);
 
         return contributions
             .GroupBy(item => item.MuscleGroupId)
@@ -361,7 +375,8 @@ public sealed class VolumeLandmarkService
                             item.IsFailure,
                             Set = new WorkingSet(item.Reps, item.Rir, item.IsFailure),
                             item.TargetRir,
-                            item.RepRangeMin
+                            item.RepRangeMin,
+                            IsCalibration = calibration.Contains(item.SetId)
                         })
                         .Select(item => new
                         {
@@ -370,7 +385,8 @@ public sealed class VolumeLandmarkService
                             item.Set,
                             Credit = StimulativeVolume.CreditFor(item.Set),
                             item.TargetRir,
-                            item.RepRangeMin
+                            item.RepRangeMin,
+                            item.IsCalibration
                         })
                         .ToList();
 
@@ -384,8 +400,11 @@ public sealed class VolumeLandmarkService
                     // stimulativnim imeniocem bi nedelja od deset laganih i dve otkazane
                     // serije prijavila udeo 1.0 umesto 0.17, pa bi pragovi umora
                     // (0.25 / 0.125) izgubili kalibraciju i MEV bi se survao na svoj pod.
+                    //
+                    // Kalibraciona serija je otkaz koji je plan propisao, a ne znak da je nedelja
+                    // bila preteška, pa ulazi u zbir, ali ne i u otkaze.
                     var failed = measured
-                        .Where(item => item.IsFailure)
+                        .Where(item => item.IsFailure && !item.IsCalibration)
                         .Sum(item => item.Contribution);
                     var failureShare = rawWeight == 0 ? 0m : failed / rawWeight;
 
@@ -420,6 +439,23 @@ public sealed class VolumeLandmarkService
                 });
     }
 
+    /// <summary>Kalibracione serije bloka kome nedelja pripada (<see cref="CalibrationSets"/>).</summary>
+    private async Task<HashSet<Guid>> CalibrationSetsOfWeekAsync(
+        Guid userId,
+        Guid trainingWeekId,
+        CancellationToken cancellationToken)
+    {
+        var mesocycleId = await _db.TrainingWeeks
+            .AsNoTracking()
+            .Where(trainingWeek => trainingWeek.Id == trainingWeekId && trainingWeek.Mesocycle.UserId == userId)
+            .Select(trainingWeek => (Guid?)trainingWeek.MesocycleId)
+            .SingleOrDefaultAsync(cancellationToken);
+
+        return mesocycleId is null
+            ? []
+            : await CalibrationSets.IdsAsync(_db, userId, mesocycleId.Value, cancellationToken);
+    }
+
     private sealed record SetContribution(
         Guid MuscleGroupId,
         decimal Contribution,
@@ -427,7 +463,8 @@ public sealed class VolumeLandmarkService
         int Rir,
         bool IsFailure,
         int TargetRir,
-        int RepRangeMin);
+        int RepRangeMin,
+        Guid SetId);
 }
 
 /// <summary>Granice koje važe za korisnika, uz seed vrednosti radi poređenja u UI-ju.</summary>

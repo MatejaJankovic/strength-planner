@@ -756,11 +756,25 @@ public class SessionService : ISessionService
         var weightStepOverrides = await WeightStepResolver.LoadOverridesAsync(_db, userId, cancellationToken);
         var portions = await ResolvePortionsAsync(userId, session, cancellationToken);
 
+        // Nedelje bloka se čitaju posebno: Include od nedelje do bloka i nazad do njegovih
+        // nedelja je ciklus, a njega EF u upitu bez praćenja odbija.
+        var weeks = await _db.TrainingWeeks
+            .AsNoTracking()
+            .Where(week => week.MesocycleId == session.TrainingWeek.MesocycleId
+                           && week.Mesocycle.UserId == userId)
+            .Select(week => new { week.WeekNumber, week.IsDeload })
+            .ToListAsync(cancellationToken);
+        var isLastTrainingWeek = CalibrationSet.IsLastTrainingWeek(
+            session.TrainingWeek.WeekNumber,
+            session.TrainingWeek.IsDeload,
+            weeks.Select(week => (week.WeekNumber, week.IsDeload)));
+
         return ToDto(
             session,
             weightStepOverrides,
             portions,
-            await ResolveEstimatedTargetsAsync(userId, session, portions, weightStepOverrides, cancellationToken));
+            await ResolveEstimatedTargetsAsync(userId, session, portions, weightStepOverrides, cancellationToken),
+            isLastTrainingWeek);
     }
 
     /// <summary>
@@ -956,8 +970,11 @@ public class SessionService : ISessionService
         WorkoutSession session,
         IReadOnlyDictionary<Guid, decimal> weightStepOverrides,
         IReadOnlyDictionary<Guid, decimal> bodyweightPortions,
-        IReadOnlyDictionary<Guid, EstimatedTarget> estimatedTargets)
+        IReadOnlyDictionary<Guid, EstimatedTarget> estimatedTargets,
+        bool isLastTrainingWeek)
     {
+        var mesocycle = session.TrainingWeek.Mesocycle;
+
         return new WorkoutSessionDto
         {
             Id = session.Id,
@@ -998,6 +1015,14 @@ public class SessionService : ISessionService
                     Equipment = plan.Exercise.Equipment,
                     IsBodyweight = BodyweightPortionResolver.PortionFor(bodyweightPortions, plan.ExerciseId) > 0,
                     BodyweightLoadKg = BodyweightPortionResolver.PortionFor(bodyweightPortions, plan.ExerciseId),
+                    IsCalibration = CalibrationSet.AppliesTo(
+                        mesocycle.ExperienceLevel,
+                        isLastTrainingWeek,
+                        plan.Order,
+                        plan.Exercise.Type,
+                        plan.Exercise.SuitsLowReps,
+                        plan.RepRangeMax,
+                        plan.TargetRir),
                     SetLogs = plan.SetLogs
                         .OrderBy(set => set.SetNumber)
                         .Select(SetLogMapper.ToDto)

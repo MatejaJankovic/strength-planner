@@ -44,6 +44,13 @@ public class ExercisePlanDto
     /// </summary>
     public bool TargetWeightIsCarried { get; set; }
 
+    /// <summary>
+    /// Prva serija ove vežbe je kalibraciona: ide do otkaza na propisanoj težini
+    /// (<see cref="Domain.Algorithms.CalibrationSet"/>). Računa se pri čitanju, pa prati i
+    /// auto-deload koji pomeri poslednju trenažnu nedelju.
+    /// </summary>
+    public bool IsCalibration { get; set; }
+
     /// <summary>Korak kojim klijent pomera opterećenje za ovu vežbu (kg).</summary>
     public decimal WeightStepKg { get; set; }
 

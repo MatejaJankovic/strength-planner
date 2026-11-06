@@ -25,6 +25,7 @@ import { loadLabel } from './load-label';
 import { repRangeLabel } from '../../shared/rep-range-label';
 import { LoadFloorNote, loadFloorNote } from './load-floor-note';
 import { adjustmentCause } from './adjustment-cause';
+import { isCalibrationEntry } from './calibration';
 
 interface SetDraft {
   weightKg: number;
@@ -110,7 +111,8 @@ export class WorkoutSession {
         reps: lastLog?.reps ?? plan.repRangeMin,
         rir: lastLog?.rir ?? plan.targetRir,
         // Otkaz se ne prenosi na sledeću seriju: to je izuzetak, ne podrazumevano stanje.
-        isFailure: false,
+        // Kalibraciona serija je jedini slučaj u kome je otkaz propisan.
+        isFailure: isCalibrationEntry(plan),
       };
     }
     this.drafts.set(drafts);
@@ -240,7 +242,22 @@ export class WorkoutSession {
 
   /** Napomena ispod unosa: šta ova serija znači za sledeći trening (vidi set-feedback.ts). */
   protected feedbackFor(plan: ExercisePlanDto, draft: SetDraft): SetFeedback | null {
+    // Otkaz kalibracione serije je propisan, a ne znak da je težina prevelika, pa napomena
+    // o sledećem treningu tu nema šta da kaže.
+    if (this.isCalibrationSet(plan)) {
+      return null;
+    }
+
     return setFeedback(plan, draft, this.session()?.isDeload ?? false);
+  }
+
+  /** Serija koja se upravo unosi ili menja je kalibraciona (prva serija označene vežbe). */
+  protected isCalibrationSet(plan: ExercisePlanDto): boolean {
+    const editingId = this.editingId(plan.id);
+    const editingSetNumber = editingId === null
+      ? null
+      : (plan.setLogs.find((log) => log.id === editingId)?.setNumber ?? null);
+    return isCalibrationEntry(plan, editingSetNumber);
   }
 
   /** Otkaz i RIR se isključuju — serija do otkaza po definiciji nema rezervu. */
@@ -449,6 +466,14 @@ export class WorkoutSession {
     if (this.editingId(planId) === set.id) {
       this.setEditing(planId, null);
       this.clearFailureDraft(planId);
+    }
+
+    // Obrisana kalibraciona serija je opet sledeća za upis, pa i kvačica mora da se vrati:
+    // server sledeću seriju broji kao prvu, a ekran bi inače napisao „do otkaza" uz isključen
+    // otkaz (pregled #110).
+    const remaining = this.session()?.exercisePlans.find((plan) => plan.id === planId);
+    if (remaining && isCalibrationEntry(remaining)) {
+      this.patchDraft(planId, { isFailure: true });
     }
 
     this.sessionService.deleteSet(set.id).subscribe({

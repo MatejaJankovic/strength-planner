@@ -261,6 +261,17 @@
           </p>
         }
 
+        @if ((isPlanned() || isInProgress()) && isCalibrationSet(plan)) {
+          <p class="card__hint card__hint--estimate">
+            <mat-icon aria-hidden="true">flag</mat-icon>
+            <span>
+              Kalibracija: prvu seriju odradi do otkaza na predloženoj težini, koliko god
+              ponavljanja stigneš. Bez rezerve nema šta da se proceni, pa je ovo najtačnija
+              procena maksimuma u bloku. Ostale serije idu po planu.
+            </span>
+          </p>
+        }
+
         @if (plan.targetWeightIsEstimate) {
           <p class="card__hint card__hint--estimate">
             <mat-icon aria-hidden="true">calculate</mat-icon>
@@ -282,7 +293,10 @@
         @if (isInProgress()) {
           <div class="entry">
             <div class="entry__field">
-              <span class="entry__label">Ponavljanja &middot; cilj {{ repTarget(plan) }}</span>
+              <span class="entry__label">
+                Ponavljanja &middot;
+                {{ isCalibrationSet(plan) ? 'do otkaza' : 'cilj ' + repTarget(plan) }}
+              </span>
               <div class="reps">
                 <button
                   class="reps__btn"

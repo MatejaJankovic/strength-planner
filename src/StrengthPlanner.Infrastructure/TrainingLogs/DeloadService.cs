@@ -516,6 +516,10 @@ public sealed class DeloadService
         int weekNumber,
         CancellationToken cancellationToken)
     {
+        // Kalibraciona serija je otkaz koji je plan propisao (CalibrationSets): ne ulazi ni u
+        // udeo otkaza ni u poređenje snage, isto kao kod granica volumena.
+        var calibration = await CalibrationSets.IdsAsync(_db, userId, mesocycleId, cancellationToken);
+
         var sets = await _db.SetLogs
             .AsNoTracking()
             .Where(set => set.ExercisePlan.WorkoutSession.TrainingWeekId == weekId
@@ -528,8 +532,11 @@ public sealed class DeloadService
                 set.WeightKg,
                 set.BodyweightLoadKg,
                 set.ExercisePlan.TargetRir,
-                set.ExercisePlan.RepRangeMin))
+                set.ExercisePlan.RepRangeMin,
+                set.Id,
+                false))
             .ToListAsync(cancellationToken);
+        sets = sets.Select(set => set with { IsCalibration = calibration.Contains(set.SetId) }).ToList();
 
         if (sets.Count == 0)
         {
@@ -547,7 +554,7 @@ public sealed class DeloadService
         // nule. Serija koja je stala ispod donje granice opsega ume i niže (kapacitet se meri
         // prema dnu opsega), pa ocena takvo odstupanje ograniči na punu težinu signala.
         var achievableDeficit = sets.Max(set => (decimal)set.TargetRir);
-        var failureShare = (decimal)sets.Count(set => set.IsFailure) / sets.Count;
+        var failureShare = (decimal)sets.Count(set => set.IsFailure && !set.IsCalibration) / sets.Count;
 
         var comparable = await GetComparableWeekAsync(userId, mesocycleId, weekNumber, cancellationToken);
         var e1RmChange = ChangeShare(sets, comparable.Sets);
@@ -626,8 +633,8 @@ public sealed class DeloadService
         // Nedostatak uporedivog para je nedostatak dokaza, pa nosi nulu, kao i nedostatak
         // uporedive nedelje iznad.
         return StrengthChange.ChangeShare(
-            currentSets.Select(ToStrengthSample),
-            previousSets.Select(ToStrengthSample)) ?? 0m;
+            currentSets.Where(set => !set.IsCalibration).Select(ToStrengthSample),
+            previousSets.Where(set => !set.IsCalibration).Select(ToStrengthSample)) ?? 0m;
     }
 
     /// <summary>Serije jedne nedelje mezociklusa, u obliku koji čitaju signali umora.</summary>
@@ -637,7 +644,8 @@ public sealed class DeloadService
         int weekNumber,
         CancellationToken cancellationToken)
     {
-        return await _db.SetLogs
+        var calibration = await CalibrationSets.IdsAsync(_db, userId, mesocycleId, cancellationToken);
+        var sets = await _db.SetLogs
             .AsNoTracking()
             .Where(set => set.ExercisePlan.WorkoutSession.TrainingWeek.MesocycleId == mesocycleId
                           && set.ExercisePlan.WorkoutSession.TrainingWeek.WeekNumber == weekNumber
@@ -650,8 +658,12 @@ public sealed class DeloadService
                 set.WeightKg,
                 set.BodyweightLoadKg,
                 set.ExercisePlan.TargetRir,
-                set.ExercisePlan.RepRangeMin))
+                set.ExercisePlan.RepRangeMin,
+                set.Id,
+                false))
             .ToListAsync(cancellationToken);
+
+        return sets.Select(set => set with { IsCalibration = calibration.Contains(set.SetId) }).ToList();
     }
 
     private static StrengthSample ToStrengthSample(SetSignal set)
@@ -701,7 +713,9 @@ public sealed class DeloadService
         decimal WeightKg,
         decimal BodyweightLoadKg,
         int TargetRir,
-        int RepRangeMin)
+        int RepRangeMin,
+        Guid SetId,
+        bool IsCalibration)
     {
         /// <summary>Everything the set moved, body included.</summary>
         public decimal TotalLoadKg => WeightKg + BodyweightLoadKg;
