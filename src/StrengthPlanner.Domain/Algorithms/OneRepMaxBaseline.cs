@@ -106,6 +106,26 @@ public static class OneRepMaxBaseline
     }
 
     /// <summary>
+    /// Whether a sample lies outside the window, which for the sample <see cref="Select"/>
+    /// picks means the stale fallback chose it: nothing newer existed.
+    ///
+    /// Generating a block keeps such a value on purpose, so a lifter returning after a pause
+    /// does not start from empty loads. But it is a statement about the lifter as they were
+    /// then, and how much strength is lost over a pause depends on its length and on training
+    /// status (Bosquet et al. 2013), so no single percentage could be subtracted here. The
+    /// value is kept and the lifter is told how old it is. A new record replaces it as the
+    /// maximum but does not rewrite loads already stored in the plan; after the first
+    /// completed session with the exercise, its next load comes from the sets lifted.
+    /// </summary>
+    public static bool IsOutsideLookback(OneRepMaxSample sample, DateTime now, int lookbackDays)
+    {
+        ArgumentNullException.ThrowIfNull(sample);
+
+        // Isti rez kao u Select: zapis tačno na granici je još u prozoru.
+        return sample.RecordedAt < now.AddDays(-lookbackDays);
+    }
+
+    /// <summary>
     /// The sample the rule picks, rather than only its value, for screens that show the
     /// stored record itself.
     /// </summary>

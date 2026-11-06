@@ -12,6 +12,7 @@ import { OneRepMaxService } from '../../core/api/one-rep-max.service';
 import { REGISTRATION_STEP_COUNT } from '../../core/models/auth.models';
 import { ExerciseDto } from '../../core/models/training.models';
 import { WizardShell } from '../../shared/components/wizard-shell/wizard-shell';
+import { staleMaxAgeWeeks, weeksLabel } from '../../shared/stale-max-age';
 
 const MAIN_LIFT_NAMES = ['Back Squat', 'Bench Press', 'Deadlift', 'Overhead Press', 'Barbell Row'];
 const STEP = 2.5;
@@ -25,6 +26,11 @@ interface LiftRow {
   /** Zapis iza prikazane vrednosti — ono što brisanje uklanja. */
   savedRecordId: string | null;
   savedSource: string | null;
+  /**
+   * Koliko je nedelja star prikazani maksimum, kad je stariji od prozora od kog plan
+   * polazi; inače null. Plan ga tada ipak koristi, pa ekran mora da kaže koliko je star.
+   */
+  savedAgeWeeks: number | null;
   /**
    * Vezba koju opterecuje telo. Njen maksimum je UKUPNO opterecenje (telo + dodato), pa
    * rucno uneto „100" ne znaci nista odredjeno — ni 100 kg na pojasu, ni 100 ukupno.
@@ -55,6 +61,8 @@ export class OneRepMaxSetup {
    * ranije je isto rečenica stajala i ovde i u čarobnjaku, i dve kopije su se već
    * razišle po crtici.
    */
+  protected readonly weeksLabel = weeksLabel;
+
   protected readonly optionalNote =
     'Ne moraš uneti sve - vežbe bez 1RM prvi put loguješ po osećaju.';
 
@@ -134,14 +142,20 @@ export class OneRepMaxSetup {
       }
     }
 
-    return ordered.map((entry) => ({
-      exerciseId: entry.id,
-      name: entry.name,
-      savedValueKg: ormByExercise.get(entry.id)?.valueKg ?? null,
-      savedRecordId: ormByExercise.get(entry.id)?.id ?? null,
-      savedSource: ormByExercise.get(entry.id)?.source ?? null,
-      isBodyweight: byId.get(entry.id)?.isBodyweight ?? false,
-    }));
+    const now = new Date();
+
+    return ordered.map((entry) => {
+      const orm = ormByExercise.get(entry.id);
+      return {
+        exerciseId: entry.id,
+        name: entry.name,
+        savedValueKg: orm?.valueKg ?? null,
+        savedRecordId: orm?.id ?? null,
+        savedSource: orm?.source ?? null,
+        savedAgeWeeks: orm ? staleMaxAgeWeeks(orm, now) : null,
+        isBodyweight: byId.get(entry.id)?.isBodyweight ?? false,
+      };
+    });
   });
 
   /**

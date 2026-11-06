@@ -10,6 +10,8 @@ import { Goal, WorkoutSessionDto } from '../../core/models/training.models';
 import { StatChip, StatChipTone } from '../../shared/components/stat-chip/stat-chip';
 import { EmptyState } from '../../shared/components/empty-state/empty-state';
 import { Loading } from '../../shared/components/loading/loading';
+import { weeksLabel } from '../../shared/stale-max-age';
+import { StaleMaxExercise, staleMaxExercises } from './stale-max-exercises';
 
 interface StatusMeta {
   label: string;
@@ -84,6 +86,23 @@ export class WorkoutDashboard {
     }
 
     return `${names.slice(0, MISSING_NAMES_SHOWN).join(', ')} i još ${names.length - MISSING_NAMES_SHOWN}`;
+  });
+
+  /** Vidi `staleMaxExercises`: samo vežbe čija opterećenja još stoje na starom maksimumu. */
+  protected readonly exercisesWithStaleMax = computed<StaleMaxExercise[]>(() => {
+    const plan = this.mesocycle();
+    return plan ? staleMaxExercises(plan, this.oneRepMaxService.oneRepMaxes(), new Date()) : [];
+  });
+
+  protected readonly staleMaxSummary = computed<string>(() => {
+    const entries = this.exercisesWithStaleMax().map(
+      (entry) => `${entry.name} (star ${weeksLabel(entry.weeks)})`,
+    );
+    if (entries.length <= MISSING_NAMES_SHOWN) {
+      return entries.join(', ');
+    }
+
+    return `${entries.slice(0, MISSING_NAMES_SHOWN).join(', ')} i još ${entries.length - MISSING_NAMES_SHOWN}`;
   });
 
   protected openOneRepMaxSetup(): void {

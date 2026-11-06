@@ -174,20 +174,29 @@ public class OneRepMaxService : IOneRepMaxService
                     TrainingConstants.OneRepMaxLookbackDays,
                     allowStaleFallback: true);
 
-                return chosen is null
+                if (chosen is null)
+                {
                     // Nijedan zapis nije upotrebljiv (npr. samo stare nule sa vežbi bez
                     // opterećenja): vežba se ne prikazuje kao da ima sačuvan maksimum.
-                    ? null
-                    : group
-                        .OrderByDescending(record => record.RecordedAt)
-                        .ThenByDescending(record => record.Id)
-                        .First(record => record.ValueKg == chosen.ValueKg
-                                         && record.RecordedAt == chosen.RecordedAt);
+                    return null;
+                }
+
+                var shown = group
+                    .OrderByDescending(record => record.RecordedAt)
+                    .ThenByDescending(record => record.Id)
+                    .First(record => record.ValueKg == chosen.ValueKg
+                                     && record.RecordedAt == chosen.RecordedAt);
+                var dto = ToDto(shown);
+                dto.IsOutsideLookback = OneRepMaxBaseline.IsOutsideLookback(
+                    chosen,
+                    now,
+                    TrainingConstants.OneRepMaxLookbackDays);
+
+                return dto;
             })
-            .Where(record => record is not null)
-            .Select(record => record!)
-            .OrderBy(record => record.Exercise)
-            .Select(ToDto)
+            .Where(dto => dto is not null)
+            .Select(dto => dto!)
+            .OrderBy(dto => dto.Exercise)
             .ToList();
     }
 
