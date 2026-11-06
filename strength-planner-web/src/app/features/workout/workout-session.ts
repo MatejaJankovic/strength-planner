@@ -9,6 +9,7 @@ import {
   AddSetLogRequest,
   CompletedExerciseSummaryDto,
   CompleteSessionResultDto,
+  ExerciseAlternativeDto,
   ExercisePlanDto,
   SetLogDto,
   WorkoutSessionDto,
@@ -56,6 +57,13 @@ export class WorkoutSession {
   protected readonly error = signal<string | null>(null);
   protected readonly starting = signal(false);
   protected readonly skipping = signal(false);
+
+  // Zamena vežbe za ostatak bloka: koja kartica je otvorila izbor, šta je ponuđeno i šta je
+  // izabrano. Ponuda je null dok se učitava.
+  protected readonly swapPlanId = signal<string | null>(null);
+  protected readonly swapOptions = signal<ExerciseAlternativeDto[] | null>(null);
+  protected readonly swapChoice = signal('');
+  protected readonly swapping = signal(false);
   protected readonly completing = signal(false);
   protected readonly actionError = signal<string | null>(null);
   protected readonly toast = signal<string | null>(null);
@@ -281,6 +289,58 @@ export class WorkoutSession {
    * ga vraća. Postoji zato što je nedelja sa rupom inače ostajala otvorena zauvek: nije
    * se ocenjivala, granice iz nje nisu učile, a sledeći blok plana se nije generisao.
    */
+  /**
+   * Vežba se menja samo u treningu koji čeka i dok na njoj nema upisane serije - server traži
+   * isto. Odrađen ili preskočen trening je istorija.
+   */
+  protected canSwap(plan: ExercisePlanDto): boolean {
+    return (this.isPlanned() || this.isInProgress()) && plan.setLogs.length === 0;
+  }
+
+  protected openSwap(plan: ExercisePlanDto): void {
+    this.swapPlanId.set(plan.id);
+    this.swapOptions.set(null);
+    this.swapChoice.set('');
+    this.actionError.set(null);
+
+    this.sessionService.alternatives(plan.id).subscribe({
+      next: (options) => {
+        this.swapOptions.set(options);
+        this.swapChoice.set(options[0]?.exerciseId ?? '');
+      },
+      error: (err: unknown) => {
+        this.swapPlanId.set(null);
+        this.actionError.set(extractErrorMessage(err, 'Ne mogu da učitam vežbe za zamenu.'));
+      },
+    });
+  }
+
+  protected cancelSwap(): void {
+    this.swapPlanId.set(null);
+  }
+
+  protected confirmSwap(plan: ExercisePlanDto): void {
+    const exerciseId = this.swapChoice();
+    if (!exerciseId || this.swapping()) {
+      return;
+    }
+    this.swapping.set(true);
+
+    this.sessionService.substitute(plan.id, exerciseId).subscribe({
+      next: (session) => {
+        this.session.set(session);
+        this.initDrafts(session);
+        this.swapping.set(false);
+        this.swapPlanId.set(null);
+        this.toast.set('Vežba je zamenjena do kraja bloka.');
+      },
+      error: (err: unknown) => {
+        this.swapping.set(false);
+        this.actionError.set(extractErrorMessage(err, 'Zamena nije sačuvana. Pokušaj ponovo.'));
+      },
+    });
+  }
+
   protected skip(): void {
     if (this.skipping()) {
       return;

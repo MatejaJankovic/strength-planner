@@ -462,6 +462,52 @@
         } @else if (isInProgress()) {
           <p class="card__hint">Još nema serija - dodaj prvu iznad.</p>
         }
+
+        @if (canSwap(plan)) {
+          @if (swapPlanId() === plan.id) {
+            <div class="swap">
+              @if (swapOptions(); as options) {
+                @if (options.length === 0) {
+                  <p class="card__hint">
+                    Nijedna vežba ne radi isti mišić na isti način, pa ova ne može da se zameni.
+                  </p>
+                } @else {
+                  <label class="entry__label" [for]="'swap-' + plan.id">Zameni sa</label>
+                  <select
+                    class="swap__select"
+                    [id]="'swap-' + plan.id"
+                    [value]="swapChoice()"
+                    (change)="swapChoice.set($any($event.target).value)"
+                  >
+                    @for (option of options; track option.exerciseId) {
+                      <option [value]="option.exerciseId">{{ option.name }}</option>
+                    }
+                  </select>
+                  <p class="card__hint">
+                    Vežba se menja u ovom i u svakom sledećem treningu ovog dana, do kraja bloka.
+                    Opseg, rezerva i serije ostaju; težina se računa iz maksimuma nove vežbe.
+                  </p>
+                  <button
+                    class="cta"
+                    type="button"
+                    [disabled]="swapping()"
+                    (click)="confirmSwap(plan)"
+                  >
+                    {{ swapping() ? 'Menjam…' : 'Zameni do kraja bloka' }}
+                  </button>
+                }
+              } @else {
+                <p class="card__hint">Tražim vežbe…</p>
+              }
+              <button class="cta cta--quiet" type="button" (click)="cancelSwap()">Odustani</button>
+            </div>
+          } @else {
+            <button class="cta cta--quiet" type="button" (click)="openSwap(plan)">
+              <mat-icon aria-hidden="true">swap_horiz</mat-icon>
+              Zameni vežbu
+            </button>
+          }
+        }
       </section>
     }
   </div>

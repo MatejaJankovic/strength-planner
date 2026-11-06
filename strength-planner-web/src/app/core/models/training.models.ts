@@ -158,6 +158,14 @@ export interface TrainingWeekDto {
   sessions: WorkoutSessionDto[];
 }
 
+/** Vežba koja sme da zameni planiranu za ostatak bloka (isti mišić, tip i propis). */
+export interface ExerciseAlternativeDto {
+  exerciseId: string;
+  name: string;
+  equipment: string;
+  isCustom: boolean;
+}
+
 export interface WorkoutSessionDto {
   id: string;
   weekNumber: number;

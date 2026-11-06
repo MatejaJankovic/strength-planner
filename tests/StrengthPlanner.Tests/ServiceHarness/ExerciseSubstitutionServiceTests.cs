@@ -57,6 +57,27 @@ public class ExerciseSubstitutionServiceTests
             squatPlans);
     }
 
+    /// <summary>
+    /// Zamena gleda unapred: trening istog dana u ranijoj nedelji, koji još čeka, ostaje sa
+    /// vežbom koju je blok propisao. Vežbač ga može odraditi i kasnije, ali zamena je tražena
+    /// od izabranog treninga.
+    /// </summary>
+    [Fact]
+    public async Task AnEarlierPendingSession_KeepsItsExercise()
+    {
+        using var database = new SqliteDatabase();
+        var block = await SeedAsync(database, SetAllocation.FollowTemplate);
+
+        await using (var context = database.NewContext())
+        {
+            await Service(context).SubstituteAsync(database.UserId, block.WeekThreeSquat, FrontSquat);
+        }
+
+        await using var read = database.NewContext();
+        Assert.Equal(BackSquat, read.ExercisePlans.Single(plan => plan.Id == block.WeekTwoSquat).ExerciseId);
+        Assert.Equal(FrontSquat, read.ExercisePlans.Single(plan => plan.Id == block.WeekThreeSquat).ExerciseId);
+    }
+
     [Fact]
     public async Task OnlyTheSameMuscleTypeAndRange_IsOffered_AndNotWhatTheSessionAlreadyHas()
     {
@@ -109,7 +130,7 @@ public class ExerciseSubstitutionServiceTests
         return exerciseId == BackSquat ? "Back Squat" : exerciseId == FrontSquat ? "Front Squat" : exerciseId.ToString();
     }
 
-    private sealed record Block(Guid WeekOneSquat, Guid WeekTwoSquat, Guid WeekTwoSession);
+    private sealed record Block(Guid WeekOneSquat, Guid WeekTwoSquat, Guid WeekTwoSession, Guid WeekThreeSquat);
 
     /// <summary>
     /// Blok od tri nedelje, Day A: čučanj pa Leg Curl. Prva nedelja je odrađena (čučanj ima
@@ -142,7 +163,7 @@ public class ExerciseSubstitutionServiceTests
             IsActive = true
         };
 
-        Guid weekOneSquat = Guid.Empty, weekTwoSquat = Guid.Empty, weekTwoSession = Guid.Empty;
+        Guid weekOneSquat = Guid.Empty, weekTwoSquat = Guid.Empty, weekTwoSession = Guid.Empty, weekThreeSquat = Guid.Empty;
         for (var weekNumber = 1; weekNumber <= 3; weekNumber++)
         {
             var week = new TrainingWeek { Id = Guid.NewGuid(), WeekNumber = weekNumber };
@@ -173,6 +194,11 @@ public class ExerciseSubstitutionServiceTests
                 weekOneSquat = squat.Id;
             }
 
+            if (weekNumber == 3)
+            {
+                weekThreeSquat = squat.Id;
+            }
+
             if (weekNumber == 2)
             {
                 weekTwoSquat = squat.Id;
@@ -185,7 +211,7 @@ public class ExerciseSubstitutionServiceTests
 
         db.Mesocycles.Add(mesocycle);
         await db.SaveChangesAsync();
-        return new Block(weekOneSquat, weekTwoSquat, weekTwoSession);
+        return new Block(weekOneSquat, weekTwoSquat, weekTwoSession, weekThreeSquat);
     }
 
     private static Exercise Exercise(Guid id, string name, ExerciseType type, bool suitsLowReps, Guid primary)
