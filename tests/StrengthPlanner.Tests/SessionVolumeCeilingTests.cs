@@ -120,20 +120,20 @@ public class SessionVolumeCeilingTests
     /// Granica menja samo nedelje u kojima bi neki trening bez nje prešao granicu. Svaka
     /// druga nedelja svakog šablona dobija isti predlog kao pre.
     ///
-    /// Dva izuzetka, imenom: u nedeljama 4 i 5 linearnog modela Full Body (4 dana) za
-    /// početnika u bloku snage propis već stavlja 12 serija jednog mišića u trening. Predlog
-    /// bez granice završi na 11, ali drugim putem - granica ceni već prvi korak pretrage.
-    /// Uzrok postoji, samo ga predlog bez granice ne pokazuje. Spisak mora da se poklopi
-    /// tačno: nedelja koja prestane da bude izuzetak mora i da se skine sa njega.
+    /// Izuzetak bi bila nedelja u kojoj propis već stavlja više od 11 serija jednog mišića u
+    /// trening, a predlog bez granice završi ispod nje drugim putem, jer granica ceni već prvi
+    /// korak pretrage. Spisak mora da se poklopi tačno: nedelja koja prestane da bude
+    /// izuzetak mora i da se skine sa njega.
+    ///
+    /// Do podele ramena (R5) na spisku su bile nedelje 4 i 5 linearnog modela Full Body (4
+    /// dana) za početnika u bloku snage. Propis tih nedelja i dalje ima 12 serija leđa na Day
+    /// B, ali sa zasebnim ciljem za zadnji deltoid predlog sa granicom i bez nje je isti, pa
+    /// izuzetka više nema (izmereno).
     /// </summary>
     [Fact]
     public void TheCeiling_ChangesOnlyWeeksThatWouldBreachIt()
     {
-        var breachedOnlyInThePrescription = new[]
-        {
-            "full-body-4 Beginner Strength LinearRising w4",
-            "full-body-4 Beginner Strength LinearRising w5",
-        };
+        var breachedOnlyInThePrescription = Array.Empty<string>();
         var changedWithoutCause = new List<string>();
 
         foreach (var week in TemplateWeekSimulation.EveryTrainingWeek())
@@ -154,6 +154,8 @@ public class SessionVolumeCeilingTests
             changedWithoutCause.SequenceEqual(breachedOnlyInThePrescription),
             string.Join(Environment.NewLine, changedWithoutCause.Take(20)));
 
+        // Prazan spisak ovu petlju trenutno čini praznom; ostaje da bi nova nedelja na spisku
+        // morala da dokaže da propis zaista prelazi granicu.
         foreach (var week in TemplateWeekSimulation.EveryTrainingWeek().Where(week => breachedOnlyInThePrescription.Contains(week.Name)))
         {
             var prescribed = week.Slots.ToDictionary(slot => slot.Id, slot => slot.PrescribedSets);

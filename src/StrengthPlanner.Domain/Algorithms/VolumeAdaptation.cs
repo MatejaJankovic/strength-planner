@@ -134,7 +134,7 @@ public static class VolumeAdaptation
         {
             mrv += MaxWeeklyStep;
         }
-        else if (response.PerformedSets >= current.Mev && showedFatigue)
+        else if (response.PerformedSets >= RecoveryEvidenceFloor(current) && showedFatigue)
         {
             mrv -= MaxWeeklyStep;
         }
@@ -197,8 +197,9 @@ public static class VolumeAdaptation
         }
 
         // Pojas mora da preživi i poravnanje MEV-a na jedinicu, inače bi ovo prošlo
-        // algoritam a palo na CHECK ograničenju usred završavanja treninga.
-        var safeMev = Math.Max(1, mev);
+        // algoritam a palo na CHECK ograničenju usred završavanja treninga. MEV čiji je seed
+        // nula ostaje nula (ExperienceProgramming.ScaleLandmark).
+        var safeMev = Math.Max(MevFloor(seed.Mev), mev);
         var safeMrv = Math.Max(safeMev + MinBandWidth, mrv);
 
         return new VolumeLandmarkValues(safeMev, ClampTarget(mav, safeMev, safeMrv, seed), safeMrv);
@@ -288,6 +289,28 @@ public static class VolumeAdaptation
         var lower = (int)Math.Ceiling(seed * (1 - MaxDriftFromSeed));
         var upper = (int)Math.Floor(seed * (1 + MaxDriftFromSeed));
 
-        return Math.Clamp(value, Math.Max(1, lower), Math.Max(1, upper));
+        return Math.Clamp(value, Math.Max(MevFloor(seed), lower), Math.Max(MevFloor(seed), upper));
+    }
+
+    /// <summary>
+    /// The least volume a fatigued week must have done before it may lower MRV. Normally the
+    /// minimum: a week below it trained too little for its fatigue to be about recovering from
+    /// this muscle's work. With an MEV of zero that test is always passed, so a week of three
+    /// front-delt sets would lower MRV every week it was hard; for such a muscle only a week
+    /// near its target speaks about recovery, as it does for the target itself.
+    /// </summary>
+    private static decimal RecoveryEvidenceFloor(VolumeLandmarkValues current)
+    {
+        return current.Mev > 0 ? current.Mev : current.Mav * NearMavShare;
+    }
+
+    /// <summary>
+    /// The lowest a landmark may go: one set, or zero for a landmark seeded at zero. A zero
+    /// MEV means no direct work is needed, and nothing a week shows can turn that into a
+    /// minimum — the drift around zero is zero.
+    /// </summary>
+    private static int MevFloor(int seed)
+    {
+        return Math.Min(1, seed);
     }
 }

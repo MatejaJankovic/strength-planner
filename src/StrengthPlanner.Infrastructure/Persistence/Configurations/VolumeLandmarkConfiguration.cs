@@ -12,7 +12,7 @@ public class VolumeLandmarkConfiguration : IEntityTypeConfiguration<VolumeLandma
         // inače bi marker cilja mogao da završi iza plafona na ekranu.
         builder.ToTable(table => table.HasCheckConstraint(
             "CK_VolumeLandmarks_LandmarkOrder",
-            "\"Mev\" >= 1 AND \"Mav\" > \"Mev\" AND \"Mrv\" > \"Mav\""));
+            "\"Mev\" >= 0 AND \"Mav\" > \"Mev\" AND \"Mrv\" > \"Mav\""));
 
         builder.HasKey(vl => vl.Id);
 

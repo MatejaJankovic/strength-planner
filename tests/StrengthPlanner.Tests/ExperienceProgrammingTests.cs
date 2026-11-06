@@ -94,6 +94,22 @@ public class ExperienceProgrammingTests
         Assert.True(scaled.Mav < scaled.Mrv, $"MAV {scaled.Mav} nije ispod MRV {scaled.Mrv}.");
     }
 
+    /// <summary>
+    /// MEV od nule, kao kod prednjeg i zadnjeg deltoida (RP), kaže da glavi ne treba direktan
+    /// rad. Nijedan nivo to ne pretvara u minimum, a pojas iznad nule ostaje.
+    /// </summary>
+    [Theory]
+    [InlineData(ExperienceLevel.Beginner)]
+    [InlineData(ExperienceLevel.Intermediate)]
+    [InlineData(ExperienceLevel.Advanced)]
+    public void ScaleLandmarks_KeepsAZeroMevAtZero(ExperienceLevel level)
+    {
+        var scaled = ExperienceProgramming.ScaleLandmarks(new VolumeLandmarkValues(0, 6, 10), level);
+
+        Assert.Equal(0, scaled.Mev);
+        Assert.True(scaled.Mav > 0 && scaled.Mrv > scaled.Mav, $"Pojas {scaled}.");
+    }
+
     [Fact]
     public void DeloadThreshold_IsAbsentForBeginnersAndStricterWithExperience()
     {

@@ -229,7 +229,8 @@ public class VolumeAdaptationTests
         {
             new VolumeLandmarkValues(10, 16, 22), new VolumeLandmarkValues(4, 10, 16),
             new VolumeLandmarkValues(6, 11, 16), new VolumeLandmarkValues(8, 16, 26),
-            new VolumeLandmarkValues(1, 2, 3)
+            new VolumeLandmarkValues(1, 2, 3), new VolumeLandmarkValues(0, 6, 10),
+            new VolumeLandmarkValues(0, 8, 16)
         };
         var responses = new[]
         {
@@ -248,13 +249,70 @@ public class VolumeAdaptationTests
                 {
                     current = VolumeAdaptation.Adjust(current, seed, response);
 
-                    Assert.True(current.Mev >= 1, $"MEV {current.Mev} ispod jedinice za seed {seed}.");
+                    Assert.True(
+                        current.Mev >= Math.Min(1, seed.Mev),
+                        $"MEV {current.Mev} ispod jedinice za seed {seed}.");
                     Assert.True(
                         current.Mrv > current.Mav && current.Mav > current.Mev,
                         $"Pojas urušen ({current.Mev}/{current.Mav}/{current.Mrv}) za seed {seed}.");
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// MEV od nule znači da glavi ne treba direktan rad, jer je složene vežbe već stimulišu
+    /// (prednji deltoid potisak za grudi, zadnji veslanje; RP). Nedelja koja je napredovala ili
+    /// nazadovala to ne može da pretvori u minimum: donja granica nule ostaje nula, a pojas i
+    /// dalje postoji iznad nje.
+    /// </summary>
+    [Fact]
+    public void Adjust_NeverMovesAZeroMev()
+    {
+        var seed = new VolumeLandmarkValues(0, 8, 16);
+        var responses = new[]
+        {
+            new VolumeResponse(0m, 0m, -3m, 1m), new VolumeResponse(1m, 1m, -3m, 1m),
+            new VolumeResponse(40m, 40m, 3m, 0m), new VolumeResponse(10m, 10m, 0m, 0.25m),
+            new VolumeResponse(2m, 2m, 1m, 0m)
+        };
+
+        var current = seed;
+        for (var week = 0; week < 40; week++)
+        {
+            foreach (var response in responses)
+            {
+                current = VolumeAdaptation.Adjust(current, seed, response);
+
+                Assert.Equal(0, current.Mev);
+                Assert.True(current.Mrv > current.Mav && current.Mav > 0, $"Pojas {current}.");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Pravilo koje spušta MRV traži da je nedelja trenirala bar na minimumu, jer o oporavku
+    /// ništa ne kaže umor nedelje koja je mišić jedva radila. Sa MEV-om nula taj uslov uvek
+    /// prolazi: tri serije prednjeg deltoida uz RIR jedan ispod cilja spuštale su MRV svake
+    /// nedelje, sa 10 na 5 za pet nedelja, a MAV za njim bez ikakvog dokaza o snazi (pregled
+    /// #109). Za takav mišić o oporavku govori samo nedelja blizu cilja.
+    /// </summary>
+    [Fact]
+    public void Adjust_DoesNotLowerAZeroMevMusclesMrv_FromAWeekFarBelowItsTarget()
+    {
+        var seed = new VolumeLandmarkValues(0, 6, 10);
+        var lightAndHard = new VolumeResponse(3m, 3m, -1m, 0m);
+
+        var current = seed;
+        for (var week = 0; week < 8; week++)
+        {
+            current = VolumeAdaptation.Adjust(current, seed, lightAndHard);
+        }
+
+        Assert.Equal(seed, current);
+
+        var nearTargetAndHard = new VolumeResponse(6m, 6m, -1m, 0m);
+        Assert.Equal(9, VolumeAdaptation.Adjust(seed, seed, nearTargetAndHard).Mrv);
     }
 
     [Fact]

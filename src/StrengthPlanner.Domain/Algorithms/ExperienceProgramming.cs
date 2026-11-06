@@ -153,9 +153,19 @@ public static class ExperienceProgramming
         _ => 0.60m
     };
 
-    /// <summary>Scales a seeded landmark, never below one set.</summary>
+    /// <summary>
+    /// Scales a seeded landmark, never below one set — except a seeded zero, which stays zero.
+    /// An MEV of zero says the muscle needs no direct work because compound lifts already
+    /// stimulate it (the front delt from pressing, the rear delt from rowing); no level turns
+    /// that into a minimum.
+    /// </summary>
     public static int ScaleLandmark(int seeded, ExperienceLevel level)
     {
+        if (seeded == 0)
+        {
+            return 0;
+        }
+
         var scaled = (int)Math.Round(seeded * LandmarkScale(level), MidpointRounding.AwayFromZero);
 
         return Math.Max(1, scaled);

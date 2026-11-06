@@ -47,10 +47,15 @@ public static class WorkoutTemplateCatalog
                     "Back Squat", "Bench Press", "Barbell Row",
                     "Leg Curl", "Cable Fly", "Lateral Raise", "Triceps Pushdown", "Calf Raise"
                 ]),
+                // Drugo bočno podizanje je dodato kad je rame podeljeno na glave (R5): bočni
+                // deltoid gradi samo ono, a sa jednim podizanjem nedeljno nije stizao do MEV-a
+                // ni na jednom nivou. Stoji posle pregiba, jer bi ispred srednjem nivou uzelo
+                // jedinu vežbu za biceps; dobija ga napredni, koji uzima pet izolacija.
                 new("Day B",
                 [
                     "Overhead Press", "Romanian Deadlift", "Lat Pulldown",
-                    "Leg Extension", "Dumbbell Fly", "Straight-Arm Pulldown", "Barbell Curl", "Cable Crunch"
+                    "Leg Extension", "Dumbbell Fly", "Straight-Arm Pulldown", "Barbell Curl", "Lateral Raise",
+                    "Cable Crunch"
                 ])
             ],
             // Dva treninga nedeljno ne staju u MEV za većinu mišićnih grupa — nema
@@ -63,10 +68,14 @@ public static class WorkoutTemplateCatalog
             FullBodyKey,
             "Full Body",
             [
+                // Bočno podizanje je prva izolacija ovog dana, a dodato je i na Day B i Day C.
+                // Bočni deltoid gradi samo ono: sa jednim podizanjem na četvrtom mestu početnik ga
+                // nije radio nijednom, a srednji nivo je imao 9 serija naspram MEV-a 8 i cilja 16
+                // (R5, docs/features/shoulder-heads.md).
                 new("Day A",
                 [
                     "Back Squat", "Bench Press", "Barbell Row",
-                    "Leg Curl", "Straight-Arm Pulldown", "Cable Fly", "Lateral Raise", "Triceps Pushdown"
+                    "Lateral Raise", "Leg Curl", "Straight-Arm Pulldown", "Cable Fly", "Triceps Pushdown"
                 ]),
                 // Face Pull umesto Rear Delt Fly: isto radi zadnji deltoid, a daje i pola serije
                 // za leđa. Bez toga napredni u bloku snage, koji uzima samo dve složene vežbe,
@@ -76,30 +85,36 @@ public static class WorkoutTemplateCatalog
                 new("Day B",
                 [
                     "Overhead Press", "Deadlift", "Lat Pulldown",
-                    "Leg Extension", "Face Pull", "Barbell Curl", "Skull Crusher", "Cable Crunch"
+                    "Leg Extension", "Face Pull", "Barbell Curl", "Skull Crusher", "Lateral Raise", "Cable Crunch"
                 ]),
                 // Hammer Curl pre Face Pull-a: početnik uzima samo dve izolacije, i ovako dobija
-                // prvu direktnu vežbu za biceps u celom šablonu. Srednji i napredni nivo uzimaju
-                // sve četiri, pa im redosled ne menja ništa.
+                // prvu direktnu vežbu za biceps u celom šablonu. Bočno podizanje zato stoji tek
+                // posle njega, jer bi ispred početniku opet uzelo jedini biceps. Cena je Leg Curl
+                // naprednog u bloku snage (vidi AnAdvancedStrengthBlockOnFullBody_...).
                 new("Day C",
                 [
                     "Pull-up", "Front Squat", "Dumbbell Bench Press",
-                    "Dumbbell Fly", "Hammer Curl", "Face Pull", "Leg Curl", "Calf Raise"
+                    "Dumbbell Fly", "Hammer Curl", "Lateral Raise", "Face Pull", "Leg Curl", "Calf Raise"
                 ])
             ]),
         new(
             PushPullLegsKey,
             "Push/Pull/Legs",
             [
+                // Bočno podizanje je prva izolacija Push dana i dodato je na Pull dan, umesto
+                // Cable Crunch-a (trbuh ostaje na Legs danu). Sa jednim podizanjem nedeljno bočni
+                // deltoid je imao 6 serija u propisu i 9 posle balansiranja, uz cilj 16:
+                // balansiranje vežbu pomera najviše za dve serije. Face Pull je ostao, jer je to
+                // jedini direktan rad za zadnji deltoid. Početnik zato ovde nema trbuh (R5).
                 new("Push",
                 [
                     "Bench Press", "Overhead Press", "Incline Bench Press",
-                    "Cable Fly", "Dumbbell Fly", "Lateral Raise", "Triceps Pushdown", "Overhead Triceps Extension"
+                    "Lateral Raise", "Cable Fly", "Dumbbell Fly", "Triceps Pushdown", "Overhead Triceps Extension"
                 ]),
                 new("Pull",
                 [
                     "Barbell Row", "Pull-up", "Seated Cable Row",
-                    "Face Pull", "Cable Crunch", "Barbell Curl", "Calf Raise", "Hammer Curl"
+                    "Face Pull", "Barbell Curl", "Lateral Raise", "Calf Raise", "Hammer Curl"
                 ]),
                 new("Legs",
                 [
@@ -122,18 +137,21 @@ public static class WorkoutTemplateCatalog
                     "Bench Press", "Barbell Row", "Overhead Press",
                     "Cable Fly", "Lateral Raise", "Triceps Pushdown", "Barbell Curl", "Face Pull"
                 ]),
+                // Bočno podizanje na danu za noge, umesto Leg Extension-a: na Upper B je svaka
+                // izolacija jedina za svoj mišić u danu, a kvadriceps ostaje iznad MEV-a od
+                // čučnjeva, iskoraka i Leg Extension-a na Lower B (R5, izmereno). Stoji posle
+                // listova: početnik uzima dve izolacije, a ovo su mu jedini listovi u nedelji.
                 new("Lower A",
                 [
                     "Back Squat", "Romanian Deadlift", "Bulgarian Split Squat",
-                    "Leg Curl", "Calf Raise", "Leg Extension", "Machine Crunch", "Cable Crunch"
+                    "Leg Curl", "Calf Raise", "Lateral Raise", "Machine Crunch", "Cable Crunch"
                 ]),
                 new("Upper B",
                 [
                     "Pull-up", "Incline Bench Press", "Dumbbell Shoulder Press",
                     // Zadnji deltoid je pomeren ispred ruku. Sastav treninga uzima izolacije
-                    // redom, pa je sa poslednjeg mesta nikada nije ni stizao do srednjeg
-                    // nivoa — a otkako potisak ne puni budžet ramena, ovo je jedina direktna
-                    // serija za rame u ovom danu.
+                    // redom, pa sa poslednjeg mesta nikada nije ni stizao do srednjeg nivoa, a
+                    // Face Pull je poslednji na Upper A i srednji nivo ni njega ne dobija.
                     "Dumbbell Fly", "Rear Delt Fly", "Overhead Triceps Extension", "Straight-Arm Pulldown", "Hammer Curl"
                 ]),
                 new("Lower B",
@@ -186,10 +204,13 @@ public static class WorkoutTemplateCatalog
                     "Bench Press", "Barbell Row",
                     "Cable Fly", "Barbell Curl", "Triceps Pushdown", "Cable Crunch"
                 ]),
+                // Bočno podizanje umesto Leg Extension-a, koji ostaje na Legs danu: jedno podizanje
+                // nedeljno (Push) je bočnom deltoidu davalo 6 serija u propisu i 9 posle
+                // balansiranja, uz cilj 16 (R5).
                 new("Lower",
                 [
                     "Back Squat", "Romanian Deadlift",
-                    "Leg Curl", "Leg Extension", "Calf Raise", "Machine Crunch"
+                    "Leg Curl", "Lateral Raise", "Calf Raise", "Machine Crunch"
                 ]),
                 new("Push",
                 [
@@ -221,10 +242,12 @@ public static class WorkoutTemplateCatalog
                     "Barbell Row", "Lat Pulldown",
                     "Straight-Arm Pulldown", "Barbell Curl", "Calf Raise", "Cable Crunch"
                 ]),
+                // Bočno podizanje umesto Leg Extension-a, koji ostaje na Legs B: napredni je sa
+                // jednim podizanjem nedeljno stajao ispod MEV-a za bočni deltoid (R5).
                 new("Legs A",
                 [
                     "Back Squat", "Romanian Deadlift",
-                    "Leg Curl", "Leg Extension", "Calf Raise", "Cable Crunch"
+                    "Leg Curl", "Lateral Raise", "Calf Raise", "Cable Crunch"
                 ]),
                 new("Push B",
                 [
@@ -288,9 +311,7 @@ public static class WorkoutTemplateCatalog
                     // Ranije je ovde bio Face Pull. Kad mrtvo dizanje više ne puni leđa punim
                     // udelom, šablon nema nijednu izolaciju za leđa i napredni vežbač pada na
                     // 10.5 serija naspram MEV-a 12 u lakšim nedeljama periodizovanog bloka. Uz
-                    // Straight-Arm Pulldown je 15. Ramena u tim i u ravnim nedeljama ostaju na
-                    // 14 i 19 (dva bočna podizanja, Rear Delt Fly i Face Pull na Upper C), a u
-                    // najtežim nedeljama padaju na 23, i dalje iznad MAV-a (F16).
+                    // Straight-Arm Pulldown je 15 (F16).
                     "Straight-Arm Pulldown", "Calf Raise", "Machine Crunch", "Cable Crunch"
                 ])
             ],
@@ -310,10 +331,13 @@ public static class WorkoutTemplateCatalog
                 // stajala jedan za drugim (prvi, drugi i treći dan), pa su noge radile tri dana
                 // zaredom na svakom nivou. Sada noge padaju prvog, trećeg i šestog dana, a gornji
                 // deo drugog i petog (pon, sre, sub i uto, pet kad blok počne u ponedeljak).
+                // Bočno podizanje na danu za noge: taj dan ima vremena a nema volumena za noge
+                // (runda 13), a bočni deltoid je sa jednim podizanjem nedeljno stajao ispod MEV-a
+                // na svakom nivou (R5).
                 new("Legs A",
                 [
                     "Bulgarian Split Squat", "Leg Press",
-                    "Leg Extension", "Calf Raise", "Machine Crunch", "Cable Crunch"
+                    "Lateral Raise", "Leg Extension", "Calf Raise", "Machine Crunch", "Cable Crunch"
                 ]),
                 new("Upper A",
                 [
