@@ -25,6 +25,7 @@ import { loadLabel } from './load-label';
 import { repRangeLabel } from '../../shared/rep-range-label';
 import { LoadFloorNote, loadFloorNote } from './load-floor-note';
 import { adjustmentCause } from './adjustment-cause';
+import { isCalibrationPending } from './calibration';
 
 interface SetDraft {
   weightKg: number;
@@ -110,7 +111,8 @@ export class WorkoutSession {
         reps: lastLog?.reps ?? plan.repRangeMin,
         rir: lastLog?.rir ?? plan.targetRir,
         // Otkaz se ne prenosi na sledeću seriju: to je izuzetak, ne podrazumevano stanje.
-        isFailure: false,
+        // Kalibraciona serija je jedini slučaj u kome je otkaz propisan.
+        isFailure: isCalibrationPending(plan),
       };
     }
     this.drafts.set(drafts);
@@ -240,7 +242,18 @@ export class WorkoutSession {
 
   /** Napomena ispod unosa: šta ova serija znači za sledeći trening (vidi set-feedback.ts). */
   protected feedbackFor(plan: ExercisePlanDto, draft: SetDraft): SetFeedback | null {
+    // Otkaz kalibracione serije je propisan, a ne znak da je težina prevelika, pa napomena
+    // o sledećem treningu tu nema šta da kaže.
+    if (this.isCalibrationSet(plan)) {
+      return null;
+    }
+
     return setFeedback(plan, draft, this.session()?.isDeload ?? false);
+  }
+
+  /** Serija koja se upravo unosi je kalibraciona (prva serija označene vežbe). */
+  protected isCalibrationSet(plan: ExercisePlanDto): boolean {
+    return isCalibrationPending(plan, this.editingId(plan.id) !== null);
   }
 
   /** Otkaz i RIR se isključuju — serija do otkaza po definiciji nema rezervu. */

@@ -932,6 +932,7 @@ public class SessionService : ISessionService
             .AsSplitQuery()
             .Include(workoutSession => workoutSession.TrainingWeek)
                 .ThenInclude(week => week.Mesocycle)
+                    .ThenInclude(mesocycle => mesocycle.Weeks)
             .Include(workoutSession => workoutSession.ExercisePlans)
                 .ThenInclude(plan => plan.Exercise)
             .Include(workoutSession => workoutSession.ExercisePlans)
@@ -958,6 +959,12 @@ public class SessionService : ISessionService
         IReadOnlyDictionary<Guid, decimal> bodyweightPortions,
         IReadOnlyDictionary<Guid, EstimatedTarget> estimatedTargets)
     {
+        var mesocycle = session.TrainingWeek.Mesocycle;
+        var isLastTrainingWeek = CalibrationSet.IsLastTrainingWeek(
+            session.TrainingWeek.WeekNumber,
+            session.TrainingWeek.IsDeload,
+            mesocycle.Weeks.Select(week => (week.WeekNumber, week.IsDeload)));
+
         return new WorkoutSessionDto
         {
             Id = session.Id,
@@ -998,6 +1005,14 @@ public class SessionService : ISessionService
                     Equipment = plan.Exercise.Equipment,
                     IsBodyweight = BodyweightPortionResolver.PortionFor(bodyweightPortions, plan.ExerciseId) > 0,
                     BodyweightLoadKg = BodyweightPortionResolver.PortionFor(bodyweightPortions, plan.ExerciseId),
+                    IsCalibration = CalibrationSet.AppliesTo(
+                        mesocycle.ExperienceLevel,
+                        isLastTrainingWeek,
+                        plan.Order,
+                        plan.Exercise.Type,
+                        plan.Exercise.SuitsLowReps,
+                        plan.RepRangeMax,
+                        plan.TargetRir),
                     SetLogs = plan.SetLogs
                         .OrderBy(set => set.SetNumber)
                         .Select(SetLogMapper.ToDto)

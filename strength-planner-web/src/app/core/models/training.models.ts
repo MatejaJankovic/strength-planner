@@ -186,6 +186,8 @@ export interface ExercisePlanDto {
   targetWeightIsEstimate?: boolean;
   /** Uz `targetWeightIsEstimate`: prenet sa poslednje težine iste vežbe u bloku, ne iz maksimuma. */
   targetWeightIsCarried?: boolean;
+  /** Prva serija ide do otkaza na propisanoj težini (kalibracija, poslednja trenažna nedelja). */
+  isCalibration?: boolean;
   weightStepKg: number;
   /** Sprava: "Barbell", "Dumbbell", "Machine", "Cable", "Bodyweight". */
   equipment?: string;
