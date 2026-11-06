@@ -55,12 +55,14 @@ kraja zadržavaju nedelje iznad MRV-a, bez balansiranja.
 
 - `dotnet test`: **860** (bilo 856), testovi za `SetAllocationRule`. Pravilo vraćeno na
   „uvek traženo" obara **1**.
-- Klijent: **203** (bilo 201): izbor se nudi samo uz lični šablon, a prelaz na ugrađeni ga
-  vraća na balansiranje.
+- Klijent: **204** (bilo 201): izbor se nudi samo uz lični šablon, polje se u DOM-u ne
+  prikazuje uz ugrađeni, a prelaz na ugrađeni vraća izbor na balansiranje. Vraćanje `@if` u
+  šablonu obara **1** od 204.
 - Servisni deo nema test, jer projekat nema harness na nivou servisa (isto kao u rundi 12).
   Proveren je uživo:
   - zahtev za plan sa Upper/Lower i „Prati moj šablon" upisuje blok sa balansiranjem
-    (`setAllocation: 0`), a i generisan mezociklus ima `SetAllocation = 0`;
+    (`setAllocation: 0`), a i generisan mezociklus ima `SetAllocation = 0`. Posle ispravki iz
+    pregleda, plan sa dva bloka, ugrađenim i ličnim, oba sa „Prati moj šablon", upisuje 0 i 1;
   - na 375 px, sa ličnim šablonom na nalogu za testiranje: oba bloka sa ličnim šablonom imaju
     polje „Broj serija". Kad se prvi blok prebaci na Upper/Lower posle izbora „Prati moj
     šablon", polje nestaje, a drugi blok ga zadržava. Bez prelivanja.
