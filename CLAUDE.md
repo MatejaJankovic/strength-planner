@@ -117,8 +117,7 @@ prose — no need for academic style.
 
 ## Scope note
 
-Fourteen rounds of work merged to `main`, and a fifteenth in review (#95). Every branch
-got its own PR, an agent code review, fixes for what the review turned up, and a
+Sixteen rounds of work, all merged to `main`. Every branch got its own PR, an agent code review, fixes for what the review turned up, and a
 plain-language write-up in `docs/features/`. (This line said "two rounds" until round 9 — a count in prose goes stale
 the moment it is written, which is why the rounds below are a list and not a number.)
 
@@ -806,7 +805,7 @@ audit and one a copy fix.
 | `feature/rep-ranges-by-role` | Isolations carried 8-12 in both blocks, so a light dumbbell could not take a step; now 10-20, with strength compared at the same load above 12 reps | #91 |
 | `fix/experience-volume-consistency` | The advanced level had the highest volume landmarks and the fewest sets (3), below MEV in 153 of 240 muscle-weeks; now 4 | #92 |
 | `fix/beginner-deload` | A beginner's flat block spent a quarter of its time deloading, though the handbook says beginners need not think about it | #93 |
-| `fix/landmark-signal-noise` | One weekly strength reading is mostly noise, so MAV and MRV of a progressing lifter slid to the floor; now two weeks must agree | #94 |
+| `fix/landmark-signal-noise` | One weekly strength reading is mostly noise, so MAV and MRV of a progressing lifter slid to the floor; now the mean of two comparable weeks decides, at 2.5% (the "both must agree" rule of #94 was replaced in #97) | #94, #97 |
 
 613 → 814 tests on the server, 150 → 192 on the client.
 
@@ -832,8 +831,9 @@ Decisions worth keeping:
 - **The handbook is the default, the literature decides only where it is clearly on the
   other side (decision D1).** That moved linear over inverse, and it kept the beginner's
   deload only out of the flat block.
-- **One noisy reading must not move a limit.** Two comparable weeks in a row must agree, and
-  the first decision comes in the third week of a block.
+- **One noisy reading must not move a limit.** The limits read the mean of two consecutive
+  comparable readings against 2.5%, and the first decision comes in the third week of a block.
+  (#94 first required both readings to cross 1%; #97 replaced that, see round 16.)
 
 Measurements from this round that contradicted the expectation, each recorded in its note:
 the second auto-deload that made the old code answer `400` on completing week 5 (#90, found
@@ -923,6 +923,81 @@ container had .NET SDK 8.0.131 (from Ubuntu) where `global.json` pins 8.0.422 wi
 `latestFeature`, so `global.json` was overridden locally and kept out of every commit with
 `git update-index --skip-worktree`; the Angular CLI refused Node 22.22.0 and ran on 22.23.3;
 PostgreSQL was 16, not 18. None of it is in the history.
+
+**Round 16 — closing the round-14 audit.** The open findings of section F (F8, F13,
+F15-F19) and one found along the way (N1). Six branches, all merged, each with a revert
+measurement and a live check at 375 px.
+
+| Branch | What it fixed | PR |
+|---|---|---|
+| `fix/landmark-signal-noise` (follow-up) | #94's rule decided about three times a year in a flat block and let a stalled lifter drift down; the limits now read the mean of two readings at 2.5% | #97 |
+| `fix/estimate-edges` | A 100 kg × 1 test set to failure was estimated at 103.3 kg; the rep cap had no stated reason | #98 |
+| `feature/stale-maximum-notice` | A block silently started from a maximum older than the 56-day window | #99 |
+| `fix/muscle-contributions-2` | The deadlift filled the back budget instead of the glutes, and Hip Thrust the hamstrings | #100 |
+| `fix/allocation-follow-template` | "Prati moj šablon" on a built-in template prescribed weeks above MRV while the screen said only "may stay below the target" | #101 |
+| `docs/round-14-closure` | "No stimulus below MEV" on screen, the fatigue weights not called a heuristic, and the thesis sentences to change not in one place (`docs/teza-uskladjivanje.md`) | #102 |
+
+838 → 860 tests on the server (843 after #97), 192 → 204 on the client.
+
+The finding that shaped the round: **in four branches out of six the first version was
+measured against the wrong thing.** The noise rule of #94 was measured on 52 consecutive
+readings, which no block has. The stale-maximum notice was checked by looking at the notice,
+while the loads it warns about did not move. The row credit to Shoulders was checked against
+MEV, not against what balancing does to the lateral raise. The follow-template copy was
+checked for built-in templates and was false for the custom ones it was written for. Each time
+the review found it by measuring the thing the lifter receives.
+
+Decisions worth keeping:
+
+- **A ratio stays on the curve.** One rep to failure is the maximum itself, but a strength
+  change compares two points on the Epley curve, so `StrengthChange` reads
+  `ImpliedOneRepMax`. Otherwise 100 × 2 then 100 × 1 reads -6.25% instead of about -3.1%.
+- **A notice must describe the plan, not the records.** The stale-maximum notice lists an
+  exercise only while it waits in a session and has not been completed on that day of the
+  block. Completing a session rewrites the same exercise for the same day next week (the next
+  plan is found by `DayLabel`), from the sets lifted.
+- **A new record changes the maximum, not loads already stored.** Week-1 targets are written
+  at generation and nothing rewrites them; the copy says so instead of promising it.
+- **A helping share needs high tension in the work, not only shortening.** The deadlift is
+  glute-primary, keeps Back 0.5 for the erectors and Hamstrings 0.5 because knee and hip
+  extend together.
+- **An aggregate group cannot take a share from an exercise that trains only one of its
+  heads.** Crediting rows to Shoulders cut the lateral raise from 4433 to 4138 sets across
+  the built-in weeks, the round-13 pressing defect again, so it was dropped. Splitting the
+  groups into heads stays the owner's call.
+- **"Follow my template" exists for the lifter's own template.** `SetAllocationRule` balances
+  a built-in template always, at creation and at generation, and writes the corrected value
+  back to the block. Already generated blocks are not rewritten (round 12).
+
+Measurements from this round that contradicted the expectation, each recorded in its note:
+
+1. **#94's numbers described a model, not the app.** Re-measured in the block structure the
+   app has (a reading only from week 2, none in a deload, a fresh start each block), the
+   "both must agree" rule decided about 3 times a year in a flat block and 6 in a linear one,
+   a stalled lifter's target fell instead of rising, and a real decline was caught weakly.
+   The simulation (`docs/simulations/landmark_signal_noise.py`) is a port of `Adjust` checked
+   against the C# on 984,000 cases.
+2. **The single-rep rule leaked into a ratio.** Found by review of #98, not by a test.
+3. **The stale-maximum test set removed the warning and left the stale loads.** Found by
+   review of #99. The first fix keyed the notice by exercise, which would have hidden Upper
+   B's bench once Upper A was done; keyed by day and exercise, a revert fails 1 of 201.
+4. **The row credit fixed nothing and broke the guide's PPL table.** Without it the table
+   is exact again and the session-ceiling test is back to `main`'s exceptions. The deadlift
+   change alone moved weeks below MEV from 498 to 491, but opened a new gap: Full Body back in
+   an advanced strength block is 11 against MEV 12. The Hip Thrust change fails 0 tests when
+   reverted; its effect is measured instead (Leg Curl +387 sets).
+5. **A number carried over from #92 was stale.** The MRV counts for following a built-in
+   template were 68 / 305 / 244; re-measured after the contribution changes, 67 / 284 / 223,
+   0 in a flat block.
+6. **Two items of the thesis list were wrong when checked against the `.docx`.** The
+   registration has seven questions and an eighth screen for maxima, and one of the five
+   limitations in chapter 8 (RIR "unreliable in beginners") was never solved, because
+   Halperin et al. 2022 contradict it.
+
+Two process notes: screenshots of the browser pane at 375 px cropped the right edge of the
+page while the layout measured no overflow, so layout is measured, not eyeballed; and a bash
+heredoc holding a Python script with Serbian quotes failed to parse twice, so longer scripts
+went to a scratch file first.
 
 Deliberately **out of scope**: i18n, full-history analytics, undulating periodization,
 PWA/offline, changing an already-generated block's periodization model, email delivery (so no

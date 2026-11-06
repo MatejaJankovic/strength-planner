@@ -846,8 +846,8 @@ išla do otkaza nosi taj jedan signal (0.25) i sama ne pokreće deload. Ne pokre
 potvrđen pad snage (0.50) ni uz volumen na MRV-u (0.40), nego tek uz oba (0.65). Kad se pokrene: serije prepolovljene, opterećenje 90%
 stvarno korišćenog, ciljni RIR podignut za dva. Pokreće se najviše jednom po bloku.
 
-Pad snage se računa tek kad ga potvrdi i **prethodna uporediva nedelja**, padom od bar 1% (ista
-mera kao kod granica volumena). Jedan slab dan spušta i rezervu i procenu maksimuma, pa bi „dva
+Pad snage se računa tek kad ga potvrdi i **prethodna uporediva nedelja**, padom od bar 1%.
+(Granice volumena sude drugačije: po proseku dve nedelje, uz prag od 2.5%.) Jedan slab dan spušta i rezervu i procenu maksimuma, pa bi „dva
 signala se slažu" bila jedna loša nedelja izbrojana dvaput. Nedelja hipertrofije koja je pala
 6% uz RIR jedan ispod cilja zato sama ne pokreće deload (0.35), a ista takva nedelja posle još
 jednog pada ga pokreće (0.60). U ravnom bloku od četiri nedelje pad snage zato ne može da
@@ -859,6 +859,14 @@ rezerva i dalje mogu.
 se isti opseg na 90% odrađuje sa više u rezervi: sa maksimumom od 130 kg deload je 90 kg, a
 RIR 1 se na toj težini dostiže tek na dvanaestom ponavljanju — po naporu skoro normalna
 radna serija. Opseg ponavljanja se ne dira, jer bi to promenilo i sam pokret.
+
+**Ocena umora je pravilo ovog sistema, ne merenje.** Težine signala (RIR 0.35, otkazi 0.25,
+pad snage 0.25, volumen 0.15) i pragovi (0.60 za srednji nivo, 0.50 za napredni) ne potiču iz
+literature: nijedno istraživanje ne daje formulu po kojoj se ovi signali sabiraju u odluku o
+deload-u. Izabrani su tako da nijedan signal sam ne pokreće deload, a lažni deload-ovi i
+propušteni padovi su izmereni simulacijom sa šumom iz literature
+(`docs/simulations/fatigue_signal_noise.py`). Ako ti deload dolazi prerano ili prekasno, to je
+podešavanje, a ne greška u tvom treningu.
 
 Deload je lakši od težine iz koje je izveden kad god korak to dozvoljava. Kod lakog tega 90%
 se zaokruži nazad na istu težinu (10 kg na koraku od 2 kg: 9 → 10), pa tada deload ide

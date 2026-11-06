@@ -57,7 +57,8 @@ public static class WorkoutTemplateCatalog
             // dovoljno mesta u nedelji. Šablon ostaje jer je bolji od nijednog, ali
             // korisnik treba da zna šta bira.
             "Dva treninga nedeljno održavaju formu, ali za većinu mišića ostaju ispod "
-            + "minimalnog volumena za rast. Ako možeš tri dana, biraj trodnevni plan."),
+            + "minimalnog efektivnog volumena, pa je rast mali. Ako možeš tri dana, biraj "
+            + "trodnevni plan."),
         new(
             FullBodyKey,
             "Full Body",
