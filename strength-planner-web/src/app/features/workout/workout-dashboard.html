@@ -56,13 +56,14 @@
             maksimuma, jer novijeg nema: <strong>{{ staleMaxSummary() }}</strong>. Ako
             {{ stale.length === 1 ? 'je' : 'ih' }} u međuvremenu nisi radio, snaga je
             verovatno manja: prvi trening {{ stale.length === 1 ? 'sa njom' : 'sa njima' }}
-            odradi opreznije i spusti težinu ako treba. Kad odradiš taj dan, sledeće nedelje
+            odradi opreznije i spusti težinu ako treba, ili prvo uradi test-seriju: plan tada
+            preračuna opterećenja treninga koji još nisu započeti. Kad odradiš taj dan, sledeće nedelje
             se opterećenje računa iz onoga što si stvarno digao.
           </span>
         </p>
         <button class="missing__action" type="button" (click)="openOneRepMaxSetup()">
           <mat-icon aria-hidden="true">tune</mat-icon>
-          Pogledaj maksimume
+          Uradi test-seriju
         </button>
       </section>
     }

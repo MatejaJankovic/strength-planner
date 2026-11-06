@@ -114,8 +114,9 @@ public static class OneRepMaxBaseline
     /// then, and how much strength is lost over a pause depends on its length and on training
     /// status (Bosquet et al. 2013), so no single percentage could be subtracted here. The
     /// value is kept and the lifter is told how old it is. A new record replaces it as the
-    /// maximum but does not rewrite loads already stored in the plan; after the first
-    /// completed session with the exercise, its next load comes from the sets lifted.
+    /// maximum and rewrites the week-one loads of sessions not yet touched
+    /// (<see cref="GeneratedTarget"/>); after the first completed session with the exercise,
+    /// its next load comes from that session.
     /// </summary>
     public static bool IsOutsideLookback(OneRepMaxSample sample, DateTime now, int lookbackDays)
     {

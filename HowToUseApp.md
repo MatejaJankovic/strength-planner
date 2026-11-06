@@ -841,7 +841,9 @@ odrađene a polaze od takvog maksimuma, uz njegovu starost; ekran maksimuma piš
 red. Za koliko je preteško sistem ne procenjuje, jer pad zavisi od dužine pauze i od
 treniranosti: prvi trening sa tom vežbom odradi opreznije i spusti težinu ako treba. Posle
 njega se opterećenje računa iz onoga što si digao, i vežba nestaje iz napomene. Nov unos ili
-test-serija menja maksimum, ali ne i opterećenja već upisana u plan.
+test-serija menja maksimum i preračunava opterećenja prve nedelje u treninzima koji još nisu
+započeti (ni sa jednom upisanom serijom). Kasnije nedelje opterećenje dobijaju kad se isti dan
+prethodne nedelje završi, ili se računaju pri otvaranju iz najsvežijeg maksimuma.
 
 **Automatski deload.** Iz svake završene nedelje se računa ocena umora (0–1) iz četiri
 signala: odstupanje RIR-a, udeo serija do otkaza, pad procenjenog 1RM i volumen u odnosu na

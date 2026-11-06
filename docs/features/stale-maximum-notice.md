@@ -28,6 +28,8 @@ vežbača od pre pauze, a snaga posle nekoliko nedelja bez treninga opada.
   opreznije i da se težina spusti ako treba.
 - **Ekran maksimuma:** uz red piše „Star 10 nedelja, jer novijeg zapisa nema", i da nov unos
   ili test-serija menja maksimum, ali ne i opterećenja već upisana u plan.
+  *(Kasnije: od [recompute-pending-targets.md](recompute-pending-targets.md) nov zapis
+  preračunava i opterećenja prve nedelje koja još nisu započeta.)*
 - Uputstvo, odeljak „Start novog bloka", to sada kaže.
 
 **Procenat pada se ne nudi.** Pad snage posle pauze zavisi od njene dužine i od treniranosti
@@ -81,7 +83,8 @@ Da li je zapis star odlučuje server, jer samo on zna prozor. Klijent samo broji
   nema harness na nivou servisa (isto kao u rundi 12). Proveren je uživo.
 - Test-serija ne prepisuje već upisana opterećenja. Da bi to radila, novi zapis bi morao da
   preračuna ciljeve treninga koji čekaju i još nisu vođeni progresijom; to je veća izmena i
-  ovde nije urađena.
+  ovde nije urađena. *(Kasnije: urađeno, vidi
+  [recompute-pending-targets.md](recompute-pending-targets.md).)*
 - Napomena ne zna da li je vežbač stvarno pravio pauzu. Vežba koja dva meseca nije bila u
   bloku dobija istu napomenu, i tu je ona jednako tačna: broj je star.
 
