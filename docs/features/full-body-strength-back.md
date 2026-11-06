@@ -25,7 +25,7 @@ Full Body, dan C: **Hammer Curl pre Face Pull-a**. Početnik uzima samo dve izol
 dobija prvu direktnu vežbu za biceps u šablonu. Srednji i napredni nivo uzimaju sve četiri, pa
 im redosled ne menja ništa.
 
-Napredni u lakoj nedelji bloka snage sada ima leđa **12.5** (MEV 12), ramena 11 (10) i triceps 8
+Napredni u lakoj nedelji bloka snage sada ima leđa **12.5** (MEV 12), a po merenju pregleda ramena 11 (10) i triceps 8
 (7). Biceps ostaje na **9.5** naspram 10. Za njega nije nađena zamena koja ne obara grudi,
 kvadriceps ili zadnju ložu u istim nedeljama, jer nijedan od tih mišića nema rezervu. Test
 `AnAdvancedStrengthBlockOnFullBody_FallsBelowMev_OnlyWhereRecorded` beleži tu rupu tačno, pa
