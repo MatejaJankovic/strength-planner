@@ -104,7 +104,8 @@ public class MacrocycleService : IMacrocycleService
                 Goal = block.Goal,
                 TemplateKey = block.TemplateKey,
                 PeriodizationModel = block.PeriodizationModel,
-                SetAllocation = block.SetAllocation
+                // „Prati moj šablon" važi samo za lični šablon; ugrađeni se uvek balansira.
+                SetAllocation = AllocationFor(block.SetAllocation, block.TemplateKey)
             });
         }
 
@@ -481,13 +482,18 @@ public class MacrocycleService : IMacrocycleService
             await _templateResolver.NameForAsync(userId, block.TemplateKey, cancellationToken)
             ?? block.TemplateKey;
 
+        // Blok se generiše tek kada dođe na red, pa izbor mora da preživi u bazi i da se
+        // tada pročita odavde — ne iz zahteva koji ga je davno napravio. Pravilo se
+        // primenjuje i ovde, jer blokovi upisani pre njega mogu nositi „Prati moj šablon"
+        // uz ugrađeni šablon, i upisuje se nazad na blok, da blok i mezociklus ne kažu dve
+        // različite stvari.
+        block.SetAllocation = AllocationFor(block.SetAllocation, block.TemplateKey);
+
         var request = new GenerateMesocycleRequest
         {
             TemplateKey = block.TemplateKey,
             Goal = block.Goal,
             PeriodizationModel = block.PeriodizationModel,
-            // Blok se generiše tek kada dođe na red, pa izbor mora da preživi u bazi i da
-            // se tada pročita odavde — ne iz zahteva koji ga je davno napravio.
             SetAllocation = block.SetAllocation,
             Name = BuildBlockName(macrocycle.Name, block.Order, blockCount, templateName),
             StartDate = startDate
@@ -499,6 +505,12 @@ public class MacrocycleService : IMacrocycleService
         block.GeneratedAt ??= now;
 
         return mesocycle;
+    }
+
+    /// <summary>The one place that applies <see cref="SetAllocationRule"/> to a template key.</summary>
+    private static SetAllocation AllocationFor(SetAllocation requested, string templateKey)
+    {
+        return SetAllocationRule.For(requested, CustomTemplateKey.TryParse(templateKey, out _));
     }
 
     /// <summary>

@@ -236,6 +236,43 @@ describe('PlanHome - sadržaj šablona u čarobnjaku', () => {
   });
 
   /**
+   * „Prati moj šablon" postoji zbog ličnog šablona. Ugrađeni šablon doslovno je propisivao
+   * nedelje iznad MRV-a, pa se uz njega izbor ne nudi.
+   */
+  it('nudi izbor broja serija samo uz lični šablon', async () => {
+    openWizard();
+    await fixture.whenStable();
+
+    expect(component().offersAllocationChoice('upper-lower')).toBe(false);
+    expect(component().offersAllocationChoice('custom:abc')).toBe(true);
+  });
+
+  it('polje „Broj serija" prikazuje samo uz lični šablon', async () => {
+    openWizard();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const field = () => fixture.nativeElement.querySelector('#block-sets-0');
+    expect(field()).toBeNull();
+
+    component().setBlockTemplate(0, 'custom:abc');
+    fixture.detectChanges();
+    expect(field()).not.toBeNull();
+  });
+
+  it('prelaz na ugrađeni šablon vraća balansiranje', async () => {
+    openWizard();
+    await fixture.whenStable();
+
+    component().setBlockTemplate(0, 'custom:abc');
+    component().setBlockAllocation(0, '1');
+    expect(component().blocks()[0].setAllocation).toBe(1);
+
+    component().setBlockTemplate(0, 'upper-lower');
+    expect(component().blocks()[0].setAllocation).toBe(0);
+  });
+
+  /**
    * Predlog modela je isti za oba cilja, pa promena cilja ne sme da poništi model koji je
    * korisnik izabrao; dok je predlog zavisio od cilja, promena cilja ga je menjala.
    */

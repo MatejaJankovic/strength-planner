@@ -128,6 +128,7 @@ ono što je ispod 20 kg, ono što blok radi kroz nedelje i ono što se tvrdi o v
 | [Ivice procene maksimuma](estimate-edges.md) | Test-serija 100 × 1 do otkaza je davala 103.3 kg; granica od 12 ponavljanja nije bila obrazložena kao izbor | #98 |
 | [Star maksimum](stale-maximum-notice.md) | Blok je tiho polazio od maksimuma starijeg od 56 dana; sada ekran kaže koliko je star | #99 |
 | [Doprinosi mišića, drugi deo](muscle-contributions-2.md) | Mrtvo dizanje je punilo leđa umesto gluteusa, a Hip Thrust zadnju ložu; udeo veslanja u ramenima je odbačen jer je sekao bočno podizanje | #100 |
+| [„Prati moj šablon" samo za lični šablon](allocation-follow-template.md) | Uz ugrađeni šablon je propisivao nedelje iznad MRV-a, a ekran je govorio samo „može ostati ispod cilja" | #101 |
 
 ## Petnaesti krug — revizija posle runde 14
 

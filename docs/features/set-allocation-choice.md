@@ -61,6 +61,9 @@ ličnog šablona nije — otkucano „3 serije" je namera, a menjala se tiho.
 Bira se po bloku, a ne po nalogu, jer isti plan sme da ima blok koji prati lični šablon i
 blok koji cilja volumen — isto kao što se model periodizacije bira po bloku.
 
+*(Kasnije: od [allocation-follow-template.md](allocation-follow-template.md) se „Prati moj
+šablon" nudi i prihvata samo uz lični šablon. Uz ugrađeni je propisivao nedelje iznad MRV-a.)*
+
 **Modeli sada pišu šta rade unetim brojevima.** Uz svaki izbor stoji rečenica: ravan model
 zadržava opseg svake nedelje, linearan kreće sa više ponavljanja i uneti opseg donosi u
 trećoj nedelji, obrnuti kreće sa manje. Algoritam se nije menjao — menjalo se to što nigde
