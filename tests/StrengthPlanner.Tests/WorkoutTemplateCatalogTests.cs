@@ -683,6 +683,27 @@ public class WorkoutTemplateCatalogTests
     }
 
     /// <summary>
+    /// Početnik na Full Body uzima samo dve izolacije po danu. Dok je na danu C Face Pull stajao
+    /// pre Hammer Curl-a, nijedna od njegovih vežbi nije bila vežba za biceps, i biceps je stajao
+    /// ispod MEV-a u 28 od 36 nedelja. Hammer Curl sada stoji pre Face Pull-a.
+    /// </summary>
+    [Theory]
+    [InlineData(Goal.Hypertrophy)]
+    [InlineData(Goal.Strength)]
+    public void FullBody_GivesABeginnerADirectBicepsExercise(Goal goal)
+    {
+        var template = WorkoutTemplateCatalog.GetByKey(WorkoutTemplateCatalog.FullBodyKey)!;
+
+        var exercises = template.Days
+            .SelectMany(day => SessionComposition.ForLevel(day.Exercises, ExerciseCatalog.IsCompound, ExperienceLevel.Beginner, goal))
+            .Select(name => ExerciseCatalog.Find(name)!);
+
+        Assert.Contains(
+            exercises,
+            exercise => exercise.Muscles.Any(muscle => muscle.Muscle == "Biceps" && muscle.Contribution == 1.0m));
+    }
+
+    /// <summary>
     /// Dva treninga nedeljno ne mogu da dostignu MEV za većinu grupa — nema dovoljno
     /// mesta u nedelji. To nije greška šablona nego posledica frekvencije, pa šablon
     /// nosi upozorenje umesto da se pravi da je pun plan. Test postoji da bi ta razlika
