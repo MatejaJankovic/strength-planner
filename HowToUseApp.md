@@ -769,8 +769,9 @@ korakom od 2 kg (25%) staje u sam opseg. Lak teg u uskom opsegu je drugačiji �
 8–12 (lični šablon, ili blok napravljen ranije) je skok posle koga bi po Epley-u ostalo
 tri-četiri ponavljanja, pet ispod dna opsega. Tada korak dolazi tek kad ga **kapacitet**
 svake serije upija: ponavljanja plus rezerva koja je zaista ostala (za taj primer 17 uz RIR 1,
-ili 15 uz RIR 3). U 10–20 isto važi za bučicu od 5 kg: korak od 2 kg je 40%, pa dolazi posle
-25 ponavljanja uz RIR 1. Do tada težina čeka i ne pada, a ekran to kaže. Kad
+ili 15 uz RIR 3). U 10–20 isto važi za bučicu od 6 kg: korak od 2 kg je 33%, pa dolazi posle
+23 ponavljanja uz RIR 1. Težina između dva koraka (npr. 9 kg na koraku od 2 kg) ide na sledeću
+koju stalak ima, 10 kg, pa za taj manji skok dovoljno je manje ponavljanja. Do tada težina čeka i ne pada, a ekran to kaže. Kad
 korak dođe, ide na sledeću težinu koju stalak ima — ne korak i korekcija povrh njega, jer bi je
 zaokruživanje na lakom tegu pretvorilo u drugi ceo korak.
 

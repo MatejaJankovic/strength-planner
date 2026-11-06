@@ -28,7 +28,10 @@ u bloku snage, a 8–12 za sve ostalo.
 
 Iz 10–20 uz RIR 1 može oko 27% više tereta, pa korak od 2 kg na bučici od 8 kg staje u sam
 opseg. Produžen cilj iz grane 1 za izolacije ostaje samo kod stvarno lakih tegova: bučica od
-5 kg sa korakom od 2 kg (40%) dobija korak posle 25 ponavljanja.
+5 kg sa korakom od 2 kg (40%) dobija korak posle 25 ponavljanja. *(Kasnije: netačno. 5 kg nije na
+mreži koraka od 2 kg, pa je sledeća težina 6, i progresija diže posle 20 ponavljanja; ekran je
+tražio 25. Primer na mreži je 6 kg, posle 23 ponavljanja. Vidi
+[step-absorption-shared-cases.md](step-absorption-shared-cases.md).)*
 
 ### Granica ponavljanja prati opseg koji plan nosi
 

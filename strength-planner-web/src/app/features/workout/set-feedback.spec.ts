@@ -63,6 +63,14 @@ describe('setFeedback', () => {
       expect(setFeedback(lightDumbbell, at(12, 4))).toBeNull();
     });
 
+    it('van mreže koraka meri put do sledeće težine, ne pun korak', () => {
+      // 9 kg na koraku od 2 kg ide na 10: kapacitet 12 + 1 to upija, i server diže težinu.
+      // Pun korak (na 11) ne bi upio, pa bi napomena lažno obećala zadržavanje.
+      expect(setFeedback(lightDumbbell, at(12, 1, false, 9))).toBeNull();
+      // Do otkaza na 12 je kapacitet 12: (30 + 12) x 9 = 378, a potrebno je 10 x 38 = 380.
+      expect(setFeedback(lightDumbbell, at(12, 0, true, 9))).toBe('at-top-step-not-earned');
+    });
+
     it('računa iz težine koja se unosi, ne iz predloga', () => {
       // Na 20 kg korak od 2 kg (10%) staje u propis: obične napomene.
       expect(setFeedback(lightDumbbell, at(12, 0, true, 20))).toBe('failure-at-top');
