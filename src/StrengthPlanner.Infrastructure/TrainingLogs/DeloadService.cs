@@ -241,6 +241,7 @@ public sealed class DeloadService
                 plan.ExerciseId,
                 plan.PrescribedSets,
                 plan.BaseRepRangeMax,
+                plan.Order,
                 plan.WorkoutSession.TrainingWeek.WeekNumber
             })
             .ToListAsync(cancellationToken);
@@ -254,7 +255,7 @@ public sealed class DeloadService
                 group => group.Key,
                 group =>
                 {
-                    if (baseSetsFromBaseWeek.TryGetValue(group.Key, out var storedBaseSets))
+                    if (baseSetsFromBaseWeek.TryGet(group.Key.DayLabel, group.Key.ExerciseId, group.First().Order, out var storedBaseSets))
                     {
                         return storedBaseSets;
                     }
@@ -418,8 +419,10 @@ public sealed class DeloadService
             // Obrtanje ide nad propisom: predlog je u međuvremenu pomeren balansiranjem
             // volumena, pa bi polovljenje njegove vrednosti dalo deload izveden iz broja
             // koji periodizacija nikada nije propisala.
-            var baseSets = baseSetsByExerciseAndDay.TryGetValue(
-                (plan.WorkoutSession.DayLabel, plan.ExerciseId),
+            var baseSets = baseSetsByExerciseAndDay.TryGet(
+                plan.WorkoutSession.DayLabel,
+                plan.ExerciseId,
+                plan.Order,
                 out var storedBaseSets)
                 ? storedBaseSets
                 : Periodization.BaseSetsFrom(
@@ -477,8 +480,12 @@ public sealed class DeloadService
     /// verzija pravila; zatečeni red nosi broj koji je propisala neka starija, pa bi iz
     /// njega izvedena osnova bila nedelja koju blok nikada nije imao. Prazno kada je i sama
     /// osnovna nedelja postala deload — tada pozivalac pada na izvođenje.
+    ///
+    /// Vežba zamenjena posle osnovne nedelje (A2) u njoj ne postoji, pa se mesto tada traži po
+    /// rednom broju u danu: zamena menja samo vežbu, a mesto i njegov propis ostaju. Bez toga
+    /// je deload padao na izvođenje, koje runde 10 i 14 nisu htele (pregled #111).
     /// </summary>
-    private async Task<Dictionary<(string DayLabel, Guid ExerciseId), int>> LoadBaseSetsAsync(
+    private async Task<BaseSetLookup> LoadBaseSetsAsync(
         Guid userId,
         Guid mesocycleId,
         PeriodizationModel model,
@@ -496,13 +503,39 @@ public sealed class DeloadService
             {
                 plan.WorkoutSession.DayLabel,
                 plan.ExerciseId,
+                plan.Order,
                 plan.PrescribedSets
             })
             .ToListAsync(cancellationToken);
 
-        return plans
-            .GroupBy(plan => (plan.DayLabel, plan.ExerciseId))
-            .ToDictionary(group => group.Key, group => group.First().PrescribedSets);
+        return new BaseSetLookup(
+            plans
+                .GroupBy(plan => (plan.DayLabel, plan.ExerciseId))
+                .ToDictionary(group => group.Key, group => group.First().PrescribedSets),
+            plans
+                .GroupBy(plan => (plan.DayLabel, plan.Order))
+                .ToDictionary(group => group.Key, group => group.First().PrescribedSets));
+    }
+
+    /// <summary>Polazni broj serija po vežbi u danu, a za zamenjenu vežbu po mestu u danu.</summary>
+    private sealed class BaseSetLookup
+    {
+        private readonly Dictionary<(string DayLabel, Guid ExerciseId), int> _byExercise;
+        private readonly Dictionary<(string DayLabel, int Order), int> _byOrder;
+
+        public BaseSetLookup(
+            Dictionary<(string DayLabel, Guid ExerciseId), int> byExercise,
+            Dictionary<(string DayLabel, int Order), int> byOrder)
+        {
+            _byExercise = byExercise;
+            _byOrder = byOrder;
+        }
+
+        public bool TryGet(string dayLabel, Guid exerciseId, int order, out int sets)
+        {
+            return _byExercise.TryGetValue((dayLabel, exerciseId), out sets)
+                   || _byOrder.TryGetValue((dayLabel, order), out sets);
+        }
     }
 
     /// <summary>
