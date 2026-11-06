@@ -69,8 +69,9 @@ Da li je zapis star odlučuje server, jer samo on zna prozor. Klijent samo broji
 - Posle pregleda: merenje vraćanjem pravila dan + vežba (samo vežba) obara **1** od 201 na
   klijentu. Uživo, na bloku u kome je Barbell Row odrađen na svom danu, a svi zapisi su mu
   stari 70 dana, napomena se **ne** prikazuje, jer plan tu vežbu više ne vodi po maksimumu.
-  Pozitivan slučaj na novom planu (prva nedelja iz starog maksimuma) posle ove izmene još nije
-  proveren uživo.
+  Na novom planu (Upper/Lower, prva nedelja iz istog maksimuma) napomena glasi „Za ovu vežbu
+  plan polazi od starog maksimuma, jer novijeg nema: Barbell Row (star 10 nedelja)", na 375 px
+  bez prelivanja.
 - Stilovi nisu dodati: napomena koristi postojeće klase, pa se upozorenja o budžetu
   stilova nisu promenila.
 
