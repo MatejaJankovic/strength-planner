@@ -435,6 +435,12 @@ Razvojne zavisnosti su ranije imale tri niske ranjivosti u lancu Angular alata
 `overrides` blokom koji podiže razrešene verzije unutar postojećeg lanca — provereno da
 produkcijski build i svih 7 frontend testova i dalje prolaze.
 
+> **Kada `overrides` ukloniti.** Blok nameće verziju svakom paketu koji od nje zavisi, bez
+> obzira na opseg koji je taj paket tražio. Kad Angular objavi alat koji traži drugi
+> `esbuild`, npm će i dalje forsirati ovaj, a greška će izaći daleko od uzroka.
+> `package.json` ne trpi komentare, pa je uslov ovde: **obrisati oba unosa čim `npm audit`
+> bude nula i bez njih** (najlakše posle ručne nadogradnje `@angular/build`).
+
 **Bitnije od trenutnog nula je što se sada proverava samo.** Nalaz iz skeniranja stari sam od
 sebe: paket koji je danas čist objavi ranjivost sledeće nedelje, bez ijedne izmene u ovom
 repozitorijumu. Zato:
@@ -444,11 +450,19 @@ repozitorijumu. Zato:
   istorijom. Korak sa NuGet-om čita ispis, jer ta naredba uvek izlazi sa nulom — bez toga bi
   bio zelen i kada nešto nađe. `npm audit --omit=dev` obara build; nalaz u razvojnim
   zavisnostima samo prijavljuje, da ranjivost u alatu ne zaustavi rad na aplikaciji.
+- **gitleaks je zakačen za commit, a ne za oznaku `v2`.** Oznakom upravlja tuđi
+  repozitorijum i može da se pomeri, a taj korak radi sa tokenom ovog repozitorijuma.
+
 **Dependabot je probno bio uključen pa isključen.** Za jedan dan je otvorio sedamnaest
 pull request-ova, uz email za svaki; za projekat koji se još ne isporučuje to je bila buka
 koja zaklanja pravu poruku. Nadogradnja se za sada radi ručno kada skeniranje nešto prijavi
 (`npm outdated`, `dotnet list package --outdated`). To znači da **nalaz stoji dok ga vlasnik
 ne reši** — svesno, dok aplikacija nije javno dostupna.
+
+Ako zatreba ponovo, config vraća `git show 6e7d924^:.github/dependabot.yml`. Pre
+uključivanja spustiti `open-pull-requests-limit` i interval na mesečni, jer je nedeljni ritam
+i napravio gomilu. Dva PR-a koja je stigao da otvori (Swashbuckle 6.6.2 → 10.2.3 i grupa
+Microsoft paketa) obarala su build: velike verzije nisu bezbolne.
 
 ---
 
