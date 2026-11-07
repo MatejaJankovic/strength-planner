@@ -4,8 +4,9 @@ Beleške za pregled, ne tekst za rad. Svaka strana ima isti raspored: **problem*
 aplikacija radila i zašto to nije bilo dobro), **rešenje**, **provera** i **poznata
 ograničenja** — uključujući ono što je revizija koda našla i kako je ispravljeno.
 
-Red bez linka znači da je beleška obrisana: opisivala je samo izmenu teksta, stila ili
-uputstva, ili pravilo koje je kasnije zamenjeno. Ostaje u git istoriji.
+U tabelama krugova, red bez linka znači da je beleška obrisana: opisivala je samo izmenu
+teksta, stila, uputstva ili navigacije, ili pravilo koje je kasnije zamenjeno. Ostaje u git
+istoriji.
 
 ## Prvi krug — „future improvements" iz zaključka rada
 

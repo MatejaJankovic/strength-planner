@@ -459,6 +459,11 @@ koja zaklanja pravu poruku. Nadogradnja se za sada radi ručno kada skeniranje n
 (`npm outdated`, `dotnet list package --outdated`). To znači da **nalaz stoji dok ga vlasnik
 ne reši** — svesno, dok aplikacija nije javno dostupna.
 
+Ako zatreba ponovo, config vraća `git show 6e7d924^:.github/dependabot.yml`. Pre
+uključivanja spustiti `open-pull-requests-limit` i interval na mesečni, jer je nedeljni ritam
+i napravio gomilu. Dva PR-a koja je stigao da otvori (Swashbuckle 6.6.2 → 10.2.3 i grupa
+Microsoft paketa) obarala su build: velike verzije nisu bezbolne.
+
 ---
 
 ## Šta ostaje otvoreno
