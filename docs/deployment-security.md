@@ -139,17 +139,14 @@ openssl rand -base64 48
 
 ## Poznata ograničenja
 
-- **Ciljano zaključavanje tuđeg naloga i dalje je moguće.** Identity zaključava nalog posle
-  pet promašaja na pet minuta, što je oko jednog zahteva u minutu — daleko ispod praga
-  ograničenja broja zahteva. Ko zna tuđ email može da mu drži nalog zaključanim. Prava
-  rešenja su postepeno usporavanje umesto tvrdog zaključavanja ili vezivanje brojača za par
-  (nalog, IP); oba menjaju ponašanje prijave, pa nisu dirana.
+- **Zaključavanje naloga posle promašaja treba doraditi** pre javnog puštanja: postepeno
+  usporavanje umesto tvrdog zaključavanja, ili brojač vezan za par (nalog, IP). Oba menjaju
+  ponašanje prijave, pa nisu dirana.
 - **Zatečene kratke lozinke ostaju.** Pravilo o dužini važi kad se lozinka postavlja, ne kad
   se proverava, pa nalozi napravljeni ranije zadržavaju svoje. Prisilna promena traži polje
   „lozinka promenjena" i tok koji korisnika na to natera.
-- **Registracija i dalje odaje da li email ima nalog** — ne porukom, koja je ujednačena, nego
-  statusnim kodom (400 naspram 200). Pravo rešenje je potvrda email-om.
-
+- **Registraciji nedostaje potvrda email-om.** Uvodi se zajedno sa slanjem pošte, a uz nju i
+  potpuno ujednačen odgovor registracije.
 - **Ograničenje broja zahteva deli budžet po IP adresi.** Više korisnika iza istog NAT-a
   (kućni ruter, teretana, fakultet) deli 20 zahteva u minutu na auth rutama, i 5 na sat na
   registraciji. Za prijavu je to prihvatljivo; ako postane smetnja, obe granice su na
