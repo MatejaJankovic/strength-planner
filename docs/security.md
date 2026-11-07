@@ -478,8 +478,12 @@ Navedeno svesno, da ne izgleda kao da je pokriveno, i na nivou posla koji treba 
 - **Nema oporavka zaboravljene lozinke**, jer nema slanja email-a.
 - **Zatečene kratke lozinke ostaju.** Pravilo važi kad se lozinka postavlja, ne kad se
   proverava.
-- **Komponente na frontendu ne otkazuju pretplate pri uništavanju.** Treba ih otkazati
-  (`takeUntilDestroyed`) bar u komponentama koje čitaju lične podatke; zaseban posao.
+- **Zahtevi započeti pre odjave se pri odjavi ne prekidaju.** Treba ih prekinuti na samoj
+  odjavi (na primer `takeUntil` na događaj odjave u interceptoru), a servisi koji keširaju
+  lične podatke (`ExerciseService`, `OneRepMaxService`) treba da odbace odgovor iz prethodne
+  sesije. Gotovo je kad posle odjave nijedan keš ne nosi podatke prethodnog naloga.
+  Otkazivanje pretplata u komponentama (`takeUntilDestroyed`) je korisno pospremanje, ali
+  ovo samo ne zatvara; zaseban posao.
 - **Kontejnerske i TLS izmene nisu pokrenute.** Docker nije bio dostupan pri radu, pa su
   compose fajlovi, Caddyfile i skripta za bazu provereni statički — osim SQL dela skripte,
   koji jeste pokrenut nad pravim PostgreSQL-om. Pre oslanjanja uraditi

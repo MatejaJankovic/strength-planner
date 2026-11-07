@@ -67,8 +67,8 @@ public class AuthService : IAuthService
             throw new AuthException(RegistrationFailed);
 
         // Poruka namerno ne razlikuje zauzet email od ostalih razloga: ranija je bila
-        // spisak postojećih naloga za svakoga ko probije redom. Prava zaštita bi bila
-        // potvrda email-om, ali dok je nema, bar se ne odgovara na pitanje direktno.
+        // spisak postojećih naloga za svakoga ko probije redom. Potvrda email-om je
+        // navedena među otvorenim stavkama u docs/security.md.
         if (await _userManager.FindByEmailAsync(dto.Email) is not null)
             throw new AuthException(RegistrationFailed);
 
