@@ -92,10 +92,8 @@ builder.Services.AddProblemDetails();
 // pokriva: probanje iste lozinke preko mnogo naloga i spam registracije, gde svaki
 // pokušaj troši PBKDF2 heširanje.
 //
-// Ne rešava ciljani DoS nad tuđim nalogom: pet pokušaja na pet minuta je oko jednog
-// zahteva u minutu, daleko ispod ovog praga, pa napadač koji zna tuđ email može da mu
-// drži nalog zaključanim. To je poznat kompromis Identity zaključavanja i zabeležen je
-// u docs/deployment-security.md.
+// Ne pokriva doradu zaključavanja pojedinačnog naloga (postepeno usporavanje ili brojač
+// po paru nalog/IP); ona je navedena u docs/security.md, „Šta ostaje otvoreno".
 // ---------------------------------------------------------------------------
 builder.Services.AddRateLimiter(options =>
 {

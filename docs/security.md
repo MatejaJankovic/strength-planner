@@ -468,21 +468,22 @@ Microsoft paketa) obarala su build: velike verzije nisu bezbolne.
 
 ## Šta ostaje otvoreno
 
-Navedeno svesno, da ne izgleda kao da je pokriveno.
+Navedeno svesno, da ne izgleda kao da je pokriveno, i na nivou posla koji treba uraditi.
 
-- **Ciljano zaključavanje tuđeg naloga.** Pet promašaja na pet minuta je oko jednog zahteva u
-  minutu, ispod svakog upotrebljivog praga, pa ko zna tuđ email može da mu drži nalog
-  zaključanim. Rešenja su postepeno usporavanje umesto tvrdog zaključavanja ili brojač vezan
-  za par (nalog, adresa); oba menjaju ponašanje prijave.
-- **Registracija odaje da li email već ima nalog** — ne porukom, koja je ujednačena, nego
-  statusnim kodom. Pravo rešenje je potvrda email-om.
+- **Zaključavanje naloga posle promašaja treba doraditi** pre javnog puštanja: postepeno
+  usporavanje umesto tvrdog zaključavanja, ili brojač vezan za par (nalog, adresa). Oba
+  menjaju ponašanje prijave, pa je to zaseban posao.
+- **Registraciji nedostaje potvrda email-om.** Uvodi se zajedno sa slanjem pošte, koje je van
+  opsega, a uz nju i potpuno ujednačen odgovor registracije.
 - **Nema oporavka zaboravljene lozinke**, jer nema slanja email-a.
 - **Zatečene kratke lozinke ostaju.** Pravilo važi kad se lozinka postavlja, ne kad se
   proverava.
-- **Odgovor koji stigne posle odjave može da napuni keš.** Nijedna komponenta ne otkazuje
-  pretplatu pri uništavanju, pa odgovor koji nadživi odjavu upiše podatke u već ispražnjen
-  keš. Usko (traži da odgovor kasni duže od cele prijave), ali stvarno; ispravka je
-  otkazivanje pretplata na 26 mesta, što je zaseban posao.
+- **Zahtevi započeti pre odjave se pri odjavi ne prekidaju.** Treba ih prekinuti na samoj
+  odjavi (na primer `takeUntil` na događaj odjave u interceptoru), a servisi koji keširaju
+  lične podatke (`ExerciseService`, `OneRepMaxService`) treba da odbace odgovor iz prethodne
+  sesije. Gotovo je kad posle odjave nijedan keš ne nosi podatke prethodnog naloga.
+  Otkazivanje pretplata u komponentama (`takeUntilDestroyed`) je korisno pospremanje, ali
+  ovo samo ne zatvara; zaseban posao.
 - **Kontejnerske i TLS izmene nisu pokrenute.** Docker nije bio dostupan pri radu, pa su
   compose fajlovi, Caddyfile i skripta za bazu provereni statički — osim SQL dela skripte,
   koji jeste pokrenut nad pravim PostgreSQL-om. Pre oslanjanja uraditi
