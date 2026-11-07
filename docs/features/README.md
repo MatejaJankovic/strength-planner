@@ -4,6 +4,9 @@ Beleške za pregled, ne tekst za rad. Svaka strana ima isti raspored: **problem*
 aplikacija radila i zašto to nije bilo dobro), **rešenje**, **provera** i **poznata
 ograničenja** — uključujući ono što je revizija koda našla i kako je ispravljeno.
 
+Red bez linka znači da je beleška obrisana: opisivala je samo izmenu teksta, stila ili
+uputstva, ili pravilo koje je kasnije zamenjeno. Ostaje u git istoriji.
+
 ## Prvi krug — „future improvements" iz zaključka rada
 
 | Grana | O čemu je | PR |
@@ -43,8 +46,8 @@ Analiza sa ishodom po stavci: [`../analiza-prirucnika.md`](../analiza-prirucnika
 
 | Grana | O čemu je | PR |
 |---|---|---|
-| [Red sa serijama i ponavljanjima](template-editor-layout.md) | Oznaka "Ponavljanja od" se prelamala, pa su tri polja stajala na dve visine | #44 |
-| [Šabloni u profilu](templates-in-profile.md) | "Moji šabloni" se otvaraju iz profila, a ne iz čarobnjaka za mezociklus | #45 |
+| Red sa serijama i ponavljanjima | Oznaka "Ponavljanja od" se prelamala, pa su tri polja stajala na dve visine | #44 |
+| Šabloni u profilu | "Moji šabloni" se otvaraju iz profila, a ne iz čarobnjaka za mezociklus | #45 |
 | [Trening samo kroz plan](macrocycle-first.md) | Jedan ulaz umesto dva; brisanje na nivou plana, čime prestaje da se vraća obrisano | #46 |
 | [Pregled bloka](macrocycle-block-preview.md) | Klik na blok pokazuje šta nosi - propis ako je generisan, šablon ako čeka red | #47 |
 
@@ -68,7 +71,7 @@ blok, rasterecenje i cilj volumena.
 |---|---|---|
 | [Prozor ponavljanja i fiksan broj](rep-window-and-fixed-reps.md) | Faza volumena hipertrofije je ispadala kao opseg od dva ponavljanja (11–12), a lični šablon sa 5–5 je u planu dobijao 5–6 | #65 |
 | [Deload rasterećuje i napor](deload-intensity.md) | Deload je spuštao opterećenje na 90% ali držao ciljni RIR, pa je po naporu bio normalna radna serija | #66 |
-| [Izolacija ne ide na opseg snage](isolation-rep-range.md) | Blok snage je propisivao 3–6 (u petoj nedelji 3–4) i za bočno podizanje, letenje i pregibe — pet od šest vežbi naprednog vežbača | #67 |
+| Izolacija ne ide na opseg snage | Blok snage je propisivao 3–6 (u petoj nedelji 3–4) i za bočno podizanje, letenje i pregibe — pet od šest vežbi naprednog vežbača; pravilo je zamenio [opseg po ulozi vežbe](rep-ranges-by-role.md) (#91) | #67 |
 | [Cilj volumena prati nedelju](weekly-volume-target.md) | Balansiranje je svaku nedelju gadjalo u MAV, pa je talas serija iz periodizacije nestajao (24, 24, 16, 16, 12 → 16 svake nedelje); blok snage je gadjao hipertrofijski MAV | #68 |
 
 ## Jedanaesti krug — učenje granica i ocena umora
@@ -94,7 +97,7 @@ tvrdi drugo, a rad obećava treće.
 | [Ciljevi na kartici vežbe](workout-card-targets.md) | „Nema 1RM za ovu vežbu" je pisalo i kad maksimum postoji — 3 068 planova u razvojnoj bazi; ciljni broj ponavljanja se računao i nigde nije prikazivan | #76 |
 | [Test-serija i brisanje maksimuma](one-rep-max-entry.md) | Rad nudi unos test-serije iz koje sistem procenjuje maksimum — ekran ga nije imao; zapis se nije mogao obrisati | #77 |
 | [Uslovi pri pravljenju plana](plan-creation-preconditions.md) | Nov plan je bez reči gasio tekući, a vežba bez maksimuma je tiho čekala da je vežbač unese po osećaju — rad traži da se oba kažu | #78 |
-| [Uputstvo koje je ostalo iza koda](guide-accuracy.md) | „Sedam ugrađenih" šablona kojih ima devet, tonaža koja „pokazuje da blok raste" a u periodizovanom bloku pada po planu, i dva značenja reči „podrazumevan" | #79 |
+| Uputstvo koje je ostalo iza koda | „Sedam ugrađenih" šablona kojih ima devet, tonaža koja „pokazuje da blok raste" a u periodizovanom bloku pada po planu, i dva značenja reči „podrazumevan" | #79 |
 
 ## Trinaesti krug — model vežbi
 
@@ -118,7 +121,7 @@ ono što je ispod 20 kg, ono što blok radi kroz nedelje i ono što se tvrdi o v
 | [Korak mora da stane u opseg](load-step-absorption.md) | Bučica 8 → 10 kg (+25%) posle 3 × 12 ostavljala je 3–4 ponavljanja u opsegu 8–12; korekcija i deload lakih tegova su se zaokruživali nazad na istu težinu | #85 |
 | [Slične vežbe ne idu u uzastopne dane](session-spacing.md) | Legs Specialization je stavljao noge tri dana zaredom, a Full Body (4 dana) čučanj pa RDL i leg press pa front squat u uzastopne dane | #86 |
 | [Granica serija po treningu](session-volume-ceiling.md) | Balansiranje je gledalo samo nedelju, pa je Push dan Push/Pull/Legs nosio 16–18 serija za grudi; sada jedan mišić dobija najviše ~11 u jednom treningu (Remmert i sar. 2025, preprint) | #87 |
-| [Tekst na ekranu](ui-copy.md) | Upozorenje na 0 kg je pominjalo praznu šipku i uz sajlu i bučice (ispravka iz runde 13 nije stigla u kod); sedam tekstova (čarobnjak plana, registracija) bilo je bez dijakritika | #88 |
+| Tekst na ekranu | Upozorenje na 0 kg je pominjalo praznu šipku i uz sajlu i bučice (ispravka iz runde 13 nije stigla u kod); sedam tekstova (čarobnjak plana, registracija) bilo je bez dijakritika | #88 |
 | [Sastav bloka snage](strength-block-composition.md) | Napredni je i u bloku snage dobijao jednu složenu vežbu po treningu, iskoraci su nosili 3–6, a balansiranje je seklo bench pre razvlačenja (373 puta) | #89 |
 | [Linearan model po priručniku](periodization-shapes.md) | Linearan model je spuštao serije kroz blok, pa je hipertrofija gađala MRV u dve najsvežije nedelje; predlog „obrnut za hipertrofiju" nije imao oslonac. Sada se za svaki blok predlaže linearan, a umor povlači deload najviše jednom po bloku | #90 |
 | [Opseg po ulozi vežbe](rep-ranges-by-role.md) | Izolacije su nosile 8–12 u oba bloka, pa laka bučica nije mogla da primi korak; sada 10–20, uz poređenje snage na istoj težini iznad 12 ponavljanja | #91 |
@@ -151,12 +154,12 @@ uz ugrađeni šablon). Svaka grana sa izmenom koda ima merenje vraćanjem, a sva
 | [Star maksimum](stale-maximum-notice.md) | Blok je tiho polazio od maksimuma starijeg od 56 dana; sada ekran kaže koliko je star | #99 |
 | [Doprinosi mišića, drugi deo](muscle-contributions-2.md) | Mrtvo dizanje je punilo leđa umesto gluteusa, a Hip Thrust zadnju ložu; udeo veslanja u ramenima je odbačen jer je sekao bočno podizanje | #100 |
 | [„Prati moj šablon" samo za lični šablon](allocation-follow-template.md) | Uz ugrađeni šablon je propisivao nedelje iznad MRV-a, a ekran je govorio samo „može ostati ispod cilja" | #101 |
-| [Zatvaranje runde 14](round-14-closure.md) | „Ispod MEV-a nema stimulusa" na ekranu; ocena umora nije bila nazvana heuristikom; rečenice teze koje više ne opisuju aplikaciju nisu bile na jednom mestu ([teza-uskladjivanje.md](../teza-uskladjivanje.md)) | #102 |
-| [Uputstvo i komentari, drugi prolaz](guide-accuracy-2.md) | Četiri rečenice uputstva i dva komentara u kodu više nisu opisivali aplikaciju; Remmert i sar. nije bio označen kao preprint | #103 |
+| Zatvaranje runde 14 | „Ispod MEV-a nema stimulusa" na ekranu; ocena umora nije bila nazvana heuristikom; rečenice teze koje više ne opisuju aplikaciju nisu bile na jednom mestu ([teza-uskladjivanje.md](../teza-uskladjivanje.md)) | #102 |
+| Uputstvo i komentari, drugi prolaz | Četiri rečenice uputstva i dva komentara u kodu više nisu opisivali aplikaciju; Remmert i sar. nije bio označen kao preprint | #103 |
 | [Test-harness za servise](service-harness.md) | Pravilo u servisu (#74, #99, #101) moglo je da se vrati uz ceo paket zelen; sada ga hvataju testovi nad servisom, osim dva pozivaoca iz #74 | #104 |
 | [Leđa naprednog u bloku snage na Full Body](full-body-strength-back.md) | Leđa 11 naspram MEV-a 12 u lakšim nedeljama; Face Pull umesto Rear Delt Fly ih diže na 12.5 bez nove rupe, a biceps (9.5 naspram 10) je zakucan testom | #105 |
 | [Nov maksimum preračunava prvu nedelju](recompute-pending-targets.md) | Test-serija posle pauze je sklanjala napomenu, a ne i opterećenje prve nedelje, jer je ono upisano pri generisanju | #106 |
-| [Stilovi ekrana treninga](workout-session-styles.md) | `workout-session.scss` je bio na 7.93 od tvrdih 8 kB; spojeni ponovljeni blokovi, 7.48 kB; jedina promena izgleda je beleška ispod unosa (0.8 → 0.82 rem) | #107 |
+| Stilovi ekrana treninga | `workout-session.scss` je bio na 7.93 od tvrdih 8 kB; spojeni ponovljeni blokovi, 7.48 kB; jedina promena izgleda je beleška ispod unosa (0.8 → 0.82 rem) | #107 |
 | [Pravilo koraka: jedna tabela za server i ekran](step-absorption-shared-cases.md) | Kartica je na težini van mreže koraka tražila više ponavljanja nego što progresija traži (9 kg: 16 umesto 12); kopiju pravila na ekranu sada drži zajednička tabela od 5066 slučajeva i test nad samom progresijom | #108 |
 | [Rame po glavama](shoulder-heads.md) | Zbirno „Shoulders" je krilo da bočni deltoid dobija 6–9 serija; sada tri glave sa RP granicama (MEV prednjeg i zadnjeg nula), drugo bočno podizanje u sedam šablona, bočni ispod MEV-a 486 → 70 parova | #109 |
 | [Kalibraciona serija](calibration-set.md) | Svaka procena maksimuma počivala je na proceni rezerve; sada u poslednjoj trenažnoj nedelji prva serija prve vežbe ide do otkaza (srednji i napredni nivo, gde se serija može očitati), a granice volumena taj otkaz ne čitaju kao umor | #110 |
