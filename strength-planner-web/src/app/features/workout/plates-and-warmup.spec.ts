@@ -22,6 +22,11 @@ describe('platesFor', () => {
     expect(platesFor(15).belowBar).toBe(true);
   });
 
+  it('težina koja nije broj nije prazna šipka', () => {
+    // NaN nije manji od šipke, pa bi `totalKg < barKg` propustilo ovo kao „prazna šipka".
+    expect(platesFor(Number.NaN).belowBar).toBe(true);
+  });
+
   it('težina koja se ne može sastaviti vraća ostatak, umesto da se tiho zaokruži', () => {
     // 61 kg: po strani 20.5; 20 + ostaje 0.5 koje ne postoji kao ploča.
     const load = platesFor(61);
@@ -63,14 +68,17 @@ describe('platesFor', () => {
 });
 
 describe('platesLabel', () => {
-  it('piše ploče sa zarezom kao decimalnim znakom', () => {
-    expect(platesLabel(platesFor(82.5))).toBe('Po strani: 25 + 5 + 1,25.');
+  it('piše ploče sa zarezom kao decimalnim znakom, uz šipku na kojoj se računa', () => {
+    expect(platesLabel(platesFor(82.5))).toBe('Po strani (šipka 20 kg): 25 + 5 + 1,25.');
   });
 
-  it('prazna šipka, manje od šipke i ostatak imaju svaki svoju poruku', () => {
+  it('prazna šipka i ostatak imaju svaki svoju poruku', () => {
     expect(platesLabel(platesFor(20))).toBe('Prazna šipka (20 kg).');
-    expect(platesLabel(platesFor(10))).toBe('Manje od same šipke (20 kg).');
     expect(platesLabel(platesFor(61))).toContain('0,5 kg po strani se ne može sastaviti');
+  });
+
+  it('težina manja od šipke se ne komentariše: aplikacija ne zna koju šipku lifter ima', () => {
+    expect(platesLabel(platesFor(10))).toBeNull();
   });
 });
 
@@ -136,28 +144,46 @@ describe('warmupLabel', () => {
 });
 
 describe('platesHint', () => {
-  it('piše ploče samo za vežbu sa šipkom', () => {
-    expect(platesHint('Barbell', 100)).toBe('Po strani: 25 + 15.');
-    expect(platesHint('Dumbbell', 100)).toBeNull();
-    expect(platesHint('Machine', 100)).toBeNull();
-    expect(platesHint(undefined, 100)).toBeNull();
+  it('piše ploče samo za složenu vežbu sa šipkom', () => {
+    expect(platesHint('Barbell', 'Compound', 100)).toBe('Po strani (šipka 20 kg): 25 + 15.');
+    expect(platesHint('Dumbbell', 'Compound', 100)).toBeNull();
+    expect(platesHint('Machine', 'Compound', 100)).toBeNull();
+    expect(platesHint(undefined, 'Compound', 100)).toBeNull();
   });
 
-  it('ćuti dok težina nije uneta', () => {
-    expect(platesHint('Barbell', 0)).toBeNull();
-    expect(platesHint('Barbell', Number.NaN)).toBeNull();
+  it('ćuti za pregib i skull crusher: šipka tu nije od 20 kg', () => {
+    expect(platesHint('Barbell', 'Isolation', 25)).toBeNull();
+  });
+
+  it('ćuti kad se tip ne zna (putanja koja ga ne šalje)', () => {
+    expect(platesHint('Barbell', undefined, 100)).toBeNull();
+    expect(platesHint('Barbell', '', 100)).toBeNull();
+  });
+
+  it('ćuti dok težina nije uneta ili je manja od šipke', () => {
+    expect(platesHint('Barbell', 'Compound', 0)).toBeNull();
+    expect(platesHint('Barbell', 'Compound', 17.5)).toBeNull();
+    expect(platesHint('Barbell', 'Compound', Number.NaN)).toBeNull();
   });
 });
 
 describe('warmupHint', () => {
-  it('predlaže zagrevanje za vežbu sa šipkom pre prve radne serije', () => {
-    expect(warmupHint('Barbell', 100, 2.5, 0)).toBe('40 kg × 5 · 60 kg × 3 · 80 kg × 1');
+  it('predlaže zagrevanje za složenu vežbu sa šipkom pre prve radne serije', () => {
+    expect(warmupHint('Barbell', 'Compound', 100, 2.5, 0)).toBe('40 kg × 5 · 60 kg × 3 · 80 kg × 1');
   });
 
-  it('ćuti kad je serija već odrađena, kad vežba nije sa šipkom i kad nema šta da se predloži', () => {
-    expect(warmupHint('Barbell', 100, 2.5, 1)).toBeNull();
-    expect(warmupHint('Dumbbell', 100, 2.5, 0)).toBeNull();
-    expect(warmupHint('Barbell', 0, 2.5, 0)).toBeNull();
-    expect(warmupHint('Barbell', 20, 2.5, 0)).toBeNull();
+  it('ćuti kad je serija već odrađena', () => {
+    expect(warmupHint('Barbell', 'Compound', 100, 2.5, 1)).toBeNull();
+  });
+
+  it('ćuti za vežbu bez šipke i za izolaciju sa šipkom', () => {
+    expect(warmupHint('Dumbbell', 'Compound', 100, 2.5, 0)).toBeNull();
+    expect(warmupHint('Barbell', 'Isolation', 100, 2.5, 0)).toBeNull();
+    expect(warmupHint('Barbell', undefined, 100, 2.5, 0)).toBeNull();
+  });
+
+  it('ćuti kad nema šta da se predloži', () => {
+    expect(warmupHint('Barbell', 'Compound', 0, 2.5, 0)).toBeNull();
+    expect(warmupHint('Barbell', 'Compound', 20, 2.5, 0)).toBeNull();
   });
 });

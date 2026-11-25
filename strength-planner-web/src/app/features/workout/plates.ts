@@ -33,7 +33,8 @@ export function platesFor(
   barKg: number = BAR_KG,
   available: readonly number[] = PLATES_KG,
 ): PlateLoad {
-  if (totalKg < barKg) {
+  // Negacija umesto `totalKg < barKg`: NaN nije manji ni veći ni jednak, pa bi prošao kao prazna šipka.
+  if (!(totalKg >= barKg)) {
     return { plates: [], remainderPerSideKg: 0, belowBar: true };
   }
 
@@ -55,10 +56,16 @@ function listPlates(plates: readonly number[]): string {
   return plates.map((plate) => String(plate).replace('.', ',')).join(' + ');
 }
 
-/** Tekst ispod težine: šta se stavlja na šipku. */
-export function platesLabel(load: PlateLoad, barKg: number = BAR_KG): string {
+/**
+ * Tekst ispod težine: šta se stavlja na šipku, ili null kad je težina manja od same šipke.
+ *
+ * Težina manja od šipke se ne komentariše: aplikacija ne zna koju šipku lifter ima, pa „manje od
+ * šipke" bi tvrdilo nešto što ne zna. Šipka od 20 kg je pretpostavka i piše se u tekstu, da se
+ * vidi na čemu se računa.
+ */
+export function platesLabel(load: PlateLoad, barKg: number = BAR_KG): string | null {
   if (load.belowBar) {
-    return `Manje od same šipke (${barKg} kg).`;
+    return null;
   }
 
   if (load.plates.length === 0) {
@@ -67,7 +74,7 @@ export function platesLabel(load: PlateLoad, barKg: number = BAR_KG): string {
       : `Prazna šipka (${barKg} kg).`;
   }
 
-  const base = `Po strani: ${listPlates(load.plates)}.`;
+  const base = `Po strani (šipka ${barKg} kg): ${listPlates(load.plates)}.`;
   return load.remainderPerSideKg > 0
     ? `${base} Još ${String(load.remainderPerSideKg).replace('.', ',')} kg po strani se ne može sastaviti iz ploča koje imaš.`
     : base;

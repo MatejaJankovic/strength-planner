@@ -159,6 +159,7 @@ describe('WorkoutSession: pomagala', () => {
       targetWeightKg: 100,
       weightStepKg: 2.5,
       equipment: 'Barbell',
+      exerciseType: 'Compound',
       isBodyweight: false,
       bodyweightLoadKg: 0,
       setLogs: [],
@@ -290,7 +291,23 @@ describe('WorkoutSession: pomagala', () => {
     it('piše ploče za vežbu sa šipkom, po težini koja se unosi', () => {
       open(session('InProgress', [plan()]));
 
-      expect(text()).toContain('Po strani: 25 + 15.');
+      expect(text()).toContain('Po strani (šipka 20 kg): 25 + 15.');
+    });
+
+    it('ne piše ih za pregib ni skull crusher, koji su „Barbell" ali se rade lakom šipkom', () => {
+      open(
+        session('InProgress', [
+          plan({ id: 'p2', exerciseName: 'Barbell Curl', exerciseType: 'Isolation', targetWeightKg: 25 }),
+        ]),
+      );
+
+      expect(text()).not.toContain('Po strani');
+    });
+
+    it('ne piše ih kad server ne pošalje tip vežbe', () => {
+      open(session('InProgress', [plan({ exerciseType: undefined })]));
+
+      expect(text()).not.toContain('Po strani');
     });
 
     it('ne piše ih za bučicu ni za mašinu', () => {
@@ -324,6 +341,16 @@ describe('WorkoutSession: pomagala', () => {
       expect(text()).toContain('Zagrevanje');
 
       saveSet(bench);
+
+      expect(text()).not.toContain('Zagrevanje');
+    });
+
+    it('ne predlaže se za izolaciju sa šipkom (pregib, skull crusher)', () => {
+      open(
+        session('InProgress', [
+          plan({ exerciseName: 'Barbell Curl', exerciseType: 'Isolation', targetWeightKg: 50 }),
+        ]),
+      );
 
       expect(text()).not.toContain('Zagrevanje');
     });

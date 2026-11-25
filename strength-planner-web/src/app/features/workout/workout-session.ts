@@ -264,15 +264,15 @@ export class WorkoutSession {
     return loadInputNote(plan.equipment, draft.weightKg);
   }
 
-  /** Koje ploče idu na šipku za težinu koja se unosi (samo vežbe sa šipkom). */
+  /** Koje ploče idu na šipku za težinu koja se unosi (samo složene vežbe sa šipkom). */
   protected platesHint(plan: ExercisePlanDto, draft: SetDraft): string | null {
-    return platesHint(plan.equipment, draft.weightKg);
+    return platesHint(plan.equipment, plan.exerciseType, draft.weightKg);
   }
 
   /** Predlog zagrevanja pre prve radne serije; samo dok trening traje. */
   protected warmupHint(plan: ExercisePlanDto, draft: SetDraft): string | null {
     return this.isInProgress()
-      ? warmupHint(plan.equipment, draft.weightKg, plan.weightStepKg, plan.setLogs.length)
+      ? warmupHint(plan.equipment, plan.exerciseType, draft.weightKg, plan.weightStepKg, plan.setLogs.length)
       : null;
   }
 
