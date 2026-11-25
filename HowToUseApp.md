@@ -625,7 +625,7 @@ generisan odmah, od tvojih sadašnjih 1RM vrednosti, i već je aktivan.
 
 ## Korak 7 — Analitika
 
-Kartica **„Analitika"** ima četiri celine. Dok nemaš nijedan plan ni rekord, umesto njih
+Kartica **„Analitika"** ima pet celina. Dok nemaš nijedan plan ni rekord, umesto njih
 stoji prazan ekran; kad plan postoji, celine se prikazuju, ali su bez podataka dok ne
 završiš prvi trening.
 
@@ -722,6 +722,21 @@ ne samo sa onim što je dodato — inače bi trening od četrdeset zgibova sabir
 > Tonaža se poredi **sa istom fazom prethodnog bloka**, ne sa prethodnom nedeljom. Jedino u
 > **ravnom** bloku, gde je propis svake nedelje isti, rast iz nedelje u nedelju zaista znači
 > da si jači.
+
+**Kroz sve blokove.** Nedeljni volumen i nedeljna tonaža iznad gledaju jedan blok. Ova celina gleda sve:
+tonažu ili serije po **kalendarskim nedeljama** (od ponedeljka), kroz sve planove i blokove. Biraš opseg
+(8 nedelja, 6 meseci, godinu dana, sve) i meru: tonaža, serije ukupno, ili serije jednog mišića.
+
+- **Granice blokova su označene.** Iznad nedelje u kojoj počinje novi blok piše njegovo ime (i plan, kad se
+  razlikuje). Nedelja pripada bloku sa najviše njenih serija. Pad na granici bloka nije gubitak snage: drugi
+  blok ima drugi propis, pa se ne poredi nedelja sa nedeljom nego blok sa blokom.
+- **Deload je označen**, a nedelja bez ijednog treninga stoji kao prazan red: pauza se vidi kao pauza. Nedelje
+  pre prvog treninga u opsegu se ne prikazuju.
+- Serije se broje kao u nedeljnom volumenu (RIR do 3 cela serija, RIR 4 pola, dalje ništa), a mišić dobija svoj
+  deo serije (potisak za grudi daje grudima celu, tricepsu pola). Tonaža nosi telesnu masu kao i iznad.
+- Nedelja se određuje po tome kad je serija podignuta, ne po nedelji plana. Zato trening odrađen u
+  ponedeljak, a završen u sredu, ostaje u svojoj nedelji.
+- **Ovde nema ciljeva ni granica volumena** (MEV, MAV, MRV): oni se uče i važe po bloku, pa se čitaju iznad.
 
 **Lični rekordi.** Po vežbi: najbolji e1RM i najveća podignuta težina, sa datumom. Za vežbe
 sa sopstvenom masom su oba broja ukupno opterećenje, i tako i piše ispod njih.
@@ -1126,4 +1141,3 @@ Namerno je van opsega, da ne bi bilo iznenađenja:
 - nema offline režima ni instalacije kao aplikacije (PWA);
 - **ne može se promeniti periodizacija već generisanog bloka** — pravi se novi;
 - nema deljenja plana, trenera ni više korisnika na jednom nalogu;
-- analitika pokriva tekuće blokove, ne celu istoriju kroz sve planove (spisak svih odrađenih treninga je u Istoriji).

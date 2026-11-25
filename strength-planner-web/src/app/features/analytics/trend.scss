@@ -1,0 +1,142 @@
+:host {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+}
+
+.control {
+  display: grid;
+  flex: 1 1 220px;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.control__label {
+  color: var(--color-muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.control__select {
+  appearance: none;
+  background: var(--color-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  color: var(--color-ink);
+  min-height: 44px;
+  padding: 0 0.7rem;
+  width: 100%;
+}
+
+.range {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.range__btn {
+  background: var(--color-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  color: var(--color-ink);
+  cursor: pointer;
+  font-weight: 600;
+  min-height: 44px;
+  padding: 0 0.9rem;
+}
+
+.range__btn.is-active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.t-note {
+  color: var(--color-muted);
+  margin: 0;
+}
+
+.t-note--error {
+  color: var(--color-above, #e4572e);
+}
+
+.t-note--scale {
+  font-size: 0.78rem;
+}
+
+.trows {
+  display: grid;
+  gap: 0.55rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.trow {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.trow--empty {
+  opacity: 0.6;
+}
+
+.trow__block {
+  border-top: 1px solid var(--color-border);
+  color: var(--color-primary);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  margin: 0.4rem 0 0;
+  padding-top: 0.5rem;
+  text-transform: uppercase;
+}
+
+.trow__head {
+  align-items: baseline;
+  display: flex;
+  justify-content: space-between;
+}
+
+.trow__week {
+  font-weight: 700;
+}
+
+.trow__deload {
+  background: color-mix(in srgb, var(--color-accent, #f2a900) 18%, transparent);
+  border-radius: 999px;
+  color: var(--color-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.5rem;
+}
+
+.trow__none {
+  color: var(--color-muted);
+  font-size: 0.82rem;
+}
+
+.track {
+  background: var(--color-surface, #eef1f3);
+  border-radius: 999px;
+  height: 0.55rem;
+  overflow: hidden;
+}
+
+.track__bar {
+  background: var(--color-primary);
+  border-radius: 999px;
+  height: 100%;
+}
+
+.t-total {
+  margin: 0;
+}

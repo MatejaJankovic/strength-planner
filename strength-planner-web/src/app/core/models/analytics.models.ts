@@ -72,3 +72,25 @@ export interface WeeklyTonnageDto {
   isDeload: boolean;
   tonnageKg: number;
 }
+
+/** Tonaža i serije po kalendarskim nedeljama kroz sve planove i blokove, od najstarije nedelje. */
+export interface TrendDto {
+  weeks: TrendWeekDto[];
+  /** Mišići koji su trenirani u opsegu, po imenu. */
+  muscles: string[];
+}
+
+export interface TrendWeekDto {
+  /** Ponedeljak nedelje, ponoć po UTC-u. */
+  weekStart: string;
+  tonnageKg: number;
+  sets: number;
+  /** Serije koje se broje u volumen, sa istim kreditom kao ekran nedeljnog volumena. */
+  stimulativeSets: number;
+  stimulativeSetsByMuscle: Record<string, number>;
+  blockName?: string | null;
+  planName?: string | null;
+  isDeload: boolean;
+  /** Prva nedelja bloka u prikazanom opsegu. */
+  blockStarts: boolean;
+}

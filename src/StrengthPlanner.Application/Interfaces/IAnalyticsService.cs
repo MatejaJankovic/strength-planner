@@ -18,4 +18,13 @@ public interface IAnalyticsService
         Guid userId,
         Guid mesocycleId,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Tonnage and stimulative sets by calendar week across all plans and blocks.
+    /// <paramref name="weeks"/> is how many weeks back from the current one; null is all history.
+    /// </summary>
+    Task<TrendDto> GetTrendAsync(
+        Guid userId,
+        int? weeks,
+        CancellationToken cancellationToken = default);
 }
