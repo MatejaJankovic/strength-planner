@@ -137,12 +137,14 @@ public class SubjectiveFatigueServiceTests
             await db.SaveChangesAsync();
         }
 
-        await CompleteAsync(database, seed.Session, 4);
+        // Odgovor 3 (porast 0.5, pola težine) a ne 4: porast od 1.5 bi se u oba slučaja ograničio na 1, pa bi ocena bila
+        // ista i kad bi osnova bila pomerena. Sa osnovom iz drugog bloka (odgovori 1) porast bi bio 1.25, pa 0.20 a ne 0.10.
+        await CompleteAsync(database, seed.Session, 3);
 
         await using var read = database.NewContext();
         var score = (await read.TrainingWeeks.SingleAsync(week => week.Id == seed.Week)).FatigueScore!.Value;
 
-        Assert.Equal(await ScoreOfWeekThreeAsync(2, 3, 4), score);
+        Assert.Equal(await ScoreOfWeekAsync([2, 3], 3), score);
     }
 
     /// <summary>
