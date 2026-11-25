@@ -25,7 +25,8 @@ maksimuma, volumen). Vežbač koji se oseća iscrpljeno a i dalje pogađa brojev
   (`FatigueEvaluator.ConfirmedSubjectiveRise`). Nedelja bez odgovora ne potvrđuje ništa.
 - **Težina 0.20.** Ocena sada ima pet signala; odgovor nosi 0.20 (porast od jednog poena je pun signal). Ostale težine
   i pragovi nisu menjani, pa ocena više nije ograničena sa 1 nego sa **1.20**.
-- **Ekran.** Komponenta `FatigueRating` (pet polja, `role="radiogroup"`, ponovni dodir poništava izbor) iznad
+- **Ekran.** Komponenta `FatigueRating` (pet dugmadi sa brojem, `role="group"` i `aria-pressed`, ponovni dodir poništava
+  izbor; krajevi skale su napisani ispod, a izabran odgovor sa nazivom) iznad
   „Završi trening", samo dok trening traje. Tekstovi „od 1" uz ocenu na pregledu i u rezimeu su izbačeni, jer ocena
   sme da pređe 1.
 
@@ -56,14 +57,22 @@ Periodizovan blok od šest nedelja, srednji nivo (prag 0.60), udeo blokova sa de
   Cena je +2.6 do 3.1 poena lažnih rasterećenja za +14 do 17 poena uhvaćenih padova.
 - **Težina 0.20, a ne 0.25.** Rezerva nosi 0.35; 0.35 + 0.25 je tačno prag 0.60, pa bi par koji deli uzrok sam
   pokretao rasterećenje, a to je upravo ono što je runda 11 uklonila. Sa 0.20 par daje 0.55 i treći signal mora da
-  se pridruži. Test `TheReserveAndTheAnswer_CannotTriggerADeloadWithoutAThirdSignal` to drži.
+  se pridruži. **To važi za srednji nivo.** Prag naprednog je 0.50, pa tamo rezerva i potvrđen odgovor sami
+  dostižu prag (pregled #127: prva verzija ove beleške, uputstva i komentara u kodu je tvrdila da par ne može
+  sam, a test je to proveravao kroz `ShouldDeload`, koji gleda uvek 0.60). Test
+  `TheReserveAndTheAnswer_CannotTriggerADeloadWithoutAThirdSignal` drži srednji nivo, a
+  `AtTheAdvancedThreshold_TheReserveAndAConfirmedAnswerReachItAlone` naprednog, gde je to isto što rezerva i volumen
+  na MRV-u već rade (0.35 + 0.15). Cena na naprednom je u istoj tabeli simulacije.
 - **Ako odgovor loše prati stvaran umor** (`TRAG` 0.75 umesto 1.5, RHO 0.5), uhvaćeno -3% pada na 61.2% (i dalje iznad
   55.2%), -2% na MAV-u na 19.4%.
 - **Ravan blok od četiri nedelje: ništa se ne menja**, kao ni kod pada snage: druga nedelja nema prethodnu koja bi
   je potvrdila, a posle treće sledi planirani deload. Nepotvrđen odgovor bi tamo dao 7-19% lažnih rasterećenja na
   MRV-u, pa je potvrda ostala bez izuzetka.
-- **Napredni nivo (prag 0.50):** gotovo isto kao danas na MRV-u (65.7% naspram 65.0%: tamo rezerva i volumen sami
-  dostižu 0.50, što je poznato od runde 15), a -2% na MAV-u 42.5% naspram 29.6%.
+- **Napredni nivo (prag 0.50), RHO 0.5:** na MRV-u gotovo isto kao danas (65.7% naspram 65.0%: tamo rezerva i
+  volumen sami dostižu 0.50, što je poznato od runde 15); **lažno rasterećenje kod naprednog koji napreduje na MAV-u
+  1.4% → 3.5%**, a uhvaćeno -2% na MAV-u 29.6% → 42.5% i -3% na MRV-u 98.9% → 99.2%. Dakle ovde odgovor koristi
+  nešto više nego što košta, ali cena nije nula.
+- **Početnik** prag nema, pa njegov odgovor menja samo prikazanu ocenu, nikad deload.
 
 Odluka je dakle: izgraditi potvrđen signal, a u izveštaju reći da je dobit **pretpostavljena, ne izmerena**. Kad budu
 postojali stvarni odgovori, `TRAG` i `RHO` se mogu proceniti iz baze i ova tabela ponoviti.
@@ -90,7 +99,7 @@ postojali stvarni odgovori, `TRAG` i `RHO` se mogu proceniti iz baze i ova tabel
 
 ## Provera
 
-- `dotnet test`: **1669** (bilo 1634); `npm test`: **458** (bilo 450); `dotnet build`, `npm run build`, migracija
+- `dotnet test`: **1670** (bilo 1634); `npm test`: **459** (bilo 450); `dotnet build`, `npm run build`, migracija
   i `scripts/check-theme-contrast.py` (0 parova ispod praga u tamnoj temi, nijedna boja napisana u komponenti)
   prolaze. Tri stila su i dalje iznad 6 kB upozorenja kao pre grane; `workout-session.scss` je netaknut.
 - Merenje vraćanjem, jedna izmena po merenju:
@@ -117,11 +126,43 @@ postojali stvarni odgovori, `TRAG` i `RHO` se mogu proceniti iz baze i ova tabel
   - Uslov „bez rasterećenja" u upitu za odgovore je **suvišan** (merenje ga vraća bez pada testa, 0): `Rises` ionako
     gleda samo nedelje iz spiska trenažnih. Ostavljen je da upit ne čita odgovore koje ne treba, a spisak je ono što
     odlučuje (pada 1 test kad se vrati).
-- Uživo, lokalni API i dva prikaza (375 i 320 px), nalog za testiranje, tamna tema: pet polja stoje u jednom redu,
-  najmanje 58 px široka na 375 i 47 px na 320 (visina 54), bez prelivanja i bez isečenih naziva; izabran odgovor ima
-  `aria-checked`; trening završen sa izabranim odgovorom 4 u bazi ima `Status = Completed`, `PerceivedFatigue = 4`.
+- Uživo, lokalni API i dva prikaza (375 i 320 px), nalog za testiranje, tamna tema: pet dugmadi stoje u jednom redu,
+  47 px široka na 320 i 48 px visoka, bez prelivanja; krajevi skale („1 · Sveže", „5 · Iscrpljen") staju u jedan red;
+  izabran odgovor ima `aria-pressed` i ispisan naziv; trening završen sa izabranim odgovorom 4 u bazi ima
+  `Status = Completed`, `PerceivedFatigue = 4` (to je izmereno pre pregleda, na prvoj verziji kontrole; raspored
+  dugmadi je posle pregleda proveren ponovo, odgovor se šalje istim putem).
   Uticaj na ocenu nedelje nije proveren uživo (za to je potrebna cela nedelja sa tri trenutka), nego servisnim
   testovima nad pravim servisima i SQLite-om: završen poslednji trening nedelje sa odgovorom daje tačno +0.20.
+
+## Šta je pregled našao (ispravljeno)
+
+Pregled je radio agent koji samo čita; sve ispod je ponovljeno ili proverano pre ispravke.
+
+- **Na naprednom nivou rezerva i potvrđen odgovor sami dostižu prag** (greška u mojoj tvrdnji, ne u pravilu). Pisao sam
+  da par 0.35 + 0.20 = 0.55 ne može sam da pokrene rasterećenje, ali to važi samo za prag 0.60. Napredni ima 0.50, a
+  servis čita prag po nivou. Test je to „proveravao" kroz `ShouldDeload`, koji ima ugrađen prag 0.60, pa je bio zelen
+  na ulazu koji servis nikad ne koristi. Ispravljeno: komentar u domenu, uputstvo, ova beleška i beleška za tezu sada
+  kažu da to važi za srednji nivo; dodat je test sa pragom naprednog (`AtTheAdvancedThreshold_...`); i u belešku je
+  ušla kolona simulacije koju sam bio izostavio: lažno rasterećenje kod naprednog koji napreduje na MAV-u **1.4% →
+  3.5%**. Težina nije spuštena: da bi 0.35 + w bilo ispod 0.50, w bi morao biti najviše 0.14, a na naprednom nivou rezerva
+  i volumen (0.35 + 0.15) već sami dostižu prag, pa to ne bi zatvorilo ono što pregled nalazi.
+- **Zastareli opisi:** `docs/teza-uskladjivanje.md` je i dalje opisivao četiri signala, što bi tezu uskladilo sa
+  netačnim opisom; pet komentara u kodu je govorilo „0-1" ili „četiri signala". Sve ispravljeno.
+- **Radio-grupa bez radio ponašanja.** Pet zasebnih tabulatora, bez strelica, i dodir koji poništava izbor, što radio
+  dugme ne sme. Sada je grupa dugmadi sa `aria-pressed`. Pregled je pitao i da li se nazivi lome na 320 px: nazivi su
+  od 0.62rem (oko 10 px), što je samo po sebi premalo, pa su izbačeni iz dugmadi. Dugmad nose broj, a ispod stoje krajevi
+  skale i naziv izabranog odgovora.
+- **Dva slaba testa.** `ALifterWhoNeverAnswers_IsScoredAsBefore` je tvrdio samo `< 0.20`; sada tvrdi tačno 0 (sve
+  ostalo je na planu). Komentar u testu osnove je pominjao „tuđi nalog", što test nema kako da proveri: ključ bloka
+  drugog naloga se ne može zadati, pa je filter po nalogu odbrana u dubini i ne može se obarati.
+- **Početnik** nema prag, pa mu odgovor menja samo prikazanu ocenu. Uputstvo i ova beleška to sada kažu.
+- Proveravano i bez primedbe: `Rises` i `GetSubjectiveRisesAsync` (nedelje pre i do, rasterećenje, nedelje bez odgovora,
+  vlasništvo), da je odgovor u bazi pre zatvaranja nedelje, ispravka završenog treninga (ne dira odgovor, računa nedelju iz
+  upisanog), preciznost kolone za ocenu do 1.20, `JOIN` umesto `SelectMany`, migracija i snimak, i telo zahteva (prazno,
+  `{}`, `null`, 0, 6 i 3.5 daju očekivano, proveren u zasebnom Kestrel-u).
+- Ostaje poznato: telo koje nije JSON (tekst, forma) na `/complete` sada daje 415; takav klijent ne postoji. I ranija
+  rupa: `ClaimForCompletionAsync` odbija samo već završen trening, pa direktan poziv API-ja može da završi i planiran
+  ili preskočen trening (sa odgovorom ili bez); ekran to ne nudi, i nije deo ove grane.
 
 ## Šta ovo ne radi
 

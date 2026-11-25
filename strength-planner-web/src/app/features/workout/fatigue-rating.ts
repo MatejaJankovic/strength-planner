@@ -1,4 +1,4 @@
-import { Component, model } from '@angular/core';
+import { Component, computed, model } from '@angular/core';
 
 /** Odgovori na pitanje o umoru, 1 do 5. Granice prate `SubjectiveFatigue` na serveru (1 i 5). */
 export const FATIGUE_RATINGS: readonly { value: number; label: string }[] = [
@@ -18,6 +18,8 @@ let nextId = 0;
  * pa odgovor iz tog treninga mora da stigne pre toga. Ne čita se nivo odgovora nego porast nad vežbačevim
  * ranijim nedeljama, pa nema „tačnog" odgovora, i zato nema ni opisa koliko je koji „dobar". Ponovni dodir
  * izabranog odgovora ga poništava: pitanje je neobavezno, a bez poništavanja bi izbor bio nepovratan.
+ *
+ * Grupa dugmadi sa `aria-pressed`, a ne radio-grupa: radio dugme se aktiviranjem ne može poništiti (pregled #127).
  */
 @Component({
   selector: 'app-fatigue-rating',
@@ -29,6 +31,7 @@ export class FatigueRating {
   readonly value = model<number | null>(null);
 
   protected readonly ratings = FATIGUE_RATINGS;
+  protected readonly chosen = computed(() => FATIGUE_RATINGS.find((option) => option.value === this.value()) ?? null);
   protected readonly legendId = `fatigue-rating-${nextId++}`;
 
   protected choose(rating: number): void {

@@ -73,7 +73,7 @@ public class AutoDeloadDto
     /// <summary>Nedelja koja je pretvorena u deload.</summary>
     public int DeloadWeek { get; set; }
 
-    /// <summary>Ocena umora, 0 (odmoran) do 1 (svi signali na maksimumu).</summary>
+    /// <summary>Ocena umora, 0 (odmoran) do 1.20 (svih pet signala na maksimumu).</summary>
     public decimal FatigueScore { get; set; }
 
     /// <summary>

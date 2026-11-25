@@ -585,7 +585,7 @@ public sealed class DeloadService
     }
 
     /// <summary>
-    /// Skuplja četiri signala umora iz nedelje. Vraća null kada nedelja nema nijednu
+    /// Skuplja signale umora iz nedelje. Vraća null kada nedelja nema nijednu
     /// odrađenu seriju — o umoru se tada nema šta zaključiti.
     /// </summary>
     private async Task<WeeklyFatigue?> BuildWeeklyFatigueAsync(
@@ -855,7 +855,7 @@ public sealed class DeloadService
 /// <summary>Rezultat automatskog deload-a, za poruku korisniku posle treninga.</summary>
 /// <param name="TriggeredByWeek">Nedelja iz koje je umor izračunat.</param>
 /// <param name="DeloadWeek">Nedelja koja je pretvorena u deload.</param>
-/// <param name="FatigueScore">Ocena umora, 0 do 1.20 (četiri signala do 1, a odgovor vežbača do 0.20).</param>
+/// <param name="FatigueScore">Ocena umora, 0 do 1.20 (prva četiri signala do 1, a odgovor vežbača do 0.20).</param>
 /// <param name="PlannedDeloadReleasedWeek">
 /// Nedelja u kojoj je planirani deload otpao jer mezociklus nosi samo jedan; null kada
 /// planiranog deload-a nije ni bilo ili je već započet.

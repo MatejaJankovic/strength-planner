@@ -21,7 +21,7 @@ describe('FatigueRating', () => {
 
   function selected(): string[] {
     return options()
-      .filter((option) => option.getAttribute('aria-checked') === 'true')
+      .filter((option) => option.getAttribute('aria-pressed') === 'true')
       .map((option) => option.getAttribute('aria-label') ?? '');
   }
 
@@ -38,6 +38,23 @@ describe('FatigueRating', () => {
     ]);
     expect(selected()).toEqual([]);
     expect(fixture.componentInstance.value()).toBeNull();
+  });
+
+  it('izabran odgovor se ispisuje sa nazivom, a krajevi skale stoje ispod dugmadi', () => {
+    create();
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(root.textContent).toContain('1 · Sveže');
+    expect(root.textContent).toContain('5 · Iscrpljen');
+    expect(root.querySelector('.rating__chosen')).toBeNull();
+
+    options()[3].click();
+    fixture.detectChanges();
+    expect(root.querySelector('.rating__chosen')?.textContent).toContain('Izabrano: 4, Jako umoran');
+
+    options()[3].click();
+    fixture.detectChanges();
+    expect(root.querySelector('.rating__chosen')).toBeNull();
   });
 
   it('granice su 1 i 5, kao na serveru', () => {
@@ -69,7 +86,7 @@ describe('FatigueRating', () => {
   it('je grupa sa nazivom, da čitač ekrana kaže na šta se odgovara', () => {
     create();
 
-    const group = (fixture.nativeElement as HTMLElement).querySelector('[role="radiogroup"]')!;
+    const group = (fixture.nativeElement as HTMLElement).querySelector('[role="group"]')!;
     const labelId = group.getAttribute('aria-labelledby')!;
 
     expect((fixture.nativeElement as HTMLElement).querySelector(`#${labelId}`)?.textContent).toContain(

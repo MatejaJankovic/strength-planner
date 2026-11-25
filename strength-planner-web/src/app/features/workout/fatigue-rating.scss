@@ -24,7 +24,8 @@
   margin-left: 0.35rem;
 }
 
-// Pet jednakih polja u jednom redu: na 320 px je to oko 55 px po polju, dovoljno za dodir.
+// Pet jednakih polja u jednom redu, samo sa brojem: nazivi su ispod, jer na 320 px polje ima oko 47 px, premalo za
+// „Iscrpljen" čitljivim slovima.
 .rating__options {
   display: grid;
   gap: 0.35rem;
@@ -32,17 +33,15 @@
 }
 
 .rating__option {
-  align-items: center;
   background: none;
   border: 1px solid var(--color-border);
   border-radius: 0.5rem;
   color: var(--color-ink);
   cursor: pointer;
-  display: grid;
-  gap: 0.1rem;
-  justify-items: center;
-  min-height: 52px;
-  padding: 0.35rem 0.15rem;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 800;
+  min-height: 48px;
 }
 
 .rating__option--on {
@@ -51,19 +50,19 @@
   color: var(--color-on-primary);
 }
 
-.rating__number {
-  font-family: var(--font-display);
-  font-size: 1.1rem;
-  font-weight: 800;
-  line-height: 1;
+.rating__scale {
+  color: var(--color-muted);
+  display: flex;
+  font-size: 0.78rem;
+  font-weight: 600;
+  justify-content: space-between;
+  margin: 0;
 }
 
-.rating__label {
-  font-size: 0.62rem;
+.rating__chosen {
+  font-size: 0.86rem;
   font-weight: 700;
-  line-height: 1.1;
-  overflow-wrap: anywhere;
-  text-align: center;
+  margin: 0;
 }
 
 .rating__hint {

@@ -30,10 +30,14 @@ public sealed record RirSample(WorkingSet Set, int RepRangeMin, int TargetRir, d
 ///
 /// The fifth, the lifter's own answer to how tired they are
 /// (<see cref="SubjectiveFatigue"/>), carries 0.20 and not 0.25 on purpose: with the reserve signal's 0.35
-/// that would reach the threshold exactly, and the two share a cause (a bad day lowers both). At 0.20 the
-/// pair cannot cross it alone, and a third signal has to join. The weights now sum to 1.20, so the score
-/// is no longer bounded by 1; the existing weights and thresholds were not rescaled, because every
-/// earlier measurement of them (<c>docs/simulations</c>) rests on them.
+/// that would reach the intermediate threshold (0.60) exactly, and the two share a cause (a bad day lowers
+/// both). At 0.20 the pair stays at 0.55 and a third signal has to join. That holds for the intermediate level
+/// only. The advanced threshold is 0.50, where the reserve with a confirmed answer reaches it alone, as the
+/// reserve with volume (0.35 + 0.15) already did; what keeps the pair rare there is the confirmation (the answer
+/// has to rise two weeks running). The simulation counts the cost: false deloads of a progressing advanced
+/// lifter at MAV go from 1.4% to 3.5%. The weights now sum to 1.20, so the score is no longer bounded by 1; the
+/// existing weights and thresholds were not rescaled, because every earlier measurement of them
+/// (<c>docs/simulations</c>) rests on them.
 ///
 /// For that safeguard to mean anything the signals have to be independent, which is why
 /// the RIR signal is measured only over sets the lifter completed. A set taken to

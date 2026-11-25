@@ -38,9 +38,9 @@ public class SubjectiveFatigueServiceTests
     [Fact]
     public async Task ALifterWhoNeverAnswers_IsScoredAsBefore()
     {
-        var score = await ScoreOfWeekThreeAsync(null, null, null);
-
-        Assert.True(score < 0.20m);
+        // Sve ostalo je na planu (rezerva na cilju, bez pada snage, volumen ispod praga), pa je ocena bez odgovora
+        // tačno nula: ono što je bila pre signala.
+        Assert.Equal(0m, await ScoreOfWeekThreeAsync(null, null, null));
     }
 
     /// <summary>
@@ -98,7 +98,8 @@ public class SubjectiveFatigueServiceTests
     }
 
     /// <summary>
-    /// Osnova su ranije nedelje istog bloka: odgovori iz tuđeg bloka (ili tuđeg naloga) ne smeju da je pomere.
+    /// Osnova su ranije nedelje istog bloka: odgovori iz drugog bloka istog vežbača ne smeju da je pomere. Filter po
+    /// nalogu u upitu je odbrana u dubini i ne može se obarati ovde: ključ bloka drugog naloga se ne može zadati.
     /// </summary>
     [Fact]
     public async Task TheBaseline_IsReadFromTheSameBlockOnly()

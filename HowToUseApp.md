@@ -1051,9 +1051,13 @@ tvojih ranijih nedelja u istom bloku (nedelje rasterećenja se ne broje, jer se 
 „tačnog" odgovora, a ko uvek kaže 4 nema porast. Prva nedelja nema sa čim da se poredi. Porast od jednog
 poena daje signalu punu težinu (0.20), ali samo kad je i **prethodna nedelja** porasla za bar pola
 poena: jedan slab dan spušta snagu i rezervu a diže i odgovor, pa bi jedna loša nedelja bila izbrojana tri
-puta. Težina je 0.20, a ne 0.25, jer bi uz rezervu (0.35) 0.25 dalo tačno prag 0.60 — par koji deli uzrok ne
-sme sam da pokrene rasterećenje, treći signal mora da se pridruži. Zato odgovor **sam nikad** ne pokreće
-deload, a ko ne odgovara dobija ocenu kao i pre. Ocena zato sada može da pređe 1 (najviše 1.20).
+puta. Težina je 0.20, a ne 0.25, jer bi uz rezervu (0.35) 0.25 dalo tačno prag 0.60 srednjeg nivoa — par koji
+deli uzrok tamo ne sme sam da pokrene rasterećenje (0.55), treći signal mora da se pridruži. **Za naprednog je
+prag 0.50**, pa tamo rezerva i potvrđen odgovor jesu dovoljni, kao što su to već bili rezerva i volumen na MRV-u
+(0.50); potvrda (dve nedelje zaredom) je ono što taj par čini retkim, a simulacija daje cenu: lažno
+rasterećenje kod naprednog koji napreduje na MAV-u 1.4% → 3.5%. Odgovor **sam, bez drugog signala**, nikad ne
+pokreće deload. Početnik prag nema, pa njegov odgovor menja samo prikazanu ocenu. Ko ne odgovara dobija ocenu
+kao i pre. Ocena zato sada može da pređe 1 (najviše 1.20).
 
 U ravnom bloku od četiri nedelje odgovor, kao ni pad snage, ne može da povuče rasterećenje: druga nedelja nema
 prethodnu koja bi je potvrdila, a posle treće ionako sledi planirano. U periodizovanom bloku od šest nedelja

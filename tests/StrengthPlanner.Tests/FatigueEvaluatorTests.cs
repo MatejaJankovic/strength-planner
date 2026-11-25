@@ -114,9 +114,9 @@ public class FatigueEvaluatorTests
     }
 
     /// <summary>
-    /// Rezerva i odgovor imaju isti uzrok (slab dan spušta obe), pa im težine ne smeju da daju prag same:
-    /// 0.35 + 0.20 = 0.55, ispod 0.60. Sa 0.25 bi par bio tačno na pragu, a to je „dva signala" koja su jedan.
-    /// Treći signal ih dopunjuje.
+    /// Rezerva i odgovor imaju isti uzrok (slab dan spušta obe), pa im težine ne smeju da daju prag srednjeg
+    /// nivoa same: 0.35 + 0.20 = 0.55, ispod 0.60. Sa 0.25 bi par bio tačno na pragu, a to je „dva signala" koja
+    /// su jedan. Treći signal ih dopunjuje. Za naprednog (prag 0.50) ovo ne važi, vidi test ispod.
     /// </summary>
     [Fact]
     public void TheReserveAndTheAnswer_CannotTriggerADeloadWithoutAThirdSignal()
@@ -129,6 +129,25 @@ public class FatigueEvaluatorTests
         var withVolume = Hypertrophy(rirDeviation: -1m, volumeShare: 1m, subjectiveRise: 2m, previousSubjectiveRise: 2m);
 
         Assert.True(FatigueEvaluator.ShouldDeload(withVolume));
+    }
+
+    /// <summary>
+    /// Na naprednom nivou (prag 0.50) rezerva i potvrđen odgovor sami dostižu prag (0.55), kao što su ga već
+    /// dostizale rezerva i volumen na MRV-u (0.50). Pregled #127: tvrdnja da par ne može sam važi samo za srednji
+    /// nivo, a test kroz `ShouldDeload` gleda uvek prag 0.60. Ovo je prag koji servis zaista koristi.
+    /// </summary>
+    [Fact]
+    public void AtTheAdvancedThreshold_TheReserveAndAConfirmedAnswerReachItAlone()
+    {
+        var pair = Hypertrophy(rirDeviation: -1m, subjectiveRise: 1m, previousSubjectiveRise: 1m);
+        var advanced = StrengthPlanner.Domain.Algorithms.ExperienceProgramming.DeloadThreshold(
+            StrengthPlanner.Domain.Enums.ExperienceLevel.Advanced);
+        var intermediate = StrengthPlanner.Domain.Algorithms.ExperienceProgramming.DeloadThreshold(
+            StrengthPlanner.Domain.Enums.ExperienceLevel.Intermediate);
+
+        Assert.Equal(0.55m, FatigueEvaluator.Score(pair));
+        Assert.True(FatigueEvaluator.Score(pair) >= advanced);
+        Assert.True(FatigueEvaluator.Score(pair) < intermediate);
     }
 
     [Fact]

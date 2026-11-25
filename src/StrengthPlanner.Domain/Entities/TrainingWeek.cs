@@ -17,7 +17,7 @@ public class TrainingWeek
     // Deload koji nije bio u planu nego ga je uvela procena umora iz prethodne nedelje.
     public bool IsAutoDeload { get; set; }
 
-    // Ocena umora izračunata IZ ove nedelje (0-1). Null dok nedelja nije završena.
+    // Ocena umora izračunata IZ ove nedelje (0 do 1.20). Null dok nedelja nije završena.
     public decimal? FatigueScore { get; set; }
 
     // Kada su MEV/MRV granice pomerene na osnovu ove nedelje. Null znači "još nije";
