@@ -18,6 +18,9 @@ namespace StrengthPlanner.Infrastructure.Persistence.Migrations
     /// lifter's own exercise trains cannot be read from the row, and the app has no way to edit an exercise's muscles.
     /// "Upper Back" is chosen because rows are by far the commonest custom back exercise; a lifter who wants the lats
     /// recreates the exercise.</item>
+    /// <item>What each completed week moved "Back" by (<c>VolumeLandmarkChanges</c>) is translated the same way, half
+    /// of each delta per head, rounded up like the landmarks. It is the only other table that references a muscle group with a cascade, and without
+    /// it a workout corrected afterwards would be counted twice (found in review of the pull request).</item>
     /// <item>System exercises lose their "Back" rows with the group, and the seeder's reconciliation writes the head
     /// contributions from the catalogue on the next start, as it does for every catalogue change.</item>
     /// </list>
@@ -77,7 +80,29 @@ namespace StrengthPlanner.Infrastructure.Persistence.Migrations
                       WHERE existing."ExerciseId" = em."ExerciseId" AND existing."MuscleGroupId" = upper_back."Id");
                 """);
 
-            // Cascades to its seed landmark, its learned landmarks and every exercise row still pointing at it.
+            // What each completed week moved "Back" by is translated the same way as the landmarks, one row per head and
+            // week: without it a workout corrected after this migration would find nothing to take back for the heads
+            // (VolumeLandmarkService.UndoWeekAsync) and its week would be counted a second time on landmarks that
+            // already contain it. Rounded up, because that is what the landmarks above do: "5 + drift / 2" rounds half
+            // up, so a head's drift is the aggregate's halved and rounded up (+1 stays +1, -1 becomes 0). A week whose
+            // move comes to nothing on the heads gets no row, as a week that moved nothing never has one.
+            migrationBuilder.Sql(
+                """
+                INSERT INTO "VolumeLandmarkChanges" ("Id", "TrainingWeekId", "MuscleGroupId", "MevDelta", "MavDelta", "MrvDelta")
+                SELECT gen_random_uuid(), c."TrainingWeekId", head."Id",
+                       CEIL(c."MevDelta" / 2.0)::int, CEIL(c."MavDelta" / 2.0)::int, CEIL(c."MrvDelta" / 2.0)::int
+                FROM "VolumeLandmarkChanges" AS c
+                JOIN "MuscleGroups" AS back ON back."Id" = c."MuscleGroupId" AND back."Name" = 'Back'
+                CROSS JOIN "MuscleGroups" AS head
+                WHERE head."Name" IN ('Lats', 'Upper Back')
+                  AND (CEIL(c."MevDelta" / 2.0) <> 0 OR CEIL(c."MavDelta" / 2.0) <> 0 OR CEIL(c."MrvDelta" / 2.0) <> 0)
+                  AND NOT EXISTS (
+                      SELECT 1 FROM "VolumeLandmarkChanges" AS existing
+                      WHERE existing."TrainingWeekId" = c."TrainingWeekId" AND existing."MuscleGroupId" = head."Id");
+                """);
+
+            // Cascades to its seed landmark, its learned landmarks, its weekly changes (translated above) and every
+            // exercise row still pointing at it. Four tables reference a muscle group; this covers all of them.
             migrationBuilder.Sql(
                 """
                 DELETE FROM "MuscleGroups" WHERE "Name" = 'Back';
@@ -138,6 +163,21 @@ namespace StrengthPlanner.Infrastructure.Persistence.Migrations
                     SELECT 1 FROM "ExerciseMuscles" AS existing
                     WHERE existing."ExerciseId" = em."ExerciseId" AND existing."MuscleGroupId" = back."Id")
                 GROUP BY em."ExerciseId", back."Id";
+                """);
+
+            // The weekly changes of both heads fold into one row per week, as the landmarks do: the sum of the heads.
+            migrationBuilder.Sql(
+                """
+                INSERT INTO "VolumeLandmarkChanges" ("Id", "TrainingWeekId", "MuscleGroupId", "MevDelta", "MavDelta", "MrvDelta")
+                SELECT gen_random_uuid(), c."TrainingWeekId", back."Id",
+                       SUM(c."MevDelta")::int, SUM(c."MavDelta")::int, SUM(c."MrvDelta")::int
+                FROM "VolumeLandmarkChanges" AS c
+                JOIN "MuscleGroups" AS head ON head."Id" = c."MuscleGroupId" AND head."Name" IN ('Lats', 'Upper Back')
+                JOIN "MuscleGroups" AS back ON back."Name" = 'Back'
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM "VolumeLandmarkChanges" AS existing
+                    WHERE existing."TrainingWeekId" = c."TrainingWeekId" AND existing."MuscleGroupId" = back."Id")
+                GROUP BY c."TrainingWeekId", back."Id";
                 """);
 
             migrationBuilder.Sql(

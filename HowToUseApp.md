@@ -528,7 +528,8 @@ Grešku ispravljaš ikonicama pored serije: **olovka** za izmenu, **kanta** za b
 > **Zamena vežbe.** Ako ti neka vežba ne odgovara (sprava je zauzeta, boli te zglob, nemaš
 > šipku), dugme **„Zameni vežbu"** na kartici nudi vežbe koje blok može da propiše isto: isti
 > glavni mišić, isti tip (složena ili izolaciona) i, za složenu, isti opseg (vežba na jednoj nozi
-> ne zamenjuje čučanj u bloku snage). Vežba se menja u tom treningu i u svakom sledećem treningu
+> ne zamenjuje čučanj u bloku snage). Latovi i gornja leđa su dva različita glavna mišića: zgib se
+> menja pulldown-om, a veslanje veslanjem, ali ne jedno drugim. Vežba se menja u tom treningu i u svakom sledećem treningu
 > istog dana **do kraja bloka**. Opseg, rezerva i serije ostaju, a težina se računa iz maksimuma
 > nove vežbe; ako maksimuma nema, unesi ga ili prvi put upiši težinu po osećaju. Odrađeni,
 > započeti i preskočeni treninzi ostaju sa vežbom koju su imali (preskočen trening je zadržava i
@@ -729,10 +730,11 @@ nema ni vežbu za listove, a početnik na Push/Pull/Legs nema vežbu za trbuh.
 **Leđa se prate po glavama**: latovi (vertikalno povlačenje: zgib, Lat Pulldown, Straight-Arm
 Pulldown) i gornja leđa (veslanje; mrtvo dizanje, rumunsko i Face Pull daju pola serije). Svaka
 glava broji samo svoj direktan rad: veslanje ne puni latove, a zgib ne puni gornja leđa. Za srednji
-nivo je MEV 5, MAV 9 i MRV 15. **MRV ima izvor, a MEV i MAV nemaju.** RP navodi da je pri četiri
-treninga leđa tipičan MRV oko 30 serija, otprilike pola vertikalnog povlačenja i pola veslanja
-(rpstrength.com, članak o leđima), a posebne granice za latove i gornja leđa ne daje; MEV i MAV
-su zato polovina nekadašnje zbirne grupe (10 i 18), što je odluka o modelu, ne podatak. Opružači
+nivo je MEV 5, MAV 9 i MRV 15. **MRV ima izvor, a MEV i MAV nemaju.** Prema sažetku članka o
+leđima na rpstrength.com (ceo tekst nije čitan), pri četiri treninga leđa tipičan MRV je oko 30
+serija, otprilike pola vertikalnog povlačenja i pola veslanja, a posebne granice za latove i gornja
+leđa ne daje; MEV i MAV su zato polovina nekadašnje zbirne grupe (10 i 18), što je odluka o modelu,
+ne podatak. Opružači
 nisu zasebna glava: za njihove granice nema izvora, a mrtvo dizanje ih već broji (pola serije) u
 gornjim leđima. Naučene granice leđa prešle su na obe glave kao polovina pomaka od podrazumevane
 vrednosti.

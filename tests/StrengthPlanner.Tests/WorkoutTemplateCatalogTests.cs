@@ -443,14 +443,6 @@ public class WorkoutTemplateCatalogTests
     }
 
     /// <summary>
-    /// MEV provera gleda samo grupe koje šablon zaista pogađa, pa bi šablon mogao da je
-    /// zaobiđe tako što grupu izostavi u celosti. Ovaj test zatvara tu rupu: velike
-    /// grupe mora da pogodi svaki šablon, na svakom nivou.
-    ///
-    /// Listovi i trbuh nisu na spisku namerno — u trodnevnom rasporedu nema mesta za
-    /// njih a da veće grupe ne padnu ispod MEV, i njihov izostanak je manja šteta.
-    /// </summary>
-    /// <summary>
     /// Šabloni na kojima napredni, sa jednom složenom vežbom po treningu, ne dobija nijednu vežbu za jednu glavu
     /// leđa. Spisak je tačan: izuzetak koji prestane da važi mora da se skine.
     /// </summary>
@@ -462,6 +454,14 @@ public class WorkoutTemplateCatalogTests
         "legs-specialization/Upper Back",
     ];
 
+    /// <summary>
+    /// MEV provera gleda samo grupe koje šablon zaista pogađa, pa bi šablon mogao da je
+    /// zaobiđe tako što grupu izostavi u celosti. Ovaj test zatvara tu rupu: velike
+    /// grupe mora da pogodi svaki šablon, na svakom nivou.
+    ///
+    /// Listovi i trbuh nisu na spisku namerno — u trodnevnom rasporedu nema mesta za
+    /// njih a da veće grupe ne padnu ispod MEV, i njihov izostanak je manja šteta.
+    /// </summary>
     [Fact]
     public void EveryTemplate_TrainsEveryMajorMuscleGroup()
     {

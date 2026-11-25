@@ -65,7 +65,7 @@ Napravljene su dve izmene:
 
 | Šablon | Izmena | Efekat |
 |---|---|---|
-| Push/Pull/Legs | Pull: Lat Pulldown umesto Seated Cable Row-a | latovi ispod MEV-a 62 → 49 parova |
+| Push/Pull/Legs | Pull: Lat Pulldown umesto Seated Cable Row-a | latovi ispod MEV-a 62 → 49 parova (menja samo početnika: samo on ima treću složenu vežbu na tom danu, srednji i napredni je ne dobijaju; izmereno složenim danom po nivou) |
 | Legs Specialization | Upper B: Seated Cable Row umetnut drugi (posle zgiba) | gornja leđa ispod MEV-a 62 → 18 |
 
 Probane i odbačene, svaka sa razlogom iz merenja:
@@ -129,15 +129,32 @@ vežbi (sve „RLS Machine Row", dakle veslanje).
 - **Lična vežba sa „Back" prelazi na gornja leđa**, sa istim brojem. Koju glavu lična vežba radi, iz reda se ne vidi, a
   aplikacija nema izmenu mišića postojeće vežbe; veslanje je daleko najčešća lična vežba za leđa, pa su gornja leđa
   izabrana. Ko želi latove, pravi vežbu ponovo.
-- „Back" se briše. Kaskada nosi njen seed, naučene granice i redove sistemskih vežbi, a usklađivanje kataloga pri startu
-  (`ReconcileSystemExercisesAsync`) upisuje doprinose glava.
-- `Down` vraća sve u jednu grupu, ali **nije tačan**: pomak od jednog koraka se polovljenjem zaokruži na nulu, pa
-  povratak ne vraća ono što je bilo (10/17/24 → 10/18/25). Proveren je red po red: 25 naučenih granica postaje 25 + 25,
-  6 ličnih vežbi prelazi, 13 grupa; Down pa Up vraća isto stanje.
+- **Pomaci po nedelji se prevode kao i granice.** Tabela `VolumeLandmarkChanges` (koliko je koja završena nedelja
+  pomerila granice jednog mišića) je četvrta tabela sa stranim ključem na mišićnu grupu, i kaskada „Back"-a ju je
+  brisala. Pregled PR-a je to našao: ispravljen trening iz te nedelje ne bi našao šta da uzme nazad za glave
+  (`VolumeLandmarkService.UndoWeekAsync` se vraća bez izmene kad nema redova) i nedelja bi se ponovo obračunala povrh
+  granica koje je već sadržale. Sada svaka glava dobija polovinu pomaka, **zaokruženu naviše** kao i same granice, a
+  nedelja čiji pomak na glavama ispadne nula nema red, kao ni nedelja koja ništa nije pomerila. U razvojnoj bazi tabela
+  je u trenutku merenja bila prazna, pa na stvarnim podacima ovo nije moglo da se vidi; proveren je na kopiji baze sa
+  izmišljenim redovima (niže).
+- „Back" se briše. Kaskada nosi njen seed, naučene granice, pomake po nedelji (prevedene gore) i redove sistemskih
+  vežbi, a usklađivanje kataloga pri startu (`ReconcileSystemExercisesAsync`) upisuje doprinose glava.
+- **Zaokruživanje je naviše, ne „polovljenjem na nulu".** `ROUND(5 + pomak / 2.0)` zaokružuje polovinu naviše, pa je
+  pomak glave pomak zbirne grupe podeljen sa dva i zaokružen naviše: +1 → +1, −1 → 0, +3 → +2, −3 → −1, a parni pomaci
+  su tačni. (Prva verzija ove beleške je tvrdila da se pomak od jednog koraka „zaokruži na nulu"; to važi samo za −1.)
+- `Down` vraća sve u jednu grupu (pomaci glava se sabiraju, i po nedelji i u granicama), ali **nije tačan**: neparan
+  pomak se vraća za jedan veći (+1 → +2, −1 → 0, +3 → +4, −3 → −2), a parni tačno (+2 → +2, −2 → −2).
 
 Provera posle primene: 25 + 25 naučenih granica, MEV 4 do 6, MAV 7 do 11, MRV 12 do 18; 6 redova ličnih vežbi na gornjim
 leđima; 13 mišićnih grupa. Pravi servis nad PostgreSQL-om nije pokretan iz testova (testovi rade nad SQLite-om), pa
 migraciju brani samo ova provera i testovi koji drže seed-ove (`TheHeadsHaveTheSeedsTheMigrationAssumes`).
+
+Posle pregleda proverena je i na **kopiji razvojne baze** (`CREATE DATABASE ... TEMPLATE`, razvojna baza nije dirana):
+Down, pa u „Back" upisano šest naučenih granica sa pomacima +1, −1, +3, −3, +2, −2 i četiri reda pomaka po nedelji
+(+1/0/−1, +2/+1/0, −1/−1/+3, −1/−1/−1), pa Up, pa opet Down. Up daje glave 6/10/16, 5/9/15, 7/11/17, 4/8/14, 6/10/16,
+4/8/14 (obe isto) i po tri reda pomaka po glavi: 1/0/0, 1/1/0, 0/0/2 (četvrti red je ispao jer na glavama iznosi nula).
+Down vraća granice 12/20/27, 10/18/25, 14/22/29, 8/16/23, 12/20/27, 8/16/23 i tri reda pomaka: 2/0/0, 2/2/0, 0/0/4.
+Kaskada bez prevoda izmerena je odvojeno, na novoj kopiji: tri reda pomaka za „Back", `DELETE` grupe, nula redova.
 
 ## Provera
 
