@@ -110,6 +110,9 @@ public class TrainingHistoryTests
     /// <summary>
     /// A page number so large that (page - 1) x pageSize overflows an int used to wrap to a
     /// negative offset, and a negative Skip returns the first page instead of an empty one.
+    /// The page is chosen so that the product wraps to a NEGATIVE int: 42,949,673 x 50 is
+    /// 2,147,483,650, just over int.MaxValue. A larger page such as 100,000,000 wraps to a
+    /// positive number and would pass for the old code too.
     /// </summary>
     [Fact]
     public async Task AHugePage_IsPastTheEnd_NotTheFirstPage()
@@ -117,7 +120,7 @@ public class TrainingHistoryTests
         using var database = new SqliteDatabase();
         await SeedAsync(database);
 
-        var history = await GetAsync(database, page: 100_000_000, pageSize: 50);
+        var history = await GetAsync(database, page: 42_949_674, pageSize: 50);
 
         Assert.Empty(history.Items);
         Assert.Equal(5, history.Total);

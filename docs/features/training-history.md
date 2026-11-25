@@ -50,6 +50,10 @@ koji mu je plan dao, pa nedelja bloka u kojoj je bio. Poslednje dve su pretposta
   Sada serija dodata pri ispravci dobija vreme poslednje serije tog treninga. Test je prvo pao
   jer je moja postavka imala sledeći trening iste nedelje već završen, pa je prozor ispravke bio
   zatvoren: ispravka je u pravu, a test je morao da ga otvori.
+- **Moj prvi test za prelivanje je prošao i za staru logiku.** Koristio sam stranu od 100 miliona;
+  uz 50 po strani proizvod preliva u *pozitivan* int (705 miliona), pa je prazna strana izlazila i
+  bez ispravke. Negativan ofset nastaje tek oko 42,9 miliona (42 949 673 × 50 je 2 147 483 650).
+  Test koristi baš tu stranu i sada pada za staro računanje (1 test).
 - **Veliki broj strane je prelivao ofset** (`(page - 1) * pageSize` u `int`): od oko 43 miliona uz
   50 po strani vraćao je prvu stranicu umesto prazne. Ofset je sada `long`.
 - Izjednačenje datuma, nedelje i dana je davalo nestabilan poredak između stranica; dodat je
