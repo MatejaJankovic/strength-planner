@@ -42,11 +42,13 @@ export class ProfileHome {
   /**
    * Dugmad na dashboardu.
    *
-   * Tri, kao što je i traženo: statistika, vežbe i šabloni. Stoje kao podaci, a ne kao
-   * prepisani blokovi u šablonu, pa dodavanje četvrtog ne dira raspored.
+   * Prvo tri, kao što je i traženo: statistika, vežbe i šabloni; istorija treninga je dodata
+   * kao četvrta. Stoje kao podaci, a ne kao prepisani blokovi u šablonu, pa dodavanje nove
+   * ne dira raspored.
    */
   protected readonly dashboard = [
     { label: 'Statistika', icon: 'monitoring', route: '/analytics' },
+    { label: 'Istorija', icon: 'history', route: '/history' },
     { label: 'Vežbe', icon: 'fitness_center', route: '/exercises' },
     { label: 'Šabloni', icon: 'assignment', route: '/templates' },
   ];

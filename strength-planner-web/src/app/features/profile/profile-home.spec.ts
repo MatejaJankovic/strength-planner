@@ -135,7 +135,7 @@ describe('ProfileHome — pregled profila', () => {
     expect(component().avatarUrl()).toMatch(/^blob:/);
   });
 
-  it('dashboard vodi na statistiku, vežbe i šablone', () => {
+  it('dashboard vodi na statistiku, istoriju, vežbe i šablone', () => {
     load({ id: 'u1', email: 'ja@primer.com', displayName: 'Mateja', age: 27, bodyweightKg: 82.5 });
     fixture.detectChanges();
 
@@ -146,9 +146,10 @@ describe('ProfileHome — pregled profila', () => {
     // Ikonica je takođe tekst unutar plocice, pa se poredi samo naziv iz <span>.
     const labels = tiles.map((tile) => tile.querySelector('span')?.textContent?.trim());
 
-    expect(labels).toEqual(['Statistika', 'Vežbe', 'Šabloni']);
+    expect(labels).toEqual(['Statistika', 'Istorija', 'Vežbe', 'Šabloni']);
     expect(tiles.map((tile) => tile.getAttribute('href'))).toEqual([
       '/analytics',
+      '/history',
       '/exercises',
       '/templates',
     ]);

@@ -1,0 +1,90 @@
+<app-subscreen-header title="Istorija" backLabel="Nazad na profil" (back)="back()" />
+
+@if (loading()) {
+  <app-loading label="Učitavam istoriju…" />
+} @else if (error(); as message) {
+  <section class="card">
+    <p class="alert" role="alert">
+      <mat-icon aria-hidden="true">cloud_off</mat-icon>
+      <span>{{ message }}</span>
+    </p>
+    <button class="btn" type="button" (click)="load()">
+      <mat-icon aria-hidden="true">refresh</mat-icon>
+      Pokušaj ponovo
+    </button>
+  </section>
+} @else if (months().length === 0) {
+  <app-empty-state
+    icon="history"
+    title="Još nema odrađenih treninga"
+    message="Kad završiš prvi trening, pojaviće se ovde, zajedno sa svim kasnijim."
+  />
+} @else {
+  <p class="summary">{{ count(total()) }} kroz sve planove</p>
+
+  @for (month of months(); track month.heading) {
+    <section class="month">
+      <h2 class="month__title">{{ month.heading }}</h2>
+
+      <ul class="list">
+        @for (entry of month.entries; track entry.sessionId) {
+          <li>
+            <button class="entry" type="button" (click)="open(entry)">
+              <mat-icon class="entry__icon" [class.entry__icon--skipped]="entry.status === 'Skipped'" aria-hidden="true">
+                {{ entry.status === 'Skipped' ? 'skip_next' : 'check_circle' }}
+              </mat-icon>
+
+              <span class="entry__body">
+                <span class="entry__head">
+                  <span class="entry__name">{{ entry.dayLabel }}</span>
+                  @if (when(entry); as label) {
+                    <span class="entry__when">{{ label }}</span>
+                  }
+                </span>
+                <span class="entry__sub">
+                  {{ entry.planName }} &middot; nedelja {{ entry.weekNumber }}
+                  @if (entry.isDeload) {
+                    &middot; deload
+                  }
+                </span>
+
+                @if (entry.status === 'Skipped') {
+                  <span class="entry__stats entry__stats--muted">Preskočen</span>
+                } @else {
+                  <span class="entry__stats">
+                    <span class="numeric">{{ entry.setCount }} serija</span>
+                    <span class="numeric">{{ tonnage(entry.tonnageKg) }}</span>
+                  </span>
+                  @if (entry.exercises.length > 0) {
+                    <span class="entry__exercises">{{ exercises(entry.exercises) }}</span>
+                  }
+                }
+              </span>
+
+              <mat-icon class="entry__chevron" aria-hidden="true">chevron_right</mat-icon>
+            </button>
+          </li>
+        }
+      </ul>
+    </section>
+  }
+
+  @if (loadMoreError(); as message) {
+    <p class="alert" role="alert">
+      <mat-icon aria-hidden="true">cloud_off</mat-icon>
+      <span>{{ message }}</span>
+    </p>
+  }
+
+  @if (hasMore()) {
+    <button
+      class="btn btn--more"
+      type="button"
+      [disabled]="loadingMore()"
+      [attr.aria-busy]="loadingMore()"
+      (click)="loadMore()"
+    >
+      {{ loadingMore() ? 'Učitavam…' : loadMoreError() ? 'Pokušaj ponovo' : 'Učitaj još' }}
+    </button>
+  }
+}
