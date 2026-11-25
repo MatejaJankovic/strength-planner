@@ -1092,6 +1092,6 @@ Process notes:
   script normalised line endings and wrote them back as found.
 
 Deliberately **out of scope**: i18n, undulating periodization,
-PWA/offline, changing an already-generated block's periodization model, email delivery (so no
+offline use (installing to the home screen exists since round 19), changing an already-generated block's periodization model, email delivery (so no
 password reset and no email confirmation), and a dark theme (the reference screenshots for
 round 8 were dark; only their structure was taken).

@@ -27,6 +27,10 @@
     </div>
   </header>
 
+  @if (screenStaysOn()) {
+    <p class="card__hint">Ekran ostaje upaljen dok traje trening.</p>
+  }
+
   @if (summary(); as result) {
     <app-completion-summary [outcome]="result" [title]="summaryTitle()" />
     @for (text of revisionTexts(); track text) {

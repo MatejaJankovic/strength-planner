@@ -547,6 +547,17 @@ Grešku ispravljaš ikonicama pored serije: **olovka** za izmenu, **kanta** za b
 > lakše, pa sledeći trening dobija veće opterećenje. Uz to serija sa RIR 4 u stimulativni
 > volumen ulazi upola, a sa RIR 5 ne ulazi uopšte.
 
+**Ekran se ne gasi dok trening traje.** Na ekranu treninga koji je u toku aplikacija traži od telefona da ne gasi
+ekran, pa ga ne moraš otključavati pred svaku seriju; kad to uspe, piše na vrhu („Ekran ostaje upaljen dok traje
+trening"). Prestaje kad završiš trening, izađeš sa ekrana, ili 15 minuta ne dodirneš ništa (da zaboravljen
+trening ne troši bateriju). Radi samo preko HTTPS-a, a pregledač ga može da odbije (npr. štednja baterije):
+tada se ekran gasi kao i obično, a trening radi bez greške. Na nekim verzijama iPhone-a zaključavanje u aplikaciji
+sa početnog ekrana ne radi iako ga pregledač prihvata; oznaka na vrhu tada piše nešto što nije tačno.
+
+**Instalacija na početni ekran.** Kad se aplikacija otvori preko HTTPS-a (na računaru u kući: `scripts/local-https.sh`,
+vidi README), u pregledaču izaberi „Dodaj na početni ekran" (Chrome: meni sa tri tačke; Safari: dugme za deljenje).
+Ikona otvara aplikaciju bez trake pregledača. Aplikacija i dalje traži vezu sa serverom.
+
 ### 3. Završi trening
 
 Dugme **„Završi trening"** na dnu. Tek tada se sve obračunava. Završen trening se ne
@@ -1141,6 +1152,6 @@ Namerno je van opsega, da ne bi bilo iznenađenja:
 
 - nema slanja mejlova → nema potvrde naloga ni oporavka lozinke;
 - nema više jezika (interfejs je samo na srpskom);
-- nema offline režima ni instalacije kao aplikacije (PWA);
+- nema offline režima: instalacija na početni ekran postoji, ali aplikacija i dalje traži vezu sa serverom;
 - **ne može se promeniti periodizacija već generisanog bloka** — pravi se novi;
 - nema deljenja plana, trenera ni više korisnika na jednom nalogu;
