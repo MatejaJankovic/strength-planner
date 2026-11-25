@@ -164,7 +164,8 @@ public sealed class SessionOutcomes
                     ExerciseId = plan.ExerciseId,
                     ValueKg = bestEstimate.Value,
                     Source = OneRepMaxSource.Estimated,
-                    RecordedAt = now
+                    RecordedAt = now,
+                    WorkoutSessionId = session.Id
                 });
             }
 

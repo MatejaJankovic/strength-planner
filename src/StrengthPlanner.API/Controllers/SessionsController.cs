@@ -12,11 +12,16 @@ namespace StrengthPlanner.API.Controllers;
 public class SessionsController : AuthorizedControllerBase
 {
     private readonly ISessionService _sessionService;
+    private readonly ISessionRevisionService _revisions;
     private readonly IExerciseSubstitutionService _substitutions;
 
-    public SessionsController(ISessionService sessionService, IExerciseSubstitutionService substitutions)
+    public SessionsController(
+        ISessionService sessionService,
+        ISessionRevisionService revisions,
+        IExerciseSubstitutionService substitutions)
     {
         _sessionService = sessionService;
+        _revisions = revisions;
         _substitutions = substitutions;
     }
 
@@ -49,6 +54,20 @@ public class SessionsController : AuthorizedControllerBase
     public async Task<IActionResult> Complete(Guid id, CancellationToken cancellationToken)
     {
         var result = await _sessionService.CompleteAsync(GetUserId(), id, cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Saves the correction of a finished workout: works out the estimate, the next target and
+    /// the week's results again from the corrected sets.
+    /// </summary>
+    [HttpPost("{id:guid}/revise")]
+    [ProducesResponseType(typeof(SessionRevisionResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Revise(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await _revisions.ReviseAsync(GetUserId(), id, cancellationToken);
         return Ok(result);
     }
 

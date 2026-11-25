@@ -549,13 +549,44 @@ Grešku ispravljaš ikonicama pored serije: **olovka** za izmenu, **kanta** za b
 
 ### 3. Završi trening
 
-Dugme **„Završi trening"** na dnu. Tek tada se sve obračunava. Završen trening se ne može
-ponovo otvoriti — ostaje samo za pregled.
+Dugme **„Završi trening"** na dnu. Tek tada se sve obračunava. Završen trening se ne
+otvara ponovo, ali se pogrešna serija može ispraviti (vidi odmah ispod).
 
 Ne moraš uneti sve serije koje plan traži; sistem računa sa onim što si stvarno uneo. Vežba
 bez ijedne serije prenosi **planirano** opterećenje u narednu nedelju, ali i za nju važe
 ista pravila: deload nedelja dobija 90% tog broja, a nedelja sa drugačijim opsegom
 ponavljanja svoju težinu za taj propis.
+
+### Ispravka završenog treninga
+
+Na završenom treningu stoji dugme **„Ispravi trening"**. Ono otključava unos: serija se
+menja olovkom, briše kantom, a nova se dodaje kao i dok je trening trajao. Svaka izmena se
+upisuje odmah, ali ono što je završetak treninga izračunao — procena maksimuma, težina sledećeg
+treninga, ocena umora nedelje — ostaje kakvo je bilo dok ne klikneš **„Sačuvaj ispravku"**. Tek
+tada se sve izračunava iznova iz ispravljenih serija, a rezime se prikazuje pod naslovom
+„Ispravka sačuvana". Ako ekran zatvoriš pre toga, izmene ostaju zapisane i ekran te na to podseća. Ako ih ne sačuvaš ni
+posle toga, sistem ih sačuva sam pri sledećem startu, završetku ili preskakanju treninga u istom
+bloku: ispravka se ne gubi kad se prozor zatvori.
+
+Ispravka je moguća dok ništa nije izgrađeno na tim serijama:
+
+- **Sledeći trening istog dana mora da čeka.** Dok nije počeo i nije preskočen, ispravka je moguća.
+  Kad je počeo, njegova težina je već izračunata iz ovih serija; kad je preskočen, nedelja je
+  zatvorena bez njega. Ako ga vratiš na plan, ispravka je opet moguća.
+- **Trening iz poslednje nedelje bloka** ispravljaš dok blok ima još neodrađenih treninga. Čim se
+  poslednji odradi ili preskoči, sledeći blok se generiše iz procena i ispravka više nije moguća,
+  pa se poslednji trening bloka ne može ispraviti nikad.
+- **Ako je nedelja zatvorena, ona se računa ponovo.** Ocena umora se izračunava iznova, a granice
+  volumena uzimaju nazad ono što je ta nedelja pomerila, pa je računaju iz ispravljenih serija. Ne
+  računa se dvaput.
+- **Deload koji je već povučen ostaje.** Ako ispravljene serije ne bi dale toliki umor, sledeća
+  nedelja se ne vraća: već je prepisana, a možeš da si je pogledao. Ekran to kaže. Obrnuto, ako
+  ispravka podigne umor preko praga, deload se uvodi kao da je tako bilo od početka (ako sledeća
+  nedelja nije počela i blok ranije nije povukao deload).
+- **Trening završen pre ove mogućnosti ispravlja se samo kao istorija.** Za njega ne postoji zapis koji
+  bi vezao njegovu procenu i pomeraj granica za njega, pa se menja samo zapis serija i ono što se iz
+  njega čita (istorija, analitika). Težine sledećih treninga i ocena nedelje ostaju. Ekran to kaže, i ne
+  nudi „Sačuvaj ispravku".
 
 ---
 
@@ -991,8 +1022,9 @@ Registracija je ograničena na **5 pokušaja po satu** sa iste adrese, prijava i
 lozinke na **20 u minuti**. Sačekaj koliko poruka kaže i pokušaj ponovo.
 
 **Uneo sam pogrešnu seriju.**
-Dok trening traje — olovka za izmenu, kanta za brisanje. Kad je trening završen, više se ne
-menja; jedina opcija je brisanje celog plana, što gubi sve.
+Dok trening traje — olovka za izmenu, kanta za brisanje. Kad je trening završen, otvori ga i
+klikni **„Ispravi trening"** (vidi „Ispravka završenog treninga" u koraku 5). To radi dok sledeći
+trening istog dana nije počeo; posle toga se serije ne menjaju.
 
 **Preskočio sam trening iz sredine nedelje.**
 Treninzi se ne moraju raditi redom i sistem ne prepisuje ciljeve već odrađenim treninzima;

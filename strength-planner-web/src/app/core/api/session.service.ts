@@ -6,6 +6,7 @@ import {
   AddSetLogRequest,
   CompleteSessionResultDto,
   ExerciseAlternativeDto,
+  SessionRevisionResultDto,
   SetLogDto,
   WorkoutSessionDto,
 } from '../models/training.models';
@@ -25,6 +26,11 @@ export class SessionService {
 
   complete(id: string): Observable<CompleteSessionResultDto> {
     return this.http.post<CompleteSessionResultDto>(`${this.apiUrl}/sessions/${id}/complete`, {});
+  }
+
+  /** Čuva ispravku završenog treninga: procena, težine i ocena nedelje se računaju iznova. */
+  revise(id: string): Observable<SessionRevisionResultDto> {
+    return this.http.post<SessionRevisionResultDto>(`${this.apiUrl}/sessions/${id}/revise`, {});
   }
 
   skip(id: string): Observable<WorkoutSessionDto> {

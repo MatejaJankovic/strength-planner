@@ -185,6 +185,19 @@ public sealed class VolumeLandmarkService
                 continue;
             }
 
+            // Šta je ova nedelja pomerila, da bi se ispravkom treninga iz nje moglo vratiti
+            // (UndoWeekAsync). Beleži se ono što se stvarno desilo, posle svih ograničenja.
+            var shift = LandmarkShift.Between(current, adjusted);
+            _db.VolumeLandmarkChanges.Add(new VolumeLandmarkChange
+            {
+                Id = Guid.NewGuid(),
+                TrainingWeekId = trainingWeekId,
+                MuscleGroupId = muscleGroupId,
+                MevDelta = shift.Mev,
+                MavDelta = shift.Mav,
+                MrvDelta = shift.Mrv
+            });
+
             if (row is null)
             {
                 _db.UserVolumeLandmarks.Add(new UserVolumeLandmark
@@ -206,6 +219,73 @@ public sealed class VolumeLandmarkService
                 row.UpdatedAt = completedAt;
             }
         }
+    }
+
+    /// <summary>
+    /// Uzima nazad ono što je jedna već obračunata nedelja uradila granicama, i vraća je među
+    /// neobračunate, da se ponovo obračuna iz ispravljenih serija.
+    ///
+    /// Pomeraj nedelje je zapisan kad je obračunata (<see cref="VolumeLandmarkChange"/>);
+    /// granice same pamte samo trenutne vrednosti. Nedelje obračunate posle nje su se
+    /// oslanjale na granice koje su već sadržale njen pomeraj, pa ovo nije tačan inverz u
+    /// svakom slučaju, ali je rezultat uvek pojas koji pravila dozvoljavaju
+    /// (<see cref="VolumeAdaptation.Undo"/>). Promene ostaju u change trackeru; pozivalac ih
+    /// upisuje pre nego što nedelju ponovo obračuna.
+    /// </summary>
+    public async Task UndoWeekAsync(
+        Guid userId,
+        Guid mesocycleId,
+        Guid trainingWeekId,
+        CancellationToken cancellationToken)
+    {
+        await _db.TrainingWeeks
+            .Where(week => week.Id == trainingWeekId && week.Mesocycle.UserId == userId)
+            .ExecuteUpdateAsync(
+                setters => setters.SetProperty(week => week.VolumeAdaptedAt, (DateTime?)null),
+                cancellationToken);
+
+        var changes = await _db.VolumeLandmarkChanges
+            .Where(change => change.TrainingWeekId == trainingWeekId
+                             && change.TrainingWeek.Mesocycle.UserId == userId)
+            .ToListAsync(cancellationToken);
+
+        if (changes.Count == 0)
+        {
+            return;
+        }
+
+        var seeds = await GetScaledSeedsAsync(userId, mesocycleId, cancellationToken);
+        var personal = await _db.UserVolumeLandmarks
+            .Where(landmark => landmark.UserId == userId)
+            .ToDictionaryAsync(landmark => landmark.MuscleGroupId, cancellationToken);
+
+        foreach (var change in changes)
+        {
+            if (!personal.TryGetValue(change.MuscleGroupId, out var row)
+                || !seeds.TryGetValue(change.MuscleGroupId, out var seed))
+            {
+                continue;
+            }
+
+            var undone = VolumeAdaptation.Undo(
+                new VolumeLandmarkValues(row.Mev, row.Mav, row.Mrv),
+                seed,
+                new LandmarkShift(change.MevDelta, change.MavDelta, change.MrvDelta));
+
+            if (undone == seed)
+            {
+                // Granice su se vratile na seed: red koji bi ih samo ponavljao ne treba, i ne
+                // sme da ih predstavlja kao lične.
+                _db.UserVolumeLandmarks.Remove(row);
+                continue;
+            }
+
+            row.Mev = undone.Mev;
+            row.Mav = undone.Mav;
+            row.Mrv = undone.Mrv;
+        }
+
+        _db.VolumeLandmarkChanges.RemoveRange(changes);
     }
 
     /// <summary>
@@ -245,6 +325,13 @@ public sealed class VolumeLandmarkService
             .ToListAsync(cancellationToken);
 
         _db.UserVolumeLandmarks.RemoveRange(rows);
+
+        // Pomeraji nedelja se odnose na granice koje više ne postoje: vraćanje bi ih
+        // oduzimalo od seed vrednosti.
+        var changes = await _db.VolumeLandmarkChanges
+            .Where(change => change.TrainingWeek.Mesocycle.UserId == userId)
+            .ToListAsync(cancellationToken);
+        _db.VolumeLandmarkChanges.RemoveRange(changes);
     }
 
     /// <summary>

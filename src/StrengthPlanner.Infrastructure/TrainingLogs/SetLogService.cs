@@ -32,6 +32,7 @@ public class SetLogService : ISetLogService
                            && plan.WorkoutSession.TrainingWeek.Mesocycle.UserId == userId)
             .Select(plan => new
             {
+                SessionId = plan.WorkoutSessionId,
                 plan.WorkoutSession.Status,
                 plan.RepRangeMin,
                 plan.Exercise.BodyweightShare
@@ -43,7 +44,11 @@ public class SetLogService : ISetLogService
             throw new TrainingLogException(TrainingLogErrorType.NotFound, "Exercise plan was not found.");
         }
 
-        EnsureSessionIsEditable(planInfo.Status);
+        var correction = await EnsureSessionIsEditableAsync(
+            userId,
+            planInfo.SessionId,
+            planInfo.Status,
+            cancellationToken);
 
         var lastSetNumber = await _db.SetLogs
             .Where(set => set.ExercisePlanId == exercisePlanId)
@@ -82,6 +87,17 @@ public class SetLogService : ISetLogService
         };
 
         _db.SetLogs.Add(setLog);
+
+        // The flag goes in the same save as the set: a failure between the two would leave a
+        // changed set that is never offered for recalculation.
+        if (correction == CorrectionMode.Recalculate)
+        {
+            var session = await _db.WorkoutSessions.FirstAsync(
+                candidate => candidate.Id == planInfo.SessionId,
+                cancellationToken);
+            session.RevisionPending = true;
+        }
+
         await _db.SaveChangesAsync(cancellationToken);
 
         return ToDto(setLog);
@@ -108,7 +124,11 @@ public class SetLogService : ISetLogService
             throw new TrainingLogException(TrainingLogErrorType.NotFound, "Set log was not found.");
         }
 
-        EnsureSessionIsEditable(setLog.ExercisePlan.WorkoutSession.Status);
+        var correction = await EnsureSessionIsEditableAsync(
+            userId,
+            setLog.ExercisePlan.WorkoutSessionId,
+            setLog.ExercisePlan.WorkoutSession.Status,
+            cancellationToken);
 
         var isFailure = WorkingSet.ImpliesFailure(
             request.Reps, request.Rir, setLog.ExercisePlan.RepRangeMin, request.IsFailure);
@@ -119,6 +139,11 @@ public class SetLogService : ISetLogService
         setLog.Reps = request.Reps;
         setLog.Rir = request.Rir;
         setLog.IsFailure = isFailure;
+
+        if (correction == CorrectionMode.Recalculate)
+        {
+            setLog.ExercisePlan.WorkoutSession.RevisionPending = true;
+        }
 
         await _db.SaveChangesAsync(cancellationToken);
 
@@ -142,10 +167,54 @@ public class SetLogService : ISetLogService
             throw new TrainingLogException(TrainingLogErrorType.NotFound, "Set log was not found.");
         }
 
-        EnsureSessionIsEditable(setLog.ExercisePlan.WorkoutSession.Status);
+        var correction = await EnsureSessionIsEditableAsync(
+            userId,
+            setLog.ExercisePlan.WorkoutSessionId,
+            setLog.ExercisePlan.WorkoutSession.Status,
+            cancellationToken);
+
+        if (correction == CorrectionMode.Recalculate)
+        {
+            setLog.ExercisePlan.WorkoutSession.RevisionPending = true;
+        }
 
         _db.SetLogs.Remove(setLog);
         await _db.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// A finished workout accepts sets only while it can still be corrected (see
+    /// <see cref="SessionCorrection"/>). Returns how the correction will be applied, or null
+    /// when the session is not a finished one.
+    /// </summary>
+    private async Task<CorrectionMode?> EnsureSessionIsEditableAsync(
+        Guid userId,
+        Guid sessionId,
+        SessionStatus status,
+        CancellationToken cancellationToken)
+    {
+        if (status != SessionStatus.Completed)
+        {
+            EnsureSessionIsEditable(status);
+            return null;
+        }
+
+        var window = await SessionCorrectionResolver.ResolveAsync(_db, userId, sessionId, cancellationToken);
+        if (window is { IsOpen: true })
+        {
+            return window.Mode;
+        }
+
+        throw new TrainingLogException(
+            TrainingLogErrorType.Conflict,
+            window?.BlockedBy switch
+            {
+                CorrectionBlock.NextWorkoutStarted =>
+                    "The same day of the next week has already been started, so this workout can no longer be corrected.",
+                CorrectionBlock.NextBlockOpened =>
+                    "The next block was generated from this workout, so it can no longer be corrected.",
+                _ => "Completed workout sessions cannot be modified."
+            });
     }
 
     /// <summary>
