@@ -90,7 +90,38 @@ postojali stvarni odgovori, `TRAG` i `RHO` se mogu proceniti iz baze i ova tabel
 
 ## Provera
 
-REZULTATI
+- `dotnet test`: **1669** (bilo 1634); `npm test`: **458** (bilo 450); `dotnet build`, `npm run build`, migracija
+  i `scripts/check-theme-contrast.py` (0 parova ispod praga u tamnoj temi, nijedna boja napisana u komponenti)
+  prolaze. Tri stila su i dalje iznad 6 kB upozorenja kao pre grane; `workout-session.scss` je netaknut.
+- Merenje vraćanjem, jedna izmena po merenju:
+
+| Vraćeno | Obara |
+|---|---|
+| bez potvrde: jedan porast se broji | 5 |
+| težina 0.25 umesto 0.20 | 6 |
+| odgovor se ne upisuje uz završetak | 3 |
+| odgovor van 1-5 se prihvata | 3 |
+| nedelje rasterećenja se broje u osnovu (spisak nedelja) | 1 |
+| osnova se čita iz svih blokova vežbača | 1 (pre ispravke testa 0) |
+| nedostatak osnove se čita kao porast od nule | 5 |
+| odgovor se ne šalje sa završetkom (klijent) | 1 |
+| ponovni dodir ne poništava izbor | 1 |
+| pitanje se postavlja i kad trening ne traje | 1 (prvo merenje 0, videti dole) |
+
+  Dva merenja nisu pala iz prvog puta, i oba puta je greška bila u merenju ili testu, ne u kodu:
+  - **Osnova iz svih blokova: 0.** Test je očekivao porast 1.5, koji se kao i pokvaren porast 2.25 ograničava na
+    punu težinu 1.0, pa je ocena bila ista. Isti oblik kao test koji prolazi slučajno iz rundi 9 i 15. Odgovor je
+    sada 3 (porast 0.5, pola težine), pa pokvarena osnova daje 0.20 umesto 0.10.
+  - **Pitanje nakon treninga: 0.** Izmenio sam grananje unutar bloka koji već proverava stanje, pa izmena nije imala
+    šta da promeni. Izmena je pomerena izvan bloka.
+  - Uslov „bez rasterećenja" u upitu za odgovore je **suvišan** (merenje ga vraća bez pada testa, 0): `Rises` ionako
+    gleda samo nedelje iz spiska trenažnih. Ostavljen je da upit ne čita odgovore koje ne treba, a spisak je ono što
+    odlučuje (pada 1 test kad se vrati).
+- Uživo, lokalni API i dva prikaza (375 i 320 px), nalog za testiranje, tamna tema: pet polja stoje u jednom redu,
+  najmanje 58 px široka na 375 i 47 px na 320 (visina 54), bez prelivanja i bez isečenih naziva; izabran odgovor ima
+  `aria-checked`; trening završen sa izabranim odgovorom 4 u bazi ima `Status = Completed`, `PerceivedFatigue = 4`.
+  Uticaj na ocenu nedelje nije proveren uživo (za to je potrebna cela nedelja sa tri trenutka), nego servisnim
+  testovima nad pravim servisima i SQLite-om: završen poslednji trening nedelje sa odgovorom daje tačno +0.20.
 
 ## Šta ovo ne radi
 
