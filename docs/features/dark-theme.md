@@ -27,7 +27,8 @@ prestanu da se menjaju.
   svetao, pa tekst na njemu mora da bude taman. Zato su `--color-on-primary`, `--color-on-ink`, `--color-on-danger`,
   `--color-on-above` i `--color-on-accent`: svaki uz pozadinu na kojoj stoji. Beli tekst je mapiran po pozadini koju
   isto pravilo već ima, a ne po slovu: skripta za zamenu prekida ako beli tekst nema pozadinu u istom pravilu.
-- **Svetla tema se ne menja.** Svaka zamena preslikava literal u token čija je svetla vrednost taj literal.
+- **Svetla tema se ne menja.** Svaka zamena preslikava literal u token čija je svetla vrednost taj literal, a to je i
+  izmereno (vidi niže: 0 razlika u 3356 elemenata).
 - **Tintovi se mešaju sa karticom, ne sa belim.** `color-mix(boja 16%, white)` je postao `color-mix(boja 16%,
   var(--color-elevated))`: svetlo je isto, a u tamnoj temi tint ostaje taman, sa svetlom varijantom iste boje za tekst.
 - **Prsten fokusa ostaje mešan sa belim**, i senke / zatamnjenje ostaju kao što su (tamno na svetlom i na tamnom): to
@@ -60,6 +61,13 @@ prestanu da se menjaju.
   slušaoca 1; čuvanje izbora 3; sistemska tema ignorisana 3; `App` ne pokreće servis 1; grafikon se ne crta ponovo 1;
   boja teksta tooltip-a 1; redosled izbora 3; birač ne primenjuje izbor 2). Skripta: pad kontrasta, napisana boja u
   komponenti, razilaženje boje trake i razilaženje ključa, sva četiri daju izlaz 1.
+- **Svetla tema nepromenjena, izmereno:** isti ekrani uzeti dvaput, jednom sa stilovima grane, jednom sa `main`-ovim
+  (TypeScript isti, stilovi privremeno vraćeni), svaki element sa 10 izračunatih svojstava boje (tekst, pozadina,
+  četiri ivice, obris, senka, stil ivice, popuna), vrednosti normalizovane (ista boja se zapisuje kao `rgba(...)` i kao
+  `color(srgb ...)`). Jedanaest ekrana i stanja, **3356 elemenata, 0 razlika**. Prvi pokušaj sa digestom bez
+  normalizacije je dao razliku na svakom ekranu: bila je samo u zapisu jedne boje (traka na dnu, `rgba(255,255,255,0.92)`
+  prema `color(srgb 1 1 1 / 0.92)`), što je pokazao pregled jednog ekrana element po element. Ekran Podešavanja je
+  izostavljen jer na grani ima karticu „Izgled".
 - **Uživo:** izbor „Tamna" kroz ekran postavlja atribut, čuva se, pozadina i `color-scheme` postaju tamni, a traka
   pregledača `#0f1215`; `theme-init.js` stoji ispred svih stilova i nije `defer` ni `async`; u praznoj stranici postavlja
   atribut i boju trake za `dark` i `light`, a za nepoznatu vrednost ili bez izbora ostavlja sistem. Tri režima u CSS-u:
@@ -88,8 +96,9 @@ prestanu da se menjaju.
   proveren je redosledom i ponašanjem skripte, ne gledanjem pri učitavanju.
 - **Pravilo za nginx** (`location = /theme-init.js`) nije pokretano: Docker nije dostupan. Postoji, i čita se kao
   pravilo za `index.html`.
-- **Izgled očima:** pogledan je jedan snimak ekrana treninga u tamnoj temi; ostalo je izmereno, ne gledano. Svetla tema
-  je mehanički nepromenjena (svaka zamena čuva vrednost), ali nije upoređivana snimcima.
+- **Izgled očima:** pogledan je jedan snimak ekrana treninga u tamnoj temi; ostalo je izmereno, ne gledano. Svetla
+  tema je upoređena po izračunatim bojama, ne po slici (razmak, veličine i slično nisu u poređenju, ali ih ova grana ne
+  dira).
 - **Boje koje nisu tokeni:** ikone (`mat-icon`) nasleđuju boju teksta. Boja trake instalirane aplikacije
   (`theme_color` u `manifest.webmanifest`) ostaje svetla vrednost: manifest je jedan i ne zavisi od izabrane teme.
 - **Veličina stilova.** Imena tokena su duža od heksadecimalnih vrednosti, pa su tri stila koji su već bili iznad
