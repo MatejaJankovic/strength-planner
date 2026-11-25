@@ -141,7 +141,34 @@ migraciju brani samo ova provera i testovi koji drže seed-ove (`TheHeadsHaveThe
 
 ## Provera
 
-REZULTATI
+- `dotnet test`: **1682** (bilo 1670); `npm test`: **459**; `dotnet build`, `npm run build` i migracija prolaze.
+- Novi testovi (`BackHeadsTests`, 12): seed-ovi koje migracija pretpostavlja (5/9/15), vertikalna povlačenja daju samo latovima,
+  veslanja samo gornjim leđima, mrtvo dizanje, rumunsko i Face Pull gornjim leđima pola serije, zbirne grupe više nema, svaka
+  vežba koja je radila leđa radi ih u istoj meri, i **manjak svake glave po šablonu**, zabeležen tačno (11 parova šablon-glava).
+- Merenje vraćanjem, jedna izmena po merenju:
+
+| Vraćeno | Obara |
+|---|---|
+| MRV gornjih leđa 12 umesto 15 | 4 |
+| MEV latova 6 umesto 5 | 2 |
+| mrtvo dizanje puni latove umesto gornjih leđa | 5 |
+| Face Pull ne puni gornja leđa | 8 |
+| veslanje puni i latove | 6 |
+| gornja granica broja grupa po vežbi ostaje 12 | 1 |
+| Push/Pull/Legs Pull zadržava drugo veslanje | 1 (pre testa zabeleženog manjka 0) |
+| Legs Specialization Upper B bez veslanja | 1 |
+
+  Izmena Push/Pull/Legs nije imala nijedan test koji bi pao kad se vrati (0): sve zabeležene liste su je prešle, jer
+  je latova na tom šablonu i dalje bilo „ispod MEV-a" u nekim nedeljama. Efekat (62 → 49 parova) se video samo u probi.
+  Zato je dodat test koji beleži manjak po šablonu, isti brojevi kao u ovoj belešci.
+- Probe koje stoje iza brojeva (nisu u repozitorijumu, jer nisu testovi): zbir parova ispod MEV-a po šablonu i mišiću,
+  pretraga jedne izmene po šablonu, i ocena tačno navedenih izmena. Sve koriste `TemplateWeekSimulation`, istu simulaciju
+  koju koriste testovi.
+- Uživo, lokalni API i 375 px, nalog za testiranje: seeder je pri startu upisao Lats i Upper Back sa 5/9/15 i doprinose
+  svih osam sistemskih vežbi tačno po katalogu (zgib, pulldown i Straight-Arm Pulldown → Lats 1.0; veslanja → Upper Back
+  1.0; mrtvo dizanje, rumunsko i Face Pull → Upper Back 0.5). Ekran volumena pokazuje „Lats 6 serija, MEV 5 · cilj 9 ·
+  MRV 15" i „Upper Back" posebno, „Back" nigde, legenda kaže da leđa imaju dve glave i da opružači nemaju granicu, bez
+  prelivanja.
 
 ## Šta ovo ne rešava
 
