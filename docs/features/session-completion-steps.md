@@ -30,7 +30,8 @@ treninga mora da pokrene deo toga ponovo, a bez deljenja bi to značilo kopiranj
   napisano pet testova koji beleže šta metoda radi (`SessionCompletionTests`): procena i cilj
   naredne nedelje, zatvaranje nedelje, dvostruki završetak, tuđi trening, balansiranje. Pokrenuti
   su na **originalnom** `SessionService` iz `main`-a (privremeni worktree) i prošli (u tom trenutku
-  ih je bilo pet), uz jedinu izmenu opisanu ispod. Isti testovi prolaze i na podeljenom kodu.
+  ih je bilo pet), uz jedinu izmenu opisanu ispod. Isti testovi prolaze i na podeljenom kodu. Dva testa za balansiranje (niže) su dopisana
+  posle toga i na originalu nisu pokretana.
 - **Upit koji nije mogao da se izvrši na probnom sklopu.** Oznaka rekorda je čitala
   najveći dosadašnji maksimum upitom sa `Max` nad `decimal`, koji SQLite ne prevodi (ista klasa
   ograničenja kao u rundi 17). Sledeći upit već učitava sve zapise te vežbe, pa se maksimum sada
