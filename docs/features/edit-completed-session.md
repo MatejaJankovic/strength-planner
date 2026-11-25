@@ -79,7 +79,7 @@ odeljak „Ispravka završenog treninga".
 
 ## Merenja
 
-- Testovi: 939 → 1327 na serveru (većina su slučajevi teorije za `Undo`: 180 tipova nedelja × 2
+- Testovi: 939 → 1335 na serveru (većina su slučajevi teorije za `Undo`: 180 tipova nedelja × 2
   provere), 213 → 223 na klijentu.
 - Vraćanje pravila na committed stablu (pre dopune testova za deload): granice se ne poništavaju
   1 od 1325 pada; procena se ne uklanja 2; ocena se ne poništava 1; prozor se ignoriše pri
@@ -97,6 +97,15 @@ odeljak „Ispravka završenog treninga".
   zamenjena (2 zapisa za trening pre i posle, ne 4); `RevisionPending` je opet `false`.
   Stari trening iste nedelje pokazuje poruku za istoriju i nema „Sačuvaj ispravku".
   `scrollWidth` 375 = `clientWidth` 375.
+
+- Posle ispravki iz pregleda, uživo: serija prvog dana vraćena sa 8 na 12 ponavljanja i ekran
+  napušten bez čuvanja (`RevisionPending` je `true`, cilj naredne nedelje i dalje 45 kg); start
+  sledećeg treninga istog dana je prvo sačuvao ispravku (cilj 47,5 kg), prozor se zatvorio
+  (`NextWorkoutStarted`), oznaka je očišćena. Zatvoren prozor na ekranu: poruka, bez dugmadi za
+  izmenu, `scrollWidth` 375 = `clientWidth` 375.
+- Vraćanje pravila posle pregleda: preskočen trening računat kao nepočet ruši 3 testa; čekajuća
+  ispravka se ne primenjuje pre starta ili preskakanja 2; oznaka se ne piše uz dodatu seriju 1;
+  primena ne ulazi u tuđu transakciju 1.
 
 ## Šta je pregled našao (i šta je ispravljeno)
 
