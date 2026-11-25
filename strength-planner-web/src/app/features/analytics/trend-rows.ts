@@ -20,6 +20,8 @@ const MONTHS_SHORT = ['jan', 'feb', 'mar', 'apr', 'maj', 'jun', 'jul', 'avg', 's
 
 export interface TrendRow {
   weekStart: string;
+  /** Poslednji red je uvek tekuća nedelja: serije su u toku, pa njen zbir nije pad. */
+  isCurrent: boolean;
   /** „23. nov": ponedeljak nedelje. */
   label: string;
   value: number;
@@ -32,10 +34,29 @@ export interface TrendRow {
   blockBanner: string | null;
 }
 
-/** Ponedeljak nedelje, bez godine: „23. nov". Čita se u UTC-u, kao i server. */
-export function weekLabel(iso: string): string {
+/**
+ * Ponedeljak nedelje: „23. nov", a sa godinom („23. nov 2025") kad pregled prelazi granicu godine.
+ * Čita se u UTC-u, kao i server.
+ */
+export function weekLabel(iso: string, withYear = false): string {
   const date = new Date(iso);
-  return `${date.getUTCDate()}. ${MONTHS_SHORT[date.getUTCMonth()]}`;
+  const label = `${date.getUTCDate()}. ${MONTHS_SHORT[date.getUTCMonth()]}`;
+  return withYear ? `${label} ${date.getUTCFullYear()}` : label;
+}
+
+/**
+ * Naslov bloka iznad nedelje u kojoj počinje. Plan se dodaje samo kad nešto novo kaže: blok
+ * jednog plana se zove „Zima - blok 1 (…)", pa bi ime plana bilo ponovljeno.
+ */
+function blockBannerOf(week: TrendWeekDto): string | null {
+  if (!week.blockStarts || !week.blockName) {
+    return null;
+  }
+
+  const plan = week.planName;
+  return plan && plan !== week.blockName && !week.blockName.startsWith(plan)
+    ? `${week.blockName} · ${plan}`
+    : week.blockName;
 }
 
 /** Vrednost jedne nedelje za izabranu meru. */
@@ -70,22 +91,20 @@ export function metricFromKey(key: string): TrendMetric {
 export function trendRows(trend: TrendDto, metric: TrendMetric): TrendRow[] {
   const values = trend.weeks.map((week) => metricValue(week, metric));
   const max = Math.max(...values, 0);
+  const years = new Set(trend.weeks.map((week) => new Date(week.weekStart).getUTCFullYear()));
 
   return trend.weeks.map((week, index) => {
     const value = values[index];
 
     return {
       weekStart: week.weekStart,
-      label: weekLabel(week.weekStart),
+      isCurrent: index === trend.weeks.length - 1,
+      label: weekLabel(week.weekStart, years.size > 1),
       value,
       barPct: max > 0 ? Math.round((value / max) * 100) : 0,
       isDeload: week.isDeload,
       isEmpty: week.sets === 0,
-      blockBanner: week.blockStarts && week.blockName
-        ? week.planName && week.planName !== week.blockName
-          ? `${week.blockName} · ${week.planName}`
-          : week.blockName
-        : null,
+      blockBanner: blockBannerOf(week),
     };
   });
 }

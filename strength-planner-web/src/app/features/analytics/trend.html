@@ -34,9 +34,10 @@
 </div>
 
 @if (loading()) {
-  <p class="t-note">Učitavam pregled…</p>
+  <p class="t-note" role="status">Učitavam pregled…</p>
 } @else if (error(); as message) {
   <p class="t-note t-note--error" role="alert">{{ message }}</p>
+  <button class="retry" type="button" (click)="retry()">Pokušaj ponovo</button>
 } @else if (!hasAnyTraining()) {
   <p class="t-note">Nema treninga u izabranom opsegu.</p>
 } @else {
@@ -49,8 +50,11 @@
         <div class="trow__head">
           <span class="trow__week">
             {{ row.label }}
+            @if (row.isCurrent) {
+              <span class="trow__tag">u toku</span>
+            }
             @if (row.isDeload) {
-              <span class="trow__deload">Deload</span>
+              <span class="trow__tag">Deload</span>
             }
           </span>
           @if (row.isEmpty) {

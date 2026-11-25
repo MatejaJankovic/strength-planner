@@ -98,7 +98,7 @@ public class TrendServiceTests
     }
 
     [Fact]
-    public async Task ARange_LeavesOutTheOlderSets_InTheQuery()
+    public async Task ARange_ShowsOnlyItsOwnWeeks_AndAllHistoryShowsEverything()
     {
         using var database = new SqliteDatabase();
         await SeedAsync(database);

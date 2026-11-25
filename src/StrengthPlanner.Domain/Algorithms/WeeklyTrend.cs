@@ -72,17 +72,13 @@ public static class WeeklyTrend
             .Where(set => WeekStartOf(set.PerformedAt) <= lastWeek)
             .ToList();
 
-        DateTime firstWeek;
         if (weeks is not null)
         {
-            firstWeek = lastWeek.AddDays(-7 * (Math.Max(1, weeks.Value) - 1));
-            counted = counted.Where(set => WeekStartOf(set.PerformedAt) >= firstWeek).ToList();
+            var rangeStart = lastWeek.AddDays(-7 * (Math.Max(1, weeks.Value) - 1));
+            counted = counted.Where(set => WeekStartOf(set.PerformedAt) >= rangeStart).ToList();
         }
-        else if (counted.Count > 0)
-        {
-            firstWeek = counted.Min(set => WeekStartOf(set.PerformedAt));
-        }
-        else
+
+        if (counted.Count == 0)
         {
             return [];
         }
@@ -91,12 +87,8 @@ public static class WeeklyTrend
             .GroupBy(set => WeekStartOf(set.PerformedAt))
             .ToDictionary(group => group.Key, group => group.ToList());
 
-        if (counted.Count == 0)
-        {
-            return [];
-        }
-
-        firstWeek = byWeek.Keys.Min();
+        // The first week with a set, not the start of the range: the weeks before it say nothing.
+        var firstWeek = byWeek.Keys.Min();
 
         var result = new List<TrendWeek>();
         Guid? previousBlock = null;

@@ -1,6 +1,8 @@
 :host {
   display: grid;
   gap: 0.9rem;
+  // Bez ovoga rešetka ne sme da se skupi ispod širine dugačkog imena bloka, pa red probija ekran.
+  min-width: 0;
 }
 
 .controls {
@@ -95,6 +97,7 @@
   font-weight: 800;
   letter-spacing: 0.04em;
   margin: 0.4rem 0 0;
+  overflow-wrap: anywhere;
   padding-top: 0.5rem;
   text-transform: uppercase;
 }
@@ -109,7 +112,7 @@
   font-weight: 700;
 }
 
-.trow__deload {
+.trow__tag {
   background: color-mix(in srgb, var(--color-accent, #f2a900) 18%, transparent);
   border-radius: 999px;
   color: var(--color-muted);
@@ -139,4 +142,16 @@
 
 .t-total {
   margin: 0;
+}
+
+.retry {
+  background: var(--color-primary);
+  border: 0;
+  border-radius: 0.5rem;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 800;
+  justify-self: start;
+  min-height: 44px;
+  padding: 0 1.1rem;
 }

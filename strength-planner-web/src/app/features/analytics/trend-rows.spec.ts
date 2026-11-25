@@ -99,6 +99,42 @@ describe('trend rows', () => {
     ]);
   });
 
+  it('plan se ne ponavlja u naslovu kad ga ime bloka već sadrži', () => {
+    const trend: TrendDto = {
+      muscles: [],
+      weeks: [
+        week(NOV_23, {
+          sets: 3,
+          blockName: 'Zima - blok 1 (Upper/Lower)',
+          planName: 'Zima',
+          blockStarts: true,
+        }),
+      ],
+    };
+
+    expect(trendRows(trend, { kind: 'sets' })[0].blockBanner).toBe('Zima - blok 1 (Upper/Lower)');
+  });
+
+  it('godina se piše samo kad pregled prelazi granicu godine', () => {
+    const sameYear: TrendDto = { muscles: [], weeks: [week(NOV_23), week('2026-11-30T00:00:00Z')] };
+    const acrossYears: TrendDto = { muscles: [], weeks: [week('2025-12-29T00:00:00Z'), week('2026-01-05T00:00:00Z')] };
+
+    expect(trendRows(sameYear, { kind: 'sets' }).map((row) => row.label)).toEqual(['23. nov', '30. nov']);
+    expect(trendRows(acrossYears, { kind: 'sets' }).map((row) => row.label)).toEqual([
+      '29. dec 2025',
+      '5. jan 2026',
+    ]);
+  });
+
+  it('samo poslednji red je tekuća nedelja', () => {
+    const trend: TrendDto = {
+      muscles: [],
+      weeks: [week(NOV_23, { sets: 3 }), week('2026-11-30T00:00:00Z', { sets: 1 })],
+    };
+
+    expect(trendRows(trend, { kind: 'sets' }).map((row) => row.isCurrent)).toEqual([false, true]);
+  });
+
   it('deload nedelja nosi oznaku', () => {
     const trend: TrendDto = {
       muscles: [],

@@ -126,11 +126,74 @@ describe('Trend', () => {
     expect(rendered).not.toContain('4,000 kg');
   });
 
+  it('izabrani mišić ostaje izabran kad se opseg menja, i lista se ne prazni dok se učitava', () => {
+    open();
+    request(26).flush(TREND);
+    fixture.detectChanges();
+
+    const select = (fixture.nativeElement as HTMLElement).querySelector<HTMLSelectElement>('#trend-metric')!;
+    select.value = 'muscle:Chest';
+    select.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    (fixture.nativeElement as HTMLElement)
+      .querySelectorAll<HTMLButtonElement>('.range__btn')[0]
+      .click();
+    TestBed.tick();
+    // Dok se učitava, opcije mišića ne nestaju: pregledač bi izabrao prvu opciju, a mera bi ostala mišić.
+    fixture.detectChanges();
+    expect(Array.from(select.options).map((option) => option.value)).toContain('muscle:Chest');
+
+    request(8).flush(TREND);
+    fixture.detectChanges();
+
+    expect(select.value).toBe('muscle:Chest');
+    expect(text()).toContain('6 serija');
+  });
+
+  it('mišić koji u novom opsegu nije trenirao vraća meru na tonažu, a lista to i pokazuje', () => {
+    open();
+    request(26).flush(TREND);
+    fixture.detectChanges();
+
+    const select = (fixture.nativeElement as HTMLElement).querySelector<HTMLSelectElement>('#trend-metric')!;
+    select.value = 'muscle:Chest';
+    select.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    (fixture.nativeElement as HTMLElement)
+      .querySelectorAll<HTMLButtonElement>('.range__btn')[0]
+      .click();
+    TestBed.tick();
+    request(8).flush({
+      muscles: ['Back'],
+      weeks: [week('2026-11-23T00:00:00Z', { tonnageKg: 2000, sets: 6, stimulativeSets: 5, stimulativeSetsByMuscle: { Back: 5 } })],
+    } satisfies TrendDto);
+    fixture.detectChanges();
+
+    expect(select.value).toBe('tonnage');
+    expect(text()).toContain('2,000 kg');
+    expect(text()).not.toContain('0 serija');
+  });
+
   it('opseg bez treninga kaže da ih nema', () => {
     open();
     request(26).flush({ muscles: [], weeks: [week('2026-11-23T00:00:00Z')] } satisfies TrendDto);
 
     expect(text()).toContain('Nema treninga u izabranom opsegu');
+  });
+
+  it('greška nudi ponovni pokušaj istog opsega', () => {
+    open();
+    request(26).flush(null, { status: 500, statusText: 'Server Error' });
+    fixture.detectChanges();
+
+    // Opseg se ne menja, pa bi dodir na njega ostao bez zahteva: za to postoji dugme.
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.retry')?.click();
+    TestBed.tick();
+
+    request(26).flush(TREND);
+    expect(text()).toContain('Blok 1');
   });
 
   it('greška se prikazuje, a izbor opsega ponovo traži', () => {

@@ -727,15 +727,18 @@ ne samo sa onim što je dodato — inače bi trening od četrdeset zgibova sabir
 tonažu ili serije po **kalendarskim nedeljama** (od ponedeljka), kroz sve planove i blokove. Biraš opseg
 (8 nedelja, 6 meseci, godinu dana, sve) i meru: tonaža, serije ukupno, ili serije jednog mišića.
 
-- **Granice blokova su označene.** Iznad nedelje u kojoj počinje novi blok piše njegovo ime (i plan, kad se
-  razlikuje). Nedelja pripada bloku sa najviše njenih serija. Pad na granici bloka nije gubitak snage: drugi
+- **Granice blokova su označene.** Iznad nedelje u kojoj počinje novi blok piše njegovo ime (i plan, kad ga
+  ime bloka već ne sadrži); u prvom redu opsega stoji i blok koji je počeo ranije. Nedelja pripada bloku sa najviše njenih serija. Pad na granici bloka nije gubitak snage: drugi
   blok ima drugi propis, pa se ne poredi nedelja sa nedeljom nego blok sa blokom.
 - **Deload je označen**, a nedelja bez ijednog treninga stoji kao prazan red: pauza se vidi kao pauza. Nedelje
   pre prvog treninga u opsegu se ne prikazuju.
 - Serije se broje kao u nedeljnom volumenu (RIR do 3 cela serija, RIR 4 pola, dalje ništa), a mišić dobija svoj
   deo serije (potisak za grudi daje grudima celu, tricepsu pola). Tonaža nosi telesnu masu kao i iznad.
-- Nedelja se određuje po tome kad je serija podignuta, ne po nedelji plana. Zato trening odrađen u
-  ponedeljak, a završen u sredu, ostaje u svojoj nedelji.
+- Nedelja se određuje po tome kad je serija podignuta, ne po nedelji plana ni po tome kad je trening
+  završen: serija podignuta u nedelju uveče ostaje u toj nedelji i kad trening završiš u ponedeljak.
+  Nedelje se računaju po UTC-u, pa serija upisana u prvim satima ponedeljka po lokalnom vremenu (do 1 ili 2
+  ujutru) može da upadne u prethodnu nedelju.
+- **Poslednji red je tekuća nedelja** i nosi oznaku „u toku": njen zbir je delimičan, pa nije pad.
 - **Ovde nema ciljeva ni granica volumena** (MEV, MAV, MRV): oni se uče i važe po bloku, pa se čitaju iznad.
 
 **Lični rekordi.** Po vežbi: najbolji e1RM i najveća podignuta težina, sa datumom. Za vežbe
@@ -782,7 +785,7 @@ rezervne kopije i nema načina da se to vrati.
 ### Istorija (dugme na dashboardu)
 
 Svaki završen i preskočen trening, kroz **sve planove i blokove**, od najnovijeg, grupisan po mesecima.
-Analitika čita jedan blok, a ekran „Plan" tekući, pa je blok koji se završio nestajao iz vida; ovde ostaje
+Neke celine analitike čitaju jedan blok, a ekran „Plan" tekući, pa je blok koji se završio nestajao iz vida; ovde ostaje
 sve dok ne obrišeš plan. Po treningu piše dan, plan i nedelja, broj serija, tonaža (težina × ponavljanja,
 sa telesnom masom za vežbe koje je nose) i vežbe koje su imale serije. Dodir otvara trening kao i svaki
 drugi, uključujući ispravku ako je još moguća. Spisak se učitava po 20, dugme „Učitaj još" nosi dalje.
