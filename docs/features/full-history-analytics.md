@@ -33,6 +33,9 @@ već čitali celu istoriju; to je ostalo kakvo je bilo.
 
 - Testovi: 1352 → 1378 na serveru (18 za domensko pravilo, 6 za servis, uz ostale), 239 → 252 na
   klijentu (redovi, izbor opsega i mere, greška).
+- Vraćanje pravila na committed stablu: nedelja koja počinje nedeljom ruši 8 testova; vodeće prazne
+  nedelje zadržane 7; kredit serije ignorisan 2; deload samo kad su sve serije deload 1; telesna masa
+  izostavljena iz tonaže 1.
 - **Živa provera je našla dva problema u mom dizajnu.** Podrazumevani opseg je počinjao sa 22 prazna
   reda (gore), a tonaža je ovde bila pisana kao `19 920 kg` dok sekcija odmah iznad piše `41,250 kg`;
   sada je ista oblika kao ta sekcija.
