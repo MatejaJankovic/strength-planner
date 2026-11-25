@@ -96,6 +96,39 @@ describe('RestTimer', () => {
     expect(buttonWithText('Bez cilja').getAttribute('aria-pressed')).toBe('false');
   });
 
+  it('izbor cilja ostavljen otvoren ne vraća se sa sledećom pauzom', () => {
+    timer.start();
+    fixture.detectChanges();
+    chooserButton().click();
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector('.rest__targets')).not.toBeNull();
+
+    // Traka se zatvara dugmetom, a zatim sledeća serija vraća pauzu.
+    (fixture.nativeElement as HTMLElement)
+      .querySelector<HTMLButtonElement>('button[aria-label="Zatvori tajmer"]')!
+      .click();
+    fixture.detectChanges();
+    timer.start();
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('.rest__targets')).toBeNull();
+    expect(chooserButton().getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('isto kad pauzu zaustavi ekran (kraj treninga), a ne dugme', () => {
+    timer.start();
+    fixture.detectChanges();
+    chooserButton().click();
+    fixture.detectChanges();
+
+    timer.stop();
+    fixture.detectChanges();
+    timer.start();
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('.rest__targets')).toBeNull();
+  });
+
   it('kad cilj istekne, to piše, a brojanje ide dalje', () => {
     timer.setTarget(90);
     timer.start();

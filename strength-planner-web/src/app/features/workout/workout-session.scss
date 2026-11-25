@@ -1,5 +1,9 @@
+// Kolona, ne mreža: traka pauze je zalepljena, a lepi se samo unutar bloka koji je sadrži. Kod
+// mrežne stavke to je njena oblast u mreži (red visok koliko i traka), kod stavke fleksa celo telo
+// kontejnera, u svim pregledačima.
 :host {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
 }
 

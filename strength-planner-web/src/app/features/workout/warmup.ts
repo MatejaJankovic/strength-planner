@@ -19,8 +19,13 @@ const RAMP: readonly (readonly [share: number, reps: number])[] = [
 /** Ispod ovoga zagrevanje u koracima nema smisla: sama šipka je već blizu radne težine. */
 const MIN_WORKING_OVER_BAR = 1.5;
 
+/**
+ * Najbliži višekratnik koraka. Korak je bilo koja vrednost sa dve decimale (2.33 kg, 0.1 kg), a
+ * proizvod broja koraka i takvog koraka nosi šum pokretnog zareza (24.400000000000002), koji bi
+ * se ispisao na ekranu: zato se rezultat vraća na dve decimale.
+ */
 function roundToStep(weightKg: number, stepKg: number): number {
-  return Math.round(weightKg / stepKg) * stepKg;
+  return Math.round((Math.round(weightKg / stepKg) * stepKg) * 100) / 100;
 }
 
 /**

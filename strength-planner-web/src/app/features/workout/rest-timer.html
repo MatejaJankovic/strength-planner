@@ -9,10 +9,6 @@
         }
       </p>
 
-      @if (reached()) {
-        <p class="rest__done" role="status">Pauza je istekla.</p>
-      }
-
       <div class="rest__actions">
         <button
           type="button"
@@ -31,6 +27,10 @@
           <mat-icon aria-hidden="true">close</mat-icon>
         </button>
       </div>
+
+      @if (reached()) {
+        <p class="rest__done" role="status">Pauza je istekla.</p>
+      }
     </div>
 
     @if (choosing()) {

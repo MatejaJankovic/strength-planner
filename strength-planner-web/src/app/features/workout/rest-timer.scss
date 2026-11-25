@@ -1,11 +1,18 @@
 // Host se lepi uz vrh ekrana, a ne traka u njemu: `sticky` ostaje unutar roditelja, a roditelj trake
-// je host visok koliko i ona sama, pa traka ne bi imala gde da se zalepi. Kartice vežbi su duge, a
-// pauza se gleda dok se skroluje do sledeće serije.
+// je host visok koliko i ona sama, pa traka ne bi imala gde da se zalepi. Host je stavka fleksa
+// ekrana treninga, čiji je blok celo telo ekrana. Kartice vežbi su duge, a pauza se gleda dok se
+// skroluje do sledeće serije.
 :host {
   display: block;
   position: sticky;
   top: 0.5rem;
   z-index: 5;
+}
+
+// Dok nema pauze host nema ništa osim komentara koji ostavlja `@if`, a ipak bi zauzimao red i razmak
+// u koloni ekrana. `:empty` komentare ne broji.
+:host(:empty) {
+  display: none;
 }
 
 .rest {
@@ -23,10 +30,13 @@
   border-color: var(--volume-optimal);
 }
 
+// Sat i dugmad su u prvom redu, a poruka u svom: na 320 px sat „12:41 / 5:00" i tri dugmeta od 44 px
+// ne staju zajedno ni sa jednom rečju pored. Prelama se, pa nikad ne prelazi ivicu ekrana.
 .rest__main {
   align-items: center;
   display: flex;
-  gap: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0 0.5rem;
   justify-content: space-between;
 }
 
@@ -48,11 +58,11 @@
 // Istekla pauza se prepoznaje po boji i po tekstu, ne samo po jednom od ta dva.
 .rest__done {
   color: #126c60;
-  flex: 1;
+  flex: 1 1 100%;
   font-size: 0.82rem;
   font-weight: 700;
   line-height: 1.2;
-  margin: 0;
+  margin: 0 0 0.45rem;
 }
 
 .rest__actions {

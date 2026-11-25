@@ -7,7 +7,7 @@ export interface PlateLoad {
   plates: number[];
   /** Šta ostaje sa jedne strane kad se ploče iskoriste: nula kad se težina sastavlja tačno. */
   remainderPerSideKg: number;
-  /** Težina je manja od same šipke. */
+  /** Težina je manja od same šipke ili nije upotrebljiv broj (NaN, beskonačno): nema šta da se stavi. */
   belowBar: boolean;
 }
 
@@ -34,7 +34,8 @@ export function platesFor(
   available: readonly number[] = PLATES_KG,
 ): PlateLoad {
   // Negacija umesto `totalKg < barKg`: NaN nije manji ni veći ni jednak, pa bi prošao kao prazna šipka.
-  if (!(totalKg >= barKg)) {
+  // Beskonačnost bi petlju ispod držala zauvek (`Infinity - 25` je opet `Infinity`).
+  if (!(totalKg >= barKg) || !Number.isFinite(totalKg)) {
     return { plates: [], remainderPerSideKg: 0, belowBar: true };
   }
 

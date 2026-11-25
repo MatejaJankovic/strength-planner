@@ -60,6 +60,17 @@ describe('RestTimerService', () => {
     expect(timer.elapsedSeconds()).toBe(120);
   });
 
+  it('nova pauza ne pravi drugi otkucaj: dva otkucaja bi ostala posle stop()', () => {
+    const timer = create();
+
+    timer.start();
+    timer.start();
+    expect(vi.getTimerCount()).toBe(1);
+
+    timer.stop();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it('nova pauza kreće od nule', () => {
     const timer = create();
     timer.start();

@@ -287,6 +287,49 @@ describe('WorkoutSession: pomagala', () => {
     });
   });
 
+  describe('pauza i izmena serije, i serija koja nije sačuvana', () => {
+    it('izmena već sačuvane serije ne počinje novu pauzu', () => {
+      const logged = {
+        id: 'set-0',
+        exercisePlanId: 'p1',
+        setNumber: 1,
+        weightKg: 100,
+        reps: 5,
+        rir: 2,
+        isFailure: false,
+        bodyweightLoadKg: 0,
+        performedAt: new Date().toISOString(),
+      };
+      const bench = plan({ setLogs: [logged] });
+      open(session('InProgress', [bench]));
+      expect(restTimer.running()).toBe(false);
+
+      const screen = fixture.componentInstance as unknown as {
+        editSet(planId: string, set: typeof logged): void;
+        submitSet(p: unknown): void;
+      };
+      screen.editSet('p1', logged);
+      screen.submitSet(bench);
+      http
+        .expectOne((request) => request.method === 'PUT' && request.url.endsWith('/sets/set-0'))
+        .flush({ ...logged, reps: 6 });
+
+      expect(restTimer.running()).toBe(false);
+    });
+
+    it('serija koja nije sačuvana ne zaustavlja pauzu: serija je odrađena, samo nije upisana', () => {
+      const bench = plan();
+      open(session('InProgress', [bench]));
+
+      (fixture.componentInstance as unknown as { submitSet(p: unknown): void }).submitSet(bench);
+      http
+        .expectOne((request) => request.method === 'POST' && request.url.endsWith('/exercise-plans/p1/sets'))
+        .flush({ message: 'greška' }, { status: 500, statusText: 'Server Error' });
+
+      expect(restTimer.running()).toBe(true);
+    });
+  });
+
   describe('ploče', () => {
     it('piše ploče za vežbu sa šipkom, po težini koja se unosi', () => {
       open(session('InProgress', [plan()]));
@@ -364,6 +407,27 @@ describe('WorkoutSession: pomagala', () => {
     it('ne predlaže se pre početka treninga ni posle završetka', () => {
       open(session('Planned', [plan()]));
       expect(text()).not.toContain('Zagrevanje');
+    });
+
+    it('ne predlaže se na završenom ni na preskočenom treningu, ni uz vežbu bez serija', () => {
+      for (const status of ['Completed', 'Skipped']) {
+        TestBed.resetTestingModule();
+        TestBed.configureTestingModule({
+          providers: [
+            provideHttpClient(),
+            provideHttpClientTesting(),
+            provideRouter([]),
+            { provide: WakeLockService, useValue: wakeLock },
+          ],
+        });
+        http = TestBed.inject(HttpTestingController);
+        restTimer = TestBed.inject(RestTimerService);
+
+        open(session(status, [plan()]));
+
+        expect(text(), status).not.toContain('Zagrevanje');
+        http.verify();
+      }
     });
 
     it('nestaje kad je prva radna serija sačuvana', () => {

@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { REST_TARGETS_SECONDS, RestTimerService, formatClock } from './rest-timer.service';
 
@@ -27,6 +27,16 @@ export class RestTimer {
   protected readonly goal = computed(() =>
     this.target() > 0 ? formatClock(this.target()) : null,
   );
+
+  constructor() {
+    // Komponent živi koliko i ekran treninga, a traka se pojavljuje i nestaje: izbor cilja koji je
+    // ostao otvoren ne sme da sačeka sledeću pauzu i da se vrati sa njom.
+    effect(() => {
+      if (!this.running()) {
+        this.choosing.set(false);
+      }
+    });
+  }
 
   protected label(seconds: number): string {
     return seconds === 0 ? 'Bez cilja' : formatClock(seconds);

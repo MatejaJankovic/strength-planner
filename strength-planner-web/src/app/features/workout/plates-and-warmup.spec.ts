@@ -27,6 +27,11 @@ describe('platesFor', () => {
     expect(platesFor(Number.NaN).belowBar).toBe(true);
   });
 
+  it('beskonačna težina se odbija, umesto da petlja ploča traje zauvek', () => {
+    expect(platesFor(Number.POSITIVE_INFINITY)).toEqual({ plates: [], remainderPerSideKg: 0, belowBar: true });
+    expect(platesFor(Number.NEGATIVE_INFINITY).belowBar).toBe(true);
+  });
+
   it('težina koja se ne može sastaviti vraća ostatak, umesto da se tiho zaokruži', () => {
     // 61 kg: po strani 20.5; 20 + ostaje 0.5 koje ne postoji kao ploča.
     const load = platesFor(61);
@@ -131,6 +136,17 @@ describe('warmupSets', () => {
     expect(sets.every((set) => set.weightKg < 90)).toBe(true);
   });
 
+  it('korak koji nije stepen dvojke ne ostavlja šum pokretnog zareza u težinama', () => {
+    // Korak je bilo koja vrednost sa dve decimale; 0.1 i 2.33 daju 24.400000000000002 i slično.
+    for (const step of [0.1, 0.2, 0.3, 0.6, 0.7, 1.1, 1.2, 1.4, 2.3, 2.33, 3.3]) {
+      for (let working = 25; working <= 300; working += 0.5) {
+        for (const set of warmupSets(working, step)) {
+          expect(set.weightKg, `${working} kg, korak ${step}`).toBe(Number(set.weightKg.toFixed(2)));
+        }
+      }
+    }
+  });
+
   it('nevažan korak ili težina ne daju zagrevanje', () => {
     expect(warmupSets(100, 0)).toEqual([]);
     expect(warmupSets(Number.NaN, 2.5)).toEqual([]);
@@ -149,6 +165,13 @@ describe('platesHint', () => {
     expect(platesHint('Dumbbell', 'Compound', 100)).toBeNull();
     expect(platesHint('Machine', 'Compound', 100)).toBeNull();
     expect(platesHint(undefined, 'Compound', 100)).toBeNull();
+  });
+
+  it('oprema se poredi bez obzira na velika slova i razmake, kao na serveru', () => {
+    // Vežba napravljena preko API-ja čuva se onako kako je uneta.
+    expect(platesHint('barbell', 'Compound', 100)).toBe('Po strani (šipka 20 kg): 25 + 15.');
+    expect(platesHint(' BARBELL ', 'Compound', 100)).toBe('Po strani (šipka 20 kg): 25 + 15.');
+    expect(warmupHint('barbell', 'Compound', 100, 2.5, 0)).not.toBeNull();
   });
 
   it('ćuti za pregib i skull crusher: šipka tu nije od 20 kg', () => {

@@ -12,7 +12,9 @@ export const COMPOUND = 'Compound';
  * ga ne šalje) ne predlaže se ništa.
  */
 export function isBarbellCompound(equipment: string | undefined, exerciseType: string | undefined): boolean {
-  return equipment === BARBELL && exerciseType === COMPOUND;
+  // Server poredi opremu bez obzira na velika slova i čuva vežbu napravljenu preko API-ja onako kako je
+  // uneta, pa „barbell" mora da važi isto što i „Barbell" (kao u load-input-note.ts).
+  return equipment?.trim().toLowerCase() === BARBELL.toLowerCase() && exerciseType === COMPOUND;
 }
 
 /**
