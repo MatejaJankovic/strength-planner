@@ -358,3 +358,29 @@ export interface CreateMacrocycleRequest {
   startDate: string;
   blocks: CreateMacrocycleBlockDto[];
 }
+
+/** Jedna stranica istorije treninga: završeni i preskočeni treninzi kroz sve planove. */
+export interface TrainingHistoryDto {
+  items: HistoryEntryDto[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface HistoryEntryDto {
+  sessionId: string;
+  status: 'Completed' | 'Skipped' | string;
+  /** Kad je trening urađen; za preskočen trening nedelja u kojoj je bio planiran. */
+  date: string;
+  /** Neistinito kad je `date` izveden iz plana, pa ga ekran ne piše kao datum. */
+  dateKnown: boolean;
+  dayLabel: string;
+  weekNumber: number;
+  isDeload: boolean;
+  planName: string;
+  blockName: string;
+  goal: 'Strength' | 'Hypertrophy' | string;
+  setCount: number;
+  tonnageKg: number;
+  exercises: string[];
+}

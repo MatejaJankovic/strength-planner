@@ -50,6 +50,12 @@ export const routes: Routes = [
     loadComponent: () => import('./features/profile/profile-home').then((m) => m.ProfileHome),
   },
   {
+    path: 'history',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/history/training-history').then((m) => m.TrainingHistory),
+  },
+  {
     path: 'settings',
     canActivate: [authGuard],
     loadComponent: () => import('./features/profile/settings-page').then((m) => m.SettingsPage),

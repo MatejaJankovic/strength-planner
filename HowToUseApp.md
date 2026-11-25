@@ -733,8 +733,8 @@ sa sopstvenom masom su oba broja ukupno opterećenje, i tako i piše ispod njih.
 Ekran **Profil** je pregled i raskrsnica. Na vrhu su tvoja slika, ime i email, a desno dve
 ikonice: **olovka** vodi na izmenu podataka, **zupčanik** na podešavanja naloga. Ispod
 imena stoje pročitani podaci (uzrast, masa, visina, nivo, pol) — prikazuju se samo ona koja
-su popunjena. Pod njima je **Dashboard** sa tri dugmeta: **Statistika**, **Vežbe**,
-**Šabloni**.
+su popunjena. Pod njima je **Dashboard** sa četiri dugmeta: **Statistika**, **Istorija**,
+**Vežbe**, **Šabloni**.
 
 ### Izmeni profil (olovka)
 
@@ -763,6 +763,18 @@ naloga.
 lozinka štiti od nekoga kome je telefon ostao otključan, otkucana reč od tebe samog. Briše
 nalog, profil, sve planove i odrađene treninge, maksimume, sopstvene vežbe i šablone. Nema
 rezervne kopije i nema načina da se to vrati.
+
+### Istorija (dugme na dashboardu)
+
+Svaki završen i preskočen trening, kroz **sve planove i blokove**, od najnovijeg, grupisan po mesecima.
+Analitika čita jedan blok, a ekran „Plan" tekući, pa je blok koji se završio nestajao iz vida; ovde ostaje
+sve dok ne obrišeš plan. Po treningu piše dan, plan i nedelja, broj serija, tonaža (težina × ponavljanja,
+sa telesnom masom za vežbe koje je nose) i vežbe koje su imale serije. Dodir otvara trening kao i svaki
+drugi, uključujući ispravku ako je još moguća. Spisak se učitava po 20, dugme „Učitaj još" nosi dalje.
+
+Kad tačan dan nije poznat, piše se samo nedelja, ne izmišljen datum: preskočen trening nema ni jednu seriju, a
+trening iz vremena pre nego što je beleženo kad je završen datira se po svojoj poslednjoj seriji. Preskočen
+trening se nikad ne piše kao da je u budućnosti.
 
 ### Vežbe (dugme na dashboardu)
 
