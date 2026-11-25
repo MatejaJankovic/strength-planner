@@ -62,3 +62,6 @@ node_modules/
 # ---- AI agent local config ----
 .claude/
 .agents/
+
+# ---- Lokalni HTTPS (scripts/local-https.sh): privatni ključevi i sertifikati ----
+.certs/
