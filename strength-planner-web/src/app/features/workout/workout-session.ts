@@ -26,6 +26,7 @@ import { LoadInputNote, loadInputNote, zeroLoadWarning } from './load-input-note
 import { loadLabel } from './load-label';
 import { repRangeLabel } from '../../shared/rep-range-label';
 import { CompletionSummary } from './completion-summary';
+import { FatigueRating } from './fatigue-rating';
 import { correctionNote, recalculates, revisionNotes } from './correction-note';
 import { isCalibrationEntry } from './calibration';
 import { AddExercise } from './add-exercise';
@@ -59,6 +60,7 @@ const REP_STEP_MAX = 100;
     RestTimer,
     AddExercise,
     RemoveExercise,
+    FatigueRating,
   ],
   templateUrl: './workout-session.html',
   styleUrl: './workout-session.scss',
@@ -86,6 +88,8 @@ export class WorkoutSession {
   protected readonly swapChoice = signal('');
   protected readonly swapping = signal(false);
   protected readonly completing = signal(false);
+  // Odgovor o umoru (1-5) koji ide uz „Završi trening"; null kad vežbač ne odgovara.
+  protected readonly fatigueRating = signal<number | null>(null);
   protected readonly actionError = signal<string | null>(null);
   protected readonly toast = signal<string | null>(null);
 
@@ -526,7 +530,7 @@ export class WorkoutSession {
     this.completing.set(true);
     this.actionError.set(null);
 
-    this.sessionService.complete(this.sessionId).subscribe({
+    this.sessionService.complete(this.sessionId, this.fatigueRating()).subscribe({
       next: (result) => {
         this.summary.set(result);
         this.session.update((session) =>

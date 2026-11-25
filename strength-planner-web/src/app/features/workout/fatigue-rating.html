@@ -1,0 +1,25 @@
+<div class="rating" role="radiogroup" [attr.aria-labelledby]="legendId">
+  <p class="rating__title" [id]="legendId">Kako se osećaš posle treninga? <span>Neobavezno</span></p>
+
+  <div class="rating__options">
+    @for (option of ratings; track option.value) {
+      <button
+        class="rating__option"
+        type="button"
+        role="radio"
+        [attr.aria-label]="option.value + ', ' + option.label"
+        [attr.aria-checked]="value() === option.value"
+        [class.rating__option--on]="value() === option.value"
+        (click)="choose(option.value)"
+      >
+        <span class="rating__number" aria-hidden="true">{{ option.value }}</span>
+        <span class="rating__label">{{ option.label }}</span>
+      </button>
+    }
+  </div>
+
+  <p class="rating__hint">
+    Prati se kako se osećaš u odnosu na sopstvene ranije nedelje, ne koliki je broj. Odgovor sam ne pokreće
+    rasterećenje.
+  </p>
+</div>

@@ -1,0 +1,74 @@
+:host {
+  display: block;
+}
+
+.rating {
+  background: var(--color-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 0.6rem;
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.85rem;
+}
+
+.rating__title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.rating__title span {
+  color: var(--color-muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+  margin-left: 0.35rem;
+}
+
+// Pet jednakih polja u jednom redu: na 320 px je to oko 55 px po polju, dovoljno za dodir.
+.rating__options {
+  display: grid;
+  gap: 0.35rem;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.rating__option {
+  align-items: center;
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  color: var(--color-ink);
+  cursor: pointer;
+  display: grid;
+  gap: 0.1rem;
+  justify-items: center;
+  min-height: 52px;
+  padding: 0.35rem 0.15rem;
+}
+
+.rating__option--on {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.rating__number {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.rating__label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+.rating__hint {
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+  margin: 0;
+}

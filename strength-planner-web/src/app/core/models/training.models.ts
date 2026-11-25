@@ -153,7 +153,7 @@ export interface TrainingWeekDto {
   isDeload: boolean;
   /** Deload uveden procenom umora, a ne planom. */
   isAutoDeload: boolean;
-  /** Ocena umora izracunata iz ove nedelje (0-1); null dok nije zavrsena. */
+  /** Ocena umora izracunata iz ove nedelje (0 do 1.20); null dok nije zavrsena. */
   fatigueScore?: number | null;
   sessions: WorkoutSessionDto[];
 }
@@ -318,7 +318,7 @@ export interface MacrocycleAdvanceDto {
 export interface AutoDeloadDto {
   triggeredByWeek: number;
   deloadWeek: number;
-  /** Ocena umora, 0 (odmoran) do 1 (svi signali na maksimumu). */
+  /** Ocena umora, 0 (odmoran) do 1.20 (svi signali na maksimumu, uz odgovor vežbača). */
   fatigueScore: number;
   /** Nedelja u kojoj je planirani deload otpao, jer mezociklus nosi samo jedan. */
   plannedDeloadReleasedWeek?: number | null;

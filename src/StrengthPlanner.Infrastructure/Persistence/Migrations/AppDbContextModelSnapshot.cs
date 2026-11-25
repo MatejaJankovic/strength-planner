@@ -820,6 +820,9 @@ namespace StrengthPlanner.Infrastructure.Persistence.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
+                    b.Property<int?>("PerceivedFatigue")
+                        .HasColumnType("integer");
+
                     b.Property<bool>("RevisionPending")
                         .HasColumnType("boolean");
 
@@ -835,7 +838,10 @@ namespace StrengthPlanner.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("TrainingWeekId");
 
-                    b.ToTable("WorkoutSessions");
+                    b.ToTable("WorkoutSessions", t =>
+                        {
+                            t.HasCheckConstraint("CK_WorkoutSessions_PerceivedFatigueRange", "\"PerceivedFatigue\" IS NULL OR \"PerceivedFatigue\" BETWEEN 1 AND 5");
+                        });
                 });
 
             modelBuilder.Entity("StrengthPlanner.Infrastructure.Identity.ApplicationUser", b =>

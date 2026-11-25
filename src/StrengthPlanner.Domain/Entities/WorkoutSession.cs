@@ -37,5 +37,13 @@ public class WorkoutSession
     /// </summary>
     public string? Note { get; set; }
 
+    /// <summary>
+    /// How tired the lifter said they were after this workout, 1 (fresh) to 5 (exhausted); null when they did not
+    /// answer. Given with completing the workout, so that the week's fatigue score, which is worked out when
+    /// the last workout of the week is completed, can read it. The level is not interpreted; the week's rise
+    /// over the lifter's own earlier weeks is (<see cref="Algorithms.SubjectiveFatigue"/>).
+    /// </summary>
+    public int? PerceivedFatigue { get; set; }
+
     public ICollection<ExercisePlan> ExercisePlans { get; set; } = new List<ExercisePlan>();
 }

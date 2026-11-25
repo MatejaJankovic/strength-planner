@@ -17,8 +17,18 @@ public class FatigueEvaluatorTests
         decimal failureShare = 0m,
         decimal e1RmChange = 0m,
         decimal volumeShare = 0m,
-        decimal? previousE1RmChange = null) =>
-        new(rirDeviation, AchievableRirDeficit: 1m, failureShare, e1RmChange, volumeShare, previousE1RmChange ?? e1RmChange);
+        decimal? previousE1RmChange = null,
+        decimal subjectiveRise = 0m,
+        decimal? previousSubjectiveRise = null) =>
+        new(
+            rirDeviation,
+            AchievableRirDeficit: 1m,
+            failureShare,
+            e1RmChange,
+            volumeShare,
+            previousE1RmChange ?? e1RmChange,
+            subjectiveRise,
+            previousSubjectiveRise ?? subjectiveRise);
 
     /// <summary>Nedelja snage (ciljni RIR 2).</summary>
     private static WeeklyFatigue Strength(
@@ -26,8 +36,18 @@ public class FatigueEvaluatorTests
         decimal failureShare = 0m,
         decimal e1RmChange = 0m,
         decimal volumeShare = 0m,
-        decimal? previousE1RmChange = null) =>
-        new(rirDeviation, AchievableRirDeficit: 2m, failureShare, e1RmChange, volumeShare, previousE1RmChange ?? e1RmChange);
+        decimal? previousE1RmChange = null,
+        decimal subjectiveRise = 0m,
+        decimal? previousSubjectiveRise = null) =>
+        new(
+            rirDeviation,
+            AchievableRirDeficit: 2m,
+            failureShare,
+            e1RmChange,
+            volumeShare,
+            previousE1RmChange ?? e1RmChange,
+            subjectiveRise,
+            previousSubjectiveRise ?? subjectiveRise);
 
     [Fact]
     public void Score_IsZero_ForAWeekThatWentToPlan()
@@ -45,6 +65,79 @@ public class FatigueEvaluatorTests
             volumeShare: 1.5m);
 
         Assert.Equal(1m, FatigueEvaluator.Score(wrecked));
+    }
+
+    /// <summary>Četiri stara signala čine 1.00, a odgovor vežbača dodaje do 0.20 iznad toga.</summary>
+    [Fact]
+    public void Score_ReachesOnePointTwo_WhenEverySignalAndTheLifterAnswerAreMaxedOut()
+    {
+        var wrecked = Hypertrophy(
+            rirDeviation: -3m,
+            failureShare: 1m,
+            e1RmChange: -0.20m,
+            volumeShare: 1.5m,
+            subjectiveRise: 3m,
+            previousSubjectiveRise: 3m);
+
+        Assert.Equal(1.20m, FatigueEvaluator.Score(wrecked));
+    }
+
+    /// <summary>
+    /// Porast odgovora računa se tek kad ga potvrdi prethodna nedelja (isti razlog kao kod pada snage: jedan
+    /// slab dan spušta i snagu i rezervu, a diže i odgovor). Granica potvrde je pola poena.
+    /// </summary>
+    [Theory]
+    [InlineData(1.0, 1.0, 1.0)]
+    [InlineData(1.0, 0.5, 1.0)]
+    [InlineData(1.0, 0.49, 0.0)]
+    [InlineData(1.0, 0.0, 0.0)]
+    [InlineData(1.0, -1.0, 0.0)]
+    [InlineData(0.4, 1.0, 0.4)]
+    [InlineData(-0.5, 1.0, 0.0)]
+    public void ConfirmedSubjectiveRise_CountsOnlyWhenThePreviousWeekRoseToo(
+        double rise,
+        double previousRise,
+        double expected)
+    {
+        var week = Hypertrophy(subjectiveRise: (decimal)rise, previousSubjectiveRise: (decimal)previousRise);
+
+        Assert.Equal((decimal)expected, FatigueEvaluator.ConfirmedSubjectiveRise(week));
+    }
+
+    [Fact]
+    public void AnUnconfirmedRise_ChangesNothing()
+    {
+        var without = Hypertrophy(rirDeviation: -1m, volumeShare: 1m);
+        var unconfirmed = Hypertrophy(rirDeviation: -1m, volumeShare: 1m, subjectiveRise: 2m, previousSubjectiveRise: 0m);
+
+        Assert.Equal(FatigueEvaluator.Score(without), FatigueEvaluator.Score(unconfirmed));
+    }
+
+    /// <summary>
+    /// Rezerva i odgovor imaju isti uzrok (slab dan spušta obe), pa im težine ne smeju da daju prag same:
+    /// 0.35 + 0.20 = 0.55, ispod 0.60. Sa 0.25 bi par bio tačno na pragu, a to je „dva signala" koja su jedan.
+    /// Treći signal ih dopunjuje.
+    /// </summary>
+    [Fact]
+    public void TheReserveAndTheAnswer_CannotTriggerADeloadWithoutAThirdSignal()
+    {
+        var pair = Hypertrophy(rirDeviation: -1m, subjectiveRise: 2m, previousSubjectiveRise: 2m);
+
+        Assert.Equal(0.55m, FatigueEvaluator.Score(pair));
+        Assert.False(FatigueEvaluator.ShouldDeload(pair));
+
+        var withVolume = Hypertrophy(rirDeviation: -1m, volumeShare: 1m, subjectiveRise: 2m, previousSubjectiveRise: 2m);
+
+        Assert.True(FatigueEvaluator.ShouldDeload(withVolume));
+    }
+
+    [Fact]
+    public void TheAnswerAlone_CannotTriggerADeload()
+    {
+        var alone = Hypertrophy(subjectiveRise: 4m, previousSubjectiveRise: 4m);
+
+        Assert.Equal(0.20m, FatigueEvaluator.Score(alone));
+        Assert.False(FatigueEvaluator.ShouldDeload(alone));
     }
 
     [Fact]
@@ -196,21 +289,21 @@ public class FatigueEvaluatorTests
     }
 
     [Fact]
-    public void Score_NeverLeavesTheZeroToOneRange()
+    public void Score_NeverLeavesTheZeroToOnePointTwoRange()
     {
         var extremes = new[]
         {
-            new WeeklyFatigue(-100m, 1m, 5m, -5m, 10m, PreviousE1RmChangeShare: -5m),
-            new WeeklyFatigue(100m, 1m, -5m, 5m, -10m, PreviousE1RmChangeShare: 5m),
-            new WeeklyFatigue(0m, 0m, 0m, 0m, 0m, PreviousE1RmChangeShare: 0m),
-            new WeeklyFatigue(-1m, -3m, 0m, 0m, 0m, PreviousE1RmChangeShare: 0m)
+            new WeeklyFatigue(-100m, 1m, 5m, -5m, 10m, PreviousE1RmChangeShare: -5m, SubjectiveRise: 9m, PreviousSubjectiveRise: 9m),
+            new WeeklyFatigue(100m, 1m, -5m, 5m, -10m, PreviousE1RmChangeShare: 5m, SubjectiveRise: -9m, PreviousSubjectiveRise: 9m),
+            new WeeklyFatigue(0m, 0m, 0m, 0m, 0m, PreviousE1RmChangeShare: 0m, SubjectiveRise: 0m, PreviousSubjectiveRise: 0m),
+            new WeeklyFatigue(-1m, -3m, 0m, 0m, 0m, PreviousE1RmChangeShare: 0m, SubjectiveRise: 0m, PreviousSubjectiveRise: 0m)
         };
 
         foreach (var fatigue in extremes)
         {
             var score = FatigueEvaluator.Score(fatigue);
 
-            Assert.InRange(score, 0m, 1m);
+            Assert.InRange(score, 0m, 1.20m);
         }
     }
 

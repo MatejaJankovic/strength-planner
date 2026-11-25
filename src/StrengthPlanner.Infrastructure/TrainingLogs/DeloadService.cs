@@ -651,13 +651,64 @@ public sealed class DeloadService
             previousE1RmChange = ChangeShare(comparable.Sets, beforeIt.Sets);
         }
 
+        var (subjectiveRise, previousSubjectiveRise) = await GetSubjectiveRisesAsync(
+            userId,
+            mesocycleId,
+            weekNumber,
+            cancellationToken);
+
         return new WeeklyFatigue(
             rirDeviation,
             achievableDeficit,
             failureShare,
             e1RmChange,
             volumeShare,
-            previousE1RmChange);
+            previousE1RmChange,
+            subjectiveRise,
+            previousSubjectiveRise);
+    }
+
+    /// <summary>
+    /// Porast odgovora o umoru nedelje i nedelje pre nje, nad sopstvenim ranijim nedeljama bloka
+    /// (<see cref="SubjectiveFatigue.Rises"/>). Deload nedelje se ne broje: vežbač se u njima oseća bolje, pa bi
+    /// spustile osnovu.
+    /// </summary>
+    private async Task<(decimal Rise, decimal PreviousRise)> GetSubjectiveRisesAsync(
+        Guid userId,
+        Guid mesocycleId,
+        int weekNumber,
+        CancellationToken cancellationToken)
+    {
+        var answers = await _db.WorkoutSessions
+            .AsNoTracking()
+            .Where(session => session.TrainingWeek.MesocycleId == mesocycleId
+                              && session.TrainingWeek.Mesocycle.UserId == userId
+                              && !session.TrainingWeek.IsDeload
+                              && session.TrainingWeek.WeekNumber <= weekNumber
+                              && session.PerceivedFatigue != null)
+            .Select(session => new { session.TrainingWeek.WeekNumber, Rating = session.PerceivedFatigue!.Value })
+            .ToListAsync(cancellationToken);
+
+        if (answers.Count == 0)
+        {
+            return (0m, 0m);
+        }
+
+        var trainingWeeks = await _db.TrainingWeeks
+            .AsNoTracking()
+            .Where(week => week.MesocycleId == mesocycleId
+                           && week.Mesocycle.UserId == userId
+                           && !week.IsDeload)
+            .Select(week => week.WeekNumber)
+            .ToListAsync(cancellationToken);
+
+        var weekMeans = answers
+            .GroupBy(answer => answer.WeekNumber)
+            .ToDictionary(
+                group => group.Key,
+                group => SubjectiveFatigue.WeekMean(group.Select(answer => answer.Rating))!.Value);
+
+        return SubjectiveFatigue.Rises(weekMeans, trainingWeeks, weekNumber);
     }
 
     /// <summary>
@@ -804,7 +855,7 @@ public sealed class DeloadService
 /// <summary>Rezultat automatskog deload-a, za poruku korisniku posle treninga.</summary>
 /// <param name="TriggeredByWeek">Nedelja iz koje je umor izračunat.</param>
 /// <param name="DeloadWeek">Nedelja koja je pretvorena u deload.</param>
-/// <param name="FatigueScore">Ocena umora, 0 do 1.</param>
+/// <param name="FatigueScore">Ocena umora, 0 do 1.20 (četiri signala do 1, a odgovor vežbača do 0.20).</param>
 /// <param name="PlannedDeloadReleasedWeek">
 /// Nedelja u kojoj je planirani deload otpao jer mezociklus nosi samo jedan; null kada
 /// planiranog deload-a nije ni bilo ili je već započet.

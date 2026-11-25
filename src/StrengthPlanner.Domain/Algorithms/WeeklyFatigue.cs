@@ -43,10 +43,23 @@ namespace StrengthPlanner.Domain.Algorithms;
 /// Highest ratio of performed weekly sets to MRV across all muscle groups. 1.0 means at
 /// least one muscle group sat exactly on its ceiling.
 /// </param>
+/// <param name="SubjectiveRise">
+/// How much the week's mean answer to "how tired are you after the workout" (1 to 5) rose above the mean of
+/// the lifter's earlier weeks in this block, in points (<see cref="SubjectiveFatigue.Rise"/>). Zero when
+/// the lifter gave no answer this week or has no earlier week to compare with, which contributes nothing
+/// rather than reading a missing answer as a flat week.
+/// </param>
+/// <param name="PreviousSubjectiveRise">
+/// The same rise one week earlier. This week's rise counts toward the score only when this one was a rise
+/// too (<see cref="FatigueEvaluator.ConfirmedSubjectiveRise"/>). Required for the same reason as
+/// <paramref name="PreviousE1RmChangeShare"/>: a default would switch the term off without a word.
+/// </param>
 public sealed record WeeklyFatigue(
     decimal AverageRirDeviation,
     decimal AchievableRirDeficit,
     decimal FailureShare,
     decimal E1RmChangeShare,
     decimal VolumeVsMrvShare,
-    decimal PreviousE1RmChangeShare);
+    decimal PreviousE1RmChangeShare,
+    decimal SubjectiveRise,
+    decimal PreviousSubjectiveRise);

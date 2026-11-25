@@ -12,7 +12,7 @@
         <strong>Nedelja {{ deload.deloadWeek }} je pretvorena u deload.</strong>
         <p>
           Nedelja {{ deload.triggeredByWeek }} pokazala je nakupljen umor
-          (ocena {{ deload.fatigueScore | number: '1.0-2' }} od 1). Serije su
+          (ocena {{ deload.fatigueScore | number: '1.0-2' }}). Serije su
           prepolovljene, a opterećenje spušteno na 90% - pa da se vratiš jači.
         </p>
         @if (deload.plannedDeloadReleasedWeek; as released) {

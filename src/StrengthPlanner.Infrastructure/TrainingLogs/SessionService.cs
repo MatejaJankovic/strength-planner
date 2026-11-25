@@ -296,8 +296,16 @@ public class SessionService : ISessionService
     public async Task<CompleteSessionResultDto> CompleteAsync(
         Guid userId,
         Guid sessionId,
+        int? perceivedFatigue,
         CancellationToken cancellationToken = default)
     {
+        if (perceivedFatigue is { } rating && !SubjectiveFatigue.IsValid(rating))
+        {
+            throw new TrainingLogException(
+                TrainingLogErrorType.Validation,
+                $"Fatigue rating must be {SubjectiveFatigue.MinRating} to {SubjectiveFatigue.MaxRating}.");
+        }
+
         await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
 
         await ApplyPendingCorrectionsAsync(userId, sessionId, cancellationToken);
@@ -311,6 +319,10 @@ public class SessionService : ISessionService
         // sa bazom da bi DTO ispod prijavio tačno stanje.
         session.Status = SessionStatus.Completed;
         session.CompletedAt = now;
+
+        // Odgovor se upisuje ovde, uz završetak, a ne naknadnim pozivom: ocena umora nedelje se računa kad se
+        // završi njen poslednji trening, i odgovor iz tog treninga mora da bude u bazi do tada.
+        session.PerceivedFatigue = perceivedFatigue;
 
         var outcome = await _outcomes.ApplyAsync(userId, session, nextPlans, now, cancellationToken);
 

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using StrengthPlanner.Application.DTOs.Mesocycles;
 using StrengthPlanner.Application.DTOs.Notes;
 using StrengthPlanner.Application.DTOs.Sessions;
@@ -58,9 +59,12 @@ public class SessionsController : AuthorizedControllerBase
     [ProducesResponseType(typeof(CompleteSessionResultDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> Complete(Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Complete(
+        Guid id,
+        [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] CompleteSessionRequest? request,
+        CancellationToken cancellationToken)
     {
-        var result = await _sessionService.CompleteAsync(GetUserId(), id, cancellationToken);
+        var result = await _sessionService.CompleteAsync(GetUserId(), id, request?.PerceivedFatigue, cancellationToken);
         return Ok(result);
     }
 
