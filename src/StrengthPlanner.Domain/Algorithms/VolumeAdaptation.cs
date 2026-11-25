@@ -174,6 +174,41 @@ public static class VolumeAdaptation
             }
         }
 
+        return Normalize(mev, mav, mrv, seed);
+    }
+
+    /// <summary>
+    /// Takes back what one week did to the landmarks, for a workout that is corrected after its
+    /// week was counted. <paramref name="shift"/> is what that week recorded when it moved the
+    /// landmarks, and the result is as if it had never moved them.
+    ///
+    /// Weeks counted after it moved the landmarks further, and some of those moves were held
+    /// back by the same limits (the drift around the seed, the width of the band), so this is
+    /// not an exact inverse in every case. It is the same renormalisation <see cref="Adjust"/>
+    /// ends with, so the result is always a valid band that stays near the seed.
+    /// </summary>
+    public static VolumeLandmarkValues Undo(
+        VolumeLandmarkValues current,
+        VolumeLandmarkValues seed,
+        LandmarkShift shift)
+    {
+        ArgumentNullException.ThrowIfNull(current);
+        ArgumentNullException.ThrowIfNull(seed);
+        ArgumentNullException.ThrowIfNull(shift);
+
+        return Normalize(
+            current.Mev - shift.Mev,
+            current.Mav - shift.Mav,
+            current.Mrv - shift.Mrv,
+            seed);
+    }
+
+    /// <summary>
+    /// Brings raw landmark values to a band that is allowed: near the seed, wide enough, and
+    /// with the target inside it.
+    /// </summary>
+    private static VolumeLandmarkValues Normalize(int mev, int mav, int mrv, VolumeLandmarkValues seed)
+    {
         mev = ClampToSeed(mev, seed.Mev);
         mav = ClampToSeed(mav, seed.Mav);
         mrv = ClampToSeed(mrv, seed.Mrv);

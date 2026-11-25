@@ -53,6 +53,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
     public DbSet<VolumeLandmark> VolumeLandmarks => Set<VolumeLandmark>();
     public DbSet<UserExerciseSetting> UserExerciseSettings => Set<UserExerciseSetting>();
     public DbSet<UserVolumeLandmark> UserVolumeLandmarks => Set<UserVolumeLandmark>();
+    public DbSet<VolumeLandmarkChange> VolumeLandmarkChanges => Set<VolumeLandmarkChange>();
     public DbSet<UserWorkoutTemplate> UserWorkoutTemplates => Set<UserWorkoutTemplate>();
     public DbSet<UserWorkoutTemplateDay> UserWorkoutTemplateDays => Set<UserWorkoutTemplateDay>();
 
@@ -137,6 +138,9 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
 
         modelBuilder.Entity<WorkoutSession>()
             .HasQueryFilter(session => session.TrainingWeek.Mesocycle.UserId == CurrentUserId);
+
+        modelBuilder.Entity<VolumeLandmarkChange>()
+            .HasQueryFilter(change => change.TrainingWeek.Mesocycle.UserId == CurrentUserId);
 
         modelBuilder.Entity<ExercisePlan>()
             .HasQueryFilter(plan => plan.WorkoutSession.TrainingWeek.Mesocycle.UserId == CurrentUserId);

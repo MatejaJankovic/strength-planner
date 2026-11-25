@@ -18,11 +18,10 @@ namespace StrengthPlanner.Infrastructure.TrainingLogs;
 public class SessionService : ISessionService
 {
     private readonly AppDbContext _db;
-    private readonly VolumeLandmarkService _volumeLandmarks;
     private readonly DeloadService _deloads;
-    private readonly WeeklySetPlanner _setPlanner;
     private readonly IMacrocycleService _macrocycles;
     private readonly SessionOutcomes _outcomes;
+    private readonly WeekConsequences _week;
     private readonly E1RmCalculator _e1RmCalculator = new();
 
     public SessionService(
@@ -33,11 +32,10 @@ public class SessionService : ISessionService
         IMacrocycleService macrocycles)
     {
         _db = db;
-        _volumeLandmarks = volumeLandmarks;
         _deloads = deloads;
-        _setPlanner = setPlanner;
         _macrocycles = macrocycles;
         _outcomes = new SessionOutcomes(db);
+        _week = new WeekConsequences(volumeLandmarks, deloads, setPlanner);
     }
 
     public async Task<WorkoutSessionDto> GetByIdAsync(
@@ -273,12 +271,13 @@ public class SessionService : ISessionService
         // Status je već upisan uslovnim UPDATE-om; ovo samo usklađuje učitanu instancu
         // sa bazom da bi DTO ispod prijavio tačno stanje.
         session.Status = SessionStatus.Completed;
+        session.CompletedAt = now;
 
         var outcome = await _outcomes.ApplyAsync(userId, session, nextPlans, now, cancellationToken);
 
         await _db.SaveChangesAsync(cancellationToken);
 
-        var autoDeload = await CloseWeekAsync(userId, session, now, cancellationToken);
+        var autoDeload = await _week.CloseAsync(userId, session.TrainingWeek.MesocycleId, now, cancellationToken);
 
         // Rezime se zaključuje TEK ovde: sve do ovog trenutka je moglo da prepiše težinu
         // naredne nedelje — progresija, pravilo za narednu nedelju, pa i auto-deload.
@@ -288,10 +287,14 @@ public class SessionService : ISessionService
         // blok — generator ispod poziva svoj SaveChanges, pa se na njega ne oslanjamo. Ovaj
         // upis je i preduslov balansiranja ispod: ono pita bazu koje su nedelje deload, a
         // DeloadService pretvaranje nedelje ostavlja u change trackeru (vidi
-        // RebalanceRestOfWeekAsync).
+        // WeekConsequences.RebalanceAsync).
         await _db.SaveChangesAsync(cancellationToken);
 
-        var volumeAdjustments = await RebalanceRestOfWeekAsync(userId, session, cancellationToken);
+        var volumeAdjustments = await _week.RebalanceAsync(
+            userId,
+            session.TrainingWeek.MesocycleId,
+            session.TrainingWeek.Mesocycle.SetAllocation,
+            cancellationToken);
 
         await _db.SaveChangesAsync(cancellationToken);
 
@@ -313,7 +316,7 @@ public class SessionService : ISessionService
 
         await transaction.CommitAsync(cancellationToken);
 
-        return BuildCompletionResult(session, outcome, autoDeload, volumeAdjustments, nextBlock);
+        return CompletionResults.Build(session, outcome, autoDeload, volumeAdjustments, nextBlock);
     }
 
     /// <summary>
@@ -365,119 +368,6 @@ public class SessionService : ISessionService
         return session;
     }
 
-    /// <summary>
-    /// What the week's end does: the volume limits learn from every week that is fully done
-    /// and not yet counted, and the fatigue score may pull a deload forward.
-    ///
-    /// Both are conditional UPDATEs on the week, so a week is counted exactly once. They stay
-    /// in the same transaction as the completion, so either everything is written or nothing.
-    /// The fatigue score goes AFTER the progression: a deload rewrites the loads that the
-    /// progression has just filled in for the next week.
-    /// </summary>
-    private async Task<DeloadOutcome?> CloseWeekAsync(
-        Guid userId,
-        WorkoutSession session,
-        DateTime now,
-        CancellationToken cancellationToken)
-    {
-        await _volumeLandmarks.AdaptPendingWeeksAsync(
-            userId,
-            session.TrainingWeek.MesocycleId,
-            now,
-            cancellationToken);
-
-        return await _deloads.EvaluatePendingWeeksAsync(
-            userId,
-            session.TrainingWeek.MesocycleId,
-            cancellationToken);
-    }
-
-    /// <summary>
-    /// The set plan is recalculated AFTER the deload, and only once the deload is WRITTEN.
-    /// Both parts of that order carry weight:
-    ///
-    /// After the deload, because a deload changes the prescription the balancing starts from.
-    /// After the write, because balancing asks the database which weeks are deloads — and
-    /// DeloadService leaves the conversion of a week in the change tracker. Without the
-    /// SaveChanges before this call the query still sees the old state, takes the freshly
-    /// relieved week for an ordinary one and gives it back four sets in place of the halved
-    /// two: the user gets a "deload" with the volume of a full training week. Measured before
-    /// the fix — the whole week went from two to four sets per exercise.
-    ///
-    /// This workout wrote part of the week's volume (or skipped it), so the workouts still to
-    /// come in that week get a proposal that brings the week back into the target zone. A
-    /// block that follows its template literally is not balanced here either. Had it been
-    /// skipped only at generation, the first completed workout would have put the sets back on
-    /// the target volume — and the choice would have held exactly until that first workout.
-    /// </summary>
-    private async Task<IReadOnlyList<SetAdjustment>> RebalanceRestOfWeekAsync(
-        Guid userId,
-        WorkoutSession session,
-        CancellationToken cancellationToken)
-    {
-        if (session.TrainingWeek.Mesocycle.SetAllocation != SetAllocation.TargetVolume)
-        {
-            return [];
-        }
-
-        return await _setPlanner.RebalanceAsync(
-            userId,
-            session.TrainingWeek.MesocycleId,
-            cancellationToken);
-    }
-
-    private static CompleteSessionResultDto BuildCompletionResult(
-        WorkoutSession session,
-        SessionOutcome outcome,
-        DeloadOutcome? autoDeload,
-        IReadOnlyList<SetAdjustment> volumeAdjustments,
-        MacrocycleAdvance? nextBlock)
-    {
-        return new CompleteSessionResultDto
-        {
-            SessionId = session.Id,
-            Status = session.Status.ToString(),
-            Exercises = outcome.Summaries,
-            // Prijavljuje se samo tekuća nedelja. Balansiranje dodiruje i one koje tek
-            // dolaze (granice volumena su se možda pomerile ovim treningom), ali posledica
-            // OVOG treninga koju korisnik može da vidi na svom planu je ono što mu preostaje
-            // u ovoj nedelji.
-            VolumeAdjustments = volumeAdjustments
-                .Where(adjustment => adjustment.WeekNumber == session.TrainingWeek.WeekNumber)
-                .Select(adjustment => new SetAdjustmentDto
-                {
-                    SessionId = adjustment.SessionId,
-                    DayLabel = adjustment.DayLabel,
-                    ExerciseName = adjustment.ExerciseName,
-                    FromSets = adjustment.FromSets,
-                    ToSets = adjustment.ToSets,
-                    Muscle = adjustment.Muscle,
-                    Reason = adjustment.Reason?.ToString()
-                })
-                .ToList(),
-            AutoDeload = autoDeload is null
-                ? null
-                : new AutoDeloadDto
-                {
-                    TriggeredByWeek = autoDeload.TriggeredByWeek,
-                    DeloadWeek = autoDeload.DeloadWeek,
-                    FatigueScore = autoDeload.FatigueScore,
-                    PlannedDeloadReleasedWeek = autoDeload.PlannedDeloadReleasedWeek
-                },
-            NextBlock = nextBlock is null
-                ? null
-                : new MacrocycleAdvanceDto
-                {
-                    PlanName = nextBlock.PlanName,
-                    BlockOrder = nextBlock.BlockOrder,
-                    BlockCount = nextBlock.BlockCount,
-                    Goal = nextBlock.Goal.ToString(),
-                    MesocycleId = nextBlock.MesocycleId,
-                    MesocycleName = nextBlock.MesocycleName
-                }
-        };
-    }
-
     /// <summary>Body mass the exercises of this session carry for the lifter right now.</summary>
     /// <summary>
     /// Jedini put od sesije do njenog DTO-a.
@@ -508,12 +398,29 @@ public class SessionService : ISessionService
             session.TrainingWeek.IsDeload,
             weeks.Select(week => (week.WeekNumber, week.IsDeload)));
 
-        return ToDto(
+        var dto = ToDto(
             session,
             weightStepOverrides,
             portions,
             await ResolveEstimatedTargetsAsync(userId, session, portions, weightStepOverrides, cancellationToken),
             isLastTrainingWeek);
+
+        // Samo završen trening ima prozor ispravke; za ostale polje ostaje prazno.
+        if (session.Status == SessionStatus.Completed)
+        {
+            var window = await SessionCorrectionResolver.ResolveAsync(_db, userId, session.Id, cancellationToken);
+            dto.Correction = window is null
+                ? null
+                : new SessionCorrectionDto
+                {
+                    CanCorrect = window.IsOpen,
+                    Mode = window.Mode.ToString(),
+                    BlockedBy = window.IsOpen ? null : window.BlockedBy.ToString(),
+                    RevisionPending = session.RevisionPending
+                };
+        }
+
+        return dto;
     }
 
     /// <summary>

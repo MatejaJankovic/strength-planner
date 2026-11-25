@@ -1,3 +1,5 @@
+using StrengthPlanner.Application.DTOs.Sessions;
+
 namespace StrengthPlanner.Application.DTOs.Mesocycles;
 
 public class WorkoutSessionDto
@@ -11,5 +13,8 @@ public class WorkoutSessionDto
     public string DayLabel { get; set; } = string.Empty;
     public DateTime? Date { get; set; }
     public string Status { get; set; } = string.Empty;
+
+    /// <summary>Set only for a finished workout: whether it can still be corrected.</summary>
+    public SessionCorrectionDto? Correction { get; set; }
     public List<ExercisePlanDto> ExercisePlans { get; set; } = new();
 }

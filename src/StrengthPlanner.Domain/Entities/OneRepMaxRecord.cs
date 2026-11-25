@@ -19,4 +19,10 @@ public class OneRepMaxRecord
     public decimal ValueKg { get; set; }
     public OneRepMaxSource Source { get; set; }
     public DateTime RecordedAt { get; set; }
+
+    /// <summary>
+    /// The workout this estimate came from, so correcting that workout can replace it. Null
+    /// for typed maxima, test sets and estimates written before they were tied to a workout.
+    /// </summary>
+    public Guid? WorkoutSessionId { get; set; }
 }

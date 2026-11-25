@@ -16,6 +16,13 @@ public class OneRepMaxRecordConfiguration : IEntityTypeConfiguration<OneRepMaxRe
             .HasConversion<string>()
             .HasMaxLength(16);
 
+        // Procena živi i posle treninga iz kog je nastala (brisanje plana ne briše istoriju
+        // maksimuma), pa ključ ide na null umesto da kaskadira.
+        builder.HasOne<WorkoutSession>()
+            .WithMany()
+            .HasForeignKey(r => r.WorkoutSessionId)
+            .OnDelete(DeleteBehavior.SetNull);
+
         // Veze ka ApplicationUser (Cascade) i Exercise (Restrict) konfigurisane su u
         // ApplicationUserConfiguration i ExerciseConfiguration.
     }

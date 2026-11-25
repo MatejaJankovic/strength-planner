@@ -437,11 +437,16 @@ namespace StrengthPlanner.Infrastructure.Persistence.Migrations
                         .HasPrecision(6, 2)
                         .HasColumnType("numeric(6,2)");
 
+                    b.Property<Guid?>("WorkoutSessionId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ExerciseId");
 
                     b.HasIndex("UserId");
+
+                    b.HasIndex("WorkoutSessionId");
 
                     b.ToTable("OneRepMaxRecords");
                 });
@@ -736,11 +741,45 @@ namespace StrengthPlanner.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("StrengthPlanner.Domain.Entities.VolumeLandmarkChange", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("MavDelta")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MevDelta")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MrvDelta")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("MuscleGroupId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TrainingWeekId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MuscleGroupId");
+
+                    b.HasIndex("TrainingWeekId", "MuscleGroupId")
+                        .IsUnique();
+
+                    b.ToTable("VolumeLandmarkChanges");
+                });
+
             modelBuilder.Entity("StrengthPlanner.Domain.Entities.WorkoutSession", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime?>("Date")
                         .HasColumnType("timestamp with time zone");
@@ -749,6 +788,9 @@ namespace StrengthPlanner.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
+
+                    b.Property<bool>("RevisionPending")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -969,6 +1011,11 @@ namespace StrengthPlanner.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("StrengthPlanner.Domain.Entities.WorkoutSession", null)
+                        .WithMany()
+                        .HasForeignKey("WorkoutSessionId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("Exercise");
                 });
 
@@ -1076,6 +1123,25 @@ namespace StrengthPlanner.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("MuscleGroup");
+                });
+
+            modelBuilder.Entity("StrengthPlanner.Domain.Entities.VolumeLandmarkChange", b =>
+                {
+                    b.HasOne("StrengthPlanner.Domain.Entities.MuscleGroup", "MuscleGroup")
+                        .WithMany()
+                        .HasForeignKey("MuscleGroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("StrengthPlanner.Domain.Entities.TrainingWeek", "TrainingWeek")
+                        .WithMany()
+                        .HasForeignKey("TrainingWeekId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MuscleGroup");
+
+                    b.Navigation("TrainingWeek");
                 });
 
             modelBuilder.Entity("StrengthPlanner.Domain.Entities.WorkoutSession", b =>

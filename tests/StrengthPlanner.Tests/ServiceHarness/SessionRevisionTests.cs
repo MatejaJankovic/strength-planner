@@ -1,0 +1,503 @@
+using Microsoft.EntityFrameworkCore;
+using StrengthPlanner.Application.DTOs.SetLogs;
+using StrengthPlanner.Application.Exceptions;
+using StrengthPlanner.Domain.Entities;
+using StrengthPlanner.Domain.Enums;
+using StrengthPlanner.Infrastructure.Analytics;
+using StrengthPlanner.Infrastructure.Mesocycles;
+using StrengthPlanner.Infrastructure.Persistence;
+using StrengthPlanner.Infrastructure.TrainingLogs;
+
+namespace StrengthPlanner.Tests.ServiceHarness;
+
+/// <summary>
+/// A finished workout can be corrected while nothing has been built on it, and saving the
+/// correction writes again everything that finishing it wrote: the estimate, the target of the
+/// same day next week, the week's fatigue score and its move of the volume limits.
+///
+/// The workouts here are finished by the real <c>CompleteAsync</c>, so the correction is
+/// measured against what completion really produced and not against a hand-built row.
+/// </summary>
+public class SessionRevisionTests
+{
+    [Fact]
+    public async Task ASavedCorrection_ReplacesTheEstimate_AndTheNextTarget()
+    {
+        using var database = new SqliteDatabase();
+        var seed = await SeedAsync(database, sets: 3, reps: 12, rir: 1);
+        var first = await CompleteAsync(database, seed.SessionOne);
+        var firstSquat = first.Exercises.Single();
+        Assert.Equal(102.5m, firstSquat.NextWeightKg);
+
+        // The lifter entered 12 reps three times, and it was 8: the estimate and the step up
+        // were both built on sets that were not lifted.
+        await SetRepsAsync(database, seed.SessionOne, reps: 8);
+        var result = await ReviseAsync(database, seed.SessionOne);
+
+        var squat = result.Result.Exercises.Single();
+        Assert.True(squat.E1Rm < firstSquat.E1Rm);
+        Assert.Equal(100m, squat.NextWeightKg);
+        Assert.Equal(100m, await NextTargetAsync(database, seed));
+
+        await using var read = database.NewContext();
+        var estimates = await read.OneRepMaxRecords
+            .Where(record => record.Source == OneRepMaxSource.Estimated)
+            .ToListAsync();
+        Assert.Equal(squat.E1Rm, Assert.Single(estimates).ValueKg);
+        Assert.Equal(seed.SessionOne, estimates[0].WorkoutSessionId);
+        Assert.False((await read.WorkoutSessions.SingleAsync(session => session.Id == seed.SessionOne)).RevisionPending);
+    }
+
+    /// <summary>
+    /// Saving with nothing changed writes the same values again, so a correction that was
+    /// interrupted and repeated cannot drift.
+    /// </summary>
+    [Fact]
+    public async Task SavingWithNothingChanged_WritesTheSameValues()
+    {
+        using var database = new SqliteDatabase();
+        var seed = await SeedAsync(database, sets: 3, reps: 12, rir: 1);
+        var first = await CompleteAsync(database, seed.SessionOne);
+
+        var again = await ReviseAsync(database, seed.SessionOne);
+
+        Assert.Equal(first.Exercises.Single().E1Rm, again.Result.Exercises.Single().E1Rm);
+        Assert.Equal(first.Exercises.Single().NextWeightKg, again.Result.Exercises.Single().NextWeightKg);
+        Assert.Equal(again.PreviousFatigueScore, again.FatigueScore);
+        await using var read = database.NewContext();
+        Assert.Equal(1, await read.OneRepMaxRecords.CountAsync(record => record.Source == OneRepMaxSource.Estimated));
+    }
+
+    /// <summary>
+    /// The week was closed when the workout was finished, so its fatigue score is worked out
+    /// again from the corrected sets and the report says what it was and what it is.
+    /// </summary>
+    [Fact]
+    public async Task ACorrectionOfAClosedWeek_ScoresTheWeekAgain()
+    {
+        using var database = new SqliteDatabase();
+        var seed = await SeedAsync(database, sets: 4, reps: 10, rir: 1);
+        await CompleteAsync(database, seed.SessionOne);
+
+        await using (var db = database.NewContext())
+        {
+            var before = (await db.TrainingWeeks.SingleAsync(week => week.Id == seed.WeekOne)).FatigueScore;
+            Assert.NotNull(before);
+        }
+
+        // Every set taken to failure instead of one rep from it.
+        await SetEverySetAsync(database, seed.SessionOne, reps: 10, rir: 0, isFailure: true);
+        var result = await ReviseAsync(database, seed.SessionOne);
+
+        Assert.NotNull(result.PreviousFatigueScore);
+        Assert.NotEqual(result.PreviousFatigueScore, result.FatigueScore);
+        await using var read = database.NewContext();
+        Assert.Equal(
+            result.FatigueScore,
+            (await read.TrainingWeeks.SingleAsync(week => week.Id == seed.WeekOne)).FatigueScore);
+    }
+
+    /// <summary>
+    /// The limits are not recalculated on top of the old move: that would count the week
+    /// twice. Twenty easy sets raise the ceiling by one (20 to 21); corrected to twenty hard
+    /// ones the same week lowers it (to 19), and not to 20, which is what counting it twice
+    /// would give.
+    /// </summary>
+    [Fact]
+    public async Task ACorrectionOfAClosedWeek_TakesBackItsMoveOfTheLimits_BeforeCountingItAgain()
+    {
+        using var database = new SqliteDatabase();
+        var seed = await SeedAsync(database, sets: 20, reps: 10, rir: 3);
+        await CompleteAsync(database, seed.SessionOne);
+
+        Assert.Equal(21, await MrvAsync(database, seed.Quads));
+        await using (var db = database.NewContext())
+        {
+            var change = await db.VolumeLandmarkChanges.SingleAsync();
+            Assert.Equal((0, 0, 1), (change.MevDelta, change.MavDelta, change.MrvDelta));
+        }
+
+        await SetEverySetAsync(database, seed.SessionOne, reps: 10, rir: 0, isFailure: true);
+        await ReviseAsync(database, seed.SessionOne);
+
+        Assert.Equal(19, await MrvAsync(database, seed.Quads));
+        await using var read = database.NewContext();
+        var changes = await read.VolumeLandmarkChanges.ToListAsync();
+        Assert.Equal(-1, Assert.Single(changes).MrvDelta);
+    }
+
+    /// <summary>
+    /// A week that moved the limits and is corrected back to where it started leaves them at
+    /// the seed, with no personal row that only repeats it.
+    /// </summary>
+    [Fact]
+    public async Task UndoingTheOnlyMove_LeavesNoPersonalRow()
+    {
+        using var database = new SqliteDatabase();
+        var seed = await SeedAsync(database, sets: 20, reps: 10, rir: 3);
+        await CompleteAsync(database, seed.SessionOne);
+        Assert.Equal(21, await MrvAsync(database, seed.Quads));
+
+        await using (var context = database.NewContext())
+        {
+            var landmarks = new VolumeLandmarkService(context);
+            await landmarks.UndoWeekAsync(database.UserId, seed.MesocycleId, seed.WeekOne, CancellationToken.None);
+            await context.SaveChangesAsync();
+        }
+
+        await using var read = database.NewContext();
+        Assert.Empty(await read.UserVolumeLandmarks.ToListAsync());
+        Assert.Empty(await read.VolumeLandmarkChanges.ToListAsync());
+        Assert.Null((await read.TrainingWeeks.SingleAsync(week => week.Id == seed.WeekOne)).VolumeAdaptedAt);
+    }
+
+    [Fact]
+    public async Task TheSessionDto_SaysWhetherItCanBeCorrected_AndWhetherASaveIsPending()
+    {
+        using var database = new SqliteDatabase();
+        var seed = await SeedAsync(database, sets: 3, reps: 12, rir: 1);
+        await CompleteAsync(database, seed.SessionOne);
+
+        var before = await ReadSessionAsync(database, seed.SessionOne);
+        Assert.NotNull(before.Correction);
+        Assert.True(before.Correction.CanCorrect);
+        Assert.Equal("Recalculate", before.Correction.Mode);
+        Assert.False(before.Correction.RevisionPending);
+
+        await SetRepsAsync(database, seed.SessionOne, reps: 9);
+
+        var pending = await ReadSessionAsync(database, seed.SessionOne);
+        Assert.True(pending.Correction!.RevisionPending);
+
+        await ReviseAsync(database, seed.SessionOne);
+        Assert.False((await ReadSessionAsync(database, seed.SessionOne)).Correction!.RevisionPending);
+
+        // A session that was not finished has no correction at all.
+        var planned = await ReadSessionAsync(database, seed.SessionTwo);
+        Assert.Null(planned.Correction);
+    }
+
+    /// <summary>
+    /// Once the same day of the next week is under way its target was built from these sets
+    /// and they are final: changing a set is refused, and so is saving.
+    /// </summary>
+    [Fact]
+    public async Task TheWindowCloses_WhenTheNextWorkoutOfTheSameDayStarts()
+    {
+        using var database = new SqliteDatabase();
+        var seed = await SeedAsync(database, sets: 3, reps: 12, rir: 1);
+        await CompleteAsync(database, seed.SessionOne);
+
+        await using (var db = database.NewContext())
+        {
+            (await db.WorkoutSessions.SingleAsync(session => session.Id == seed.SessionTwo)).Status = SessionStatus.InProgress;
+            await db.SaveChangesAsync();
+        }
+
+        var setId = await FirstSetIdAsync(database, seed.SessionOne);
+        await using var context = database.NewContext();
+        var update = await Assert.ThrowsAsync<TrainingLogException>(() =>
+            new SetLogService(context).UpdateSetAsync(
+                database.UserId,
+                setId,
+                new UpdateSetLogRequest { WeightKg = 100m, Reps = 8, Rir = 1 }));
+        Assert.Equal(TrainingLogErrorType.Conflict, update.ErrorType);
+
+        await using var other = database.NewContext();
+        var revise = await Assert.ThrowsAsync<TrainingLogException>(() => NewRevisionService(other).ReviseAsync(database.UserId, seed.SessionOne));
+        Assert.Equal(TrainingLogErrorType.Conflict, revise.ErrorType);
+
+        var dto = await ReadSessionAsync(database, seed.SessionOne);
+        Assert.False(dto.Correction!.CanCorrect);
+        Assert.Equal("NextWorkoutStarted", dto.Correction.BlockedBy);
+    }
+
+    /// <summary>
+    /// A workout finished before consequences were recorded per workout has no estimate or
+    /// week move tied to it. Its sets can still be corrected, as history, and nothing is
+    /// recalculated: no pending save, no new estimate, the next target stays.
+    /// </summary>
+    [Fact]
+    public async Task AWorkoutFinishedBeforeConsequencesWereRecorded_IsCorrectedAsHistoryOnly()
+    {
+        using var database = new SqliteDatabase();
+        var seed = await SeedAsync(database, sets: 3, reps: 12, rir: 1);
+        await CompleteAsync(database, seed.SessionOne);
+
+        await using (var db = database.NewContext())
+        {
+            var session = await db.WorkoutSessions.SingleAsync(candidate => candidate.Id == seed.SessionOne);
+            session.CompletedAt = null;
+            await db.OneRepMaxRecords
+                .Where(record => record.WorkoutSessionId == seed.SessionOne)
+                .ExecuteUpdateAsync(setters => setters.SetProperty(record => record.WorkoutSessionId, (Guid?)null));
+            await db.SaveChangesAsync();
+        }
+
+        var targetBefore = await NextTargetAsync(database, seed);
+        await SetRepsAsync(database, seed.SessionOne, reps: 8);
+
+        var dto = await ReadSessionAsync(database, seed.SessionOne);
+        Assert.Equal("HistoryOnly", dto.Correction!.Mode);
+        Assert.False(dto.Correction.RevisionPending);
+        Assert.Equal(targetBefore, await NextTargetAsync(database, seed));
+
+        await using var read = database.NewContext();
+        Assert.All(
+            (await read.SetLogs.Where(set => set.ExercisePlan.WorkoutSessionId == seed.SessionOne).ToListAsync()),
+            set => Assert.Equal(8, set.Reps));
+        Assert.Equal(1, await read.OneRepMaxRecords.CountAsync(record => record.Source == OneRepMaxSource.Estimated));
+
+        await using var context = database.NewContext();
+        var error = await Assert.ThrowsAsync<TrainingLogException>(() => NewRevisionService(context).ReviseAsync(database.UserId, seed.SessionOne));
+        Assert.Equal(TrainingLogErrorType.Conflict, error.ErrorType);
+    }
+
+    [Fact]
+    public async Task AddingASet_ToAFinishedWorkout_MarksTheCorrectionPending()
+    {
+        using var database = new SqliteDatabase();
+        var seed = await SeedAsync(database, sets: 3, reps: 12, rir: 1);
+        await CompleteAsync(database, seed.SessionOne);
+
+        await using (var context = database.NewContext())
+        {
+            await new SetLogService(context).AddSetAsync(
+                database.UserId,
+                seed.SquatPlanOne,
+                new AddSetLogRequest { WeightKg = 100m, Reps = 10, Rir = 1 });
+        }
+
+        Assert.True((await ReadSessionAsync(database, seed.SessionOne)).Correction!.RevisionPending);
+    }
+
+    [Fact]
+    public async Task AnotherUser_CannotReviseOrCorrect()
+    {
+        using var database = new SqliteDatabase();
+        var seed = await SeedAsync(database, sets: 3, reps: 12, rir: 1);
+        await CompleteAsync(database, seed.SessionOne);
+
+        await using var context = database.NewContext();
+        var error = await Assert.ThrowsAsync<TrainingLogException>(
+            () => NewRevisionService(context).ReviseAsync(Guid.NewGuid(), seed.SessionOne));
+
+        Assert.Equal(TrainingLogErrorType.NotFound, error.ErrorType);
+    }
+
+    // ---- helpers ------------------------------------------------------------------------
+
+    private static SessionRevisionService NewRevisionService(AppDbContext context)
+    {
+        var landmarks = new VolumeLandmarkService(context);
+        return new SessionRevisionService(
+            context,
+            landmarks,
+            new DeloadService(context, landmarks),
+            new WeeklySetPlanner(context, landmarks, new WeeklyVolumeTargetResolver(context)));
+    }
+
+    private static async Task<StrengthPlanner.Application.DTOs.Sessions.CompleteSessionResultDto> CompleteAsync(
+        SqliteDatabase database,
+        Guid sessionId)
+    {
+        await using var context = database.NewContext();
+        return await SessionCompletionTests.NewService(context).CompleteAsync(database.UserId, sessionId, CancellationToken.None);
+    }
+
+    private static async Task<StrengthPlanner.Application.DTOs.Sessions.SessionRevisionResultDto> ReviseAsync(
+        SqliteDatabase database,
+        Guid sessionId)
+    {
+        await using var context = database.NewContext();
+        return await NewRevisionService(context).ReviseAsync(database.UserId, sessionId, CancellationToken.None);
+    }
+
+    private static async Task<StrengthPlanner.Application.DTOs.Mesocycles.WorkoutSessionDto> ReadSessionAsync(
+        SqliteDatabase database,
+        Guid sessionId)
+    {
+        await using var context = database.NewContext();
+        return await SessionCompletionTests.NewService(context).GetByIdAsync(database.UserId, sessionId, CancellationToken.None);
+    }
+
+    private static async Task<Guid> FirstSetIdAsync(SqliteDatabase database, Guid sessionId)
+    {
+        await using var db = database.NewContext();
+        return await db.SetLogs
+            .Where(set => set.ExercisePlan.WorkoutSessionId == sessionId)
+            .OrderBy(set => set.SetNumber)
+            .Select(set => set.Id)
+            .FirstAsync();
+    }
+
+    /// <summary>Changes every logged set of the session through the same service the screen uses.</summary>
+    private static async Task SetRepsAsync(SqliteDatabase database, Guid sessionId, int reps)
+    {
+        await SetEverySetAsync(database, sessionId, reps, rir: 1, isFailure: false);
+    }
+
+    private static async Task SetEverySetAsync(SqliteDatabase database, Guid sessionId, int reps, int rir, bool isFailure)
+    {
+        List<Guid> setIds;
+        await using (var db = database.NewContext())
+        {
+            setIds = await db.SetLogs
+                .Where(set => set.ExercisePlan.WorkoutSessionId == sessionId)
+                .Select(set => set.Id)
+                .ToListAsync();
+        }
+
+        foreach (var setId in setIds)
+        {
+            await using var context = database.NewContext();
+            await new SetLogService(context).UpdateSetAsync(
+                database.UserId,
+                setId,
+                new UpdateSetLogRequest { WeightKg = 100m, Reps = reps, Rir = rir, IsFailure = isFailure });
+        }
+    }
+
+    private static async Task<decimal?> NextTargetAsync(SqliteDatabase database, Seed seed)
+    {
+        await using var db = database.NewContext();
+        return (await db.ExercisePlans.SingleAsync(plan => plan.WorkoutSessionId == seed.SessionTwo)).TargetWeightKg;
+    }
+
+    private static async Task<int> MrvAsync(SqliteDatabase database, Guid muscleGroupId)
+    {
+        await using var db = database.NewContext();
+        var personal = await db.UserVolumeLandmarks.SingleOrDefaultAsync(landmark => landmark.MuscleGroupId == muscleGroupId);
+        if (personal is not null)
+        {
+            return personal.Mrv;
+        }
+
+        return (await db.VolumeLandmarks.SingleAsync(landmark => landmark.MuscleGroupId == muscleGroupId)).Mrv;
+    }
+
+    private sealed record Seed(
+        Guid Quads,
+        Guid MesocycleId,
+        Guid WeekOne,
+        Guid SessionOne,
+        Guid SessionTwo,
+        Guid SquatPlanOne);
+
+    /// <summary>
+    /// A hypertrophy block of four weeks with one day ("Day A") a week and one lift, a squat
+    /// with a typed maximum of 130 kg. The first workout is under way with <paramref name="sets"/>
+    /// sets of 100 kg; the second is planned. The block follows its template, so finishing a
+    /// workout does not rebalance anything that is not under test here.
+    /// </summary>
+    private static async Task<Seed> SeedAsync(SqliteDatabase database, int sets, int reps, int rir)
+    {
+        var quads = Guid.NewGuid();
+        var squat = Guid.NewGuid();
+
+        await using var db = database.NewContext();
+        db.MuscleGroups.Add(new MuscleGroup { Id = quads, Name = "Quads" });
+        db.VolumeLandmarks.Add(new VolumeLandmark { Id = Guid.NewGuid(), MuscleGroupId = quads, Mev = 8, Mav = 12, Mrv = 20 });
+        db.Profiles.Add(new Profile
+        {
+            Id = Guid.NewGuid(),
+            UserId = database.UserId,
+            Age = 30,
+            BodyweightKg = 80m,
+            ExperienceLevel = ExperienceLevel.Intermediate
+        });
+        db.Exercises.Add(new Exercise
+        {
+            Id = squat,
+            Name = "Back Squat",
+            Type = ExerciseType.Compound,
+            Equipment = "Barbell",
+            WeightStepKg = 2.5m,
+            Muscles = [new ExerciseMuscle { MuscleGroupId = quads, Contribution = 1.0m }]
+        });
+        db.OneRepMaxRecords.Add(new OneRepMaxRecord
+        {
+            Id = Guid.NewGuid(),
+            UserId = database.UserId,
+            ExerciseId = squat,
+            ValueKg = 130m,
+            Source = OneRepMaxSource.Manual,
+            RecordedAt = DateTime.UtcNow.AddDays(-10)
+        });
+
+        var mesocycle = new Mesocycle
+        {
+            Id = Guid.NewGuid(),
+            UserId = database.UserId,
+            Name = "Blok",
+            Goal = Goal.Hypertrophy,
+            PeriodizationModel = PeriodizationModel.Flat,
+            SetAllocation = SetAllocation.FollowTemplate,
+            ExperienceLevel = ExperienceLevel.Intermediate,
+            StartDate = new DateTime(2026, 11, 9, 0, 0, 0, DateTimeKind.Utc),
+            IsActive = true
+        };
+
+        Guid weekOne = default, sessionOne = default, sessionTwo = default, planOne = default;
+        for (var weekNumber = 1; weekNumber <= 4; weekNumber++)
+        {
+            var week = new TrainingWeek { Id = Guid.NewGuid(), WeekNumber = weekNumber, IsDeload = weekNumber == 4 };
+            mesocycle.Weeks.Add(week);
+            if (weekNumber > 2)
+            {
+                continue;
+            }
+
+            var session = new WorkoutSession
+            {
+                Id = Guid.NewGuid(),
+                DayLabel = "Day A",
+                Status = weekNumber == 1 ? SessionStatus.InProgress : SessionStatus.Planned
+            };
+            var plan = new ExercisePlan
+            {
+                Id = Guid.NewGuid(),
+                ExerciseId = squat,
+                Order = 1,
+                TargetSets = sets,
+                PrescribedSets = sets,
+                RepRangeMin = 8,
+                RepRangeMax = 12,
+                BaseRepRangeMin = 8,
+                BaseRepRangeMax = 12,
+                TargetRir = 1,
+                TargetWeightKg = 100m
+            };
+            if (weekNumber == 1)
+            {
+                for (var number = 1; number <= sets; number++)
+                {
+                    plan.SetLogs.Add(new SetLog
+                    {
+                        Id = Guid.NewGuid(),
+                        SetNumber = number,
+                        WeightKg = 100m,
+                        Reps = reps,
+                        Rir = rir,
+                        PerformedAt = DateTime.UtcNow
+                    });
+                }
+
+                weekOne = week.Id;
+                sessionOne = session.Id;
+                planOne = plan.Id;
+            }
+            else
+            {
+                sessionTwo = session.Id;
+            }
+
+            session.ExercisePlans.Add(plan);
+            week.Sessions.Add(session);
+        }
+
+        db.Mesocycles.Add(mesocycle);
+        await db.SaveChangesAsync();
+        return new Seed(quads, mesocycle.Id, weekOne, sessionOne, sessionTwo, planOne);
+    }
+}
