@@ -35,12 +35,15 @@ public class SessionCompletionTests
         var squat = result.Exercises.Single(summary => summary.ExerciseId == seed.Squat);
         Assert.Equal(100m, squat.UsedWeightKg);
         Assert.NotNull(squat.E1Rm);
+        // Procena je iznad ručno upisanih 130 kg, pa je ovo rekord; druga vežba nema procenu.
+        Assert.True(squat.IsPr);
         Assert.True(squat.WeightIncreased);
         Assert.Equal(102.5m, squat.NextWeightKg);
         Assert.Equal(2.5m, squat.WeightChangeKg);
 
         var untouched = result.Exercises.Single(summary => summary.ExerciseId == seed.Hack);
         Assert.Null(untouched.E1Rm);
+        Assert.False(untouched.IsPr);
         Assert.Equal(80m, untouched.UsedWeightKg);
         Assert.Equal(80m, untouched.NextWeightKg);
 
@@ -136,7 +139,8 @@ public class SessionCompletionTests
         var change = Assert.Single(result.VolumeAdjustments);
         Assert.Equal("Day B", change.DayLabel);
         Assert.Equal(10, change.FromSets);
-        Assert.True(change.ToSets < change.FromSets);
+        // Cilj nedelje je MAV od 12 serija, a tri su već odrađene: ostaje devet.
+        Assert.Equal(9, change.ToSets);
 
         await using var read = database.NewContext();
         var dayB = await read.ExercisePlans.SingleAsync(plan => plan.WorkoutSession.DayLabel == "Day B");
@@ -163,11 +167,48 @@ public class SessionCompletionTests
     }
 
     /// <summary>
-    /// Izdvojeni korak sam: naredni planovi su istog dana u kasnijim nedeljama, a već završen
-    /// trening se ne dira (završetak van redosleda ne sme da prepiše odrađene ciljeve).
+    /// Izdvojeni korak sam: naredni planovi su istog dana u kasnijim nedeljama i samo za vežbe
+    /// ovog treninga. Drugi dan iste nedelje i vežba koje u treningu nema ne ulaze.
     /// </summary>
     [Fact]
-    public async Task TheNextPlans_AreTheSameDayLaterWeeks_AndNeverACompletedSession()
+    public async Task TheNextPlans_AreTheSameDayLaterWeeks_ForTheExercisesOfTheSession()
+    {
+        using var database = new SqliteDatabase();
+        var seed = await SeedAsync(database, SetAllocation.FollowTemplate);
+        var other = database.AddExercise("Leg Press", equipment: "Machine");
+
+        await using (var db = database.NewContext())
+        {
+            var weekTwo = await db.TrainingWeeks.SingleAsync(week => week.Id == seed.WeekTwo);
+            var dayB = new WorkoutSession { Id = Guid.NewGuid(), DayLabel = "Day B", Status = SessionStatus.Planned, TrainingWeekId = weekTwo.Id };
+            dayB.ExercisePlans.Add(Plan(seed.Squat, order: 1, weightKg: 100m));
+            db.WorkoutSessions.Add(dayB);
+
+            var dayA = await db.WorkoutSessions.SingleAsync(session => session.Id == seed.WeekTwoSession);
+            var extra = Plan(other, order: 3, weightKg: 150m);
+            extra.WorkoutSessionId = dayA.Id;
+            db.ExercisePlans.Add(extra);
+            await db.SaveChangesAsync();
+        }
+
+        await using var context = database.NewContext();
+        var session = await LoadSessionAsync(context, seed.WeekOneSession);
+
+        var nextPlans = await new SessionOutcomes(context)
+            .LoadNextPlansAsync(database.UserId, session, CancellationToken.None);
+
+        Assert.Equal(
+            [seed.Squat, seed.Hack],
+            nextPlans.Select(plan => plan.ExerciseId));
+        Assert.All(nextPlans, plan => Assert.Equal(seed.WeekTwoSession, plan.WorkoutSessionId));
+    }
+
+    /// <summary>
+    /// Izdvojeni korak sam: već završen trening naredne nedelje se ne dira (završetak van
+    /// redosleda ne sme da prepiše odrađene ciljeve), a tuđi nalog ne vidi ništa.
+    /// </summary>
+    [Fact]
+    public async Task TheNextPlans_NeverIncludeACompletedSession_OrAnotherUsersPlans()
     {
         using var database = new SqliteDatabase();
         var seed = await SeedAsync(database, SetAllocation.FollowTemplate);
@@ -180,37 +221,50 @@ public class SessionCompletionTests
         }
 
         await using var context = database.NewContext();
-        var session = await context.WorkoutSessions
-            .Include(workoutSession => workoutSession.TrainingWeek)
-            .Include(workoutSession => workoutSession.ExercisePlans)
-            .SingleAsync(workoutSession => workoutSession.Id == seed.WeekOneSession);
+        var session = await LoadSessionAsync(context, seed.WeekOneSession);
+        var outcomes = new SessionOutcomes(context);
 
-        var nextPlans = await new SessionOutcomes(context).LoadNextPlansAsync(session, CancellationToken.None);
+        Assert.Empty(await outcomes.LoadNextPlansAsync(database.UserId, session, CancellationToken.None));
 
-        Assert.Empty(nextPlans);
+        await using (var db = database.NewContext())
+        {
+            var weekTwoSession = await db.WorkoutSessions.SingleAsync(candidate => candidate.Id == seed.WeekTwoSession);
+            weekTwoSession.Status = SessionStatus.Planned;
+            await db.SaveChangesAsync();
+        }
+
+        await using var fresh = database.NewContext();
+        var stranger = await new SessionOutcomes(fresh)
+            .LoadNextPlansAsync(Guid.NewGuid(), await LoadSessionAsync(fresh, seed.WeekOneSession), CancellationToken.None);
+        Assert.Empty(stranger);
     }
 
-    /// <summary>
-    /// Izdvojeni korak sam: upisuje cilj naredne nedelje i procenu, a rezime tek posle
-    /// <c>Finalize</c> čita ono što je zaista upisano - ne ono što je progresija predložila.
-    /// </summary>
-    [Fact]
-    public async Task TheSummary_ReadsTheStoredTarget_OnlyAfterFinalize()
+    private static Task<WorkoutSession> LoadSessionAsync(AppDbContext context, Guid sessionId)
     {
-        using var database = new SqliteDatabase();
-        var seed = await SeedAsync(database, SetAllocation.FollowTemplate);
-
-        await using var context = database.NewContext();
-        var session = await context.WorkoutSessions
+        return context.WorkoutSessions
             .Include(workoutSession => workoutSession.TrainingWeek)
                 .ThenInclude(week => week.Mesocycle)
             .Include(workoutSession => workoutSession.ExercisePlans)
                 .ThenInclude(plan => plan.Exercise)
             .Include(workoutSession => workoutSession.ExercisePlans)
                 .ThenInclude(plan => plan.SetLogs)
-            .SingleAsync(workoutSession => workoutSession.Id == seed.WeekOneSession);
+            .SingleAsync(workoutSession => workoutSession.Id == sessionId);
+    }
+
+    /// <summary>
+    /// Izdvojeni korak sam: upisuje cilj naredne nedelje i procenu, a rezime tek posle
+    /// <c>Settle</c> čita ono što je zaista upisano - ne ono što je progresija predložila.
+    /// </summary>
+    [Fact]
+    public async Task TheSummary_ReadsTheStoredTarget_OnlyAfterSettle()
+    {
+        using var database = new SqliteDatabase();
+        var seed = await SeedAsync(database, SetAllocation.FollowTemplate);
+
+        await using var context = database.NewContext();
+        var session = await LoadSessionAsync(context, seed.WeekOneSession);
         var outcomes = new SessionOutcomes(context);
-        var nextPlans = await outcomes.LoadNextPlansAsync(session, CancellationToken.None);
+        var nextPlans = await outcomes.LoadNextPlansAsync(database.UserId, session, CancellationToken.None);
 
         var outcome = await outcomes.ApplyAsync(
             database.UserId,
@@ -224,7 +278,7 @@ public class SessionCompletionTests
 
         // Deload ili balansiranje bi sada mogli da prepišu cilj na istom entitetu.
         nextPlans.Single(plan => plan.ExerciseId == seed.Squat).TargetWeightKg = 90m;
-        outcome.Finalize();
+        outcome.Settle();
 
         Assert.Equal(90m, squat.NextWeightKg);
         Assert.Equal(-10m, squat.WeightChangeKg);

@@ -36,10 +36,11 @@ treninga mora da pokrene deo toga ponovo, a bez deljenja bi to značilo kopiranj
   najveći dosadašnji maksimum upitom sa `Max` nad `decimal`, koji SQLite ne prevodi (ista klasa
   ograničenja kao u rundi 17). Sledeći upit već učitava sve zapise te vežbe, pa se maksimum sada
   izvodi iz njega: jedan upit manje, isto značenje.
-- Testovi: 930 → 938 na serveru (osam u `SessionCompletionTests`: šest koji beleže ponašanje i
-  dva za izdvojene korake), 213 na klijentu (nepromenjeno).
-- Vraćanje pravila na committed stablu: cilj naredne nedelje se ne upisuje, 1 od 938 pada;
-  procena se ne upisuje, 2 pada; uslov balansiranja obrnut, 2 pada.
+- Testovi: 930 → 939 na serveru (devet u `SessionCompletionTests`: šest koji beleže ponašanje i
+  tri za izdvojene korake), 213 na klijentu (nepromenjeno).
+- Vraćanje pravila na committed stablu: cilj naredne nedelje se ne upisuje, 1 pada;
+  procena se ne upisuje, 2 pada; uslov balansiranja obrnut, 2 pada (merenja su uzeta pre
+  pregleda, kad je bilo 938 testova).
 - `workout-session.scss`: **7,61 → 6,17 kB** (tvrda granica 8, upozorenje od 6). Nova
   komponenta ima manje od 6 kB. Ostala dva fajla koja su prelazila 6 kB
   (`one-rep-max-setup.scss` 6,01 i `plan-home.scss` 6,29) nisu dirana.
@@ -54,6 +55,19 @@ treninga mora da pokrene deo toga ponovo, a bez deljenja bi to značilo kopiranj
   serije kad blok teži cilju i ne dira ih kad prati šablon. Sa obrnutim uslovom padaju oba.
 - Živa provera nije rađena na staroj i novoj verziji API-ja jedna uz drugu; zamenjuju je testovi
   koji beleže ponašanje, pokrenuti na obe.
+
+- **Atomsko preuzimanje sesije.** Test dvostrukog završetka staje na brzom izlazu (status je
+  već `Completed`), ne na uslovnom UPDATE-u koji je zaista štiti od dva istovremena zahteva.
+  Brisanje UPDATE-a ostavlja zbirku zelenom; to bi tražilo dva istovremena zahteva nad pravom
+  bazom, a probni sklop to ne radi.
+- **Redosled „sačuvaj pa balansiraj".** Nijedan test ne pokriva nedelju koja se pretvara u
+  deload u istom zahtevu, pa uklanjanje `SaveChanges` pre balansiranja ostavlja zbirku zelenom.
+  Redosled je proveren čitanjem, a komentar uz njega je sada i na samom pozivu u `CompleteAsync`.
+
+Pregled (agent, samo čitanje) nije našao promenu ponašanja. Na osnovu njega: `IsPr` je dobio
+tvrdnju, broj skinutih serija je pinovan na devet (cilj 12 minus tri odrađene), upit za naredne
+planove se filtrira i po korisniku, a `Finalize` je preimenovan u `Settle` jer metoda tog imena
+na recordu daje upozorenje kompajlera CS0465.
 
 ## Odluka koju vredi zapamtiti
 

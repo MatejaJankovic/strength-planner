@@ -268,7 +268,7 @@ public class SessionService : ISessionService
         var session = await ClaimForCompletionAsync(userId, sessionId, cancellationToken);
         var now = DateTime.UtcNow;
 
-        var nextPlans = await _outcomes.LoadNextPlansAsync(session, cancellationToken);
+        var nextPlans = await _outcomes.LoadNextPlansAsync(userId, session, cancellationToken);
 
         // Status je već upisan uslovnim UPDATE-om; ovo samo usklađuje učitanu instancu
         // sa bazom da bi DTO ispod prijavio tačno stanje.
@@ -282,10 +282,13 @@ public class SessionService : ISessionService
 
         // Rezime se zaključuje TEK ovde: sve do ovog trenutka je moglo da prepiše težinu
         // naredne nedelje — progresija, pravilo za narednu nedelju, pa i auto-deload.
-        outcome.Finalize();
+        outcome.Settle();
 
         // Sve što se tiče samog treninga mora da bude upisano pre prelaska na sledeći
-        // blok — generator ispod poziva svoj SaveChanges, pa se na njega ne oslanjamo.
+        // blok — generator ispod poziva svoj SaveChanges, pa se na njega ne oslanjamo. Ovaj
+        // upis je i preduslov balansiranja ispod: ono pita bazu koje su nedelje deload, a
+        // DeloadService pretvaranje nedelje ostavlja u change trackeru (vidi
+        // RebalanceRestOfWeekAsync).
         await _db.SaveChangesAsync(cancellationToken);
 
         var volumeAdjustments = await RebalanceRestOfWeekAsync(userId, session, cancellationToken);

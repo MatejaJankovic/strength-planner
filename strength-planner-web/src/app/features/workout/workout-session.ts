@@ -7,7 +7,6 @@ import { extractErrorMessage } from '../../core/api/http-error';
 import { SessionService } from '../../core/api/session.service';
 import {
   AddSetLogRequest,
-  CompletedExerciseSummaryDto,
   CompleteSessionResultDto,
   ExerciseAlternativeDto,
   ExercisePlanDto,

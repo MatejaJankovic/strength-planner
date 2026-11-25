@@ -36,6 +36,7 @@ public sealed class SessionOutcomes
     /// targets of workouts that were already done.
     /// </summary>
     public async Task<IReadOnlyList<ExercisePlan>> LoadNextPlansAsync(
+        Guid userId,
         WorkoutSession session,
         CancellationToken cancellationToken)
     {
@@ -45,6 +46,7 @@ public sealed class SessionOutcomes
             .Include(plan => plan.WorkoutSession)
                 .ThenInclude(workoutSession => workoutSession.TrainingWeek)
             .Where(plan => plan.WorkoutSession.TrainingWeek.MesocycleId == session.TrainingWeek.MesocycleId
+                           && plan.WorkoutSession.TrainingWeek.Mesocycle.UserId == userId
                            && plan.WorkoutSession.DayLabel == session.DayLabel
                            && plan.WorkoutSession.TrainingWeek.WeekNumber > session.TrainingWeek.WeekNumber
                            && plan.WorkoutSession.Status != SessionStatus.Completed
@@ -60,7 +62,7 @@ public sealed class SessionOutcomes
     ///
     /// The summaries are not final: the week may still become a deload and the sets may still
     /// be rebalanced, and either rewrites the target on the very same tracked entities. Call
-    /// <see cref="Finalize"/> once nothing can change it any more.
+    /// <see cref="SessionOutcome.Settle"/> once nothing can change it any more.
     /// </summary>
     public async Task<SessionOutcome> ApplyAsync(
         Guid userId,
@@ -379,7 +381,7 @@ public sealed record SessionOutcome(
     /// With no next week in this block there is no proposal to show: the next block derives
     /// its own weights from the estimated maximum when it is generated.
     /// </summary>
-    public void Finalize()
+    public void Settle()
     {
         foreach (var summary in Summaries)
         {
