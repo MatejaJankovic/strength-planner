@@ -27,6 +27,9 @@ import { repRangeLabel } from '../../shared/rep-range-label';
 import { CompletionSummary } from './completion-summary';
 import { correctionNote, recalculates, revisionNotes } from './correction-note';
 import { isCalibrationEntry } from './calibration';
+import { RestTimer } from './rest-timer';
+import { RestTimerService } from './rest-timer.service';
+import { platesHint, warmupHint } from './workout-aids';
 
 interface SetDraft {
   weightKg: number;
@@ -40,7 +43,16 @@ const REP_STEP_MAX = 100;
 
 @Component({
   selector: 'app-workout-session',
-  imports: [DecimalPipe, MatIconModule, WeightStepper, StatChip, EmptyState, Loading, CompletionSummary],
+  imports: [
+    DecimalPipe,
+    MatIconModule,
+    WeightStepper,
+    StatChip,
+    EmptyState,
+    Loading,
+    CompletionSummary,
+    RestTimer,
+  ],
   templateUrl: './workout-session.html',
   styleUrl: './workout-session.scss',
 })
@@ -49,6 +61,7 @@ export class WorkoutSession {
   private readonly router = inject(Router);
   private readonly sessionService = inject(SessionService);
   private readonly wakeLock = inject(WakeLockService);
+  private readonly restTimer = inject(RestTimerService);
 
   private readonly sessionId = this.route.snapshot.paramMap.get('id') ?? '';
 
@@ -116,15 +129,20 @@ export class WorkoutSession {
     this.load();
 
     // Ekran se drži upaljenim samo dok trening traje: ne dok se pregleda ili ispravlja završen.
+    // Isto važi za pauzu između serija: završen ili preskočen trening nema pauzu koja teče.
     effect(() => {
       if (this.isInProgress()) {
         void this.wakeLock.hold();
       } else {
         void this.wakeLock.release();
+        this.restTimer.stop();
       }
     });
 
-    inject(DestroyRef).onDestroy(() => void this.wakeLock.release());
+    inject(DestroyRef).onDestroy(() => {
+      void this.wakeLock.release();
+      this.restTimer.stop();
+    });
   }
 
   protected load(): void {
@@ -244,6 +262,18 @@ export class WorkoutSession {
   /** Napomena uz polje za težinu: jedna bučica, ili nula na vežbi koja se opterećuje. */
   protected loadNote(plan: ExercisePlanDto, draft: SetDraft): LoadInputNote {
     return loadInputNote(plan.equipment, draft.weightKg);
+  }
+
+  /** Koje ploče idu na šipku za težinu koja se unosi (samo vežbe sa šipkom). */
+  protected platesHint(plan: ExercisePlanDto, draft: SetDraft): string | null {
+    return platesHint(plan.equipment, draft.weightKg);
+  }
+
+  /** Predlog zagrevanja pre prve radne serije; samo dok trening traje. */
+  protected warmupHint(plan: ExercisePlanDto, draft: SetDraft): string | null {
+    return this.isInProgress()
+      ? warmupHint(plan.equipment, draft.weightKg, plan.weightStepKg, plan.setLogs.length)
+      : null;
   }
 
   /** Propisana ponavljanja: `8–12`, ili samo `5` kada je propisan tačan broj. */
@@ -604,6 +634,12 @@ export class WorkoutSession {
       performedAt: new Date().toISOString(),
     };
     this.appendSet(plan.id, optimistic);
+
+    // Pauza počinje kad je serija odrađena, ne kad server odgovori. Ne počinje dok se ispravlja
+    // završen trening: tada se ne radi, nego se prepisuje ono što je već bilo.
+    if (this.isInProgress()) {
+      this.restTimer.start();
+    }
 
     this.writeStarted();
     this.sessionService.addSet(plan.id, request).subscribe({
