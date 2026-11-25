@@ -264,9 +264,14 @@ export class WorkoutSession {
     return loadInputNote(plan.equipment, draft.weightKg);
   }
 
-  /** Koje ploče idu na šipku za težinu koja se unosi (samo složene vežbe sa šipkom). */
+  /**
+   * Koje ploče idu na šipku za težinu koja se unosi (samo složene vežbe sa šipkom). Prikazuje se
+   * dok se trening sprema ili traje: na završenom ili preskočenom nema šta da se stavlja na šipku.
+   */
   protected platesHint(plan: ExercisePlanDto, draft: SetDraft): string | null {
-    return platesHint(plan.equipment, plan.exerciseType, draft.weightKg);
+    return this.isPlanned() || this.isInProgress()
+      ? platesHint(plan.equipment, plan.exerciseType, draft.weightKg)
+      : null;
   }
 
   /** Predlog zagrevanja pre prve radne serije; samo dok trening traje. */

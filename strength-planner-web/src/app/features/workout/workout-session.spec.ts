@@ -294,6 +294,37 @@ describe('WorkoutSession: pomagala', () => {
       expect(text()).toContain('Po strani (šipka 20 kg): 25 + 15.');
     });
 
+    it('piše ih i dok se trening tek sprema, da se šipka može pripremiti', () => {
+      open(session('Planned', [plan()]));
+
+      expect(text()).toContain('Po strani (šipka 20 kg): 25 + 15.');
+    });
+
+    it('ne piše ih na završenom ni na preskočenom treningu, ni dok se ispravlja', () => {
+      for (const status of ['Completed', 'Skipped']) {
+        TestBed.resetTestingModule();
+        TestBed.configureTestingModule({
+          providers: [
+            provideHttpClient(),
+            provideHttpClientTesting(),
+            provideRouter([]),
+            { provide: WakeLockService, useValue: wakeLock },
+          ],
+        });
+        http = TestBed.inject(HttpTestingController);
+        restTimer = TestBed.inject(RestTimerService);
+
+        open(
+          session(status, [plan()], {
+            correction: { canCorrect: true, mode: 'Recalculate', revisionPending: true },
+          }),
+        );
+
+        expect(text(), status).not.toContain('Po strani');
+        http.verify();
+      }
+    });
+
     it('ne piše ih za pregib ni skull crusher, koji su „Barbell" ali se rade lakom šipkom', () => {
       open(
         session('InProgress', [
