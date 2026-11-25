@@ -561,6 +561,48 @@ public class BlockEditServiceTests
         Assert.NotEqual(Periodization.DeloadSets(6), deloaded.TargetSets);
     }
 
+    /// <summary>
+    /// Pregled #126. Vežba dodata u petoj nedelji, dok je četvrta još čekala, postoji samo u petoj i u
+    /// šestoj (planirani deload). Kad umor povuče deload na petu nedelju, šesta se oslobađa i preuzima
+    /// propis pete, a polazni broj serija se traži u osnovnoj nedelji i u trenažnim nedeljama bloka -
+    /// dodata vežba nije ni u jednoj. Plan je tada preskakan, pa je šesta nedelja, koja više nije deload,
+    /// ostajala sa propisom rasterećenja na toj vežbi (2 serije uz RIR 4) kraj punog propisa ostalih.
+    /// </summary>
+    [Fact]
+    public async Task AReleasedPlannedDeload_GivesALateAddedExercise_TheTrainingPrescriptionOfTheFreedWeek()
+    {
+        using var database = new SqliteDatabase();
+        var mesocycleId = await SeedStrengthBlockAsync(database);
+
+        await using (var context = database.NewContext())
+        {
+            await Service(context).AddExerciseAsync(database.UserId, await SessionId(context, "Day A", 5), CableFly);
+        }
+
+        await CompleteHeavyWeekFourAsync(database);
+        await EvaluateAsync(database, mesocycleId);
+
+        await using var read = database.NewContext();
+        var week = await read.TrainingWeeks.SingleAsync(candidate => candidate.WeekNumber == 6);
+        var fly = await read.ExercisePlans.SingleAsync(plan =>
+            plan.ExerciseId == CableFly && plan.WorkoutSession.TrainingWeek.WeekNumber == 6);
+
+        // Šesta nedelja je oslobođena i preuzela je fazu pete.
+        Assert.False(week.IsDeload);
+        var expected = Periodization.ForWeek(
+            Model,
+            5,
+            fly.BaseRepRangeMin,
+            fly.BaseRepRangeMax,
+            GoalPrescriptions.ForGoal(Goal.Strength).TargetRir,
+            ExperienceProgramming.StartingSetsPerExercise(Level));
+
+        Assert.Equal(expected.Sets, fly.PrescribedSets);
+        Assert.Equal(expected.RepRangeMax, fly.RepRangeMax);
+        Assert.Equal(expected.TargetRir, fly.TargetRir);
+        Assert.NotEqual(Periodization.DeloadRir(GoalPrescriptions.ForGoal(Goal.Strength).TargetRir), fly.TargetRir);
+    }
+
     // ---- priprema ------------------------------------------------------------------------
 
     private static BlockEditService Service(AppDbContext context)

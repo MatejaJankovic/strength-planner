@@ -52,9 +52,10 @@ plan, a nov plan povlači nove maksimume i nov raspored.
   ova funkcija nisu stariji pravilo, a polazni broj iz nivoa je ≥ 3, pa donja granica ne radi. To je provereno,
   ne pretpostavljeno: test prolazi svaku kombinaciju cilja, tipa, modela i nivoa i u svakoj nedelji koja nije
   rasterećenje izvodi nazad broj koji nivo propisuje.
-- **Poznata granica: ukloni pa dodaj na isto mesto.** Ako se ukloni poslednja vežba dana i doda druga, dodata
-  nasleđuje polazni broj serija uklonjene, jer se podaci ne razlikuju od zamene (isto mesto, nova vežba). Razlika
-  postoji samo kod ličnog šablona sa različitim brojem serija po vežbi, a posledica je broj serija u rasterećenju.
+- **Poznata granica: ukloni pa dodaj (ili zameni) na isto mesto.** Ako se ukloni poslednja vežba dana i doda
+  druga, dodata nasleđuje polazni broj serija uklonjene, jer se podaci ne razlikuju od zamene (isto mesto, nova
+  vežba). Isto važi kad se zamenjena vežba nađe na mestu uklonjene. Razlika postoji samo kod ličnog šablona sa
+  različitim brojem serija po vežbi, a posledica je broj serija u rasterećenju.
 - **Razlog odbijanja ne može da zavisi od teksta greške.** Server u produkciji ne šalje tekst izuzetka
   (`ProblemDetails.Detail` je isti kao `Title`, vidi `docs/security.md`), a `extractErrorMessage` čita `Title`.
   Uživo je odgovor na odbijeno dodavanje bio `"title": "Request conflicts with current state."`, a poruka na
@@ -62,6 +63,30 @@ plan, a nov plan povlači nove maksimume i nov raspored.
   (završen trening, jedina vežba dana, pun dan), razlog koji se ne može znati unapred stiže kao podatak u
   odgovoru `addable-exercises` (`unavailable`), a za trku (stanje se promenilo između klika i odgovora) postoji
   srpska poruka po statusu (`blockEditError`).
+
+## Šta je pregled našao (ispravljeno)
+
+Pregled je radio agent koji samo čita; nalaz 1 sam ponovio testom pre ispravke (crven: 2 serije umesto 5).
+
+- **Vežba dodata kasno ostajala je sa propisom rasterećenja u nedelji koja više nije rasterećenje** (greška u
+  podacima). Dodaj vežbu u petoj nedelji dok je četvrta još na čekanju: postoji samo u petoj i u šestoj (planirani
+  deload). Kad umor četvrte nedelje povuče deload na petu, šesta se oslobađa i preuzima fazu pete, a polazni broj
+  serija se traži u osnovnoj nedelji i u trenažnim nedeljama - dodata vežba nije ni u jednoj, jer se „referenca"
+  ne pravi iz nedelje koja je postala deload ni iz one koja se oslobađa. Plan je tada preskakan (`continue`), pa je
+  šesta nedelja, običan trening, ostajala sa 2 serije uz RIR 4 na toj vežbi, a sa punim propisom na ostalim.
+  Do toga ne može doći sa zamenom, jer ona ne pravi vežbu koja postoji samo u poslednje dve nedelje. Ispravljeno:
+  vežba koja nigde nema osnovu kreće od serija koje propisuje nivo bloka, što je za dodatu vežbu uvek tačno.
+  Nijedan raniji test nije pokrivao `RestorePlannedDeloadAsync` sa dodatom vežbom; oba testa deload-a iz ove grane
+  su stizala samo do `ApplyDeloadAsync`.
+- **Poruka za odbijeno uklanjanje je savetovala nešto što ne pomaže.** Uklanjanje je odbijeno kad bi neki kasniji
+  trening ostao bez vežbe (dan A: u petoj nedelji ukloni A, pa iz treće ukloni B), a ekran je govorio „osveži ekran".
+  Ekran ne može da zna za kasnije nedelje, a razlog u produkciji ne stiže (isti problem zbog koga je `Unavailable`).
+  Poruka sada navodi oba uzroka, bez saveta koji ne pomaže.
+- **Dve rečenice u dokumentaciji su tvrdile više nego što kod radi** (započeti treninzi; trening iz koga se menja se
+  menja i kad je u toku), i jedna granica nije bila navedena (pun trening se preskače tiho). Ispravljeno gore.
+- Proveravano i bez primedbe: izbor ciljnih treninga, redosled posle dodavanja i uklanjanja, praćenje u EF-u,
+  vlasništvo nad svim upitima, transakcija, dvostruko slanje, tokeni tema u `_block-edit.scss`, i da ograničenje
+  na mesto u deload-u ne lomi zamenu (jedini pao test je onaj koji je namenjen tom ograničenju).
 
 ## Šta je usput nađeno
 
@@ -79,7 +104,7 @@ plan, a nov plan povlači nove maksimume i nov raspored.
 
 ## Provera
 
-- `dotnet test`: **1633** (bilo 1413); `npm test`: **450** (bilo 425); `dotnet build` i `npm run build` prolaze.
+- `dotnet test`: **1634** (bilo 1413); `npm test`: **450** (bilo 425); `dotnet build` i `npm run build` prolaze.
   Dva stila (`plan-home`, `one-rep-max-setup`) i `workout-session.scss` su i dalje iznad 6 kB upozorenja, kao
   pre grane; `workout-session.scss` je netaknut (6.48 kB), jer su nove komponente dobile svoj stil.
 - Merenje vraćanjem, jedna izmena po merenju, na zapisanom stablu. Server (222 testa u 4 klase):
@@ -118,7 +143,10 @@ plan, a nov plan povlači nove maksimume i nov raspored.
 ## Šta ovo ne radi
 
 - Ne menja model periodizacije ni šablon već generisanog bloka.
-- Ne dodaje vežbu u blok koji je imao rasterećenje zbog umora, ni u treninge koji su početi.
+- Ne dodaje vežbu u blok koji je imao rasterećenje zbog umora, ni u druge započete treninge (trening iz koga
+  se menja menja se i kad je u toku).
+- Trening koji je već pun (12 vežbi) preskače se tiho: dodata vežba tada postoji u nekim nedeljama dana, a u
+  tom ne. Ekran to ne kaže.
 - Ne nudi vežbu bez opterećenja (Plank).
 - Ne pamti uklonjenu vežbu: ako se kasnije doda, kreće od propisa bloka.
 - Dva istovremena dodavanja iste vežbe nisu zaštićena jedinstvenim ključem u bazi (kao ni zamena); transakcija

@@ -532,7 +532,8 @@ Grešku ispravljaš ikonicama pored serije: **olovka** za izmenu, **kanta** za b
 > **Dodavanje i uklanjanje vežbe.** Dugme **„Dodaj vežbu"** na dnu ekrana treninga nudi vežbe koje se
 > rade sa opterećenjem, a još nisu u tom danu, sa mišićem koji direktno rade; dugme **„Ukloni vežbu"**
 > stoji na kartici. Oba važe za taj dan **do kraja bloka**: u ovom treningu i u svakom sledećem treningu
-> istog dana koji još čeka. Odrađeni, započeti i preskočeni treninzi ostaju kakvi su bili, a vežba na kojoj
+> istog dana koji još čeka. Odrađeni i preskočeni treninzi, kao i ostali započeti, ostaju kakvi su bili (trening iz koga menjaš menja
+> se i kad je u toku), a vežba na kojoj
 > već postoji upisana serija ne uklanja se. Dodata vežba ide na kraj dana i dobija ono što bi joj blok
 > propisao da je od početka bila u šablonu: opseg i rezervu prema tipu (složena ili izolaciona) i prema
 > nedelji, broj serija prema tvom nivou, a težina se računa iz maksimuma, kao kod zamene. Kad blok cilja

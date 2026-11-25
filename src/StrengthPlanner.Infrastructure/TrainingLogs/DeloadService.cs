@@ -98,8 +98,8 @@ public sealed class DeloadService
         // Prag zavisi od nivoa iskustva. Početnik ga nema; razlog je zapisan uz
         // ExperienceProgramming.DeloadThreshold, a da li blok početnika ima i planirani
         // deload odlučuje Periodization.HasPlannedDeload.
-        var threshold = ExperienceProgramming.DeloadThreshold(
-            await BlockExperienceLevel.ForBlockAsync(_db, userId, mesocycleId, cancellationToken));
+        var level = await BlockExperienceLevel.ForBlockAsync(_db, userId, mesocycleId, cancellationToken);
+        var threshold = ExperienceProgramming.DeloadThreshold(level);
 
         if (claimed == 0 || threshold is null || score < threshold.Value)
         {
@@ -183,6 +183,7 @@ public sealed class DeloadService
             nextWeek.WeekNumber,
             model,
             goal,
+            level,
             cancellationToken);
 
         return new DeloadOutcome(weekNumber, nextWeek.WeekNumber, score, plannedDeloadRestored);
@@ -204,6 +205,7 @@ public sealed class DeloadService
         int autoDeloadWeekNumber,
         PeriodizationModel model,
         GoalPrescription goal,
+        ExperienceLevel level,
         CancellationToken cancellationToken)
     {
         var planned = await _db.TrainingWeeks
@@ -287,7 +289,12 @@ public sealed class DeloadService
                     (plan.WorkoutSession.DayLabel, plan.ExerciseId),
                     out baseSets))
             {
-                continue;
+                // Vežba koja nije ni u osnovnoj nedelji ni u jednoj trenažnoj nedelji osim ove i
+                // nedelje koja je upravo postala deload: dodata je kasno u blok (A3), pa postoji samo u
+                // te dve. Plan se nije smeo preskočiti, jer bi nedelja koja više nije deload ostala sa
+                // propisom rasterećenja na njemu (pregled #126). Dodata vežba uvek kreće od serija koje
+                // propisuje nivo bloka, pa se polazni broj čita odatle.
+                baseSets = ExperienceProgramming.StartingSetsPerExercise(level);
             }
 
             // Nedelja preuzima propis one koja je postala deload — dakle faze koja bi

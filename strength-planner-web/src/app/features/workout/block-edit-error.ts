@@ -11,7 +11,9 @@ import { HttpErrorResponse } from '@angular/common/http';
  */
 export function blockEditError(err: unknown, fallback: string): string {
   if (err instanceof HttpErrorResponse && [400, 404, 409].includes(err.status)) {
-    return 'Izmena nije moguća: trening ili blok su se u međuvremenu promenili. Osveži ekran i pokušaj ponovo.';
+    // Server ne kaže zašto. Najčešći razlozi su dva i oba se vide tek u drugim nedeljama dana: neki kasniji
+    // trening bi ostao bez vežbe (ili je već pun), ili se trening u međuvremenu promenio.
+    return 'Izmena nije moguća: neki kasniji trening tog dana to ne dozvoljava (na primer bi ostao bez vežbe), ili se trening u međuvremenu promenio.';
   }
 
   return fallback;
