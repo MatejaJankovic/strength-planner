@@ -60,6 +60,9 @@ već čitali celu istoriju; to je ostalo kakvo je bilo.
   ekran; granica od 520 nedelja je imenovana konstanta; mrtva dodela u `WeeklyTrend.Build` je
   uklonjena; test koji je tvrdio da proverava upit sa opsegom (a opseg filtrira i domen) je
   preimenovan u ono što stvarno proverava.
+- Vraćanje ispravki na committed stablu: lista mišića koja se prazni pri učitavanju ruši test o
+  izabranom mišiću (ostali padovi u istom fajlu su kaskada: neočekivan zahtev obara `http.verify()`);
+  mera koja ostaje mišić ruši 1; ponovni pokušaj bez efekta ruši 1.
 - Navodi o zastarelim izjavama: `CLAUDE.md` i `docs/teza-uskladjivanje.md` su još navodili „analitiku
   cele istorije" kao van obima, a uputstvo je u istoriji tvrdilo da analitika čita jedan blok.
 
