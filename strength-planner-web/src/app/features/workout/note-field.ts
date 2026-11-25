@@ -120,10 +120,8 @@ export class NoteField {
       },
       error: (err: unknown) => {
         this.saving.set(false);
-
-        if (this.targetId() === target) {
-          this.error.set(extractErrorMessage(err, 'Beleška nije sačuvana. Pokušaj ponovo.'));
-        }
+        // Posle zamene vežbe izmena je zatvorena, pa ovde ništa nije vidljivo, a `edit()` briše grešku.
+        this.error.set(extractErrorMessage(err, 'Beleška nije sačuvana. Pokušaj ponovo.'));
       },
     });
   }
