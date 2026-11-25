@@ -29,14 +29,16 @@ treninga mora da pokrene deo toga ponovo, a bez deljenja bi to značilo kopiranj
 - **Ponašanje je isto.** Do sada nijedan test nije pozvao `CompleteAsync`, pa je prvo
   napisano pet testova koji beleže šta metoda radi (`SessionCompletionTests`): procena i cilj
   naredne nedelje, zatvaranje nedelje, dvostruki završetak, tuđi trening, balansiranje. Pokrenuti
-  su na **originalnom** `SessionService` iz `main`-a (privremeni worktree) i prošli 5 od 5, uz
-  jedinu izmenu opisanu ispod. Isti testovi prolaze i na podeljenom kodu.
+  su na **originalnom** `SessionService` iz `main`-a (privremeni worktree) i prošli (u tom trenutku
+  ih je bilo pet), uz jedinu izmenu opisanu ispod. Isti testovi prolaze i na podeljenom kodu.
 - **Upit koji nije mogao da se izvrši na probnom sklopu.** Oznaka rekorda je čitala
   najveći dosadašnji maksimum upitom sa `Max` nad `decimal`, koji SQLite ne prevodi (ista klasa
   ograničenja kao u rundi 17). Sledeći upit već učitava sve zapise te vežbe, pa se maksimum sada
   izvodi iz njega: jedan upit manje, isto značenje.
-- Testovi: 930 → 937 na serveru (5 koji beleže ponašanje i 2 za izdvojene korake), 213 na
-  klijentu (nepromenjeno).
+- Testovi: 930 → 938 na serveru (osam u `SessionCompletionTests`: šest koji beleže ponašanje i
+  dva za izdvojene korake), 213 na klijentu (nepromenjeno).
+- Vraćanje pravila na committed stablu: cilj naredne nedelje se ne upisuje, 1 od 938 pada;
+  procena se ne upisuje, 2 pada; uslov balansiranja obrnut, 2 pada.
 - `workout-session.scss`: **7,61 → 6,17 kB** (tvrda granica 8, upozorenje od 6). Nova
   komponenta ima manje od 6 kB. Ostala dva fajla koja su prelazila 6 kB
   (`one-rep-max-setup.scss` 6,01 i `plan-home.scss` 6,29) nisu dirana.
@@ -45,8 +47,10 @@ treninga mora da pokrene deo toga ponovo, a bez deljenja bi to značilo kopiranj
 
 ## Šta nije pokriveno
 
-- Poziv balansiranja je pokriven samo tako što ne pada; seed sadrži jedan trening po nedelji,
-  pa nema šta da se pomeri. Pravila balansiranja imaju svoje testove u `WeeklySetPlanner`.
+- Prvi pokušaj pokrivanja balansiranja nije ništa merio: seed je imao jedan trening po nedelji,
+  pa nije bilo šta da se pomeri, i obrnut uslov balansiranja je ostavljao celu zbirku zelenom
+  (0 od 937). Zato seed ima opcioni drugi dan sa deset serija za isti mišić, i dva testa: skida
+  serije kad blok teži cilju i ne dira ih kad prati šablon. Sa obrnutim uslovom padaju oba.
 - Živa provera nije rađena na staroj i novoj verziji API-ja jedna uz drugu; zamenjuju je testovi
   koji beleže ponašanje, pokrenuti na obe.
 

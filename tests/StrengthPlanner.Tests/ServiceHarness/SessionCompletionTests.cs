@@ -122,18 +122,44 @@ public class SessionCompletionTests
 
     /// <summary>
     /// Sa balansiranjem ka nedeljnom cilju trening koji se završava prolazi i kroz
-    /// <c>RebalanceAsync</c>; rezultat ne sme da padne ni kad su granice samo seed vrednosti.
+    /// <c>RebalanceAsync</c>: preostali dan iste nedelje propisuje deset serija za mišić koji je
+    /// već na tri, pa mu se serije skidaju i rezime to prijavljuje.
     /// </summary>
     [Fact]
-    public async Task Completing_WithTargetVolume_RunsTheRebalance()
+    public async Task Completing_WithTargetVolume_CutsTheRestOfTheWeekToTheTarget()
     {
         using var database = new SqliteDatabase();
-        var seed = await SeedAsync(database, SetAllocation.TargetVolume);
+        var seed = await SeedAsync(database, SetAllocation.TargetVolume, secondDayInWeekOne: true);
 
         var result = await CompleteAsync(database, seed.WeekOneSession);
 
-        Assert.Equal(SessionStatus.Completed.ToString(), result.Status);
-        Assert.NotNull(result.VolumeAdjustments);
+        var change = Assert.Single(result.VolumeAdjustments);
+        Assert.Equal("Day B", change.DayLabel);
+        Assert.Equal(10, change.FromSets);
+        Assert.True(change.ToSets < change.FromSets);
+
+        await using var read = database.NewContext();
+        var dayB = await read.ExercisePlans.SingleAsync(plan => plan.WorkoutSession.DayLabel == "Day B");
+        Assert.Equal(change.ToSets, dayB.TargetSets);
+        Assert.Equal(10, dayB.PrescribedSets);
+    }
+
+    /// <summary>
+    /// Blok koji prati šablon doslovno se ne balansira ni pri završetku treninga: izbor važi i
+    /// posle prvog treninga, ne samo do njega.
+    /// </summary>
+    [Fact]
+    public async Task Completing_WhileFollowingTheTemplate_LeavesTheRestOfTheWeekAlone()
+    {
+        using var database = new SqliteDatabase();
+        var seed = await SeedAsync(database, SetAllocation.FollowTemplate, secondDayInWeekOne: true);
+
+        var result = await CompleteAsync(database, seed.WeekOneSession);
+
+        Assert.Empty(result.VolumeAdjustments);
+        await using var read = database.NewContext();
+        var dayB = await read.ExercisePlans.SingleAsync(plan => plan.WorkoutSession.DayLabel == "Day B");
+        Assert.Equal(10, dayB.TargetSets);
     }
 
     /// <summary>
@@ -235,7 +261,10 @@ public class SessionCompletionTests
     /// Blok hipertrofije od četiri nedelje, jedan trening ("Day A") nedeljno. U prvoj nedelji
     /// trening je u toku, u drugoj planiran. Čučanj ima tri odrađene serije, druga vežba nijednu.
     /// </summary>
-    private static async Task<Seed> SeedAsync(SqliteDatabase database, SetAllocation allocation)
+    private static async Task<Seed> SeedAsync(
+        SqliteDatabase database,
+        SetAllocation allocation,
+        bool secondDayInWeekOne = false)
     {
         var quads = Guid.NewGuid();
         var squat = Guid.NewGuid();
@@ -332,6 +361,18 @@ public class SessionCompletionTests
             session.ExercisePlans.Add(squatPlan);
             session.ExercisePlans.Add(hackPlan);
             week.Sessions.Add(session);
+
+            if (weekNumber == 1 && secondDayInWeekOne)
+            {
+                // Drugi dan iste nedelje propisuje deset serija za isti mišić: sa tri odrađene
+                // to je trinaest, iznad cilja od 12 (MAV), pa balansiranje ima šta da skine.
+                var dayB = new WorkoutSession { Id = Guid.NewGuid(), DayLabel = "Day B", Status = SessionStatus.Planned };
+                var heavyPlan = Plan(squat, order: 1, weightKg: 100m);
+                heavyPlan.TargetSets = 10;
+                heavyPlan.PrescribedSets = 10;
+                dayB.ExercisePlans.Add(heavyPlan);
+                week.Sessions.Add(dayB);
+            }
 
             if (weekNumber == 1)
             {
