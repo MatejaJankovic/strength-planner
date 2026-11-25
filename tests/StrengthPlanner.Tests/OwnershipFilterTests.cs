@@ -92,6 +92,7 @@ public class OwnershipFilterTests
     [InlineData(typeof(SetLog))]
     [InlineData(typeof(OneRepMaxRecord))]
     [InlineData(typeof(UserExerciseSetting))]
+    [InlineData(typeof(UserExerciseNote))]
     [InlineData(typeof(UserVolumeLandmark))]
     [InlineData(typeof(VolumeLandmarkChange))]
     [InlineData(typeof(Exercise))]
