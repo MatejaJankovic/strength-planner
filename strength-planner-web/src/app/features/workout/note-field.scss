@@ -40,6 +40,9 @@
   min-height: 5rem;
   padding: 0.5rem 0.6rem;
   resize: vertical;
+  // Zalepljena traka pauze (do 73 px) stoji uz vrh ekrana: polje koje pregledač dovede do vrha ne sme
+  // da završi ispod nje.
+  scroll-margin-top: 5.5rem;
   width: 100%;
 }
 

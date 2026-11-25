@@ -8,15 +8,16 @@
       rows="3"
       [maxLength]="maxLength"
       [value]="draft()"
+      [attr.aria-describedby]="error() ? fieldId + '-count ' + fieldId + '-error' : fieldId + '-count'"
       (input)="setDraft(field.value)"
       [disabled]="saving()"
     ></textarea>
-    <p class="note__count" [class.note__count--full]="draft().length >= maxLength">
+    <p class="note__count" [id]="fieldId + '-count'" [class.note__count--full]="draft().length >= maxLength">
       {{ draft().length }} / {{ maxLength }}
     </p>
 
     @if (error(); as message) {
-      <p class="note__error" role="alert">{{ message }}</p>
+      <p class="note__error" role="alert" [id]="fieldId + '-error'">{{ message }}</p>
     }
 
     <div class="note__actions">
@@ -30,7 +31,8 @@
   <div class="note">
     <p class="note__label">{{ label() }}</p>
     <p class="note__text">{{ text }}</p>
-    <button type="button" class="note__btn" (click)="edit()">
+    <!-- Na ekranu ima više dugmadi „Izmeni" (jedna po kartici): čitač ekrana mora da zna uz šta. -->
+    <button type="button" class="note__btn" [attr.aria-label]="'Izmeni: ' + label().toLowerCase()" (click)="edit()">
       <mat-icon aria-hidden="true">edit</mat-icon>
       Izmeni
     </button>
@@ -38,6 +40,6 @@
 } @else {
   <button type="button" class="note__btn note__btn--add" (click)="edit()">
     <mat-icon aria-hidden="true">edit_note</mat-icon>
-    Dodaj belešku: {{ label().toLowerCase() }}
+    {{ addLabel() }}
   </button>
 }

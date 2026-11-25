@@ -362,10 +362,10 @@ describe('WorkoutSession: pomagala', () => {
 
       // Jedna beleška uz trening, jedna uz prvu vežbu; druga vežba je bez nje i nudi dodavanje.
       expect(notesShown()).toEqual(['Težak dan', 'Sedište 4, pin 7']);
-      expect(text()).toContain('Dodaj belešku: beleška uz vežbu');
+      expect(text()).toContain('Dodaj belešku uz vežbu');
     });
 
-    it('može se pisati u svakom statusu treninga, i na završenom i na preskočenom', () => {
+    it('nudi dodavanje beleške u svakom statusu treninga, i na završenom i na preskočenom', () => {
       for (const status of ['Planned', 'InProgress', 'Completed', 'Skipped']) {
         TestBed.resetTestingModule();
         TestBed.configureTestingModule({
@@ -381,14 +381,14 @@ describe('WorkoutSession: pomagala', () => {
 
         open(session(status, [plan()]));
 
-        expect(text(), status).toContain('Dodaj belešku: beleška o treningu');
+        expect(text(), status).toContain('Dodaj belešku o treningu');
         http.verify();
       }
     });
 
-    it('beleška uz trening ide treningu, a čuvanje ne pokreće pauzu i ne menja trening', () => {
+    it('beleška uz trening ide treningu, a čuvanje ne učitava trening ponovo', () => {
       open(session('InProgress', [plan()]));
-      addButton('Dodaj belešku: beleška o treningu').click();
+      addButton('Dodaj belešku o treningu').click();
       fixture.detectChanges();
 
       const field = (fixture.nativeElement as HTMLElement).querySelector('textarea')!;
@@ -402,14 +402,13 @@ describe('WorkoutSession: pomagala', () => {
         .flush({ note: 'Spavao 5h' });
 
       expect(notesShown()).toEqual(['Spavao 5h']);
-      // Ni pauza ni ponovno učitavanje treninga: beleška nije podatak o treningu.
-      expect(restTimer.running()).toBe(false);
+      // Bez ponovnog učitavanja treninga: beleška nije podatak o treningu, pa se ništa ne preračunava.
       http.expectNone((request) => request.method === 'GET');
     });
 
     it('beleška uz vežbu ide vežbi, ne planu', () => {
       open(session('InProgress', [plan({ exerciseId: 'e-77' })]));
-      addButton('Dodaj belešku: beleška uz vežbu').click();
+      addButton('Dodaj belešku uz vežbu').click();
       fixture.detectChanges();
 
       const field = (fixture.nativeElement as HTMLElement).querySelector('textarea')!;

@@ -33,7 +33,13 @@
 
   <app-rest-timer />
 
-  <app-note-field label="Beleška o treningu" kind="session" [targetId]="ws.id" [value]="ws.note" />
+  <app-note-field
+    label="Beleška o treningu"
+    addLabel="Dodaj belešku o treningu"
+    kind="session"
+    [targetId]="ws.id"
+    [value]="ws.note"
+  />
 
   @if (summary(); as result) {
     <app-completion-summary [outcome]="result" [title]="summaryTitle()" />
@@ -121,6 +127,7 @@
           </div>
           <app-note-field
             label="Beleška uz vežbu"
+            addLabel="Dodaj belešku uz vežbu"
             kind="exercise"
             [targetId]="plan.exerciseId"
             [value]="plan.exerciseNote"

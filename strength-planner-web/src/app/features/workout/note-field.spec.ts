@@ -3,6 +3,11 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { NOTE_MAX_LENGTH, NoteField } from './note-field';
 
+// Isti broj kao `NotePolicy.MaximumLength` na serveru; server ga pina svojim testom, a ovo je druga strana.
+it('granica dužine je 500, kao na serveru', () => {
+  expect(NOTE_MAX_LENGTH).toBe(500);
+});
+
 describe('NoteField', () => {
   let fixture: ComponentFixture<NoteField>;
   let http: HttpTestingController;
@@ -10,6 +15,7 @@ describe('NoteField', () => {
   function create(kind: 'session' | 'exercise', value: string | null = null, targetId = 't-1'): void {
     fixture = TestBed.createComponent(NoteField);
     fixture.componentRef.setInput('label', kind === 'session' ? 'Beleška o treningu' : 'Beleška uz vežbu');
+    fixture.componentRef.setInput('addLabel', kind === 'session' ? 'Dodaj belešku o treningu' : 'Dodaj belešku uz vežbu');
     fixture.componentRef.setInput('kind', kind);
     fixture.componentRef.setInput('targetId', targetId);
     fixture.componentRef.setInput('value', value);
@@ -186,6 +192,104 @@ describe('NoteField', () => {
 
     expect(text()).toContain('Nova');
     expect(text()).not.toContain('Stara');
+  });
+
+  describe('kad se vežba na kartici zameni (kartica ostaje, menja se id vežbe)', () => {
+    function swapTo(targetId: string, value: string | null = null): void {
+      fixture.componentRef.setInput('targetId', targetId);
+      fixture.componentRef.setInput('value', value);
+      fixture.detectChanges();
+    }
+
+    it('beleška stare vežbe ne ostaje na kartici nove, ni kad server za novu pošalje isto null', () => {
+      // Prva vežba nije imala belešku, pa je ulaz null; korisnik je upravo upisao jednu i sačuvao je.
+      create('exercise', null, 'vezba-A');
+      button('Dodaj belešku').click();
+      type('Sedište 4');
+      button('Sačuvaj').click();
+      http.expectOne((candidate) => candidate.url.endsWith('/exercises/vezba-A/note')).flush({ note: 'Sedište 4' });
+      expect(text()).toContain('Sedište 4');
+
+      // Zamena: ulaz je opet null, pa ga linkedSignal sam ne bi poništio.
+      swapTo('vezba-B', null);
+
+      expect(text()).not.toContain('Sedište 4');
+      expect(text()).toContain('Dodaj belešku');
+    });
+
+    it('otvorena izmena se zatvara, i otkucano ne ide uz novu vežbu', () => {
+      create('exercise', null, 'vezba-A');
+      button('Dodaj belešku').click();
+      type('Za vežbu A');
+      expect(root().querySelector('textarea')).not.toBeNull();
+
+      swapTo('vezba-B', null);
+
+      expect(root().querySelector('textarea')).toBeNull();
+      expect(text()).not.toContain('Za vežbu A');
+    });
+
+    it('odgovor na čuvanje koje je krenulo za staru vežbu se ne prikazuje uz novu', () => {
+      create('exercise', null, 'vezba-A');
+      button('Dodaj belešku').click();
+      type('Za vežbu A');
+      button('Sačuvaj').click();
+      const request = http.expectOne((candidate) => candidate.url.endsWith('/exercises/vezba-A/note'));
+
+      swapTo('vezba-B', null);
+      request.flush({ note: 'Za vežbu A' });
+
+      expect(text()).not.toContain('Za vežbu A');
+      expect(text()).toContain('Dodaj belešku');
+      // Zaključano „Čuvam" ne sme da ostane: kartica nove vežbe mora da bude upotrebljiva.
+      button('Dodaj belešku').click();
+      expect(button('Sačuvaj').disabled).toBe(false);
+    });
+
+    it('beleška nove vežbe sa servera se prikazuje', () => {
+      create('exercise', 'Stara', 'vezba-A');
+
+      swapTo('vezba-B', 'Nova vežba, nova beleška');
+
+      expect(text()).toContain('Nova vežba, nova beleška');
+      expect(text()).not.toContain('Stara');
+    });
+  });
+
+  it('polje je u fokusu čim se otvori, da dodir na „Dodaj belešku" otvori i tastaturu', () => {
+    create('exercise');
+
+    button('Dodaj belešku').click();
+    fixture.detectChanges();
+
+    expect(document.activeElement).toBe(root().querySelector('textarea'));
+  });
+
+  it('dugme „Izmeni" kaže uz šta je (na ekranu ih ima više), a polje je vezano za brojač', () => {
+    create('exercise', 'Sedište 4');
+    expect(button('Izmeni').getAttribute('aria-label')).toBe('Izmeni: beleška uz vežbu');
+
+    button('Izmeni').click();
+    const field = root().querySelector('textarea')!;
+    const describedBy = field.getAttribute('aria-describedby')!.split(' ');
+
+    expect(describedBy.length).toBe(1);
+    expect(root().querySelector(`#${describedBy[0]}`)?.textContent).toContain(`/ ${NOTE_MAX_LENGTH}`);
+  });
+
+  it('greška se vezuje za polje čim se pojavi', () => {
+    create('exercise', null, 'e-5');
+    button('Dodaj belešku').click();
+    type('x');
+    button('Sačuvaj').click();
+    http
+      .expectOne((candidate) => candidate.url.endsWith('/exercises/e-5/note'))
+      .flush({ title: 'x' }, { status: 400, statusText: 'Bad Request' });
+
+    const describedBy = root().querySelector('textarea')!.getAttribute('aria-describedby')!.split(' ');
+
+    expect(describedBy.length).toBe(2);
+    expect(root().querySelector(`#${describedBy[1]}`)?.getAttribute('role')).toBe('alert');
   });
 
   it('beleška se prikazuje onako kako je napisana: novi redovi ostaju', () => {
