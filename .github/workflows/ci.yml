@@ -62,6 +62,17 @@ jobs:
       - run: npm test
         working-directory: strength-planner-web
 
+      # Izgrađen index.html mora da prođe CSP aplikacije (`script-src 'self'`): umetnuti rukovalac, koji Angular
+      # sam dodaje za asinhroni glavni CSS, bio bi blokiran, pa bi glavni CSS (i tamna tema) ostao nepunjen.
+      # U razvojnom serveru se to ne vidi, jer tamo nema optimizacije. Vidi scripts/check-production-index.py.
+      - name: Izgrađen index.html bez umetnutog koda (CSP)
+        run: python3 scripts/check-production-index.py
+
+      # Kontrast tekst/pozadina u obe teme, usklađenost skripte za temu sa servisom, i boje napisane u
+      # komponentama (takva ostaje svetla u tamnoj temi). Vidi scripts/check-theme-contrast.py.
+      - name: Kontrast i tokeni teme
+        run: python3 scripts/check-theme-contrast.py
+
   dependencies:
     name: Ranjive zavisnosti
     runs-on: ubuntu-latest
