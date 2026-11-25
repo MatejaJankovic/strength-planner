@@ -18,7 +18,7 @@ describe('correctionNote', () => {
     const started = correctionNote({ ...open, canCorrect: false, blockedBy: 'NextWorkoutStarted' }, false);
     const block = correctionNote({ ...open, canCorrect: false, blockedBy: 'NextBlockOpened' }, false);
 
-    expect(started).toContain('sledeći trening ovog dana je već počeo');
+    expect(started).toContain('sledeći trening ovog dana je već počeo ili je preskočen');
     expect(block).toContain('sledeći blok je generisan');
     expect(started).not.toBe(block);
   });

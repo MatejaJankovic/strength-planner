@@ -323,12 +323,189 @@ public class SessionRevisionTests
         using var database = new SqliteDatabase();
         var seed = await SeedAsync(database, sets: 3, reps: 12, rir: 1);
         await CompleteAsync(database, seed.SessionOne);
+        var setId = await FirstSetIdAsync(database, seed.SessionOne);
 
         await using var context = database.NewContext();
         var error = await Assert.ThrowsAsync<TrainingLogException>(
             () => NewRevisionService(context).ReviseAsync(Guid.NewGuid(), seed.SessionOne));
-
         Assert.Equal(TrainingLogErrorType.NotFound, error.ErrorType);
+
+        await using var other = database.NewContext();
+        var update = await Assert.ThrowsAsync<TrainingLogException>(
+            () => new SetLogService(other).UpdateSetAsync(
+                Guid.NewGuid(),
+                setId,
+                new UpdateSetLogRequest { WeightKg = 100m, Reps = 8, Rir = 1 }));
+        Assert.Equal(TrainingLogErrorType.NotFound, update.ErrorType);
+
+        await using var read = database.NewContext();
+        Assert.All(
+            await read.SetLogs.Where(set => set.ExercisePlan.WorkoutSessionId == seed.SessionOne).ToListAsync(),
+            set => Assert.Equal(12, set.Reps));
+    }
+
+    /// <summary>
+    /// A skipped same-day workout in the next week settles that week, and in the last week of a
+    /// block it generates the next block from the estimates. Treating it as not started left the
+    /// window open after both, so the correction would have recalculated what was already used.
+    /// </summary>
+    [Fact]
+    public async Task ASkippedNextWorkout_ClosesTheWindow_ThroughTheServices()
+    {
+        using var database = new SqliteDatabase();
+        var seed = await SeedAsync(database, sets: 3, reps: 12, rir: 1);
+        await CompleteAsync(database, seed.SessionOne);
+
+        await using (var db = database.NewContext())
+        {
+            (await db.WorkoutSessions.SingleAsync(session => session.Id == seed.SessionTwo)).Status = SessionStatus.Skipped;
+            await db.SaveChangesAsync();
+        }
+
+        var dto = await ReadSessionAsync(database, seed.SessionOne);
+        Assert.False(dto.Correction!.CanCorrect);
+        Assert.Equal("NextWorkoutStarted", dto.Correction.BlockedBy);
+
+        var setId = await FirstSetIdAsync(database, seed.SessionOne);
+        await using var context = database.NewContext();
+        var error = await Assert.ThrowsAsync<TrainingLogException>(() =>
+            new SetLogService(context).UpdateSetAsync(
+                database.UserId,
+                setId,
+                new UpdateSetLogRequest { WeightKg = 100m, Reps = 8, Rir = 1 }));
+        Assert.Equal(TrainingLogErrorType.Conflict, error.ErrorType);
+    }
+
+    /// <summary>
+    /// The last workout of a block has no later week to hand a target to; what its sets fed is
+    /// the next block. While that block has not been generated the window is open, and once it
+    /// has, it is closed. This goes through the database; the domain test only covers the rule.
+    /// </summary>
+    [Fact]
+    public async Task InTheLastWeek_TheWindowClosesWhenTheNextBlockIsGenerated()
+    {
+        using var database = new SqliteDatabase();
+        var seed = await SeedAsync(database, sets: 3, reps: 12, rir: 1);
+        var blockTwoId = Guid.NewGuid();
+
+        // Week 2's workout is the last one of this block: weeks 3 and 4 have no session.
+        await using (var db = database.NewContext())
+        {
+            var last = await db.WorkoutSessions.SingleAsync(session => session.Id == seed.SessionTwo);
+            last.Status = SessionStatus.Completed;
+            last.CompletedAt = DateTime.UtcNow;
+
+            var plan = new Macrocycle { Id = Guid.NewGuid(), UserId = database.UserId, Name = "Plan", StartDate = DateTime.UtcNow, IsActive = true };
+            plan.Blocks.Add(new MacrocycleBlock { Id = Guid.NewGuid(), Order = 1, Goal = Goal.Hypertrophy, TemplateKey = "x", MesocycleId = seed.MesocycleId });
+            plan.Blocks.Add(new MacrocycleBlock { Id = blockTwoId, Order = 2, Goal = Goal.Hypertrophy, TemplateKey = "x" });
+            db.Macrocycles.Add(plan);
+            await db.SaveChangesAsync();
+        }
+
+        Assert.True((await ReadSessionAsync(database, seed.SessionTwo)).Correction!.CanCorrect);
+
+        var secondBlockMesocycle = Guid.NewGuid();
+        await using (var db = database.NewContext())
+        {
+            db.Mesocycles.Add(new Mesocycle
+            {
+                Id = secondBlockMesocycle,
+                UserId = database.UserId,
+                Name = "Blok 2",
+                Goal = Goal.Hypertrophy,
+                StartDate = DateTime.UtcNow,
+                IsActive = false
+            });
+            await db.SaveChangesAsync();
+            (await db.MacrocycleBlocks.SingleAsync(block => block.Id == blockTwoId)).MesocycleId = secondBlockMesocycle;
+            await db.SaveChangesAsync();
+        }
+
+        var closed = await ReadSessionAsync(database, seed.SessionTwo);
+        Assert.False(closed.Correction!.CanCorrect);
+        Assert.Equal("NextBlockOpened", closed.Correction.BlockedBy);
+    }
+
+    /// <summary>
+    /// A correction the lifter left unsaved is saved before the next workout of the same day
+    /// starts. Starting it closes the window, and without this the sets would be changed and
+    /// nothing built from them would be, with no later request able to save the correction.
+    /// </summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AnUnsavedCorrection_IsAppliedBeforeTheNextWorkoutIsStartedOrSkipped(bool skip)
+    {
+        using var database = new SqliteDatabase();
+        var seed = await SeedAsync(database, sets: 3, reps: 12, rir: 1);
+        await CompleteAsync(database, seed.SessionOne);
+        Assert.Equal(102.5m, await NextTargetAsync(database, seed));
+
+        await SetRepsAsync(database, seed.SessionOne, reps: 8);
+        Assert.True((await ReadSessionAsync(database, seed.SessionOne)).Correction!.RevisionPending);
+
+        await using (var context = database.NewContext())
+        {
+            var service = NewSessionServiceWithRevisions(context);
+            if (skip)
+            {
+                await service.SkipAsync(database.UserId, seed.SessionTwo);
+            }
+            else
+            {
+                await service.StartAsync(database.UserId, seed.SessionTwo);
+            }
+        }
+
+        // The correction was saved first: the target was recalculated from the eight reps, and
+        // the flag is gone, so the window closing after it loses nothing.
+        Assert.Equal(100m, await NextTargetAsync(database, seed));
+        await using var read = database.NewContext();
+        Assert.False((await read.WorkoutSessions.SingleAsync(session => session.Id == seed.SessionOne)).RevisionPending);
+        var estimate = Assert.Single(await read.OneRepMaxRecords.Where(record => record.Source == OneRepMaxSource.Estimated).ToListAsync());
+        Assert.Equal(seed.SessionOne, estimate.WorkoutSessionId);
+    }
+
+    /// <summary>
+    /// The week still waits for another workout, so it was never scored and never counted by the
+    /// limits: there is nothing of the week to take back, and the correction must not score it
+    /// early either. Every other test has one workout a week, so the week is always closed.
+    /// </summary>
+    [Fact]
+    public async Task ACorrectionInAnOpenWeek_DoesNotScoreOrCountTheWeek()
+    {
+        using var database = new SqliteDatabase();
+        var seed = await SeedAsync(database, sets: 3, reps: 12, rir: 1);
+        await using (var db = database.NewContext())
+        {
+            var week = await db.TrainingWeeks.SingleAsync(candidate => candidate.Id == seed.WeekOne);
+            db.WorkoutSessions.Add(new WorkoutSession
+            {
+                Id = Guid.NewGuid(),
+                TrainingWeekId = week.Id,
+                DayLabel = "Day B",
+                Status = SessionStatus.Planned
+            });
+            await db.SaveChangesAsync();
+        }
+
+        await CompleteAsync(database, seed.SessionOne);
+        await using (var db = database.NewContext())
+        {
+            var week = await db.TrainingWeeks.SingleAsync(candidate => candidate.Id == seed.WeekOne);
+            Assert.Null(week.FatigueScore);
+            Assert.Null(week.VolumeAdaptedAt);
+        }
+
+        await SetRepsAsync(database, seed.SessionOne, reps: 8);
+        var result = await ReviseAsync(database, seed.SessionOne);
+
+        Assert.Null(result.PreviousFatigueScore);
+        Assert.Null(result.FatigueScore);
+        Assert.Equal(100m, await NextTargetAsync(database, seed));
+        await using var read = database.NewContext();
+        Assert.Null((await read.TrainingWeeks.SingleAsync(candidate => candidate.Id == seed.WeekOne)).FatigueScore);
+        Assert.Empty(await read.VolumeLandmarkChanges.ToListAsync());
     }
 
     // ---- helpers ------------------------------------------------------------------------
@@ -341,6 +518,20 @@ public class SessionRevisionTests
             landmarks,
             new DeloadService(context, landmarks),
             new WeeklySetPlanner(context, landmarks, new WeeklyVolumeTargetResolver(context)));
+    }
+
+    private static StrengthPlanner.Infrastructure.TrainingLogs.SessionService NewSessionServiceWithRevisions(AppDbContext context)
+    {
+        var landmarks = new VolumeLandmarkService(context);
+        var deloads = new DeloadService(context, landmarks);
+        var planner = new WeeklySetPlanner(context, landmarks, new WeeklyVolumeTargetResolver(context));
+        return new StrengthPlanner.Infrastructure.TrainingLogs.SessionService(
+            context,
+            landmarks,
+            deloads,
+            planner,
+            new MacrocycleService(context, null!, null!),
+            new SessionRevisionService(context, landmarks, deloads, planner));
     }
 
     private static async Task<StrengthPlanner.Application.DTOs.Sessions.CompleteSessionResultDto> CompleteAsync(

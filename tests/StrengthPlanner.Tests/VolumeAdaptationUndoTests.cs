@@ -69,6 +69,24 @@ public class VolumeAdaptationUndoTests
         Assert.InRange(undone.Mrv, Seed.Mrv * (1 - VolumeAdaptation.MaxDriftFromSeed), Seed.Mrv * (1 + VolumeAdaptation.MaxDriftFromSeed));
     }
 
+    /// <summary>
+    /// Two weeks each raised the ceiling by one. Taking back the first leaves the second's move:
+    /// the ceiling goes from 22 + 2 to 22 + 1. An implementation that ignored the shift, or that
+    /// returned the seed, would give something else.
+    /// </summary>
+    [Fact]
+    public void UndoingAnEarlierWeek_LeavesTheLaterWeeksMove()
+    {
+        var easy = new VolumeResponse(PerformedSets: 21m, RawSets: 21m, AverageRirDeviation: 1.5m, FailureShare: 0m);
+        var first = VolumeAdaptation.Adjust(Seed, Seed, easy);
+        var second = VolumeAdaptation.Adjust(first, Seed, easy);
+        Assert.Equal((23, 24), (first.Mrv, second.Mrv));
+
+        var undone = VolumeAdaptation.Undo(second, Seed, LandmarkShift.Between(Seed, first));
+
+        Assert.Equal(23, undone.Mrv);
+    }
+
     /// <summary>A week that moved nothing has nothing to take back.</summary>
     [Fact]
     public void AZeroShift_ChangesNothing()

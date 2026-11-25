@@ -57,7 +57,6 @@ public class SessionsController : AuthorizedControllerBase
         return Ok(result);
     }
 
-    /// <summary>Označava planiran trening kao preskočen, da nedelja može da se zatvori.</summary>
     /// <summary>
     /// Saves the correction of a finished workout: works out the estimate, the next target and
     /// the week's results again from the corrected sets.
@@ -72,6 +71,7 @@ public class SessionsController : AuthorizedControllerBase
         return Ok(result);
     }
 
+    /// <summary>Označava planiran trening kao preskočen, da nedelja može da se zatvori.</summary>
     [HttpPost("{id:guid}/skip")]
     [ProducesResponseType(typeof(WorkoutSessionDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]

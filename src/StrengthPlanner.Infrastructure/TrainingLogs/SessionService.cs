@@ -21,6 +21,7 @@ public class SessionService : ISessionService
     private readonly DeloadService _deloads;
     private readonly IMacrocycleService _macrocycles;
     private readonly SessionOutcomes _outcomes;
+    private readonly ISessionRevisionService? _revisions;
     private readonly WeekConsequences _week;
     private readonly E1RmCalculator _e1RmCalculator = new();
 
@@ -29,9 +30,11 @@ public class SessionService : ISessionService
         VolumeLandmarkService volumeLandmarks,
         DeloadService deloads,
         WeeklySetPlanner setPlanner,
-        IMacrocycleService macrocycles)
+        IMacrocycleService macrocycles,
+        ISessionRevisionService? revisions = null)
     {
         _db = db;
+        _revisions = revisions;
         _deloads = deloads;
         _macrocycles = macrocycles;
         _outcomes = new SessionOutcomes(db);
@@ -59,6 +62,8 @@ public class SessionService : ISessionService
         Guid sessionId,
         CancellationToken cancellationToken = default)
     {
+        await ApplyPendingCorrectionsAsync(userId, sessionId, cancellationToken);
+
         var session = await _db.WorkoutSessions
             .Include(workoutSession => workoutSession.TrainingWeek)
                 .ThenInclude(week => week.Mesocycle)
@@ -105,6 +110,8 @@ public class SessionService : ISessionService
         CancellationToken cancellationToken = default)
     {
         await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+
+        await ApplyPendingCorrectionsAsync(userId, sessionId, cancellationToken);
 
         var session = await LoadForLifecycleChangeAsync(userId, sessionId, cancellationToken);
 
@@ -224,6 +231,35 @@ public class SessionService : ISessionService
         }
     }
 
+    /// <summary>
+    /// A correction the lifter left unsaved is saved before anything that would use the sets up.
+    /// Starting the next workout of the same day closes the window, and finishing or skipping
+    /// the last workout of a block opens the next block from the estimates. Without this the
+    /// sets would be changed and nothing built from them would be, and no later request could
+    /// ever save the correction.
+    /// </summary>
+    private async Task ApplyPendingCorrectionsAsync(
+        Guid userId,
+        Guid sessionId,
+        CancellationToken cancellationToken)
+    {
+        if (_revisions is null)
+        {
+            return;
+        }
+
+        var mesocycleId = await _db.WorkoutSessions
+            .AsNoTracking()
+            .Where(session => session.Id == sessionId && session.TrainingWeek.Mesocycle.UserId == userId)
+            .Select(session => (Guid?)session.TrainingWeek.MesocycleId)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (mesocycleId is not null)
+        {
+            await _revisions.ApplyPendingAsync(userId, mesocycleId.Value, cancellationToken);
+        }
+    }
+
     private async Task<WorkoutSession> LoadForLifecycleChangeAsync(
         Guid userId,
         Guid sessionId,
@@ -262,6 +298,8 @@ public class SessionService : ISessionService
         CancellationToken cancellationToken = default)
     {
         await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+
+        await ApplyPendingCorrectionsAsync(userId, sessionId, cancellationToken);
 
         var session = await ClaimForCompletionAsync(userId, sessionId, cancellationToken);
         var now = DateTime.UtcNow;

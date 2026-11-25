@@ -19,7 +19,7 @@ export function correctionNote(
   if (!correction.canCorrect) {
     switch (correction.blockedBy) {
       case 'NextWorkoutStarted':
-        return 'Ispravka više nije moguća: sledeći trening ovog dana je već počeo, a njegova težina je izračunata iz ovih serija.';
+        return 'Ispravka više nije moguća: sledeći trening ovog dana je već počeo ili je preskočen, pa su ove serije već iskorišćene.';
       case 'NextBlockOpened':
         return 'Ispravka više nije moguća: sledeći blok je generisan iz ovog treninga.';
       default:

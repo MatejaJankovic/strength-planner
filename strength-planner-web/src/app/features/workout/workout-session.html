@@ -172,7 +172,7 @@
           </p>
         }
 
-        @if ((isPlanned() || isInProgress()) && isCalibrationSet(plan)) {
+        @if ((isPlanned() || canEnterSets()) && isCalibrationSet(plan)) {
           <p class="card__hint card__hint--estimate">
             <mat-icon aria-hidden="true">flag</mat-icon>
             <span>
@@ -433,7 +433,7 @@
       }
     </button>
   } @else if (correcting()) {
-    <button class="cta cta--finish" type="button" [disabled]="revising()" (click)="finishCorrection()">
+    <button class="cta cta--finish" type="button" [disabled]="revising() || writesInFlight() > 0" (click)="finishCorrection()">
       @if (revising()) {
         <span class="cta__spinner" aria-hidden="true"></span>
         Čuvam…

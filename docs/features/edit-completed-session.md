@@ -8,8 +8,9 @@ brisanje celog plana: uputstvo je to tako i govorilo.
 Završen trening se ispravlja dok ništa nije izgrađeno na njegovim serijama (domen:
 `SessionCorrection`, čist kod sa testovima):
 
-- Trening istog dana u najbližoj kasnijoj nedelji **nije počeo** (planiran ili preskočen). Kad
-  je počeo, njegov cilj je izračunat iz ovih serija.
+- Trening istog dana u najbližoj kasnijoj nedelji je **planiran**: nije počeo i nije preskočen. Kad
+  je počeo, njegov cilj je izračunat iz ovih serija. Kad je preskočen, nedelja je zatvorena bez
+  njega (ocenjena za umor, a ako je to poslednji trening bloka, sledeći blok je generisan iz procena).
 - Za trening u poslednjoj nedelji bloka, koji nema kome da preda cilj: sledeći blok **nije
   generisan**. Blok kreće od procena, pa ih generisanje troši.
 
@@ -97,10 +98,49 @@ odeljak „Ispravka završenog treninga".
   Stari trening iste nedelje pokazuje poruku za istoriju i nema „Sačuvaj ispravku".
   `scrollWidth` 375 = `clientWidth` 375.
 
+## Šta je pregled našao (i šta je ispravljeno)
+
+Pregled agentom (samo čitanje) je našao dva stvarna propusta u prvoj verziji, oba u pravilu a ne
+u računici, pa ih nijedan test nije mogao videti:
+
+1. **Preskočen sledeći trening je držao prozor otvorenim.** Plan je kazao „nije počeo ni preskočen",
+   a ja sam preskočen računao kao nepočet, jer se može vratiti na plan. Ali preskakanje zatvara
+   nedelju (ocena umora, a u poslednjoj nedelji i generisanje sledećeg bloka iz procena), pa je
+   ispravka računala nad onim što je već iskorišćeno. Prvobitni test je i tvrdio pogrešnu
+   premisu („blok se prati tek kad se poslednji trening *odradi*"; preskočen je takođe
+   zaključen). Sada samo planiran trening ostavlja prozor otvorenim.
+2. **Nesačuvana ispravka je mogla da ostane zarobljena.** Uputstvo kaže da ekran može da se
+   zatvori pre čuvanja. Ako bi se potom počeo sledeći trening istog dana ili završio poslednji
+   trening bloka, prozor bi se zatvorio, serije bi ostale izmenjene, a ništa izgrađeno iz njih
+   ne bi, i nijedan zahtev više nije mogao da sačuva ispravku. Sada se pri startu, završetku i
+   preskakanju treninga sve nesačuvane ispravke bloka primene prve
+   (`ISessionRevisionService.ApplyPendingAsync`, u istoj transakciji). Ako se prozor ipak
+   zatvorio, oznaka se briše umesto da nudi čuvanje koje uvek pada.
+
+Manji nalazi, ispravljeni: klijent je oznaku „čeka čuvanje" postavljao pre odgovora servera i
+nikad je nije vraćao; „Sačuvaj ispravku" je mogla da stigne pre poslednjeg upisa serije
+(sada čeka upise u toku); greška pri čuvanju nije osvežavala prozor, pa je dugme ostajalo i
+ponavljalo grešku; oznaka na serveru se pri dodavanju serije upisivala posebnim zahtevom posle
+upisa (sada u istom snimanju); dva komentara su bila na pogrešnom mestu; `VolumeLandmarkChange`
+nije bio u spisku modela koje proverava test vlasništva.
+
 ## Šta nije pokriveno
 
 - Dva istovremena zahteva za čuvanje ispravke nisu probana; sve je u jednoj transakciji, ali
   probni sklop ne pravi konkurentne zahteve.
+- **Cilj drugog dana iste vežbe.** Ako se ista vežba radi dva dana nedeljno, cilj drugog dana
+  se računa i iz procena prvog (osnova je najbolja skorašnja procena). Ispravka prvog dana
+  preračuna samo njegov sopstveni cilj, ne i cilj drugog dana, koji je već izračunat. Pravilo o
+  osnovi (`OneRepMaxBaseline`) ograničava štetu od jedne pogrešne procene, ali „ništa nije
+  izgrađeno na ovim serijama" nije potpuno tačno za taj slučaj. Pregled to navodi kao sumnju;
+  nije izvršeno ni ispravljeno.
+- **Procene upisane posle završetka.** Ispravka čita sve procene koje danas postoje, pa može
+  da uzme u obzir i kasniji unos maksimuma ili procenu drugog treninga; rezultat nije tačno onaj
+  koji bi dalo ispravno prvo unošenje, a oznaka rekorda se poredi sa kasnijim zapisima.
+- Ispravka treninga u deload nedelji nije posebno proveravana; deload ne upisuje procenu, a
+  cilj naredne nedelje se računa istim putem kao pri završetku.
+- Serija dodata pri ispravci dobija `PerformedAt` iz trenutka ispravke i trenutnu telesnu masu iz
+  profila, a ne one od dana treninga.
 - `RevisionPending` se postavlja i kad serija nije stvarno promenjena (npr. izmena istim
   vrednostima): sledeće čuvanje tada upiše iste vrednosti, što je bezopasno.
 - Ispravka serije u treningu koji je u međuvremenu zamenjen (`Zameni vežbu`) nije posebno

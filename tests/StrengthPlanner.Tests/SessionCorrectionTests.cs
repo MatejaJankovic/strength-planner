@@ -58,16 +58,33 @@ public class SessionCorrectionTests
     }
 
     /// <summary>
-    /// A block is only followed once its last workout is done, so a workout that still has a
-    /// later week cannot belong to a block that already has a successor. If it ever did, the
-    /// later workout is what decides, not the block.
+    /// A block is followed once its last workout is settled, and a skipped workout is settled.
+    /// A planned later workout therefore means no successor can exist yet, and a skipped one
+    /// already counts as started, so the case of an opened block with an open window cannot be
+    /// reached through the statuses. If it ever were, the later workout still decides.
     /// </summary>
     [Fact]
-    public void AnOpenedNextBlock_DoesNotCloseAWorkoutThatStillHasALaterWeek()
+    public void AnOpenedNextBlock_DoesNotCloseAWorkoutThatStillHasAPlannedLaterWeek()
     {
         var window = SessionCorrection.Evaluate(SessionStatus.Completed, true, NextWorkoutState.NotStarted, true);
 
         Assert.True(window.IsOpen);
+    }
+
+    /// <summary>
+    /// Skipping the same day of the next week settles that week, so the week can be scored from
+    /// the sets being corrected and, in the last week, the next block is generated from their
+    /// estimates. Treating it as not started left the window open after both.
+    /// </summary>
+    [Fact]
+    public void ASkippedNextWorkout_ClosesTheWindow()
+    {
+        var next = SessionCorrection.NextWorkoutOf(SessionStatus.Skipped);
+
+        var window = SessionCorrection.Evaluate(SessionStatus.Completed, true, next, false);
+
+        Assert.False(window.IsOpen);
+        Assert.Equal(CorrectionBlock.NextWorkoutStarted, window.BlockedBy);
     }
 
     /// <summary>
@@ -86,7 +103,7 @@ public class SessionCorrectionTests
     [Theory]
     [InlineData(null, NextWorkoutState.None)]
     [InlineData(SessionStatus.Planned, NextWorkoutState.NotStarted)]
-    [InlineData(SessionStatus.Skipped, NextWorkoutState.NotStarted)]
+    [InlineData(SessionStatus.Skipped, NextWorkoutState.Started)]
     [InlineData(SessionStatus.InProgress, NextWorkoutState.Started)]
     [InlineData(SessionStatus.Completed, NextWorkoutState.Started)]
     public void TheNextWorkout_IsReadFromItsStatus(SessionStatus? status, NextWorkoutState expected)

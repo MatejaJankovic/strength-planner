@@ -564,20 +564,25 @@ menja olovkom, briše kantom, a nova se dodaje kao i dok je trening trajao. Svak
 upisuje odmah, ali ono što je završetak treninga izračunao — procena maksimuma, težina sledećeg
 treninga, ocena umora nedelje — ostaje kakvo je bilo dok ne klikneš **„Sačuvaj ispravku"**. Tek
 tada se sve izračunava iznova iz ispravljenih serija, a rezime se prikazuje pod naslovom
-„Ispravka sačuvana". Ako ekran zatvoriš pre toga, izmene ostaju zapisane i ekran te na to podseća.
+„Ispravka sačuvana". Ako ekran zatvoriš pre toga, izmene ostaju zapisane i ekran te na to podseća. Ako ih ne sačuvaš ni
+posle toga, sistem ih sačuva sam pri sledećem startu, završetku ili preskakanju treninga u istom
+bloku: ispravka se ne gubi kad se prozor zatvori.
 
 Ispravka je moguća dok ništa nije izgrađeno na tim serijama:
 
-- **Sledeći trening istog dana mora da čeka.** Kad je on počeo, njegova težina je već izračunata
-  iz ovih serija i više se ne dira. Za trening u poslednjoj nedelji bloka važi isto za sledeći
-  blok: dok nije generisan, ispravka je moguća.
+- **Sledeći trening istog dana mora da čeka.** Dok nije počeo i nije preskočen, ispravka je moguća.
+  Kad je počeo, njegova težina je već izračunata iz ovih serija; kad je preskočen, nedelja je
+  zatvorena bez njega. Ako ga vratiš na plan, ispravka je opet moguća.
+- **Trening iz poslednje nedelje bloka** ispravljaš dok blok ima još neodrađenih treninga. Čim se
+  poslednji odradi ili preskoči, sledeći blok se generiše iz procena i ispravka više nije moguća,
+  pa se poslednji trening bloka ne može ispraviti nikad.
 - **Ako je nedelja zatvorena, ona se računa ponovo.** Ocena umora se izračunava iznova, a granice
   volumena uzimaju nazad ono što je ta nedelja pomerila, pa je računaju iz ispravljenih serija. Ne
   računa se dvaput.
 - **Deload koji je već povučen ostaje.** Ako ispravljene serije ne bi dale toliki umor, sledeća
   nedelja se ne vraća: već je prepisana, a možeš da si je pogledao. Ekran to kaže. Obrnuto, ako
   ispravka podigne umor preko praga, deload se uvodi kao da je tako bilo od početka (ako sledeća
-  nedelja nije počela i blok već nema deload).
+  nedelja nije počela i blok ranije nije povukao deload).
 - **Trening završen pre ove mogućnosti ispravlja se samo kao istorija.** Za njega ne postoji zapis koji
   bi vezao njegovu procenu i pomeraj granica za njega, pa se menja samo zapis serija i ono što se iz
   njega čita (istorija, analitika). Težine sledećih treninga i ocena nedelje ostaju. Ekran to kaže, i ne

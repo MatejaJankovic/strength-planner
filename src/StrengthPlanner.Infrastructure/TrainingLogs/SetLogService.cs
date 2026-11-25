@@ -87,12 +87,18 @@ public class SetLogService : ISetLogService
         };
 
         _db.SetLogs.Add(setLog);
-        await _db.SaveChangesAsync(cancellationToken);
 
+        // The flag goes in the same save as the set: a failure between the two would leave a
+        // changed set that is never offered for recalculation.
         if (correction == CorrectionMode.Recalculate)
         {
-            await MarkRevisionPendingAsync(userId, planInfo.SessionId, cancellationToken);
+            var session = await _db.WorkoutSessions.FirstAsync(
+                candidate => candidate.Id == planInfo.SessionId,
+                cancellationToken);
+            session.RevisionPending = true;
         }
+
+        await _db.SaveChangesAsync(cancellationToken);
 
         return ToDto(setLog);
     }
@@ -177,14 +183,6 @@ public class SetLogService : ISetLogService
     }
 
     /// <summary>
-    /// Serije se ne mogu menjati kad od sesije više ništa ne preostaje.
-    ///
-    /// Završena: progresija je već izračunata i naknadne izmene bi narušile istoriju.
-    /// Preskočena: nedelja je na osnovu nje već zatvorena — ocenjena za umor, a možda je i
-    /// sledeći blok plana generisan. Serija upisana posle toga bi bila rad koji nijedan
-    /// obračun nije video. Trening se prvo vraća na plan, pa se loguje.
-    /// </summary>
-    /// <summary>
     /// A finished workout accepts sets only while it can still be corrected (see
     /// <see cref="SessionCorrection"/>). Returns how the correction will be applied, or null
     /// when the session is not a finished one.
@@ -220,21 +218,13 @@ public class SetLogService : ISetLogService
     }
 
     /// <summary>
-    /// A set was added to a finished workout: what finishing it produced no longer describes
-    /// its sets until the correction is saved.
+    /// Serije se ne mogu menjati kad od sesije više ništa ne preostaje.
+    ///
+    /// Završena: progresija je već izračunata i naknadne izmene bi narušile istoriju.
+    /// Preskočena: nedelja je na osnovu nje već zatvorena — ocenjena za umor, a možda je i
+    /// sledeći blok plana generisan. Serija upisana posle toga bi bila rad koji nijedan
+    /// obračun nije video. Trening se prvo vraća na plan, pa se loguje.
     /// </summary>
-    private async Task MarkRevisionPendingAsync(
-        Guid userId,
-        Guid sessionId,
-        CancellationToken cancellationToken)
-    {
-        await _db.WorkoutSessions
-            .Where(session => session.Id == sessionId && session.TrainingWeek.Mesocycle.UserId == userId)
-            .ExecuteUpdateAsync(
-                setters => setters.SetProperty(session => session.RevisionPending, true),
-                cancellationToken);
-    }
-
     private static void EnsureSessionIsEditable(SessionStatus status)
     {
         if (!SessionLifecycle.IsSettled(status))

@@ -16,14 +16,20 @@ public static class SessionCorrection
 {
     /// <summary>
     /// The state of the session this one hands its target to: the same day, nearest later
-    /// week. A skipped session has not been started and can still take a new target.
+    /// week. Only a planned one can still take a new target without anything having been
+    /// decided on it.
+    ///
+    /// A skipped one counts as started. Skipping is an answer, and it settles the week: the
+    /// week can close and be scored from these sets, and when it was the last workout of the
+    /// block the next block is generated from their estimates, so by then they have been used.
+    /// Putting it back on the plan reopens the window.
     /// </summary>
     public static NextWorkoutState NextWorkoutOf(SessionStatus? nextStatus)
     {
         return nextStatus switch
         {
             null => NextWorkoutState.None,
-            SessionStatus.Planned or SessionStatus.Skipped => NextWorkoutState.NotStarted,
+            SessionStatus.Planned => NextWorkoutState.NotStarted,
             _ => NextWorkoutState.Started
         };
     }
@@ -69,10 +75,10 @@ public enum NextWorkoutState
     /// <summary>No later week has this day: the workout is in the last week of its block.</summary>
     None,
 
-    /// <summary>Planned or skipped: it can still take a new target.</summary>
+    /// <summary>Planned: it can still take a new target.</summary>
     NotStarted,
 
-    /// <summary>Under way or finished: it was prescribed from the sets being corrected.</summary>
+    /// <summary>Under way, finished or skipped: it was prescribed from the sets being corrected, or the week was settled without it.</summary>
     Started
 }
 

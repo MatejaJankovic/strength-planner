@@ -47,7 +47,12 @@ public class SessionRevisionService : ISessionRevisionService
         Guid sessionId,
         CancellationToken cancellationToken = default)
     {
-        await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+        // Called from inside another request's transaction (see ApplyPendingAsync), it joins
+        // that transaction instead of opening a second one.
+        var ownsTransaction = _db.Database.CurrentTransaction is null;
+        await using var transaction = ownsTransaction
+            ? await _db.Database.BeginTransactionAsync(cancellationToken)
+            : null;
 
         var session = await _db.WorkoutSessions
             .Include(workoutSession => workoutSession.TrainingWeek)
@@ -140,7 +145,10 @@ public class SessionRevisionService : ISessionRevisionService
         var deloadKept = autoDeload is null
                          && await DeloadStaysAsync(userId, mesocycleId, week.WeekNumber, previousScore, score, cancellationToken);
 
-        await transaction.CommitAsync(cancellationToken);
+        if (ownsTransaction)
+        {
+            await transaction!.CommitAsync(cancellationToken);
+        }
 
         return new SessionRevisionResultDto
         {
@@ -149,6 +157,41 @@ public class SessionRevisionService : ISessionRevisionService
             FatigueScore = score,
             DeloadKept = deloadKept
         };
+    }
+
+    public async Task ApplyPendingAsync(
+        Guid userId,
+        Guid mesocycleId,
+        CancellationToken cancellationToken = default)
+    {
+        var pending = await _db.WorkoutSessions
+            .AsNoTracking()
+            .Where(session => session.RevisionPending
+                              && session.Status == SessionStatus.Completed
+                              && session.TrainingWeek.MesocycleId == mesocycleId
+                              && session.TrainingWeek.Mesocycle.UserId == userId)
+            .OrderBy(session => session.TrainingWeek.WeekNumber)
+            .Select(session => session.Id)
+            .ToListAsync(cancellationToken);
+
+        foreach (var sessionId in pending)
+        {
+            try
+            {
+                await ReviseAsync(userId, sessionId, cancellationToken);
+            }
+            catch (TrainingLogException error) when (error.ErrorType == TrainingLogErrorType.Conflict)
+            {
+                // The window closed without the correction being saved (a state from before
+                // this was applied automatically). Nothing can be recalculated any more, so the
+                // flag is cleared rather than left to offer a save that always fails.
+                await _db.WorkoutSessions
+                    .Where(session => session.Id == sessionId)
+                    .ExecuteUpdateAsync(
+                        setters => setters.SetProperty(session => session.RevisionPending, false),
+                        cancellationToken);
+            }
+        }
     }
 
     /// <summary>

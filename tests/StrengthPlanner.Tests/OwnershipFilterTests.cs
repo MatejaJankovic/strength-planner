@@ -93,6 +93,7 @@ public class OwnershipFilterTests
     [InlineData(typeof(OneRepMaxRecord))]
     [InlineData(typeof(UserExerciseSetting))]
     [InlineData(typeof(UserVolumeLandmark))]
+    [InlineData(typeof(VolumeLandmarkChange))]
     [InlineData(typeof(Exercise))]
     [InlineData(typeof(ExerciseMuscle))]
     public void EveryUserOwnedTable_IsFilteredByItsOwner(Type entityType)
