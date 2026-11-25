@@ -1,0 +1,23 @@
+@if (confirming()) {
+  <div class="edit">
+    <p class="edit__hint">
+      „{{ exerciseName() }}" se uklanja iz ovog i iz svakog sledećeg treninga ovog dana, do kraja bloka.
+      Odrađeni treninzi ostaju kakvi su bili. Ako blok cilja volumen mišića, serije ostalih vežbi se ponovo
+      raspoređuju.
+    </p>
+
+    @if (error(); as message) {
+      <p class="edit__error" role="alert">{{ message }}</p>
+    }
+
+    <button class="edit__btn edit__btn--danger" type="button" [disabled]="busy()" (click)="confirm()">
+      {{ busy() ? 'Uklanjam…' : 'Ukloni do kraja bloka' }}
+    </button>
+    <button class="edit__btn edit__btn--quiet" type="button" (click)="cancel()">Odustani</button>
+  </div>
+} @else {
+  <button class="edit__btn edit__btn--quiet" type="button" (click)="ask()">
+    <mat-icon aria-hidden="true">delete_outline</mat-icon>
+    Ukloni vežbu
+  </button>
+}

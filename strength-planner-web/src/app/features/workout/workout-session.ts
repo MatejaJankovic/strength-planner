@@ -13,6 +13,7 @@ import {
   ExercisePlanDto,
   SessionRevisionResultDto,
   SetLogDto,
+  TEMPLATE_LIMITS,
   WorkoutSessionDto,
 } from '../../core/models/training.models';
 import { WeightStepper } from '../../shared/components/weight-stepper/weight-stepper';
@@ -27,7 +28,9 @@ import { repRangeLabel } from '../../shared/rep-range-label';
 import { CompletionSummary } from './completion-summary';
 import { correctionNote, recalculates, revisionNotes } from './correction-note';
 import { isCalibrationEntry } from './calibration';
+import { AddExercise } from './add-exercise';
 import { NoteField } from './note-field';
+import { RemoveExercise } from './remove-exercise';
 import { RestTimer } from './rest-timer';
 import { RestTimerService } from './rest-timer.service';
 import { platesHint, warmupHint } from './workout-aids';
@@ -54,6 +57,8 @@ const REP_STEP_MAX = 100;
     CompletionSummary,
     NoteField,
     RestTimer,
+    AddExercise,
+    RemoveExercise,
   ],
   templateUrl: './workout-session.html',
   styleUrl: './workout-session.scss',
@@ -355,6 +360,39 @@ export class WorkoutSession {
     return (this.isPlanned() || this.isInProgress()) && plan.setLogs.length === 0;
   }
 
+  /**
+   * Vežba se uklanja pod istim uslovom kao zamena, i samo dok u danu ostaje bar jedna druga: trening bez
+   * vežbe nije trening, a server to ne dozvoljava.
+   */
+  protected canRemove(plan: ExercisePlanDto): boolean {
+    return this.canSwap(plan) && (this.session()?.exercisePlans.length ?? 0) > 1;
+  }
+
+  /** Vežba se dodaje u trening koji čeka ili traje, dok dan ne dostigne granicu koju ima i lični šablon. */
+  protected canAddExercise(): boolean {
+    return (
+      (this.isPlanned() || this.isInProgress()) &&
+      (this.session()?.exercisePlans.length ?? 0) < TEMPLATE_LIMITS.maxExercisesPerDay
+    );
+  }
+
+  /**
+   * Trening posle dodavanja ili uklanjanja vežbe. Unos dobijaju samo kartice koje ga još nemaju:
+   * nesačuvani unosi na ostalim karticama ostaju.
+   */
+  protected onBlockEdited(session: WorkoutSessionDto, message: string): void {
+    this.session.set(session);
+    this.drafts.update((drafts) => {
+      const next = { ...drafts };
+      for (const plan of session.exercisePlans) {
+        next[plan.id] ??= this.initialDraft(plan);
+      }
+      return next;
+    });
+    this.actionError.set(null);
+    this.showToast(message);
+  }
+
   protected openSwap(plan: ExercisePlanDto): void {
     this.swapPlanId.set(plan.id);
     this.swapOptions.set(null);
@@ -402,7 +440,7 @@ export class WorkoutSession {
         }
         this.swapping.set(false);
         this.swapPlanId.set(null);
-        this.toast.set('Vežba je zamenjena do kraja bloka.');
+        this.showToast('Vežba je zamenjena do kraja bloka.');
       },
       error: (err: unknown) => {
         this.swapping.set(false);
@@ -427,7 +465,7 @@ export class WorkoutSession {
       next: (session) => {
         this.session.set(session);
         this.skipping.set(false);
-        this.toast.set('Trening je preskočen.');
+        this.showToast('Trening je preskočen.');
       },
       error: (err: unknown) => {
         this.skipping.set(false);
@@ -450,7 +488,7 @@ export class WorkoutSession {
         this.session.set(session);
         this.initDrafts(session);
         this.skipping.set(false);
-        this.toast.set('Trening je vraćen na plan.');
+        this.showToast('Trening je vraćen na plan.');
       },
       error: (err: unknown) => {
         this.skipping.set(false);

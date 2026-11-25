@@ -1,0 +1,47 @@
+@if (open()) {
+  <div class="edit">
+    @if (offer(); as current) {
+      @if (current.unavailable) {
+        <p class="edit__hint">{{ current.unavailable }}</p>
+      } @else if (current.exercises.length === 0 && !error()) {
+        <p class="edit__hint">Nema vežbe koja bi mogla da se doda: sve što se radi sa opterećenjem već je u ovom danu.</p>
+      } @else if (current.exercises.length > 0) {
+        <label class="edit__label" [for]="selectId">Dodaj vežbu</label>
+        <select
+          class="edit__select"
+          [id]="selectId"
+          [value]="choice()"
+          (change)="choice.set($any($event.target).value)"
+        >
+          @for (option of current.exercises; track option.exerciseId) {
+            <option [value]="option.exerciseId">{{ label(option) }}</option>
+          }
+        </select>
+        <p class="edit__hint">
+          Vežba ide na kraj dana, u ovom i u svakom sledećem treningu ovog dana, do kraja bloka. Opseg,
+          rezerva i serije su kao za svaku vežbu tog tipa u toj nedelji, a težina se računa iz maksimuma.
+          Odrađeni treninzi ostaju kakvi su bili. Ako blok cilja volumen mišića, serije ostalih vežbi se
+          ponovo raspoređuju.
+        </p>
+      }
+
+      @if (error(); as message) {
+        <p class="edit__error" role="alert">{{ message }}</p>
+      }
+
+      @if (current.exercises.length > 0) {
+        <button class="edit__btn" type="button" [disabled]="busy()" (click)="confirm()">
+          {{ busy() ? 'Dodajem…' : 'Dodaj do kraja bloka' }}
+        </button>
+      }
+    } @else {
+      <p class="edit__hint">Tražim vežbe…</p>
+    }
+    <button class="edit__btn edit__btn--quiet" type="button" (click)="cancel()">Odustani</button>
+  </div>
+} @else {
+  <button class="edit__btn edit__btn--quiet" type="button" (click)="openPicker()">
+    <mat-icon aria-hidden="true">add</mat-icon>
+    Dodaj vežbu
+  </button>
+}

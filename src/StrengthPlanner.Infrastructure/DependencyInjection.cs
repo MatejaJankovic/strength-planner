@@ -83,6 +83,7 @@ public static class DependencyInjection
         services.AddScoped<ISessionRevisionService, SessionRevisionService>();
         services.AddScoped<ITrainingHistoryService, TrainingHistoryService>();
         services.AddScoped<IExerciseSubstitutionService, ExerciseSubstitutionService>();
+        services.AddScoped<IBlockEditService, BlockEditService>();
         services.AddScoped<IWorkoutNoteService, WorkoutNoteService>();
         services.AddScoped<VolumeLandmarkService>();
         services.AddScoped<WeeklyVolumeTargetResolver>();

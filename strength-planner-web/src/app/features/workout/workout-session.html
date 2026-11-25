@@ -450,9 +450,24 @@
             </button>
           }
         }
+
+        @if (canRemove(plan)) {
+          <app-remove-exercise
+            [planId]="plan.id"
+            [exerciseName]="plan.exerciseName"
+            (removed)="onBlockEdited($event, 'Vežba je uklonjena do kraja bloka.')"
+          />
+        }
       </section>
     }
   </div>
+
+  @if (canAddExercise()) {
+    <app-add-exercise
+      [sessionId]="ws.id"
+      (added)="onBlockEdited($event, 'Vežba je dodata do kraja bloka.')"
+    />
+  }
 
   @if (isInProgress()) {
     <button class="cta cta--finish" type="button" [disabled]="completing()" (click)="complete()">
