@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using StrengthPlanner.Domain.Algorithms;
+using StrengthPlanner.Domain.Entities;
 using StrengthPlanner.Domain.Enums;
 using StrengthPlanner.Infrastructure.Analytics;
 using StrengthPlanner.Infrastructure.Exercises;
@@ -97,8 +98,8 @@ public sealed class DeloadService
         // Prag zavisi od nivoa iskustva. Početnik ga nema; razlog je zapisan uz
         // ExperienceProgramming.DeloadThreshold, a da li blok početnika ima i planirani
         // deload odlučuje Periodization.HasPlannedDeload.
-        var threshold = ExperienceProgramming.DeloadThreshold(
-            await BlockExperienceLevel.ForBlockAsync(_db, userId, mesocycleId, cancellationToken));
+        var level = await BlockExperienceLevel.ForBlockAsync(_db, userId, mesocycleId, cancellationToken);
+        var threshold = ExperienceProgramming.DeloadThreshold(level);
 
         if (claimed == 0 || threshold is null || score < threshold.Value)
         {
@@ -182,6 +183,7 @@ public sealed class DeloadService
             nextWeek.WeekNumber,
             model,
             goal,
+            level,
             cancellationToken);
 
         return new DeloadOutcome(weekNumber, nextWeek.WeekNumber, score, plannedDeloadRestored);
@@ -203,6 +205,7 @@ public sealed class DeloadService
         int autoDeloadWeekNumber,
         PeriodizationModel model,
         GoalPrescription goal,
+        ExperienceLevel level,
         CancellationToken cancellationToken)
     {
         var planned = await _db.TrainingWeeks
@@ -249,20 +252,17 @@ public sealed class DeloadService
         // Propisani broj serija, ne predloženi: predlog je pomeren balansiranjem volumena,
         // pa bi obrtanje periodizacije nad njim vratilo polaznu vrednost koju blok nikada
         // nije imao.
-        var baseSetsByExerciseAndDay = reference
+        //
+        // Ovo je samo rezerva. Prvo se traži polazni broj upisan u osnovnoj nedelji, a tek za
+        // vežbu kojoj tamo nema mesta izvodi se iz propisa: osnovni opseg ide uz broj serija, jer
+        // kada Epley granica pojede pomeraj ponavljanja, nedelja ga nosi kao seriju — pa se ista
+        // brojka razlaže drugačije za hipertrofijsku nego za vežbu snage.
+        var derivedBaseSets = reference
             .GroupBy(item => (item.DayLabel, item.ExerciseId))
             .ToDictionary(
                 group => group.Key,
                 group =>
                 {
-                    if (baseSetsFromBaseWeek.TryGet(group.Key.DayLabel, group.Key.ExerciseId, group.First().Order, out var storedBaseSets))
-                    {
-                        return storedBaseSets;
-                    }
-
-                    // Rezerva: osnovni opseg ide uz broj serija, jer kada Epley granica
-                    // pojede pomeraj ponavljanja, nedelja ga nosi kao seriju — pa se ista
-                    // brojka razlaze drugacije za hipertrofijsku nego za vezbu snage.
                     var sample = group.First();
                     return Periodization.BaseSetsFrom(
                         model,
@@ -275,14 +275,26 @@ public sealed class DeloadService
             .Include(plan => plan.WorkoutSession)
             .Where(plan => plan.WorkoutSession.TrainingWeekId == planned.Id)
             .ToListAsync(cancellationToken);
+        var exercisesBySession = ExercisesBySession(plans);
 
         foreach (var plan in plans)
         {
-            if (!baseSetsByExerciseAndDay.TryGetValue(
+            if (!baseSetsFromBaseWeek.TryGet(
+                    plan.WorkoutSession.DayLabel,
+                    plan.ExerciseId,
+                    plan.Order,
+                    exercisesBySession[plan.WorkoutSessionId],
+                    out var baseSets)
+                && !derivedBaseSets.TryGetValue(
                     (plan.WorkoutSession.DayLabel, plan.ExerciseId),
-                    out var baseSets))
+                    out baseSets))
             {
-                continue;
+                // Vežba koja nije ni u osnovnoj nedelji ni u jednoj trenažnoj nedelji osim ove i
+                // nedelje koja je upravo postala deload: dodata je kasno u blok (A3), pa postoji samo u
+                // te dve. Plan se nije smeo preskočiti, jer bi nedelja koja više nije deload ostala sa
+                // propisom rasterećenja na njemu (pregled #126). Dodata vežba uvek kreće od serija koje
+                // propisuje nivo bloka, pa se polazni broj čita odatle.
+                baseSets = ExperienceProgramming.StartingSetsPerExercise(level);
             }
 
             // Nedelja preuzima propis one koja je postala deload — dakle faze koja bi
@@ -411,6 +423,8 @@ public sealed class DeloadService
             model,
             cancellationToken);
 
+        var exercisesBySession = ExercisesBySession(plans);
+
         foreach (var plan in plans)
         {
             // Serije se polove u odnosu na POLAZNI broj bloka, ne u odnosu na ono što ta
@@ -423,6 +437,7 @@ public sealed class DeloadService
                 plan.WorkoutSession.DayLabel,
                 plan.ExerciseId,
                 plan.Order,
+                exercisesBySession[plan.WorkoutSessionId],
                 out var storedBaseSets)
                 ? storedBaseSets
                 : Periodization.BaseSetsFrom(
@@ -484,6 +499,12 @@ public sealed class DeloadService
     /// Vežba zamenjena posle osnovne nedelje (A2) u njoj ne postoji, pa se mesto tada traži po
     /// rednom broju u danu: zamena menja samo vežbu, a mesto i njegov propis ostaju. Bez toga
     /// je deload padao na izvođenje, koje runde 10 i 14 nisu htele (pregled #111).
+    ///
+    /// Mesto se preuzima samo kada je vežba koja ga je držala u osnovnoj nedelji otišla iz tog dana.
+    /// Otkako se vežbe dodaju i uklanjaju (A3), isti redni broj može da pripada nekoj drugoj vežbi
+    /// koja je tu i dalje: uklonjena je vežba ispred nje pa se redosled zbio, i dodata vežba je
+    /// dobila broj koji je nosila ona. Čitanje njenog polaznog broja serija bi dodatoj vežbi
+    /// pripisalo propis vežbe koja nije ni zamenjena ni uklonjena.
     /// </summary>
     private async Task<BaseSetLookup> LoadBaseSetsAsync(
         Guid userId,
@@ -514,27 +535,52 @@ public sealed class DeloadService
                 .ToDictionary(group => group.Key, group => group.First().PrescribedSets),
             plans
                 .GroupBy(plan => (plan.DayLabel, plan.Order))
-                .ToDictionary(group => group.Key, group => group.First().PrescribedSets));
+                .ToDictionary(group => group.Key, group => (group.First().ExerciseId, group.First().PrescribedSets)));
+    }
+
+    /// <summary>Vežbe po treningu, za proveru da li je mesto u danu zaista ispražnjeno.</summary>
+    private static Dictionary<Guid, HashSet<Guid>> ExercisesBySession(IEnumerable<ExercisePlan> plans)
+    {
+        return plans
+            .GroupBy(plan => plan.WorkoutSessionId)
+            .ToDictionary(group => group.Key, group => group.Select(plan => plan.ExerciseId).ToHashSet());
     }
 
     /// <summary>Polazni broj serija po vežbi u danu, a za zamenjenu vežbu po mestu u danu.</summary>
     private sealed class BaseSetLookup
     {
         private readonly Dictionary<(string DayLabel, Guid ExerciseId), int> _byExercise;
-        private readonly Dictionary<(string DayLabel, int Order), int> _byOrder;
+        private readonly Dictionary<(string DayLabel, int Order), (Guid ExerciseId, int Sets)> _byOrder;
 
         public BaseSetLookup(
             Dictionary<(string DayLabel, Guid ExerciseId), int> byExercise,
-            Dictionary<(string DayLabel, int Order), int> byOrder)
+            Dictionary<(string DayLabel, int Order), (Guid ExerciseId, int Sets)> byOrder)
         {
             _byExercise = byExercise;
             _byOrder = byOrder;
         }
 
-        public bool TryGet(string dayLabel, Guid exerciseId, int order, out int sets)
+        /// <param name="sessionExerciseIds">Vežbe koje trening, u kome se mesto traži, danas ima.</param>
+        public bool TryGet(
+            string dayLabel,
+            Guid exerciseId,
+            int order,
+            IReadOnlySet<Guid> sessionExerciseIds,
+            out int sets)
         {
-            return _byExercise.TryGetValue((dayLabel, exerciseId), out sets)
-                   || _byOrder.TryGetValue((dayLabel, order), out sets);
+            if (_byExercise.TryGetValue((dayLabel, exerciseId), out sets))
+            {
+                return true;
+            }
+
+            if (_byOrder.TryGetValue((dayLabel, order), out var slot) && !sessionExerciseIds.Contains(slot.ExerciseId))
+            {
+                sets = slot.Sets;
+                return true;
+            }
+
+            sets = 0;
+            return false;
         }
     }
 

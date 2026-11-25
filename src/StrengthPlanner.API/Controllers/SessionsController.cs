@@ -16,17 +16,20 @@ public class SessionsController : AuthorizedControllerBase
     private readonly ISessionRevisionService _revisions;
     private readonly IExerciseSubstitutionService _substitutions;
     private readonly IWorkoutNoteService _notes;
+    private readonly IBlockEditService _blockEdits;
 
     public SessionsController(
         ISessionService sessionService,
         ISessionRevisionService revisions,
         IExerciseSubstitutionService substitutions,
-        IWorkoutNoteService notes)
+        IWorkoutNoteService notes,
+        IBlockEditService blockEdits)
     {
         _sessionService = sessionService;
         _revisions = revisions;
         _substitutions = substitutions;
         _notes = notes;
+        _blockEdits = blockEdits;
     }
 
     /// <summary>Vraća detalj sesije sa planovima i logovima.</summary>
@@ -112,6 +115,50 @@ public class SessionsController : AuthorizedControllerBase
     {
         var userId = GetUserId();
         var sessionId = await _substitutions.SubstituteAsync(userId, planId, request.ExerciseId, cancellationToken);
+        return Ok(await _sessionService.GetByIdAsync(userId, sessionId, cancellationToken));
+    }
+
+    /// <summary>Vežbe koje smeju da se dodaju u dan ovog treninga, za ostatak bloka.</summary>
+    [HttpGet("{id:guid}/addable-exercises")]
+    [ProducesResponseType(typeof(AddableExercisesDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Addable(Guid id, CancellationToken cancellationToken)
+    {
+        return Ok(await _blockEdits.GetAddableAsync(GetUserId(), id, cancellationToken));
+    }
+
+    /// <summary>
+    /// Dodaje vežbu u ovaj i u svaki trening istog dana koji još čeka, do kraja bloka, i vraća
+    /// trening u koji je dodata.
+    /// </summary>
+    [HttpPost("{id:guid}/exercises")]
+    [ProducesResponseType(typeof(WorkoutSessionDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> AddExercise(
+        Guid id,
+        [FromBody] AddExerciseRequest request,
+        CancellationToken cancellationToken)
+    {
+        var userId = GetUserId();
+        var sessionId = await _blockEdits.AddExerciseAsync(userId, id, request.ExerciseId, cancellationToken);
+        return Ok(await _sessionService.GetByIdAsync(userId, sessionId, cancellationToken));
+    }
+
+    /// <summary>
+    /// Uklanja vežbu iz ovog i iz svakog treninga istog dana koji još čeka, do kraja bloka, i
+    /// vraća trening iz koga je uklonjena.
+    /// </summary>
+    [HttpDelete("plans/{planId:guid}")]
+    [ProducesResponseType(typeof(WorkoutSessionDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> RemoveExercise(Guid planId, CancellationToken cancellationToken)
+    {
+        var userId = GetUserId();
+        var sessionId = await _blockEdits.RemoveExerciseAsync(userId, planId, cancellationToken);
         return Ok(await _sessionService.GetByIdAsync(userId, sessionId, cancellationToken));
     }
 

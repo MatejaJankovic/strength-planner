@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { API_BASE_URL } from './api-base';
 import {
   AddSetLogRequest,
+  AddableExercisesDto,
   CompleteSessionResultDto,
   ExerciseAlternativeDto,
   SessionRevisionResultDto,
@@ -50,6 +51,23 @@ export class SessionService {
     return this.http.post<WorkoutSessionDto>(`${this.apiUrl}/sessions/plans/${planId}/substitute`, {
       exerciseId,
     });
+  }
+
+  /** Vežbe koje smeju da se dodaju u dan ovog treninga, za ostatak bloka. */
+  addableExercises(sessionId: string): Observable<AddableExercisesDto> {
+    return this.http.get<AddableExercisesDto>(`${this.apiUrl}/sessions/${sessionId}/addable-exercises`);
+  }
+
+  /** Dodaje vežbu u ovaj i u svaki sledeći trening istog dana; vraća trening iz koga je dodata. */
+  addExercise(sessionId: string, exerciseId: string): Observable<WorkoutSessionDto> {
+    return this.http.post<WorkoutSessionDto>(`${this.apiUrl}/sessions/${sessionId}/exercises`, {
+      exerciseId,
+    });
+  }
+
+  /** Uklanja vežbu iz ovog i iz svakog sledećeg treninga istog dana; vraća trening iz koga je uklonjena. */
+  removeExercise(planId: string): Observable<WorkoutSessionDto> {
+    return this.http.delete<WorkoutSessionDto>(`${this.apiUrl}/sessions/plans/${planId}`);
   }
 
   addSet(planId: string, request: AddSetLogRequest): Observable<SetLogDto> {

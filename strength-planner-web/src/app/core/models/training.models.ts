@@ -166,6 +166,24 @@ export interface ExerciseAlternativeDto {
   isCustom: boolean;
 }
 
+/** Vežba koja sme da se doda u dan bloka koji teče, sa mišićima koje direktno radi. */
+export interface AddableExerciseDto {
+  exerciseId: string;
+  name: string;
+  equipment: string;
+  isCustom: boolean;
+  primaryMuscles: string[];
+}
+
+/**
+ * Šta sme da se doda u dan. `unavailable` je razlog zbog koga ništa ne sme (blok koji je već imao rasterećenje
+ * zbog umora): stiže kao podatak, jer tekst greške iz servera u produkciji ne stiže do ekrana.
+ */
+export interface AddableExercisesDto {
+  exercises: AddableExerciseDto[];
+  unavailable?: string | null;
+}
+
 export interface WorkoutSessionDto {
   id: string;
   weekNumber: number;

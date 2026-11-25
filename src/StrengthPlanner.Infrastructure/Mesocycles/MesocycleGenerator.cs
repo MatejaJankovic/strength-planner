@@ -253,30 +253,23 @@ public class MesocycleGenerator : IMesocycleGenerator
                     var planned = dayExercises[exerciseIndex];
                     var exercise = planned.Exercise;
 
-                    // Vežba iz ličnog šablona nosi svoje serije i opseg; ista periodizacija
-                    // ih pomera kroz blok kao što pomera propis izveden iz cilja, jer
-                    // ForWeek i inače prima "osnovu" kao parametar. RIR ostaje iz cilja.
-                    //
-                    // Kada šablon ne kaže opseg, on se izvodi iz cilja I iz tipa vežbe:
-                    // izolacija u oba bloka ide 10-20, jer se snaga izražava u složenim
-                    // pokretima, a ne u trojci na bočnom podizanju. Složena vežba koja nizak
-                    // opseg ne podnosi (iskorak, step-up, sklek) u bloku snage ostaje na 8-12.
-                    var exerciseSettings = GoalPrescriptions.ForExercise(goal, exercise.Type, exercise.SuitsLowReps);
-                    var baseRepRangeMin = planned.RepRangeMin ?? exerciseSettings.RepRangeMin;
-                    var baseRepRangeMax = planned.RepRangeMax ?? exerciseSettings.RepRangeMax;
-
-                    // Propis se racuna po vezbi, a ne po nedelji. Dok su sve vezbe delile
-                    // opseg cilja, nedeljni propis je bio isti za svaku i racunao se jednom;
-                    // sada izolacija nosi svoj opseg, pa deljeni propis nije ni tacan.
-                    // Za slozene vezbe iz ugradjenog sablona daje identicne brojeve.
-                    var exercisePrescription = Periodization.ForWeek(
+                    // Propis je u jednoj funkciji (ExercisePrescriptions), jer dodavanje vežbe u blok koji već
+                    // teče traži iste brojeve. Vežba iz ličnog šablona nosi svoje serije i opseg; kada ih šablon
+                    // ne kaže, opseg se izvodi iz cilja I iz tipa vežbe (izolacija ide 10-20 u oba bloka), a RIR
+                    // ostaje iz cilja. Propis se računa po vežbi, a ne po nedelji, jer izolacija nosi svoj opseg.
+                    var prescribed = ExercisePrescriptions.For(
+                        goal,
+                        exercise.Type,
+                        exercise.SuitsLowReps,
                         periodizationModel,
                         experienceLevel,
                         weekNumber,
-                        baseRepRangeMin,
-                        baseRepRangeMax,
-                        goalSettings.TargetRir,
-                        planned.Sets ?? startingSets);
+                        planned.RepRangeMin,
+                        planned.RepRangeMax,
+                        planned.Sets);
+                    var baseRepRangeMin = prescribed.BaseRepRangeMin;
+                    var baseRepRangeMax = prescribed.BaseRepRangeMax;
+                    var exercisePrescription = prescribed.Week;
 
                     var targetWeightKg = GetInitialTargetWeight(
                         weekNumber,
