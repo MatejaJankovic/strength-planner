@@ -17,16 +17,17 @@ import {
   PASSWORD_MIN_LENGTH,
 } from '../../core/models/auth.models';
 import { SubscreenHeader } from '../../shared/components/subscreen-header/subscreen-header';
+import { ThemePicker } from '../../shared/components/theme-picker/theme-picker';
 
 /**
- * Podešavanja naloga: lozinka, odjava i brisanje naloga.
+ * Podešavanja: izgled aplikacije (tema), pa lozinka, odjava i brisanje naloga.
  *
- * Sve tri stvari dele jedno svojstvo — tiču se pristupa nalogu, a ne trenažnih podataka —
+ * Izgled se menja odmah i važi samo za ovaj telefon. Ostale tri stvari dele jedno svojstvo — tiču se pristupa nalogu, a ne trenažnih podataka —
  * pa su izdvojene sa ekrana profila, koji je sada pregled i ulaz u ostale ekrane.
  */
 @Component({
   selector: 'app-settings-page',
-  imports: [ReactiveFormsModule, MatIconModule, SubscreenHeader],
+  imports: [ReactiveFormsModule, MatIconModule, SubscreenHeader, ThemePicker],
   templateUrl: './settings-page.html',
   styleUrl: './settings-page.scss',
 })
