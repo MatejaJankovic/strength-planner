@@ -37,5 +37,5 @@ public class CreateExerciseRequest
     /// iz <see cref="ExerciseCatalog.MuscleGroupNames"/>. Da razmimoilaženje ne bi tiho
     /// počelo da odbija ispravne zahteve, poklapanje čuva test.
     /// </summary>
-    public const int MaxMuscleGroups = 12;
+    public const int MaxMuscleGroups = 13;
 }

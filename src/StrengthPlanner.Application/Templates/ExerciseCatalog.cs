@@ -49,9 +49,18 @@ public static class ExerciseCatalog
     public const string SideDelts = "Side Delts";
     public const string RearDelts = "Rear Delts";
 
+    // Leđa su bila jedna zbirna grupa, "Back", sa jednim ciljem za vertikalno i horizontalno povlačenje. RP ne daje
+    // granice posebno za latove i gornja leđa; daje pravilo: volumen podeliti otprilike podjednako između vertikalnog
+    // i horizontalnog povlačenja (rpstrength.com, članak o leđima). Izmereno nad svim ugrađenim nedeljama: u 333 od 827
+    // nedelja u kojima je zbirna grupa dostizala MEV, jedna polovina je bila ispod pola minimuma
+    // (docs/features/back-heads.md). Opružači nisu glava: nema izvora za njihove granice, a mrtvo dizanje ih već
+    // broji (pola serije) u gornjim leđima.
+    public const string Lats = "Lats";
+    public const string UpperBack = "Upper Back";
+
     public static readonly IReadOnlyList<string> MuscleGroupNames =
     [
-        "Chest", "Back", FrontDelts, SideDelts, RearDelts, "Quads", "Hamstrings",
+        "Chest", Lats, UpperBack, FrontDelts, SideDelts, RearDelts, "Quads", "Hamstrings",
         "Glutes", "Biceps", "Triceps", "Calves", "Abs"
     ];
 
@@ -74,15 +83,16 @@ public static class ExerciseCatalog
         new("Leg Press", ExerciseType.Compound, "Machine",
             [new("Quads", 1.0m), new("Glutes", 0.5m)]),
         new("Romanian Deadlift", ExerciseType.Compound, "Barbell",
-            [new("Hamstrings", 1.0m), new("Glutes", 0.5m), new("Back", 0.5m)]),
+            [new("Hamstrings", 1.0m), new("Glutes", 0.5m), new(UpperBack, 0.5m)]),
         // Mrtvo dizanje je opružanje kuka, i pokret nosi gluteus. Zadnja loža dobija pola, a
         // ne pun udeo kao u rumunskom mrtvom dizanju: koleno se opruža zajedno sa kukom, pa
         // se taj dvozglobni mišić malo menja po dužini. Leđa zadržavaju pola: opružači rade
         // izometrijski, ali pod velikom napetošću, a za razliku od zadnje lože u čučnju tu
         // napetost i nose. Dok je Back bio 1.0, Upper/Lower x3 je dostizao MEV za leđa samo
-        // kroz mrtvo dizanje (F16).
+        // kroz mrtvo dizanje (F16). Posle podele leđa pola serije ide gornjim leđima: debljina
+        // (opružači, trapezi), ne širina, a ni RP ne odvaja opružače u zasebnu grupu.
         new("Deadlift", ExerciseType.Compound, "Barbell",
-            [new("Glutes", 1.0m), new("Hamstrings", 0.5m), new("Back", 0.5m), new("Quads", 0.5m)]),
+            [new("Glutes", 1.0m), new("Hamstrings", 0.5m), new(UpperBack, 0.5m), new("Quads", 0.5m)]),
         // Zadnja loža u potisku kukom radi uz savijeno koleno, skraćena i sa malo opterećenja;
         // gluteus nosi pokret. Udeo od 0.5 je punio budžet zadnje lože koji pregib gradi.
         new("Hip Thrust", ExerciseType.Compound, "Barbell",
@@ -151,7 +161,7 @@ public static class ExerciseCatalog
         new("Rear Delt Fly", ExerciseType.Isolation, "Dumbbell",
             [new(RearDelts, 1.0m)]),
         new("Face Pull", ExerciseType.Isolation, "Cable",
-            [new(RearDelts, 1.0m), new("Back", 0.5m)]),
+            [new(RearDelts, 1.0m), new(UpperBack, 0.5m)]),
 
         // Veslanje ne dobija udeo u zadnjem deltoidu, iako on u njemu radi dinamički. Granice
         // za zadnji deltoid (RP) važe za direktan rad povrh rada za leđa, i MEV mu je nula
@@ -160,16 +170,21 @@ public static class ExerciseCatalog
         // je skidao serije sa bočnog podizanja (F16, docs/features/muscle-contributions-2.md).
         //
         // Zgib podiže celo telo.
+        //
+        // Vertikalno povlačenje je direktan rad za latove, veslanje za gornja leđa. Veslanje ne dobija
+        // udeo u latovima ni zgib u gornjim leđima, iako rade i ono drugo: isto kao potisci i veslanje
+        // kod glava ramena, granice po glavi važe za direktan rad, a minimum bi inače bio popunjen
+        // pokretom koji ga ne gradi.
         new("Pull-up", ExerciseType.Compound, "Bodyweight",
-            [new("Back", 1.0m), new("Biceps", 0.5m)], BodyweightShare: 1.00m),
+            [new(Lats, 1.0m), new("Biceps", 0.5m)], BodyweightShare: 1.00m),
         new("Lat Pulldown", ExerciseType.Compound, "Machine",
-            [new("Back", 1.0m), new("Biceps", 0.5m)]),
+            [new(Lats, 1.0m), new("Biceps", 0.5m)]),
         new("Barbell Row", ExerciseType.Compound, "Barbell",
-            [new("Back", 1.0m), new("Biceps", 0.5m)]),
+            [new(UpperBack, 1.0m), new("Biceps", 0.5m)]),
         new("Seated Cable Row", ExerciseType.Compound, "Cable",
-            [new("Back", 1.0m), new("Biceps", 0.5m)]),
+            [new(UpperBack, 1.0m), new("Biceps", 0.5m)]),
         new("Straight-Arm Pulldown", ExerciseType.Isolation, "Cable",
-            [new("Back", 1.0m)]),
+            [new(Lats, 1.0m)]),
 
         new("Barbell Curl", ExerciseType.Isolation, "Barbell",
             [new("Biceps", 1.0m)]),
@@ -204,6 +219,12 @@ public static class ExerciseCatalog
 
     // MAV je ciljna vrednost; priručnik je smešta u raspon 8-20 serija nedeljno.
     //
+    // Leđa: zbirna grupa je imala 10/18/25. RP ne daje granice posebno za latove i gornja leđa; daje pravilo da se
+    // volumen deli otprilike podjednako između vertikalnog i horizontalnog povlačenja, a za MRV navodi da je pri
+    // četiri treninga leđa tipično oko 30 serija, otprilike 15 vertikalnog i 15 veslanja (rpstrength.com, članak o
+    // leđima). Zato MRV svake glave je 15, a MEV i MAV su polovina zbirne grupe (5 i 9): za njih izvora po glavi
+    // nema, pa je to odluka o modelu i ovde je zapisana kao takva.
+    //
     // Priručnik ne deli rame na glave, pa su granice glava RP procene za srednji nivo
     // (rpstrength.com, članci o prednjem, bočnom i zadnjem deltoidu), date kao rasponi.
     // MAV i MRV su sredina raspona. MEV prednjeg i zadnjeg deltoida je nula, kao u RP: prvi
@@ -216,7 +237,8 @@ public static class ExerciseCatalog
     public static readonly IReadOnlyList<VolumeLandmarkSeed> VolumeLandmarks =
     [
         new("Chest", 10, 16, 22),
-        new("Back", 10, 18, 25),
+        new(Lats, 5, 9, 15),
+        new(UpperBack, 5, 9, 15),
         new(FrontDelts, 0, 6, 10),
         new(SideDelts, 8, 16, 26),
         new(RearDelts, 0, 8, 16),

@@ -113,21 +113,26 @@ aplikacija ne modeluje. Bez njih bi manje serija značilo manje stimulusa baš z
 granice stoje najviše.
 
 Ni tada svaki šablon naprednom ne daje MEV za svaki mišić. U bloku hipertrofije on dobija
-jednu složenu vežbu po treningu, a MEV mu je za grudi i leđa 12, dok jedan trening nosi
-najviše oko 11 serija jednog mišića:
+jednu složenu vežbu po treningu, a MEV mu je za grudi 12 (za svaku glavu leđa 6), dok jedan
+trening nosi najviše oko 11 serija jednog mišića:
 
-- **Push/Pull/Legs (3 dana):** grudi se treniraju jednom nedeljno i staju na 11, a leđa
-  dobijaju samo jedno veslanje (oko 9);
-- **Upper/Lower + Push/Pull/Legs:** Upper dan zadržava bench, pa se leđa treniraju samo na
-  Pull danu i staju na 11;
+- **Push/Pull/Legs (3 dana):** grudi se treniraju jednom nedeljno i staju na 11; Pull dan mu
+  daje jedno veslanje, pa **latovi nemaju nijednu vežbu** (gornja leđa su oko 9);
+- **Upper/Lower + Push/Pull/Legs:** Upper dan zadržava bench, a Pull dan zgib, pa **gornja leđa
+  nemaju nijednu vežbu**;
+- **Full Body (3 dana, 2 dana) i Legs Specialization:** gornja leđa mu ostaju ispod MEV-a ili bez
+  vežbe, jer je veslanje na mestu koje napredni ne stigne;
 - gluteusi ostaju ispod MEV-a na većini šablona, a listovi i trbuh na Full Body;
 - u bloku snage Full Body (3 dana) biceps staje na 9.5 naspram MEV-a 10 u lakšim nedeljama
-  periodizovanog bloka (prva linearnog, prve dve obrnutog).
+  periodizovanog bloka (prva linearnog, prve dve obrnutog), a gornja leđa 3.5 do 5.5 naspram 6 u
+  jedanaest nedelja: napredni tu uzima dve složene vežbe po treningu i nijedna nije veslanje.
 
-Jedini šablon koji naprednom daje MEV za svaki mišić u svakoj nedelji je **Upper/Lower x3**,
-ali traži šest treninga. Od šablona sa pet dana ili manje najbolji je **Upper/Lower (4 dana)**:
-ispod MEV-a je samo u bloku snage, za biceps, u prvoj nedelji linearnog bloka (koja nosi
-seriju manje) i u prve dve nedelje obrnutog.
+Zbirna grupa leđa je sve ovo krila: zgib je punio celu grupu, pa je izgledalo da ima dovoljno.
+Zato **Upper/Lower x3 više nije šablon koji naprednom daje MEV za svaki mišić**: gornja leđa su u
+hipertrofiji za jednu seriju ispod (5 naspram 6) u prvoj nedelji linearnog bloka i u prve dve
+nedelje obrnutog. Isto važi za **Upper/Lower (4 dana)**, koji je uz to u bloku snage, za biceps,
+ispod MEV-a u istim nedeljama (kojima je jedna serija manje). Oba ostaju najbolji izbor za
+naprednog, ali manjak je sada vidljiv, i to je ono što podela leđa i treba da pokaže.
 
 Koliko puta nedeljno treniraš ne unosiš nigde. To bira šablon treninga na kasnijem ekranu:
 šablon od tri dana *jeste* „tri treninga nedeljno".
@@ -523,7 +528,8 @@ Grešku ispravljaš ikonicama pored serije: **olovka** za izmenu, **kanta** za b
 > **Zamena vežbe.** Ako ti neka vežba ne odgovara (sprava je zauzeta, boli te zglob, nemaš
 > šipku), dugme **„Zameni vežbu"** na kartici nudi vežbe koje blok može da propiše isto: isti
 > glavni mišić, isti tip (složena ili izolaciona) i, za složenu, isti opseg (vežba na jednoj nozi
-> ne zamenjuje čučanj u bloku snage). Vežba se menja u tom treningu i u svakom sledećem treningu
+> ne zamenjuje čučanj u bloku snage). Latovi i gornja leđa su dva različita glavna mišića: zgib se
+> menja pulldown-om, a veslanje veslanjem, ali ne jedno drugim. Vežba se menja u tom treningu i u svakom sledećem treningu
 > istog dana **do kraja bloka**. Opseg, rezerva i serije ostaju, a težina se računa iz maksimuma
 > nove vežbe; ako maksimuma nema, unesi ga ili prvi put upiši težinu po osećaju. Odrađeni,
 > započeti i preskočeni treninzi ostaju sa vežbom koju su imali (preskočen trening je zadržava i
@@ -721,7 +727,17 @@ pa direktan rad za njih nije obavezan nego dodatak. Bočni deltoid gradi samo bo
 Gde u treningu nije bilo mesta, ustupili su trbuh ili listovi. Na oba Full Body šablona sada
 nijedan nivo nema vežbu za trbuh (ranije ju je dobijao samo napredni u hipertrofiji), na Full Body nijedan nivo
 nema ni vežbu za listove, a početnik na Push/Pull/Legs nema vežbu za trbuh.
-Leđa su i dalje jedna grupa za latove, gornja leđa i opružače.
+**Leđa se prate po glavama**: latovi (vertikalno povlačenje: zgib, Lat Pulldown, Straight-Arm
+Pulldown) i gornja leđa (veslanje; mrtvo dizanje, rumunsko i Face Pull daju pola serije). Svaka
+glava broji samo svoj direktan rad: veslanje ne puni latove, a zgib ne puni gornja leđa. Za srednji
+nivo je MEV 5, MAV 9 i MRV 15. **MRV ima izvor, a MEV i MAV nemaju.** Prema sažetku članka o
+leđima na rpstrength.com (ceo tekst nije čitan), pri četiri treninga leđa tipičan MRV je oko 30
+serija, otprilike pola vertikalnog povlačenja i pola veslanja, a posebne granice za latove i gornja
+leđa ne daje; MEV i MAV su zato polovina nekadašnje zbirne grupe (10 i 18), što je odluka o modelu,
+ne podatak. Opružači
+nisu zasebna glava: za njihove granice nema izvora, a mrtvo dizanje ih već broji (pola serije) u
+gornjim leđima. Naučene granice leđa prešle su na obe glave kao polovina pomaka od podrazumevane
+vrednosti.
 
 Boja trake govori da li si ispod, u zoni ili iznad. **Ne broji se svaka serija isto**:
 serija sa RIR 0–3 (ili do otkaza) ulazi cela, RIR 4 ulazi upola, a serija dalja od otkaza
@@ -1178,15 +1194,16 @@ volumen jednog mišića pada u jedan trening, a u jednom treningu korisno staje 
 | Mišić | Nedeljno, bez granice → sa granicom | Cilj |
 |---|---|---|
 | grudi | 16 → 11 | 16 |
-| leđa | 18 → 14 | 18 |
+| latovi | 6 → 6 | 9 |
+| gornja leđa | 9 → 9 | 9 |
 | bočni deltoid | 15 → 15 | 16 |
-| zadnji deltoid | 6 → 4 | 8 |
+| zadnji deltoid | 6 → 6 | 8 |
 | kvadriceps | 12 → 11 | 14 |
-| biceps | 12 → 10,5 | 14 |
+| biceps | 10,5 → 10,5 | 14 |
 | triceps | 12 → 11 | 12 |
 
-Biceps gubi i pola serije sa svakom skinutom serijom veslanja ili zgiba, a zadnji deltoid
-seriju Face Pull-a kad granica skida rad za leđa. Kod početnika je Barbell Curl druga izolacija
+Granica ovde seče samo grudi; leđa su na ceni koju propis daje, jer Pull dan srednjem nivou daje po
+jedno veslanje i jedan zgib, a latovi tako nemaju dve vežbe. Kod početnika je Barbell Curl druga izolacija
 Pull dana, pa biceps ni u jednoj nedelji ne pada ispod minimuma (MEV 6); u nedeljama volumena
 granica ga spušta sa 13,5 na 10,5. Cena je trbuh: Cable Crunch je ustupio mesto drugom bočnom
 podizanju, pa početnik na ovom šablonu nema vežbu za trbuh. Za više volumena uzmi

@@ -416,11 +416,17 @@ public class WorkoutTemplateCatalogTests
     /// uzeo Cable Crunch sa Pull dana, po istom pravilu kao u
     /// <see cref="EveryTemplate_TrainsEveryMajorMuscleGroup"/>: kad nema mesta, ustupaju
     /// trbuh i listovi.
+    ///
+    /// Drugi izuzetak, imenom (R20, leđa po glavama): latovi na Push/Pull/Legs. Pull dan srednjem nivou daje dve
+    /// složene vežbe, jedno veslanje i jedan zgib, po 4 serije, a MEV jedne glave je 5. Propis je dakle za jednu
+    /// seriju ispod, ali balansiranje tu seriju dodaje (vežba se pomera najviše za dve): izmereno nad svim nedeljama,
+    /// latovi ovog šablona na srednjem nivou u hipertrofiji ostaju iznad MEV-a. Zbirna grupa leđa je to krila.
     /// </summary>
     [Fact]
     public void TemplatesOfThreeDaysOrMore_ReachMevAtTheReferenceLevel()
     {
         const string NoRoomForAbs = "Intermediate Hypertrophy push-pull-legs/Abs: 4.0 serija je ispod MEV 6.";
+        const string OneVerticalPull = "Intermediate Hypertrophy push-pull-legs/Lats: 4.0 serija je ispod MEV 5.";
 
         var breaches = Breaches(
             ExperienceLevel.Intermediate,
@@ -431,8 +437,22 @@ public class WorkoutTemplateCatalogTests
 
         Assert.Contains(NoRoomForAbs, breaches);
         breaches.Remove(NoRoomForAbs);
+        Assert.Contains(OneVerticalPull, breaches);
+        breaches.Remove(OneVerticalPull);
         Assert.True(breaches.Count == 0, string.Join(Environment.NewLine, breaches));
     }
+
+    /// <summary>
+    /// Šabloni na kojima napredni, sa jednom složenom vežbom po treningu, ne dobija nijednu vežbu za jednu glavu
+    /// leđa. Spisak je tačan: izuzetak koji prestane da važi mora da se skine.
+    /// </summary>
+    private static readonly HashSet<string> AdvancedPullingGaps =
+    [
+        "full-body-2/Upper Back",
+        "push-pull-legs/Lats",
+        "upper-lower-ppl/Upper Back",
+        "legs-specialization/Upper Back",
+    ];
 
     /// <summary>
     /// MEV provera gleda samo grupe koje šablon zaista pogađa, pa bi šablon mogao da je
@@ -446,7 +466,7 @@ public class WorkoutTemplateCatalogTests
     public void EveryTemplate_TrainsEveryMajorMuscleGroup()
     {
         string[] major =
-            ["Chest", "Back", ExerciseCatalog.SideDelts, "Quads", "Hamstrings", "Glutes", "Biceps", "Triceps"];
+            ["Chest", ExerciseCatalog.Lats, ExerciseCatalog.UpperBack, ExerciseCatalog.SideDelts, "Quads", "Hamstrings", "Glutes", "Biceps", "Triceps"];
 
         foreach (var level in Enum.GetValues<ExperienceLevel>())
         {
@@ -459,6 +479,15 @@ public class WorkoutTemplateCatalogTests
 
                 foreach (var muscle in major)
                 {
+                    // Imenovani izuzeci (R20, AdvancedPullingGaps): napredni uzima jednu složenu vežbu po danu, pa
+                    // dan za povlačenje ima ili vertikalno ili horizontalno. Zbirna grupa leđa je to krila.
+                    if (level == ExperienceLevel.Advanced
+                        && AdvancedPullingGaps.Contains($"{template.Key}/{muscle}"))
+                    {
+                        Assert.False(trained.ContainsKey(muscle), "Izuzetak više ne važi: ukloni ga.");
+                        continue;
+                    }
+
                     Assert.True(
                         trained.ContainsKey(muscle),
                         $"{level} {template.Key}: nijedna vežba ne pogađa {muscle}.");
@@ -498,6 +527,11 @@ public class WorkoutTemplateCatalogTests
     /// u hipertrofiji na oba Full Body šablona, listove naprednog na Full Body i trbuh
     /// početnika na Push/Pull/Legs, jer je drugo bočno podizanje uzelo mesto vežbe koju taj
     /// nivo više ne stigne (pregled #109).
+    ///
+    /// Podela leđa (R20) je dodala četiri para, imenom, sva za naprednog u hipertrofiji: gornja leđa na Full Body
+    /// (2 dana), Legs Specialization i Upper/Lower + Push/Pull/Legs, i latovi na Push/Pull/Legs. Taj nivo uzima jednu
+    /// složenu vežbu po danu i pet izolacija, pa se na danu za povlačenje bira ili vertikalno ili horizontalno:
+    /// veslanje ili zgib ne stiže na red. Zbirna grupa leđa je to krila, jer je svaka od te dve vežbe punila celu.
     /// </summary>
     [Fact]
     public void OnlyAbsAndCalves_AreEverLeftWithoutASet()
@@ -524,14 +558,18 @@ public class WorkoutTemplateCatalogTests
         {
             ["full-body/Abs"] = 6,
             ["full-body/Calves"] = 6,
+            ["legs-specialization/Upper Back"] = 1,
             ["full-body-2/Abs"] = 6,
             ["full-body-2/Calves"] = 5,
+            ["full-body-2/Upper Back"] = 1,
             ["full-body-4/Abs"] = 5,
             ["full-body-4/Calves"] = 5,
             ["push-pull-legs/Abs"] = 2,
             ["push-pull-legs/Calves"] = 2,
+            ["push-pull-legs/Lats"] = 1,
             ["push-pull-legs-6/Abs"] = 2,
             ["upper-lower-ppl/Abs"] = 2,
+            ["upper-lower-ppl/Upper Back"] = 1,
         };
 
         Assert.Equal(
@@ -597,11 +635,13 @@ public class WorkoutTemplateCatalogTests
             ["full-body/Calves"] = Composition,
             ["full-body/Abs"] = Composition,
             ["push-pull-legs/Chest"] = SessionCeiling,
-            ["push-pull-legs/Back"] = Composition,
+            ["push-pull-legs/Lats"] = Composition,
             ["push-pull-legs/Hamstrings"] = Composition,
             ["push-pull-legs/Glutes"] = Composition,
             ["full-body-4/Glutes"] = Composition,
-            ["upper-lower-ppl/Back"] = SessionCeiling,
+            ["full-body/Upper Back"] = Composition,
+            ["legs-specialization/Upper Back"] = Composition,
+            ["upper-lower-ppl/Upper Back"] = Composition,
         };
 
         var found = new Dictionary<string, string>();
@@ -643,10 +683,12 @@ public class WorkoutTemplateCatalogTests
     }
 
     /// <summary>
-    /// Ono što uputstvo naprednom preporučuje, drži test. Upper/Lower x3 mu daje MEV za
-    /// svaki mišić u svakoj trenažnoj nedelji svakog modela koji čarobnjak nudi. Upper/Lower
-    /// (4 dana) ispod MEV-a pada samo u bloku snage, za biceps, u prvoj nedelji linearnog
-    /// bloka i u prve dve nedelje obrnutog. Gluteusi su tu padali dok je mrtvo dizanje
+    /// Ono što uputstvo naprednom preporučuje, drži test. Do podele leđa (R20) Upper/Lower x3 mu je davao MEV za
+    /// svaki mišić u svakoj trenažnoj nedelji svakog modela koji čarobnjak nudi. Sada gornja leđa u hipertrofiji
+    /// padaju za jednu seriju (5 uz MEV 6) u prvoj nedelji linearnog bloka i u prve dve obrnutog, i na x3 i na
+    /// Upper/Lower (4 dana). To je ono što je zbirna grupa leđa krila: napredni uzima jednu složenu vežbu po treningu,
+    /// pa se na Upper danu bira ili veslanje ili zgib. Upper/Lower (4 dana) pada još samo u bloku snage, za biceps,
+    /// u prvoj nedelji linearnog bloka i u prve dve obrnutog. Gluteusi su tu padali dok je mrtvo dizanje
     /// bilo vežba za leđa (F16).
     /// </summary>
     [Fact]
@@ -690,6 +732,14 @@ public class WorkoutTemplateCatalogTests
                 "upper-lower Strength LinearRising w1 Biceps",
                 "upper-lower Strength Inverse w1 Biceps",
                 "upper-lower Strength Inverse w2 Biceps",
+                // R20: gornja leđa naprednog u hipertrofiji na Upper/Lower, u tri nedelje sa serijom manje (5 uz MEV 6).
+                // Zbirna grupa leđa je to krila; latovi su tu u zoni.
+                "upper-lower Hypertrophy LinearRising w1 Upper Back",
+                "upper-lower Hypertrophy Inverse w1 Upper Back",
+                "upper-lower Hypertrophy Inverse w2 Upper Back",
+                "upper-lower-x3 Hypertrophy LinearRising w1 Upper Back",
+                "upper-lower-x3 Hypertrophy Inverse w1 Upper Back",
+                "upper-lower-x3 Hypertrophy Inverse w2 Upper Back",
             }.Order(),
             belowMev.Order());
     }
@@ -760,9 +810,21 @@ public class WorkoutTemplateCatalogTests
                 "LinearRising w1 Biceps 9.5",
                 "Inverse w1 Biceps 9.5",
                 "Inverse w2 Biceps 9.5",
-                "LinearRising w1 Back 11.5",
-                "Inverse w1 Back 11.5",
-                "Inverse w2 Back 11.5",
+                // R20: leđa su tu bila 11.5 uz MEV 12 u tri nedelje. Podeljena, latovi stoje u zoni (zgib i
+                // pulldown), a gornja leđa su ispod MEV-a 6 u jedanaest nedelja (3.5 do 5.5): napredni u bloku snage
+                // uzima dve složene vežbe po treningu, i nijedna nije veslanje; ostaje Face Pull i pola mrtvog
+                // dizanja. Veslanje umesto drugog čučnja (Front Squat na danu C) bi to popravilo, ali bi kvadriceps
+                // i gluteuse ostavilo bez drugog čučnja u nedelji, pa nije uzeto.
+                "Flat w1 Upper Back 4.5",
+                "Flat w2 Upper Back 4.5",
+                "Flat w3 Upper Back 4.5",
+                "Inverse w1 Upper Back 3.5",
+                "Inverse w2 Upper Back 3.5",
+                "Inverse w3 Upper Back 4.5",
+                "Inverse w4 Upper Back 5.5",
+                "LinearRising w1 Upper Back 3.5",
+                "LinearRising w2 Upper Back 4.5",
+                "LinearRising w3 Upper Back 4.5",
                 "LinearRising w1 Hamstrings 6.5",
                 "Inverse w1 Hamstrings 6.5",
                 "Inverse w2 Hamstrings 6.5",

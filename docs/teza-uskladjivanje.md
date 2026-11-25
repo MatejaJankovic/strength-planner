@@ -260,8 +260,9 @@ među vežbačima (#93).
 - RIR je samoprocena, i jedna nedelja je pretežno šum. Zato granice volumena sude po dve
   nedelje, a ocena umora traži potvrdu (#94, #95, #97).
 - Vrednosti MEV/MAV/MRV i težine ocene umora su procene i heuristika.
-- Zbirna grupa „leđa" ne razlikuje latove, gornja leđa i opružače (#81, #100). Rame je
-  podeljeno na prednji, bočni i zadnji deltoid, sa RP procenama granica (shoulder-heads.md).
+- Rame je podeljeno na prednji, bočni i zadnji deltoid, sa RP procenama granica
+  (shoulder-heads.md), a leđa na latove i gornja leđa (back-heads.md): MRV 15 po glavi ima izvor (RP), a MEV i
+  MAV su polovina nekadašnje zbirne grupe i nemaju ga. Opružači nisu zasebna glava (nema izvora za granice).
 
 Van obima su ostali: višejezičnost, talasasta periodizacija, rad bez mreže i
 slanje e-pošte.

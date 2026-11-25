@@ -134,7 +134,21 @@ public class SessionVolumeCeilingTests
     public void TheCeiling_ChangesOnlyWeeksThatWouldBreachIt()
     {
         var breachedOnlyInThePrescription = Array.Empty<string>();
+
+        // R20 (leđa po glavama): na Push/Pull/Legs x2 (srednji nivo, nedelje sa najviše serija) dve vežbe za biceps od po
+        // 5 serija nose propis iznad MRV-a mišića, pa se dve serije moraju skinuti. Granica po treningu tu ništa ne seče
+        // (5 je ispod 11), ali menja redosled pretrage: sa njom ispadne 4 + 3, bez nje 3 + 4. Zato ove nedelje nisu
+        // „promena bez uzroka", nego sečenje čiji redosled zavisi od granice. Test proverava da propis zaista prelazi
+        // MRV neke grupe. Podela leđa im je promenila put pretrage, a ne uzrok: biceps dobija pola serije od svakog
+        // veslanja i pulldown-a.
+        var cutOrderDependsOnTheCeiling = new[]
+        {
+            "push-pull-legs-6 Intermediate Hypertrophy Inverse w4",
+            "push-pull-legs-6 Intermediate Hypertrophy LinearRising w4",
+            "push-pull-legs-6 Intermediate Hypertrophy LinearRising w5",
+        };
         var changedWithoutCause = new List<string>();
+        var changedByCutOrder = new List<string>();
 
         foreach (var week in TemplateWeekSimulation.EveryTrainingWeek())
         {
@@ -146,13 +160,32 @@ public class SessionVolumeCeilingTests
 
             if (!wouldBreach && !before.SequenceEqual(week.Allocated))
             {
-                changedWithoutCause.Add(week.Name);
+                if (cutOrderDependsOnTheCeiling.Contains(week.Name))
+                {
+                    changedByCutOrder.Add(week.Name);
+
+                    var prescribedTotals = WeeklySetAllocation.Project(
+                        week.Slots,
+                        week.Slots.ToDictionary(slot => slot.Id, slot => slot.PrescribedSets),
+                        new Dictionary<Guid, decimal>());
+
+                    Assert.Contains(
+                        week.Targets,
+                        target => prescribedTotals.GetValueOrDefault(target.MuscleGroupId) > target.CeilingSets);
+                }
+                else
+                {
+                    changedWithoutCause.Add(week.Name);
+                }
             }
         }
 
         Assert.True(
             changedWithoutCause.SequenceEqual(breachedOnlyInThePrescription),
             string.Join(Environment.NewLine, changedWithoutCause.Take(20)));
+
+        // Spisak mora da se poklopi tačno: nedelja koja prestane da bude izuzetak mora da se skine sa njega.
+        Assert.Equal(cutOrderDependsOnTheCeiling.Order(), changedByCutOrder.Order());
 
         // Prazan spisak ovu petlju trenutno čini praznom; ostaje da bi nova nedelja na spisku
         // morala da dokaže da propis zaista prelazi granicu.
