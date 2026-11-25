@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { WakeLockService } from './wake-lock.service';
+import { WAKE_LOCK_IDLE_MS, WakeLockService } from './wake-lock.service';
 
 /**
  * Ekran se drži upaljenim dok traje trening. Pregledač sam otpušta zaključavanje kad se kartica
@@ -47,6 +47,10 @@ describe('WakeLockService', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
+    // Servis skida svoje slušaoce kad se uništi: bez ovoga bi instance iz ranijih testova reagovale
+    // na događaje u sledećem.
+    TestBed.resetTestingModule();
     vi.restoreAllMocks();
     Reflect.deleteProperty(navigator, 'wakeLock');
   });
@@ -56,6 +60,15 @@ describe('WakeLockService', () => {
 
     expect(request).toHaveBeenCalledExactlyOnceWith('screen');
     expect(service.active()).toBe(true);
+  });
+
+  it('dva istovremena poziva traže zaključavanje jednom (drugi ne prepisuje prvo i ne curi)', async () => {
+    await Promise.all([service.hold(), service.hold()]);
+
+    expect(request).toHaveBeenCalledTimes(1);
+    await service.release();
+    // Da je drugi zahtev prošao, jedno zaključavanje bi ostalo neotpušteno posle release().
+    expect(sentinels.every((sentinel) => sentinel.release.mock.calls.length > 0)).toBe(true);
   });
 
   it('drugi poziv dok je ekran držan ne traži ponovo', async () => {
@@ -85,6 +98,15 @@ describe('WakeLockService', () => {
     setVisibility('visible');
     await vi.waitFor(() => expect(request).toHaveBeenCalledTimes(2));
     await vi.waitFor(() => expect(service.active()).toBe(true));
+  });
+
+  it('otpuštanje koje stigne posle "vidljiva" (obrnut redosled događaja) ponovo traži', async () => {
+    await service.hold();
+
+    // Kartica je već vidljiva, a pregledač tek sada javlja da je zaključavanje otpušteno.
+    sentinels[0].dispatchEvent(new Event('release'));
+
+    await vi.waitFor(() => expect(request).toHaveBeenCalledTimes(2));
   });
 
   it('posle release se ne traži ponovo kad kartica postane vidljiva', async () => {
@@ -152,5 +174,77 @@ describe('WakeLockService', () => {
 
     expect(late.release).toHaveBeenCalledTimes(1);
     expect(service.active()).toBe(false);
+  });
+
+  describe('rok neaktivnosti', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    function touch(): void {
+      document.dispatchEvent(new Event('pointerdown'));
+    }
+
+    it('bez dodira ekran se otpušta posle roka, a namera ostaje', async () => {
+      await service.hold();
+
+      await vi.advanceTimersByTimeAsync(WAKE_LOCK_IDLE_MS + 1);
+
+      expect(sentinels[0].release).toHaveBeenCalledTimes(1);
+      expect(service.active()).toBe(false);
+    });
+
+    it('dodir pre isteka roka ga produžava', async () => {
+      await service.hold();
+
+      await vi.advanceTimersByTimeAsync(WAKE_LOCK_IDLE_MS - 1000);
+      touch();
+      await vi.advanceTimersByTimeAsync(WAKE_LOCK_IDLE_MS - 1000);
+
+      expect(service.active()).toBe(true);
+      expect(sentinels[0].release).not.toHaveBeenCalled();
+    });
+
+    it('prvi dodir posle isteka roka ponovo traži ekran', async () => {
+      await service.hold();
+      await vi.advanceTimersByTimeAsync(WAKE_LOCK_IDLE_MS + 1);
+      expect(service.active()).toBe(false);
+
+      touch();
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(request).toHaveBeenCalledTimes(2);
+      expect(service.active()).toBe(true);
+    });
+
+    it('kartica koja postane vidljiva ne vraća ekran dok je rok istekao (to radi tek dodir)', async () => {
+      await service.hold();
+      await vi.advanceTimersByTimeAsync(WAKE_LOCK_IDLE_MS + 1);
+      request.mockClear();
+
+      setVisibility('visible');
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(request).not.toHaveBeenCalled();
+    });
+
+    it('dodir bez namere (trening nije u toku) ništa ne traži', async () => {
+      touch();
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(request).not.toHaveBeenCalled();
+    });
+
+    it('posle release nema tajmera koji bi kasnije otpustio ili tražio', async () => {
+      await service.hold();
+      await service.release();
+      request.mockClear();
+
+      await vi.advanceTimersByTimeAsync(WAKE_LOCK_IDLE_MS * 2);
+      touch();
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(request).not.toHaveBeenCalled();
+    });
   });
 });

@@ -259,7 +259,7 @@ među vežbačima (#93).
 - Zbirna grupa „leđa" ne razlikuje latove, gornja leđa i opružače (#81, #100). Rame je
   podeljeno na prednji, bočni i zadnji deltoid, sa RP procenama granica (shoulder-heads.md).
 
-Van obima su ostali: višejezičnost, talasasta periodizacija, PWA,
+Van obima su ostali: višejezičnost, talasasta periodizacija, rad bez mreže,
 slanje e-pošte i tamna tema.
 
 ## 13. Ostala mesta

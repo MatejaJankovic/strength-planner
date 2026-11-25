@@ -47,8 +47,7 @@ Swagger UI je dostupan u Development okruženju na `/swagger`
 
 ## Telefon u lokalnoj mreži (HTTPS)
 
-Instalacija na početni ekran, service worker i „ekran se ne gasi" (dolaze u narednim granama) rade samo u
-bezbednom kontekstu. Računar `localhost` smatra bezbednim, a telefon adresu računara u mreži ne, pa je
+Instalacija na početni ekran i „ekran se ne gasi" dok trening traje rade samo u bezbednom kontekstu. Računar `localhost` smatra bezbednim, a telefon adresu računara u mreži ne, pa je
 potreban HTTPS sa sertifikatom kome telefon veruje. Ništa se ne preuzima: koristi se `openssl` koji dolazi
 uz Git za Windows.
 
