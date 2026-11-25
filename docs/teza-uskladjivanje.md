@@ -197,19 +197,23 @@ se nudi samo uz lični šablon (#101).
 
 **Danas:**
 
-- Ocena umora sabira četiri signala: RIR 0.35, otkaze 0.25, pad snage 0.25 i volumen 0.15.
+- Ocena umora sabira pet signala: RIR 0.35, otkaze 0.25, pad snage 0.25, volumen 0.15 i
+  odgovor vežbača o umoru 0.20 (porast nad njegovim ranijim nedeljama, uz potvrdu prethodne
+  nedelje). Zato ocena sme da pređe 1, najviše 1.20.
   Prag je 0.60, a za naprednog 0.50. Početnik prag nema, pa ni automatski deload.
-- Nijedan signal sam ne pokreće deload, a pad snage traži potvrdu prethodne nedelje (#5, #70,
-  #95).
+- Nijedan signal sam ne pokreće deload, a pad snage i odgovor traže potvrdu prethodne nedelje (#5,
+  #70, #95, #127). Na naprednom nivou (prag 0.50) dva signala sa istim uzrokom, rezerva i potvrđen
+  odgovor, ipak dostižu prag.
 - Težine i pragovi su heuristika sistema. Lažni i propušteni deload-ovi su izmereni simulacijom
   (`docs/simulations/fatigue_signal_noise.py`). Šum u njoj je modelovan prema literaturi, ali
   deo je pretpostavka modela: koliko vežbačeva procena RIR-a varira iz nedelje u nedelju nijedan
   od korišćenih radova ne meri.
 
 **Predlog (novi pasus u 4.x):** „Аутоматски deload се покреће када недељна процена умора пређе
-праг; почетник праг нема. Процена сабира четири сигнала - одступање RIR-а, удео серија до отказа, потврђен пад
-процењене снаге и волумен према MRV-у - са тежинама изабраним тако да ниједан сигнал сам не
-покреће растерећење. Тежине и прагови су хеуристика система, а не резултат истраживања;
+праг; почетник праг нема. Процена сабира пет сигнала - одступање RIR-а, удео серија до отказа, потврђен пад
+процењене снаге, волумен према MRV-у и потврђен пораст одговора вежбача о умору (1-5, у односу на
+његове раније недеље) - са тежинама изабраним тако да ниједан сигнал сам не покреће
+растерећење; процена зато може да пређе 1 (највише 1,20). Тежине и прагови су хеуристика система, а не резултат истраживања;
 провераване су симулацијом са шумом процене RIR-а и дневне варијације снаге моделованим према
 литератури, при чему је део тог шума претпоставка модела."
 

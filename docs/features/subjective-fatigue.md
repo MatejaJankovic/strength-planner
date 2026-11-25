@@ -1,0 +1,174 @@
+# Odgovor vežbača o umoru u oceni umora nedelje
+
+**Grana:** `feature/subjective-fatigue`
+
+Runda 20, stavka 20.2. Plan je tražio da se pre gradnje simulira dvoje: da li novi signal popravlja pogađanje
+deload-a, i da li je nezavisan od postojećih (runda 15 je pokazala da „dva signala" mogu biti jedan uzrok izbrojan
+dvaput).
+
+## Problem
+
+Ocena umora je čitala četiri signala, i sva četiri su izvedena iz onoga što je upisano (rezerva, otkazi, procena
+maksimuma, volumen). Vežbač koji se oseća iscrpljeno a i dalje pogađa brojeve ne daje ocenu ničemu.
+
+## Šta je urađeno
+
+- **Pitanje.** Uz „Završi trening" stoji neobavezno „Kako se osećaš posle treninga?", od 1 (sveže) do 5 (iscrpljen).
+  Šalje se **sa završetkom** (`POST /api/sessions/{id}/complete`, telo `{ "perceivedFatigue": 4 }`, ili prazno):
+  ocena nedelje se računa kad se završi njen poslednji trening, pa odgovor iz tog treninga mora da bude u bazi do tada.
+  Upisuje se u `WorkoutSession.PerceivedFatigue` (nova kolona, `int?`, uz proveru 1-5 u bazi; migracija
+  `AddPerceivedFatigue`, primenjena na lokalnu bazu, bez popunjavanja: stari treninzi nemaju odgovor).
+- **Signal (`SubjectiveFatigue`, domen).** Ne čita se nivo odgovora nego **porast**: prosek odgovora nedelje nad
+  prosekom prosečnih odgovora ranijih trenažnih nedelja istog bloka. Nedelje rasterećenja se ne broje (u njima se
+  vežbač oseća bolje, pa bi spustile osnovu). Nema odgovora ili nema osnove (prva nedelja) znači nula, ne „ravno".
+- **Potvrda.** Porast ulazi u ocenu tek kad je i **prethodna trenažna nedelja** porasla za bar pola poena
+  (`FatigueEvaluator.ConfirmedSubjectiveRise`). Nedelja bez odgovora ne potvrđuje ništa.
+- **Težina 0.20.** Ocena sada ima pet signala; odgovor nosi 0.20 (porast od jednog poena je pun signal). Ostale težine
+  i pragovi nisu menjani, pa ocena više nije ograničena sa 1 nego sa **1.20**.
+- **Ekran.** Komponenta `FatigueRating` (pet dugmadi sa brojem, `role="group"` i `aria-pressed`, ponovni dodir poništava
+  izbor; krajevi skale su napisani ispod, a izabran odgovor sa nazivom) iznad
+  „Završi trening", samo dok trening traje. Tekstovi „od 1" uz ocenu na pregledu i u rezimeu su izbačeni, jer ocena
+  sme da pređe 1.
+
+## Merenje pre gradnje
+
+`docs/simulations/subjective_fatigue.py`, po uzoru na `fatigue_signal_noise.py` (isti model šuma, isti blokovi).
+**Parametri modela za odgovor su pretpostavke**, jer aplikacija odgovor do sada nije prikupljala: koliko odgovor
+prati stvaran umor (`TRAG`) i koliko deli uzrok sa slabim danom (`RHO`: 0 znači da odgovor ne zna ništa o njemu, 0.9
+da je gotovo isto što i on). Zato se `RHO` menja, a ne bira.
+
+Periodizovan blok od šest nedelja, srednji nivo (prag 0.60), udeo blokova sa deload-om iz ocene:
+
+| Dizajn | RHO | +1%/ned., MRV (lažni) | -2%/ned., MAV | -3%/ned., MRV (uhvaćen) |
+|---|---|---|---|---|
+| danas (bez odgovora) | - | 2.7% | 12.5% | 55.2% |
+| dodaje se, težina 0.20 | 0 / 0.5 / 0.9 | 19.7 / 32.2 / 44.0% | 26.2 / 29.5 / 32.4% | 92.6 / 94.7 / 96.0% |
+| dodaje se, težina 0.25 | 0 / 0.5 / 0.9 | 24.6 / 37.8 / 50.2% | 50.7 / 61.2 / 69.5% | 94.5 / 96.0 / 97.1% |
+| sa potvrdom, težina 0.25 | 0 / 0.5 / 0.9 | 6.1 / 6.4 / 5.9% | 27.1 / 30.7 / 33.8% | 75.0 / 72.9 / 70.3% |
+| **sa potvrdom, težina 0.20 (izgrađeno)** | 0 / 0.5 / 0.9 | **5.3 / 5.8 / 5.4%** | 21.2 / 24.6 / 28.9% | **72.5 / 71.0 / 69.0%** |
+
+- **Nepotvrđen odgovor nije prihvatljiv.** Vežbač koji napreduje na MRV-u dobijao bi lažno rasterećenje u 20-50%
+  blokova, tim više što odgovor više deli sa slabim danom. Slab dan spušta snagu i rezervu, a diže i odgovor: tri
+  signala iz jednog uzroka. Korelacija člana odgovora sa članom rezerve u nedeljama bez pravog umora je 0.00, +0.20,
+  +0.42 i +0.68 za RHO 0, 0.3, 0.6 i 0.9 (sa padom snage skoro ista), pa „nezavisnost" nije osobina signala nego
+  pretpostavka koja zavisi od ponašanja vežbača.
+- **Potvrda je ono što ga čini upotrebljivim, i izabrana je ista kao za snagu (runda 15).** Lažno rasterećenje se
+  drži oko 5-6% (danas 2.7%) bez obzira na RHO, a pad od 3% nedeljno se hvata u oko 70% blokova umesto u 55%.
+  Cena je +2.6 do 3.1 poena lažnih rasterećenja za +14 do 17 poena uhvaćenih padova.
+- **Težina 0.20, a ne 0.25.** Rezerva nosi 0.35; 0.35 + 0.25 je tačno prag 0.60, pa bi par koji deli uzrok sam
+  pokretao rasterećenje, a to je upravo ono što je runda 11 uklonila. Sa 0.20 par daje 0.55 i treći signal mora da
+  se pridruži. **To važi za srednji nivo.** Prag naprednog je 0.50, pa tamo rezerva i potvrđen odgovor sami
+  dostižu prag (pregled #127: prva verzija ove beleške, uputstva i komentara u kodu je tvrdila da par ne može
+  sam, a test je to proveravao kroz `ShouldDeload`, koji gleda uvek 0.60). Test
+  `TheReserveAndTheAnswer_CannotTriggerADeloadWithoutAThirdSignal` drži srednji nivo, a
+  `AtTheAdvancedThreshold_TheReserveAndAConfirmedAnswerReachItAlone` naprednog, gde je to isto što rezerva i volumen
+  na MRV-u već rade (0.35 + 0.15). Cena na naprednom je u istoj tabeli simulacije.
+- **Ako odgovor loše prati stvaran umor** (`TRAG` 0.75 umesto 1.5, RHO 0.5), uhvaćeno -3% pada na 61.2% (i dalje iznad
+  55.2%), -2% na MAV-u na 19.4%.
+- **Ravan blok od četiri nedelje: ništa se ne menja**, kao ni kod pada snage: druga nedelja nema prethodnu koja bi
+  je potvrdila, a posle treće sledi planirani deload. Nepotvrđen odgovor bi tamo dao 7-19% lažnih rasterećenja na
+  MRV-u, pa je potvrda ostala bez izuzetka.
+- **Napredni nivo (prag 0.50), RHO 0.5:** na MRV-u gotovo isto kao danas (65.7% naspram 65.0%: tamo rezerva i
+  volumen sami dostižu 0.50, što je poznato od runde 15); **lažno rasterećenje kod naprednog koji napreduje na MAV-u
+  1.4% → 3.5%**, a uhvaćeno -2% na MAV-u 29.6% → 42.5% i -3% na MRV-u 98.9% → 99.2%. Dakle ovde odgovor koristi
+  nešto više nego što košta, ali cena nije nula.
+- **Početnik** prag nema, pa njegov odgovor menja samo prikazanu ocenu, nikad deload.
+
+Odluka je dakle: izgraditi potvrđen signal, a u izveštaju reći da je dobit **pretpostavljena, ne izmerena**. Kad budu
+postojali stvarni odgovori, `TRAG` i `RHO` se mogu proceniti iz baze i ova tabela ponoviti.
+
+## Odluke vredne pamćenja
+
+- **Odgovor se piše uz završetak, ne naknadno.** Naknadni poziv za poslednji trening nedelje stizao bi posle ocene.
+  Posledica: odgovor se ne menja kasnije, ni kroz ispravku završenog treninga (ispravka ponovo računa nedelju iz
+  odgovora koji je već upisan).
+- **Granica potvrde je pola poena**, upola manje od porasta koji daje punu težinu: nedelja koja očigledno nije
+  porasla nije druga nedelja istog.
+- **„Prethodna nedelja" je prethodna trenažna nedelja, ne poslednja koja je odgovorila.** Nedelja bez odgovora ne
+  potvrđuje ništa, ma koliko ranije nedelje bile visoke.
+- **Obavezna polja umesto podrazumevanih.** `WeeklyFatigue` je dobio dva nova polja bez podrazumevane vrednosti, kao
+  i `PreviousE1RmChangeShare` u rundi 15: podrazumevana nula bi tiho isključila član za svakog ko ga zaboravi. Zato
+  je servis, jedino mesto koje pravi taj zapis, prvo prestao da se prevodi.
+
+## Šta je usput nađeno
+
+- **Ni jedna nedelja sa prethodnom nije mogla da se zatvori u testu nad bazom.** `GetStrengthChangeAsync` je mišiće
+  vežbe čitao kroz `SelectMany` preko navigacije, što SQLite ne ume da prevede (APPLY): `SessionCompletionTests` su
+  zatvarali samo prvu nedelju, koja nema prethodnu, pa se to nikad nije videlo. Prvi test koji je zatvorio treću
+  nedelju pao je tu. Upit je prepisan kao `join`, istog značenja, kao u susednoj metodi i kao u rundi 17.
+
+## Provera
+
+- `dotnet test`: **1670** (bilo 1634); `npm test`: **459** (bilo 450); `dotnet build`, `npm run build`, migracija
+  i `scripts/check-theme-contrast.py` (0 parova ispod praga u tamnoj temi, nijedna boja napisana u komponenti)
+  prolaze. Tri stila su i dalje iznad 6 kB upozorenja kao pre grane; `workout-session.scss` je netaknut.
+- Merenje vraćanjem, jedna izmena po merenju:
+
+| Vraćeno | Obara |
+|---|---|
+| bez potvrde: jedan porast se broji | 5 |
+| težina 0.25 umesto 0.20 | 6 |
+| odgovor se ne upisuje uz završetak | 3 |
+| odgovor van 1-5 se prihvata | 3 |
+| nedelje rasterećenja se broje u osnovu (spisak nedelja) | 1 |
+| osnova se čita iz svih blokova vežbača | 1 (pre ispravke testa 0) |
+| nedostatak osnove se čita kao porast od nule | 5 |
+| odgovor se ne šalje sa završetkom (klijent) | 1 |
+| ponovni dodir ne poništava izbor | 1 |
+| pitanje se postavlja i kad trening ne traje | 1 (prvo merenje 0, videti dole) |
+
+  Dva merenja nisu pala iz prvog puta, i oba puta je greška bila u merenju ili testu, ne u kodu:
+  - **Osnova iz svih blokova: 0.** Test je očekivao porast 1.5, koji se kao i pokvaren porast 2.25 ograničava na
+    punu težinu 1.0, pa je ocena bila ista. Isti oblik kao test koji prolazi slučajno iz rundi 9 i 15. Odgovor je
+    sada 3 (porast 0.5, pola težine), pa pokvarena osnova daje 0.20 umesto 0.10.
+  - **Pitanje nakon treninga: 0.** Izmenio sam grananje unutar bloka koji već proverava stanje, pa izmena nije imala
+    šta da promeni. Izmena je pomerena izvan bloka.
+  - Uslov „bez rasterećenja" u upitu za odgovore je **suvišan** (merenje ga vraća bez pada testa, 0): `Rises` ionako
+    gleda samo nedelje iz spiska trenažnih. Ostavljen je da upit ne čita odgovore koje ne treba, a spisak je ono što
+    odlučuje (pada 1 test kad se vrati).
+- Uživo, lokalni API i dva prikaza (375 i 320 px), nalog za testiranje, tamna tema: pet dugmadi stoje u jednom redu,
+  47 px široka na 320 i 48 px visoka, bez prelivanja; krajevi skale („1 · Sveže", „5 · Iscrpljen") staju u jedan red;
+  izabran odgovor ima `aria-pressed` i ispisan naziv; trening završen sa izabranim odgovorom 4 u bazi ima
+  `Status = Completed`, `PerceivedFatigue = 4` (to je izmereno pre pregleda, na prvoj verziji kontrole; raspored
+  dugmadi je posle pregleda proveren ponovo, odgovor se šalje istim putem).
+  Uticaj na ocenu nedelje nije proveren uživo (za to je potrebna cela nedelja sa tri trenutka), nego servisnim
+  testovima nad pravim servisima i SQLite-om: završen poslednji trening nedelje sa odgovorom daje tačno +0.20.
+
+## Šta je pregled našao (ispravljeno)
+
+Pregled je radio agent koji samo čita; sve ispod je ponovljeno ili proverano pre ispravke.
+
+- **Na naprednom nivou rezerva i potvrđen odgovor sami dostižu prag** (greška u mojoj tvrdnji, ne u pravilu). Pisao sam
+  da par 0.35 + 0.20 = 0.55 ne može sam da pokrene rasterećenje, ali to važi samo za prag 0.60. Napredni ima 0.50, a
+  servis čita prag po nivou. Test je to „proveravao" kroz `ShouldDeload`, koji ima ugrađen prag 0.60, pa je bio zelen
+  na ulazu koji servis nikad ne koristi. Ispravljeno: komentar u domenu, uputstvo, ova beleška i beleška za tezu sada
+  kažu da to važi za srednji nivo; dodat je test sa pragom naprednog (`AtTheAdvancedThreshold_...`); i u belešku je
+  ušla kolona simulacije koju sam bio izostavio: lažno rasterećenje kod naprednog koji napreduje na MAV-u **1.4% →
+  3.5%**. Težina nije spuštena: da bi 0.35 + w bilo ispod 0.50, w bi morao biti najviše 0.14, a na naprednom nivou rezerva
+  i volumen (0.35 + 0.15) već sami dostižu prag, pa to ne bi zatvorilo ono što pregled nalazi.
+- **Zastareli opisi:** `docs/teza-uskladjivanje.md` je i dalje opisivao četiri signala, što bi tezu uskladilo sa
+  netačnim opisom; pet komentara u kodu je govorilo „0-1" ili „četiri signala". Sve ispravljeno.
+- **Radio-grupa bez radio ponašanja.** Pet zasebnih tabulatora, bez strelica, i dodir koji poništava izbor, što radio
+  dugme ne sme. Sada je grupa dugmadi sa `aria-pressed`. Pregled je pitao i da li se nazivi lome na 320 px: nazivi su
+  od 0.62rem (oko 10 px), što je samo po sebi premalo, pa su izbačeni iz dugmadi. Dugmad nose broj, a ispod stoje krajevi
+  skale i naziv izabranog odgovora.
+- **Dva slaba testa.** `ALifterWhoNeverAnswers_IsScoredAsBefore` je tvrdio samo `< 0.20`; sada tvrdi tačno 0 (sve
+  ostalo je na planu). Komentar u testu osnove je pominjao „tuđi nalog", što test nema kako da proveri: ključ bloka
+  drugog naloga se ne može zadati, pa je filter po nalogu odbrana u dubini i ne može se obarati.
+- **Početnik** nema prag, pa mu odgovor menja samo prikazanu ocenu. Uputstvo i ova beleška to sada kažu.
+- Proveravano i bez primedbe: `Rises` i `GetSubjectiveRisesAsync` (nedelje pre i do, rasterećenje, nedelje bez odgovora,
+  vlasništvo), da je odgovor u bazi pre zatvaranja nedelje, ispravka završenog treninga (ne dira odgovor, računa nedelju iz
+  upisanog), preciznost kolone za ocenu do 1.20, `JOIN` umesto `SelectMany`, migracija i snimak, i telo zahteva (prazno,
+  `{}`, `null`, 0, 6 i 3.5 daju očekivano, proveren u zasebnom Kestrel-u).
+- Ostaje poznato: telo koje nije JSON (tekst, forma) na `/complete` sada daje 415; takav klijent ne postoji. I ranija
+  rupa: `ClaimForCompletionAsync` odbija samo već završen trening, pa direktan poziv API-ja može da završi i planiran
+  ili preskočen trening (sa odgovorom ili bez); ekran to ne nudi, i nije deo ove grane.
+
+## Šta ovo ne radi
+
+- Ne prikuplja odgovor posle treninga (samo uz završetak) i ne menja ga kasnije.
+- Ne prikazuje istoriju odgovora ni grafikon; vidi se samo kroz ocenu umora.
+- Ne zamenjuje nijedan postojeći signal i ne pokreće rasterećenje sam.
+- Ne pomaže ravnom bloku od četiri nedelje.
+- Ne zna šta je „dobar" odgovor: ko uvek kaže 4 nema porast.
+- Ne proverava pretpostavke simulacije (`TRAG`, `RHO`): za to su potrebni stvarni odgovori.

@@ -379,22 +379,29 @@ public sealed class VolumeLandmarkService
         // procenjuje, a njima jeste (CalibrationSets).
         var calibration = await CalibrationSets.IdsAsync(_db, userId, week.MesocycleId, cancellationToken);
 
+        // Spoj sa mišićima je join, a ne SelectMany preko navigacije: to drugo SQLite ne ume da prevede
+        // (APPLY), pa nijedna nedelja sa prethodnom nije mogla da se zatvori u testu nad bazom. Značenje
+        // je isto, a prvi test koji je to pokušao bila je ocena umora nedelje sa odgovorima vežbača.
         var samples = await _db.SetLogs
             .AsNoTracking()
             .Where(set => set.ExercisePlan.WorkoutSession.TrainingWeek.MesocycleId == week.MesocycleId
                           && set.ExercisePlan.WorkoutSession.TrainingWeek.Mesocycle.UserId == userId
                           && (set.ExercisePlan.WorkoutSession.TrainingWeek.WeekNumber == week.WeekNumber
                               || set.ExercisePlan.WorkoutSession.TrainingWeek.WeekNumber == previousWeekNumber))
-            .SelectMany(set => set.ExercisePlan.Exercise.Muscles.Select(muscle => new
-            {
-                muscle.MuscleGroupId,
-                SetId = set.Id,
-                IsCurrent = set.ExercisePlan.WorkoutSession.TrainingWeek.WeekNumber == week.WeekNumber,
-                set.ExercisePlan.ExerciseId,
-                set.Reps,
-                set.Rir,
-                TotalLoadKg = set.WeightKg + set.BodyweightLoadKg
-            }))
+            .Join(
+                _db.ExerciseMuscles,
+                set => set.ExercisePlan.ExerciseId,
+                muscle => muscle.ExerciseId,
+                (set, muscle) => new
+                {
+                    muscle.MuscleGroupId,
+                    SetId = set.Id,
+                    IsCurrent = set.ExercisePlan.WorkoutSession.TrainingWeek.WeekNumber == week.WeekNumber,
+                    set.ExercisePlan.ExerciseId,
+                    set.Reps,
+                    set.Rir,
+                    TotalLoadKg = set.WeightKg + set.BodyweightLoadKg
+                })
             .ToListAsync(cancellationToken);
 
         var changes = new Dictionary<Guid, decimal>();

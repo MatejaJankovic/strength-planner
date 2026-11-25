@@ -421,8 +421,9 @@ nedelja, a u svakoj nedelji spisak treninga.
 - **Broj vežbi** u tom treningu.
 - **Deload** oznaka na nedelji rasterećenja. Ako piše **„Deload zbog umora"**, tu nedelju
   je pomerio sistem na osnovu izmerenog zamora, a ne kalendar.
-- **„Umor 0.42"** — ocena umora izračunata iz završene nedelje (0 = odmoran, 1 = svi
-  signali na maksimumu). Pojavljuje se tek kad je nedelja gotova.
+- **„Umor 0.42"** — ocena umora izračunata iz završene nedelje (0 = odmoran; rasterećenje
+  povlači ocena od 0.60, a za napredne 0.50; najviše može da bude 1.20, kad su svih pet signala na
+  maksimumu). Pojavljuje se tek kad je nedelja gotova.
 
 Ovaj ekran **ništa ne pravi i ništa ne briše** — on je samo za trening. Blok koji je u toku
 pripada planu, pa bi prekid usred njega ostavio plan bez bloka. I pravljenje novog plana i
@@ -1027,10 +1028,11 @@ test-serija menja maksimum i preračunava opterećenja prve nedelje u treninzima
 započeti (ni sa jednom upisanom serijom). Kasnije nedelje opterećenje dobijaju kad se isti dan
 prethodne nedelje završi, ili se računaju pri otvaranju iz najsvežijeg maksimuma.
 
-**Automatski deload.** Iz svake završene nedelje se računa ocena umora (0–1) iz četiri
-signala: odstupanje RIR-a, udeo serija do otkaza, pad procenjenog 1RM i volumen u odnosu na
-MRV. Nijedan signal sam ne može da pokrene deload — najteži nosi 0.35 naspram praga 0.60, pa
-se bar dva moraju složiti, i to **i u krajnjem slučaju**: nedelja u kojoj je baš svaka serija
+**Automatski deload.** Iz svake završene nedelje se računa ocena umora iz pet signala:
+odstupanje RIR-a, udeo serija do otkaza, pad procenjenog 1RM, volumen u odnosu na MRV i tvoj
+odgovor na pitanje „Kako se osećaš posle treninga?" (vidi ispod). Nijedan signal sam ne može da
+pokrene deload — najteži nosi 0.35 naspram praga 0.60, pa se bar dva moraju složiti, i to
+**i u krajnjem slučaju**: nedelja u kojoj je baš svaka serija
 išla do otkaza nosi taj jedan signal (0.25) i sama ne pokreće deload. Ne pokreće ga ni uz
 potvrđen pad snage (0.50) ni uz volumen na MRV-u (0.40), nego tek uz oba (0.65). Kad se pokrene: serije prepolovljene, opterećenje 90%
 stvarno korišćenog, ciljni RIR podignut za dva. Pokreće se najviše jednom po bloku.
@@ -1043,6 +1045,27 @@ jednog pada ga pokreće (0.60). U ravnom bloku od četiri nedelje pad snage zato
 povuče deload: druga nedelja nema potvrdu, a posle treće ionako sledi planirani deload. Otkazi i
 rezerva i dalje mogu.
 
+**Odgovor o umoru.** Uz „Završi trening" stoji jedno neobavezno pitanje: kako se osećaš, od 1 (sveže)
+do 5 (iscrpljen). Ne čita se broj nego **porast**: koliko je prosek odgovora ove nedelje viši od proseka
+tvojih ranijih nedelja u istom bloku (nedelje rasterećenja se ne broje, jer se u njima osećaš bolje), pa nema
+„tačnog" odgovora, a ko uvek kaže 4 nema porast. Prva nedelja nema sa čim da se poredi. Porast od jednog
+poena daje signalu punu težinu (0.20), ali samo kad je i **prethodna nedelja** porasla za bar pola
+poena: jedan slab dan spušta snagu i rezervu a diže i odgovor, pa bi jedna loša nedelja bila izbrojana tri
+puta. Težina je 0.20, a ne 0.25, jer bi uz rezervu (0.35) 0.25 dalo tačno prag 0.60 srednjeg nivoa — par koji
+deli uzrok tamo ne sme sam da pokrene rasterećenje (0.55), treći signal mora da se pridruži. **Za naprednog je
+prag 0.50**, pa tamo rezerva i potvrđen odgovor jesu dovoljni, kao što su to već bili rezerva i volumen na MRV-u
+(0.50); potvrda (dve nedelje zaredom) je ono što taj par čini retkim, a simulacija daje cenu: lažno
+rasterećenje kod naprednog koji napreduje na MAV-u 1.4% → 3.5%. Odgovor **sam, bez drugog signala**, nikad ne
+pokreće deload. Početnik prag nema, pa njegov odgovor menja samo prikazanu ocenu. Ko ne odgovara dobija ocenu
+kao i pre. Ocena zato sada može da pređe 1 (najviše 1.20).
+
+U ravnom bloku od četiri nedelje odgovor, kao ni pad snage, ne može da povuče rasterećenje: druga nedelja nema
+prethodnu koja bi je potvrdila, a posle treće ionako sledi planirano. U periodizovanom bloku od šest nedelja
+simulacija (`docs/simulations/subjective_fatigue.py`) daje: lažno rasterećenje kod vežbača koji napreduje na
+MRV-u 5-6% (bilo 2.7%), a stvaran pad od 3% nedeljno uhvaćen u oko 70% blokova (bilo 55%). **Pretpostavke
+simulacije za odgovor nisu merene** (aplikacija ga do sada nije prikupljala): koliko odgovor prati stvaran umor
+i koliko deli uzrok sa slabim danom su brojevi izabrani u rasponu, ne izmereni.
+
 **Deload rasterećuje i napor.** Ciljni RIR deload nedelje je tvoj ciljni RIR **+2**
 (hipertrofija 3, snaga 4). Pad opterećenja od 10% po Epley-u vredi oko tri ponavljanja, pa
 se isti opseg na 90% odrađuje sa više u rezervi: sa maksimumom od 130 kg deload je 90 kg, a
@@ -1050,7 +1073,7 @@ RIR 1 se na toj težini dostiže tek na dvanaestom ponavljanju — po naporu sko
 radna serija. Opseg ponavljanja se ne dira, jer bi to promenilo i sam pokret.
 
 **Ocena umora je pravilo ovog sistema, ne merenje.** Težine signala (RIR 0.35, otkazi 0.25,
-pad snage 0.25, volumen 0.15) i pragovi (0.60 za srednji nivo, 0.50 za napredni) ne potiču iz
+pad snage 0.25, volumen 0.15, tvoj odgovor 0.20) i pragovi (0.60 za srednji nivo, 0.50 za napredni) ne potiču iz
 literature: nijedno istraživanje ne daje formulu po kojoj se ovi signali sabiraju u odluku o
 deload-u. Izabrani su tako da nijedan signal sam ne pokreće deload, a lažni deload-ovi i
 propušteni padovi su izmereni simulacijom (`docs/simulations/fatigue_signal_noise.py`). Šum u

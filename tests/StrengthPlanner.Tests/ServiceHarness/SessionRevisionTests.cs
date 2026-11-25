@@ -539,7 +539,7 @@ public class SessionRevisionTests
         Guid sessionId)
     {
         await using var context = database.NewContext();
-        return await SessionCompletionTests.NewService(context).CompleteAsync(database.UserId, sessionId, CancellationToken.None);
+        return await SessionCompletionTests.NewService(context).CompleteAsync(database.UserId, sessionId, null, CancellationToken.None);
     }
 
     private static async Task<StrengthPlanner.Application.DTOs.Sessions.SessionRevisionResultDto> ReviseAsync(

@@ -10,7 +10,7 @@ public sealed record StrengthSample(Guid ExerciseId, int Reps, int Rir, decimal 
 /// <summary>
 /// How much stronger — or weaker — a week was than a comparable earlier one.
 ///
-/// The fatigue score reads a drop in estimated strength as one of its four signals, and it
+/// The fatigue score reads a drop in estimated strength as one of its signals, and it
 /// used to measure that as the week's <i>best</i> estimate against the previous week's
 /// best, per exercise, with no test of whether the two sets were comparable at all. Where
 /// in the prescribed range the lifter lands is itself part of the prescription: a set at

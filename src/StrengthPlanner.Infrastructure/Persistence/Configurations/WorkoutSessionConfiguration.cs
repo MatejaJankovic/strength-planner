@@ -26,6 +26,11 @@ public class WorkoutSessionConfiguration : IEntityTypeConfiguration<WorkoutSessi
         builder.Property(s => s.Note)
             .HasMaxLength(NotePolicy.MaximumLength);
 
+        // Ocena umora je 1 do 5; granica se brani i u bazi, jer iz nje nedeljni signal računa porast.
+        builder.ToTable(table => table.HasCheckConstraint(
+            "CK_WorkoutSessions_PerceivedFatigueRange",
+            "\"PerceivedFatigue\" IS NULL OR \"PerceivedFatigue\" BETWEEN 1 AND 5"));
+
         // Kaskadni lanac: Sessions -> ExercisePlans.
         builder.HasMany(s => s.ExercisePlans)
             .WithOne(ep => ep.WorkoutSession)

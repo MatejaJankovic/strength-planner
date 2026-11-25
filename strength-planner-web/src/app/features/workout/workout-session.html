@@ -470,6 +470,8 @@
   }
 
   @if (isInProgress()) {
+    <app-fatigue-rating [(value)]="fatigueRating" />
+
     <button class="cta cta--finish" type="button" [disabled]="completing()" (click)="complete()">
       @if (completing()) {
         <span class="cta__spinner" aria-hidden="true"></span>

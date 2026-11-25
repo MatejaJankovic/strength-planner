@@ -18,6 +18,7 @@ public interface ISessionService
     Task<CompleteSessionResultDto> CompleteAsync(
         Guid userId,
         Guid sessionId,
+        int? perceivedFatigue,
         CancellationToken cancellationToken = default);
 
     /// <summary>

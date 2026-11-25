@@ -25,8 +25,15 @@ export class SessionService {
     return this.http.post<WorkoutSessionDto>(`${this.apiUrl}/sessions/${id}/start`, {});
   }
 
-  complete(id: string): Observable<CompleteSessionResultDto> {
-    return this.http.post<CompleteSessionResultDto>(`${this.apiUrl}/sessions/${id}/complete`, {});
+  /**
+   * Završava trening. `perceivedFatigue` (1-5) je neobavezan odgovor o umoru i mora da stigne uz završetak:
+   * ocena umora nedelje se računa kad se završi njen poslednji trening.
+   */
+  complete(id: string, perceivedFatigue: number | null = null): Observable<CompleteSessionResultDto> {
+    return this.http.post<CompleteSessionResultDto>(
+      `${this.apiUrl}/sessions/${id}/complete`,
+      perceivedFatigue === null ? {} : { perceivedFatigue },
+    );
   }
 
   /** Čuva ispravku završenog treninga: procena, težine i ocena nedelje se računaju iznova. */

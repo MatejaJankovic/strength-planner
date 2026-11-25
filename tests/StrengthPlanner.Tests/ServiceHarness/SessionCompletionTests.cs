@@ -118,7 +118,7 @@ public class SessionCompletionTests
         var service = NewService(context);
 
         var error = await Assert.ThrowsAsync<StrengthPlanner.Application.Exceptions.TrainingLogException>(
-            () => service.CompleteAsync(Guid.NewGuid(), seed.WeekOneSession, CancellationToken.None));
+            () => service.CompleteAsync(Guid.NewGuid(), seed.WeekOneSession, null, CancellationToken.None));
 
         Assert.Equal(StrengthPlanner.Application.Exceptions.TrainingLogErrorType.NotFound, error.ErrorType);
     }
@@ -288,7 +288,7 @@ public class SessionCompletionTests
     private static async Task<CompleteSessionResultDto> CompleteAsync(SqliteDatabase database, Guid sessionId)
     {
         await using var context = database.NewContext();
-        return await NewService(context).CompleteAsync(database.UserId, sessionId, CancellationToken.None);
+        return await NewService(context).CompleteAsync(database.UserId, sessionId, null, CancellationToken.None);
     }
 
     internal static SessionService NewService(AppDbContext context)

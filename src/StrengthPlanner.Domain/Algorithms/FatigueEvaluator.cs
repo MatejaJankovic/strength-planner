@@ -23,10 +23,21 @@ public sealed record RirSample(WorkingSet Set, int RepRangeMin, int TargetRir, d
 /// week is deloaded for no reason. The calendar deload stays as a floor, but a
 /// week that shows enough fatigue can now pull the next one forward.
 ///
-/// Four signals are combined, each normalised to 0..1 and weighted. No single signal
+/// Five signals are combined, each normalised to 0..1 and weighted. No single signal
 /// can trigger a deload on its own: the heaviest carries 0.35 against a threshold of
 /// 0.60, so at least two have to agree. That is deliberate — every one of them is
 /// noisy in isolation, and an unnecessary deload costs a week of training.
+///
+/// The fifth, the lifter's own answer to how tired they are
+/// (<see cref="SubjectiveFatigue"/>), carries 0.20 and not 0.25 on purpose: with the reserve signal's 0.35
+/// that would reach the intermediate threshold (0.60) exactly, and the two share a cause (a bad day lowers
+/// both). At 0.20 the pair stays at 0.55 and a third signal has to join. That holds for the intermediate level
+/// only. The advanced threshold is 0.50, where the reserve with a confirmed answer reaches it alone, as the
+/// reserve with volume (0.35 + 0.15) already did; what keeps the pair rare there is the confirmation (the answer
+/// has to rise two weeks running). The simulation counts the cost: false deloads of a progressing advanced
+/// lifter at MAV go from 1.4% to 3.5%. The weights now sum to 1.20, so the score is no longer bounded by 1; the
+/// existing weights and thresholds were not rescaled, because every earlier measurement of them
+/// (<c>docs/simulations</c>) rests on them.
 ///
 /// For that safeguard to mean anything the signals have to be independent, which is why
 /// the RIR signal is measured only over sets the lifter completed. A set taken to
@@ -65,8 +76,12 @@ public static class FatigueEvaluator
     private const decimal VolumeShareAtFullWeight = 1.00m;
     private const decimal VolumeWeight = 0.15m;
 
+    // Lifter's own answer; 0.20 and not 0.25, see the summary above.
+    private const decimal SubjectiveWeight = 0.20m;
+
     /// <summary>
-    /// Returns the fatigue score of the week, from 0 (fresh) to 1 (every signal maxed).
+    /// Returns the fatigue score of the week, from 0 (fresh) to 1.20 (every signal maxed; the first four
+    /// reach 1.00, the lifter's own answer adds up to 0.20).
     /// </summary>
     public static decimal Score(WeeklyFatigue fatigue)
     {
@@ -82,11 +97,13 @@ public static class FatigueEvaluator
         var failures = Normalize(fatigue.FailureShare, 0m, FailureShareAtFullWeight);
         var e1Rm = Normalize(ConfirmedStrengthDrop(fatigue), 0m, E1RmDropAtFullWeight);
         var volume = Normalize(fatigue.VolumeVsMrvShare, VolumeShareFloor, VolumeShareAtFullWeight);
+        var subjective = Normalize(ConfirmedSubjectiveRise(fatigue), 0m, SubjectiveFatigue.RiseAtFullWeight);
 
         return rir * RirWeight
                + failures * FailureWeight
                + e1Rm * E1RmWeight
-               + volume * VolumeWeight;
+               + volume * VolumeWeight
+               + subjective * SubjectiveWeight;
     }
 
     /// <summary>
@@ -160,6 +177,28 @@ public static class FatigueEvaluator
         var confirmed = fatigue.PreviousE1RmChangeShare <= -VolumeAdaptation.StrengthChangeThreshold;
 
         return confirmed ? Math.Max(0m, -fatigue.E1RmChangeShare) : 0m;
+    }
+
+    /// <summary>
+    /// The week's rise in the lifter's own answer as the score reads it: the rise itself, but only when the
+    /// previous week rose as well (by <see cref="SubjectiveFatigue.RiseToConfirm"/>); otherwise zero.
+    ///
+    /// For the same reason as the strength term: one bad day lowers the week's strength and the reserve the
+    /// lifter reports, and raises the answer, so one cause would be counted three times. Two weeks in a row
+    /// of feeling worse than one's own baseline is a different thing; a mood that is bad for a day is rarely
+    /// bad for two weeks.
+    ///
+    /// Two consequences of the block's shape, both the same as the strength term's. A flat block of four
+    /// weeks scores only week 2 in time to matter, and week 2 has no earlier rise to confirm it, so the answer
+    /// cannot pull a deload there. And a lifter who gives no answers is scored exactly as before.
+    /// </summary>
+    public static decimal ConfirmedSubjectiveRise(WeeklyFatigue fatigue)
+    {
+        ArgumentNullException.ThrowIfNull(fatigue);
+
+        var confirmed = fatigue.PreviousSubjectiveRise >= SubjectiveFatigue.RiseToConfirm;
+
+        return confirmed ? Math.Max(0m, fatigue.SubjectiveRise) : 0m;
     }
 
     /// <summary>
