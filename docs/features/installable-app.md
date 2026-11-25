@@ -27,7 +27,7 @@ trake pregledača, i ekran koji se ne gasi dok trening traje.
 
 ## Merenja
 
-- Testovi klijenta: 258 → 268 (deset za `WakeLockService`).
+- Testovi klijenta: 258 → 281 (devetnaest za `WakeLockService`, pet za ožičenje u ekranu treninga).
 - Vraćanje pravila na committed stablu: bez ponovnog traženja kad kartica opet postane vidljiva ruši 2 testa;
   zaključavanje koje stigne posle `release()` ne otpušta se 1; odbijen zahtev baca grešku 2.
 - Razvojni server servira manifest kao `application/manifest+json` i sve četiri ikone (200, `image/png`);
@@ -36,6 +36,38 @@ trake pregledača, i ekran koji se ne gasi dok trening traje.
   povezani. **Pregledač u panelu odbija Wake Lock** (`NotAllowedError`, i kad panel ima fokus), pa je
   provereno samo da odbijanje ne pravi grešku i da se oznaka ne prikazuje; pozitivan slučaj je pokriven
   testovima sa lažnim API-jem, ne uživo.
+
+## Šta je pregled našao (ispravljeno)
+
+- **Ekran je mogao da ostane upaljen neograničeno.** Zaključavanje se držalo dok je trening `InProgress`, a
+  ništa ne završava trening samo od sebe: ko završi poslednju seriju, ne skroluje do „Završi trening" i spusti
+  telefon sa otvorenim ekranom, ostavio bi ga upaljenog do pražnjenja baterije (i do sledećeg otvaranja
+  zaboravljenog treninga). Sada se ekran otpušta posle 15 minuta bez dodira (`pointerdown`, `keydown`,
+  `touchstart`), a prvi sledeći dodir ga ponovo traži; kartica koja postane vidljiva ga ne vraća dok je rok
+  istekao. Pet testova sa lažnim satom.
+- Događaji mogu da stignu obrnutim redom (`visibilitychange` pre `release`): tada niko ne bi ponovo tražio
+  zaključavanje; sada ga traži i sam događaj otpuštanja kad je kartica vidljiva.
+- **Ožičenje u ekranu nije bilo pokriveno**: brisanje `effect`-a ili obrnut uslov ostavljali su ceo skup zelenim
+  (oblik koji se u ovom projektu ponavlja: pravilo ima test, ali ga niko ne poziva). Sada postoji
+  `workout-session.spec.ts` (traži u toku, ne traži za planiran, završen i preskočen, otpušta pri završetku i
+  pri izlasku, oznaka samo dok se drži).
+- Zaštita od istovremenih zahteva (`requesting`) nije imala test: bez nje drugi zahtev prepisuje prvi
+  `sentinel` i jedno zaključavanje ostaje neotpušteno posle `release()`.
+- Slušaoci na dokumentu se skidaju kad se servis uništi: bez toga su instance iz ranijih testova reagovale
+  na događaje u sledećem, pa bi poredak testova menjao rezultat.
+- Skripta za ikone je mešala alfa-kanal (`paste` sa maskom) i tvrdila da ima providne ćoškove, a logo je pun
+  RGB kvadrat; sada koristi `alpha_composite` i čuva RGB kad nema providnosti (ikone su 12% manje).
+- Zastarele izjave: README je i dalje pisao da dolaze service worker i ekran koji se ne gasi, a
+  `docs/teza-uskladjivanje.md` i `CLAUDE.md` su PWA navodili kao van obima.
+- Vraćanje pravila posle pregleda: `hold()` izbačen iz efekta ruši 2; zaštita od istovremenih zahteva izbačena
+  ruši 1; dodir koji ne produžava rok 1; rok koji nikad ne istekne 2.
+
+## Šta pregled navodi a nije proveravano
+
+- **iPhone:** WebKit je neko vreme imao grešku zbog koje Wake Lock ne radi u aplikaciji sa početnog ekrana iako
+  se zahtev prihvati; oznaka „Ekran ostaje upaljen" bi tada pisala nešto što nije tačno, a servis to ne može
+  da otkrije. Uputstvo to kaže, ali nije proveravano na uređaju.
+- Zahtev koji se nikad ne razreši bi držao `requesting` zauvek; specifikacija nema takav tok, pa nije obrađeno.
 
 ## Šta nije proveravano
 
