@@ -128,11 +128,14 @@ describe('NoteField', () => {
     type('x');
 
     button('Sačuvaj').click();
-    const saving = button('Čuvam');
-    expect(saving.disabled).toBe(true);
+    expect(button('Čuvam').disabled).toBe(true);
     expect(button('Otkaži').disabled).toBe(true);
-    saving.click();
 
+    // Dugme je zaključano, pa dodir ne stiže do komponente; zaštita u `save()` je za poziv koji ne
+    // ide kroz dugme (Enter, ponovljen događaj). Zato se zove direktno.
+    (fixture.componentInstance as unknown as { save(): void }).save();
+
+    // `expectOne` pada ako su dva zahteva.
     http.expectOne((candidate) => candidate.url.endsWith('/exercises/e-5/note')).flush({ note: 'x' });
   });
 
