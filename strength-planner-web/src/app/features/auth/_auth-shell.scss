@@ -62,10 +62,10 @@
 
 .auth__error {
   align-items: start;
-  background: color-mix(in srgb, var(--volume-above) 12%, white);
-  border: 1px solid color-mix(in srgb, var(--volume-above) 45%, white);
+  background: color-mix(in srgb, var(--volume-above) 12%, var(--color-elevated));
+  border: 1px solid color-mix(in srgb, var(--volume-above) 45%, var(--color-elevated));
   border-radius: 0.55rem;
-  color: #8a2f18;
+  color: var(--color-danger-ink);
   display: flex;
   font-size: 0.88rem;
   font-weight: 600;
@@ -99,7 +99,7 @@
 
 .control {
   appearance: none;
-  background: #fff;
+  background: var(--color-elevated);
   border: 1px solid var(--color-border);
   border-radius: 0.55rem;
   color: var(--color-ink);
@@ -122,7 +122,7 @@
 }
 
 .field__error {
-  color: #8a2f18;
+  color: var(--color-danger-ink);
   font-size: 0.8rem;
   font-weight: 600;
 }
@@ -161,7 +161,7 @@
   background: var(--color-primary);
   border: 0;
   border-radius: 0.6rem;
-  color: #fff;
+  color: var(--color-on-primary);
   cursor: pointer;
   display: inline-flex;
   font-weight: 800;
@@ -179,9 +179,9 @@
 
 .auth__spinner {
   animation: auth-spin 0.7s linear infinite;
-  border: 2px solid rgb(255 255 255 / 45%);
+  border: 2px solid color-mix(in srgb, var(--color-on-primary) 45%, transparent);
   border-radius: 50%;
-  border-top-color: #fff;
+  border-top-color: var(--color-on-primary);
   height: 1.1rem;
   width: 1.1rem;
 }

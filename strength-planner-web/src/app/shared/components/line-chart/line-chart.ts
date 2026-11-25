@@ -2,6 +2,7 @@ import {
   Component,
   ElementRef,
   effect,
+  inject,
   input,
   OnDestroy,
   viewChild,
@@ -16,8 +17,39 @@ import {
   PointElement,
   Tooltip,
 } from 'chart.js';
+import { ThemeService } from '../../../core/theme/theme.service';
 
 Chart.register(LineController, LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Filler);
+
+export interface ChartColors {
+  primary: string;
+  ink: string;
+  /** Tekst na `ink` pozadini (tooltip): u tamnoj temi je `ink` svetao, pa tekst na njemu mora da bude taman. */
+  onInk: string;
+  muted: string;
+  border: string;
+}
+
+/** Boje tooltip-a: tekst na pozadini „ink" mora da prati tu pozadinu, a ne da ostane beo. */
+export function tooltipColors(colors: ChartColors): { backgroundColor: string; titleColor: string; bodyColor: string } {
+  return { backgroundColor: colors.ink, titleColor: colors.onInk, bodyColor: colors.onInk };
+}
+
+/**
+ * Boje grafikona iz tokena teme. Platno ne zna za CSS, pa se vrednosti čitaju pri crtanju; rezervne su
+ * svetle vrednosti iz `styles.scss`, za slučaj da token ne postoji.
+ */
+export function chartColors(css: { getPropertyValue(name: string): string }): ChartColors {
+  const read = (name: string, fallback: string) => css.getPropertyValue(name).trim() || fallback;
+
+  return {
+    primary: read('--color-primary', '#0e5c63'),
+    ink: read('--color-ink', '#14151a'),
+    onInk: read('--color-on-ink', '#ffffff'),
+    muted: read('--color-muted', '#66707c'),
+    border: read('--color-border', '#dce1e6'),
+  };
+}
 
 @Component({
   selector: 'app-line-chart',
@@ -29,11 +61,17 @@ export class LineChart implements OnDestroy {
   readonly values = input<number[]>([]);
   readonly seriesLabel = input('e1RM (kg)');
 
+  private readonly theme = inject(ThemeService);
   private readonly canvas = viewChild<ElementRef<HTMLCanvasElement>>('canvas');
   private chart?: Chart;
 
   constructor() {
-    effect(() => this.render(this.labels(), this.values()));
+    effect(() => {
+      // Boje se čitaju iz CSS-a pri crtanju, a platno se ne boji samo od sebe kad se tema promeni: zato se
+      // iscrtava ponovo i kad se promeni tema, ne samo kad stignu novi podaci.
+      this.theme.effective();
+      this.render(this.labels(), this.values());
+    });
   }
 
   ngOnDestroy(): void {
@@ -48,11 +86,8 @@ export class LineChart implements OnDestroy {
 
     this.chart?.destroy();
 
-    const css = getComputedStyle(document.documentElement);
-    const primary = css.getPropertyValue('--color-primary').trim() || '#0e5c63';
-    const ink = css.getPropertyValue('--color-ink').trim() || '#14151a';
-    const muted = css.getPropertyValue('--color-muted').trim() || '#66707c';
-    const border = css.getPropertyValue('--color-border').trim() || '#dce1e6';
+    const colors = chartColors(getComputedStyle(document.documentElement));
+    const { primary, muted, border } = colors;
     const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const tabular = { family: 'Space Grotesk, Inter, sans-serif' };
 
@@ -65,6 +100,7 @@ export class LineChart implements OnDestroy {
             label: this.seriesLabel(),
             data: values,
             borderColor: primary,
+            // Dve cifre providnosti na kraju: `--color-primary` mora da ostane `#rrggbb` (proverava skripta za kontrast).
             backgroundColor: `${primary}1f`,
             borderWidth: 2,
             tension: 0.25,
@@ -82,7 +118,9 @@ export class LineChart implements OnDestroy {
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: ink,
+            // Pozadina je „ink" (u tamnoj temi svetla), pa i tekst na njoj mora da prati: podrazumevani beli
+            // tekst na svetloj pozadini ne bi bio čitljiv.
+            ...tooltipColors(colors),
             titleFont: tabular,
             bodyFont: tabular,
             callbacks: { label: (item) => `${item.formattedValue} kg` },

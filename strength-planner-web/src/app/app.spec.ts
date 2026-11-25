@@ -10,6 +10,24 @@ describe('App', () => {
     }).compileComponents();
   });
 
+  /**
+   * Tema mora da bude primenjena čim se aplikacija pokrene, ne tek kad se neki ekran obrati servisu: skripta
+   * u `index.html` postavlja atribut pre iscrtavanja, ali ako ona ne uspe, ovo je jedino što ga postavlja.
+   */
+  it('primenjuje sačuvanu temu pri pokretanju, i bez otvaranja ekrana sa izborom', () => {
+    localStorage.setItem('strength-planner.theme', 'dark');
+    document.documentElement.removeAttribute('data-theme');
+
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    TestBed.tick();
+
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+
+    localStorage.removeItem('strength-planner.theme');
+    document.documentElement.removeAttribute('data-theme');
+  });
+
   it('should create the app', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;

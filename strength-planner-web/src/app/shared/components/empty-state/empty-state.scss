@@ -11,7 +11,7 @@
 
 .empty-state mat-icon {
   align-items: center;
-  background: color-mix(in srgb, var(--color-primary) 12%, white);
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-elevated));
   border-radius: 0.5rem;
   color: var(--color-primary);
   display: inline-flex;
@@ -37,7 +37,7 @@
   background: var(--color-primary);
   border: 0;
   border-radius: 0.5rem;
-  color: #fff;
+  color: var(--color-on-primary);
   cursor: pointer;
   display: inline-flex;
   font-weight: 800;

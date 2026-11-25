@@ -816,6 +816,13 @@ na sledeći koji se napravi.
 
 ### Podešavanja (zupčanik)
 
+**Izgled.** Tema aplikacije: **Kao sistem** (podrazumevano; prati svetli ili tamni režim telefona), **Svetla** ili
+**Tamna**. Menja se odmah i važi samo za taj telefon: izbor se čuva u pregledaču, ne na nalogu, pa se na drugom
+uređaju bira posebno. Pri otvaranju se tema primeni pre nego što se išta nacrta, da se na tamnom telefonu ne vidi
+kratak bljesak svetle teme; boja trake pregledača prati temu, a grafikon u analitici se nacrta ponovo. Tamna tema
+nije samo obrnuta svetla: tekstovi i pozadine su birani i izmereni da ostanu čitljivi (vidi
+`docs/features/dark-theme.md`).
+
 **Lozinka.** Trenutna + nova + potvrda. Promena lozinke **odjavljuje sve ostale uređaje**.
 Potvrda nije formalnost — pošto nema oporavka lozinke, greška u kucanju znači trajan gubitak
 naloga.

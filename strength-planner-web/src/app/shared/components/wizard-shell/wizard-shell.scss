@@ -92,7 +92,7 @@
   background: var(--color-primary);
   border: 0;
   border-radius: 0.7rem;
-  color: #fff;
+  color: var(--color-on-primary);
   cursor: pointer;
   display: inline-flex;
   font-weight: 800;
@@ -109,9 +109,9 @@
 
 .wiz__spinner {
   animation: wiz-spin 0.7s linear infinite;
-  border: 2px solid rgb(255 255 255 / 45%);
+  border: 2px solid color-mix(in srgb, var(--color-on-primary) 45%, transparent);
   border-radius: 50%;
-  border-top-color: #fff;
+  border-top-color: var(--color-on-primary);
   height: 1.1rem;
   width: 1.1rem;
 }

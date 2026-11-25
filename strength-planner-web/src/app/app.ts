@@ -3,6 +3,7 @@ import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } fro
 import { toSignal } from '@angular/core/rxjs-interop';
 import { MatIconModule } from '@angular/material/icon';
 import { filter, map, startWith } from 'rxjs';
+import { ThemeService } from './core/theme/theme.service';
 
 @Component({
   selector: 'app-root',
@@ -12,6 +13,12 @@ import { filter, map, startWith } from 'rxjs';
 })
 export class App {
   private readonly router = inject(Router);
+
+  constructor() {
+    // Servis se pravi tek kad ga neko traži; tema mora da bude primenjena čim se aplikacija pokrene,
+    // ne tek kad se otvori ekran sa izborom.
+    inject(ThemeService);
+  }
 
   private readonly currentUrl = toSignal(
     this.router.events.pipe(

@@ -23,7 +23,7 @@
   background: var(--color-ink);
   border: 0;
   border-radius: 0.5rem;
-  color: #fff;
+  color: var(--color-on-ink);
   cursor: pointer;
   display: inline-flex;
   font-family: var(--font-display);
@@ -36,8 +36,8 @@
 }
 
 .weight-stepper__button:disabled {
-  background: #d3d8de;
-  color: #7b8490;
+  background: var(--color-disabled-bg);
+  color: var(--color-disabled-ink);
   cursor: not-allowed;
 }
 

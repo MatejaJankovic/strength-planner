@@ -72,7 +72,7 @@
 .weeks__btn.is-active {
   background: var(--color-primary);
   border-color: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-primary);
 }
 
 .vol-note {
@@ -81,7 +81,7 @@
 }
 
 .vol-note--error {
-  color: #8a2f18;
+  color: var(--color-danger-ink);
   font-weight: 600;
 }
 
@@ -116,7 +116,7 @@
 }
 
 .track {
-  background: #e8ecef;
+  background: var(--color-chip);
   border-radius: 0.4rem;
   height: 22px;
   overflow: hidden;
@@ -149,10 +149,12 @@
   // pocinju na svojoj tacki pa deluju pomereno udesno za svoju sirinu.
   transform: translateX(-50%);
   width: 2px;
+  // Oreol samo u tamnoj temi (u svetloj je providan): svetla crta na svetloj boji trake bi inače nestala.
+  box-shadow: 0 0 0 1px var(--color-marker-halo);
 }
 
 .marker--mev {
-  background: rgb(20 21 26 / 45%);
+  background: color-mix(in srgb, var(--color-ink) 45%, transparent);
 }
 
 .marker--mrv {
@@ -238,8 +240,8 @@
 }
 
 .legend__reset--danger {
-  border-color: color-mix(in srgb, #e4572e 45%, transparent);
-  color: var(--color-above, #e4572e);
+  border-color: color-mix(in srgb, var(--color-above) 45%, transparent);
+  color: var(--color-above);
 }
 
 .legend__actions {
@@ -249,7 +251,7 @@
 }
 
 .legend__ok {
-  color: var(--color-optimal, #1f9e8a);
+  color: var(--color-optimal);
   font-size: 0.8rem;
   font-weight: 700;
   margin: 0;

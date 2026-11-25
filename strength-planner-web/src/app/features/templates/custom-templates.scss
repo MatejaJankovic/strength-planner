@@ -36,8 +36,8 @@
 }
 
 .alert--error {
-  background: color-mix(in srgb, #e4572e 12%, transparent);
-  color: var(--color-above, #e4572e);
+  background: color-mix(in srgb, var(--color-above) 12%, transparent);
+  color: var(--color-above);
 }
 
 .field {
@@ -59,7 +59,7 @@
 }
 
 .control {
-  background: var(--color-surface, #fff);
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 0.5rem;
   color: var(--color-ink);
@@ -245,7 +245,7 @@
 
 .btn--primary {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-primary);
 }
 
 .btn--ghost {
@@ -255,6 +255,6 @@
 }
 
 .btn--danger {
-  background: #8a2f18;
-  color: #fff;
+  background: var(--color-danger-strong);
+  color: var(--color-on-danger);
 }

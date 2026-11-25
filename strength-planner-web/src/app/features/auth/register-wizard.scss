@@ -38,10 +38,10 @@
 
 .wizard-error {
   align-items: start;
-  background: color-mix(in srgb, var(--volume-above) 12%, white);
-  border: 1px solid color-mix(in srgb, var(--volume-above) 45%, white);
+  background: color-mix(in srgb, var(--volume-above) 12%, var(--color-elevated));
+  border: 1px solid color-mix(in srgb, var(--volume-above) 45%, var(--color-elevated));
   border-radius: 0.55rem;
-  color: #8a2f18;
+  color: var(--color-danger-ink);
   display: flex;
   font-size: 0.88rem;
   font-weight: 600;

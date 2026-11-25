@@ -1,6 +1,10 @@
 .app-shell {
   background:
-    linear-gradient(180deg, rgb(255 255 255 / 72%), rgb(244 245 247 / 0%) 16rem),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-elevated) 72%, transparent),
+      color-mix(in srgb, var(--color-surface) 0%, transparent) 16rem
+    ),
     var(--color-surface);
   color: var(--color-ink);
   min-height: 100dvh;
@@ -62,7 +66,7 @@
 
 .bottom-nav {
   align-items: center;
-  background: rgb(255 255 255 / 92%);
+  background: color-mix(in srgb, var(--color-elevated) 92%, transparent);
   border-top: 1px solid var(--color-border);
   bottom: 0;
   box-shadow: 0 -14px 32px rgb(20 21 26 / 8%);
@@ -111,7 +115,7 @@
 }
 
 .bottom-nav__item.is-active {
-  background: color-mix(in srgb, var(--color-primary) 11%, white);
+  background: color-mix(in srgb, var(--color-primary) 11%, var(--color-elevated));
   color: var(--color-primary);
 }
 

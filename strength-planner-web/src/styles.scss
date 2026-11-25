@@ -1,9 +1,15 @@
 @use '@angular/material' as mat;
 
+// Boje. Svaka boja u aplikaciji dolazi odavde: ni jedna komponenta ne piše heksadecimalnu vrednost, jer bi
+// takva ostala svetla u tamnoj temi. Svetle vrednosti su u `:root`, a tamne u `dark-tokens` ispod; tema se
+// bira atributom `data-theme` na <html> (vidi core/theme/theme.service.ts), a bez njega prati sistem.
+// Odnosi kontrasta oba skupa mere se skriptom `scripts/check-theme-contrast.py`.
 :root {
   --color-ink: #14151a;
   --color-surface: #f4f5f7;
   --color-elevated: #ffffff;
+  // `--color-primary` mora da ostane heksadecimalna vrednost sa šest cifara u obe teme: grafikon na nju
+  // dodaje providnost (`${primary}1f`), a skripta za kontrast to proverava.
   --color-primary: #0e5c63;
   --color-accent: #f2a900;
   --color-muted: #66707c;
@@ -12,18 +18,99 @@
   --volume-optimal: #1f9e8a;
   --volume-above: #e4572e;
   --focus-ring: #0e5c63;
+
+  // Isto što i `--volume-*`, pod imenom kojim ga komponente čitaju (greška, „optimalno"). Do sada su
+  // pisale `var(--color-above, #e4572e)`, a `--color-above` nije postojao, pa se uvek koristila rezervna
+  // vrednost: u tamnoj temi bi ostala svetla.
+  --color-above: var(--volume-above);
+  --color-optimal: var(--volume-optimal);
+
+  // Tekst na ispunjenoj pozadini: ime kaže na čemu stoji, ne kakva je boja (u tamnoj temi je „ink" svetao,
+  // pa tekst na njemu mora da bude taman).
+  --color-on-primary: #ffffff;
+  --color-on-ink: #ffffff;
+  --color-on-danger: #ffffff;
+  --color-on-above: #ffffff;
+
+  // Dugme za brisanje, i tekst koji stoji na providnom tintu boje „iznad" / „optimalno" / „ispod" / akcent.
+  --color-danger-strong: #8a2f18;
+  --color-danger-ink: #8a2f18;
+  --color-above-ink: #97371f;
+  --color-optimal-ink: #126c60;
+  --color-below-ink: #244675;
+  --color-accent-ink: #5d4200;
+  --color-on-accent: #3d2c00;
+
+  --color-chip: #e8ecef;
+  // Oreol oko oznaka granica (MEV / MAV / MRV) na traci volumena. U svetloj temi ga nema; u tamnoj je boja
+  // kartice, da svetla crta ostane vidljiva i na svetloj boji trake i na tamnoj praznoj traci.
+  --color-marker-halo: transparent;
+  --color-disabled-bg: #d3d8de;
+  --color-disabled-ink: #7b8490;
+  --color-primary-container: #cceff1;
+  --color-on-primary-container: #093a3f;
+
   --font-display: 'Space Grotesk', Inter, system-ui, sans-serif;
   --font-body: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
   --mat-sys-primary: var(--color-primary);
-  --mat-sys-on-primary: #ffffff;
-  --mat-sys-primary-container: #cceff1;
-  --mat-sys-on-primary-container: #093a3f;
+  --mat-sys-on-primary: var(--color-on-primary);
+  --mat-sys-primary-container: var(--color-primary-container);
+  --mat-sys-on-primary-container: var(--color-on-primary-container);
   --mat-sys-secondary: var(--color-accent);
   --mat-sys-tertiary: var(--color-accent);
   --mat-sys-surface: var(--color-surface);
   --mat-sys-on-surface: var(--color-ink);
   --mat-sys-outline: var(--color-border);
+}
+
+// Tamne vrednosti samo za ono što se razlikuje. Teal je svetliji da bi ostao čitljiv kao tekst na tamnoj
+// podlozi, a tekst na njemu taman; tintovi (`color-mix(..., var(--color-elevated))`) se mešaju sa tamnom
+// karticom, pa ostaju tamni, a tekst na njima je svetla varijanta iste boje.
+@mixin dark-tokens {
+  --color-ink: #e8ebef;
+  --color-surface: #0f1215;
+  --color-elevated: #171b1f;
+  --color-primary: #4fb8c0;
+  --color-accent: #f2b633;
+  --color-muted: #9aa4af;
+  --color-border: #2a3137;
+  --volume-below: #7aa5f5;
+  --volume-optimal: #3dc4ae;
+  --volume-above: #f08560;
+  --focus-ring: #7fd6dc;
+
+  --color-on-primary: #06262a;
+  --color-on-ink: #14151a;
+  --color-on-danger: #ffffff;
+  --color-on-above: #1c0b05;
+
+  --color-danger-strong: #b8391c;
+  --color-danger-ink: #ffb8a3;
+  --color-above-ink: #ffb8a3;
+  --color-optimal-ink: #86e3d0;
+  --color-below-ink: #b3ceff;
+  --color-accent-ink: #f8dc92;
+  --color-on-accent: #241a00;
+
+  --color-chip: #242b31;
+  --color-marker-halo: var(--color-elevated);
+  --color-disabled-bg: #242b31;
+  --color-disabled-ink: #6f7a85;
+  --color-primary-container: #0b3f44;
+  --color-on-primary-container: #bff1f5;
+}
+
+:root[data-theme='dark'] {
+  @include dark-tokens;
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    @include dark-tokens;
+    color-scheme: dark;
+  }
 }
 
 html {
@@ -33,6 +120,7 @@ html {
   @include mat.theme(
     (
       color: (
+        theme-type: color-scheme,
         primary: mat.$cyan-palette,
         tertiary: mat.$yellow-palette,
       ),

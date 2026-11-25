@@ -33,7 +33,7 @@
 }
 
 .trend-note--error {
-  color: #8a2f18;
+  color: var(--color-danger-ink);
   font-weight: 600;
 }
 
@@ -70,11 +70,11 @@
 }
 
 .trend-summary__delta.is-up {
-  background: color-mix(in srgb, var(--volume-optimal) 16%, white);
-  color: #126c60;
+  background: color-mix(in srgb, var(--volume-optimal) 16%, var(--color-elevated));
+  color: var(--color-optimal-ink);
 }
 
 .trend-summary__delta.is-down {
-  background: color-mix(in srgb, var(--volume-above) 16%, white);
-  color: #97371f;
+  background: color-mix(in srgb, var(--volume-above) 16%, var(--color-elevated));
+  color: var(--color-above-ink);
 }

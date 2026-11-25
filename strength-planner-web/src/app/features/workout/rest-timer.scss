@@ -26,7 +26,7 @@
 }
 
 .rest--reached {
-  background: color-mix(in srgb, var(--volume-optimal) 14%, white);
+  background: color-mix(in srgb, var(--volume-optimal) 14%, var(--color-elevated));
   border-color: var(--volume-optimal);
 }
 
@@ -57,7 +57,7 @@
 
 // Istekla pauza se prepoznaje po boji i po tekstu, ne samo po jednom od ta dva.
 .rest__done {
-  color: #126c60;
+  color: var(--color-optimal-ink);
   flex: 1 1 100%;
   font-size: 0.82rem;
   font-weight: 700;
@@ -85,7 +85,7 @@
 }
 
 .rest__icon--on {
-  background: color-mix(in srgb, var(--color-primary) 14%, white);
+  background: color-mix(in srgb, var(--color-primary) 14%, var(--color-elevated));
   color: var(--color-primary);
 }
 
@@ -97,7 +97,7 @@
 }
 
 .rest__target {
-  background: #e8ecef;
+  background: var(--color-chip);
   border: 0;
   border-radius: 999px;
   color: var(--color-ink);
@@ -110,5 +110,5 @@
 
 .rest__target--on {
   background: var(--color-primary);
-  color: #ffffff;
+  color: var(--color-on-primary);
 }

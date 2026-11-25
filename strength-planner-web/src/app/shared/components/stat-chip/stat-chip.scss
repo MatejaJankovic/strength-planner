@@ -1,6 +1,6 @@
 .stat-chip {
   align-items: center;
-  background: #e8ecef;
+  background: var(--color-chip);
   border-radius: 999px;
   color: var(--color-ink);
   display: inline-flex;
@@ -16,21 +16,21 @@
 }
 
 .stat-chip--below {
-  background: color-mix(in srgb, var(--volume-below) 16%, white);
-  color: #244675;
+  background: color-mix(in srgb, var(--volume-below) 16%, var(--color-elevated));
+  color: var(--color-below-ink);
 }
 
 .stat-chip--optimal {
-  background: color-mix(in srgb, var(--volume-optimal) 16%, white);
-  color: #126c60;
+  background: color-mix(in srgb, var(--volume-optimal) 16%, var(--color-elevated));
+  color: var(--color-optimal-ink);
 }
 
 .stat-chip--above {
-  background: color-mix(in srgb, var(--volume-above) 16%, white);
-  color: #97371f;
+  background: color-mix(in srgb, var(--volume-above) 16%, var(--color-elevated));
+  color: var(--color-above-ink);
 }
 
 .stat-chip--accent {
-  background: color-mix(in srgb, var(--color-accent) 24%, white);
-  color: #5d4200;
+  background: color-mix(in srgb, var(--color-accent) 24%, var(--color-elevated));
+  color: var(--color-accent-ink);
 }

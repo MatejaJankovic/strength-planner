@@ -10,9 +10,9 @@
 
 .panel__error {
   align-items: center;
-  background: color-mix(in srgb, #e4572e 12%, transparent);
+  background: color-mix(in srgb, var(--color-above) 12%, transparent);
   border-radius: 0.55rem;
-  color: var(--color-above, #e4572e);
+  color: var(--color-above);
   display: flex;
   font-size: 0.88rem;
   font-weight: 600;
@@ -26,7 +26,7 @@
   background: var(--color-primary);
   border: 0;
   border-radius: 0.5rem;
-  color: #fff;
+  color: var(--color-on-primary);
   cursor: pointer;
   display: inline-flex;
   font-weight: 800;
@@ -85,7 +85,7 @@
   align-items: center;
   background: var(--color-ink);
   border-radius: 50%;
-  color: #fff;
+  color: var(--color-on-ink);
   display: flex;
   font-family: var(--font-display);
   font-weight: 800;
@@ -175,7 +175,7 @@
 // Posledica koja se do sada dešavala prećutno: nov plan gasi tekući.
 .wizard__warning {
   align-items: flex-start;
-  background: color-mix(in srgb, var(--color-above, #e4572e) 10%, white);
+  background: color-mix(in srgb, var(--color-above) 10%, var(--color-elevated));
   border-radius: 0.55rem;
   color: var(--color-ink);
   display: flex;
@@ -187,7 +187,7 @@
 }
 
 .wizard__warning mat-icon {
-  color: var(--color-above, #e4572e);
+  color: var(--color-above);
   flex-shrink: 0;
   font-size: 1.15rem;
   height: 1.15rem;
@@ -211,8 +211,8 @@
 }
 
 .alert--error {
-  background: color-mix(in srgb, #e4572e 12%, transparent);
-  color: var(--color-above, #e4572e);
+  background: color-mix(in srgb, var(--color-above) 12%, transparent);
+  color: var(--color-above);
 }
 
 .field {
@@ -230,7 +230,7 @@
 }
 
 .control {
-  background: var(--color-surface, #fff);
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 0.5rem;
   color: var(--color-ink);
@@ -336,7 +336,7 @@
 
 .btn--primary {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-primary);
 }
 
 .btn--primary:disabled {
@@ -362,7 +362,7 @@
 }
 
 .confirm {
-  border: 1px solid color-mix(in srgb, #8a2f18 40%, var(--color-border));
+  border: 1px solid color-mix(in srgb, var(--color-danger-strong) 40%, var(--color-border));
   border-radius: 0.6rem;
   display: grid;
   gap: 0.6rem;
@@ -383,8 +383,8 @@
 }
 
 .btn--danger {
-  background: #8a2f18;
-  color: #fff;
+  background: var(--color-danger-strong);
+  color: var(--color-on-danger);
 }
 
 // Sadržaj izabranog šablona, ispod padajućeg menija bloka.
@@ -465,7 +465,7 @@
 }
 
 .preview__note--error {
-  color: var(--color-above, #e4572e);
+  color: var(--color-above);
   font-weight: 600;
 }
 

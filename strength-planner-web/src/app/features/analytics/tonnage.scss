@@ -44,7 +44,7 @@
 }
 
 .ton-note--error {
-  color: var(--color-above, #e4572e);
+  color: var(--color-above);
 }
 
 .ton-note--scale {
@@ -76,7 +76,7 @@
 }
 
 .trow__deload {
-  background: color-mix(in srgb, var(--color-accent, #f2a900) 18%, transparent);
+  background: color-mix(in srgb, var(--color-accent) 18%, transparent);
   border-radius: 999px;
   color: var(--color-ink);
   font-size: 0.72rem;
