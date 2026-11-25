@@ -1,0 +1,52 @@
+@if (running()) {
+  <section class="rest" [class.rest--reached]="reached()" aria-label="Pauza između serija">
+    <div class="rest__main">
+      <p class="rest__clock" role="timer" aria-live="off">
+        <mat-icon aria-hidden="true">timer</mat-icon>
+        <strong>{{ clock() }}</strong>
+        @if (goal(); as value) {
+          <span class="rest__goal">/ {{ value }}</span>
+        }
+      </p>
+
+      <div class="rest__actions">
+        <button
+          type="button"
+          class="rest__icon"
+          [class.rest__icon--on]="choosing()"
+          [attr.aria-expanded]="choosing()"
+          (click)="toggleChoosing()"
+          aria-label="Cilj pauze"
+        >
+          <mat-icon aria-hidden="true">flag</mat-icon>
+        </button>
+        <button type="button" class="rest__icon" (click)="restart()" aria-label="Pauza ispočetka">
+          <mat-icon aria-hidden="true">replay</mat-icon>
+        </button>
+        <button type="button" class="rest__icon" (click)="dismiss()" aria-label="Zatvori tajmer">
+          <mat-icon aria-hidden="true">close</mat-icon>
+        </button>
+      </div>
+
+      @if (reached()) {
+        <p class="rest__done" role="status">Pauza je istekla.</p>
+      }
+    </div>
+
+    @if (choosing()) {
+      <div class="rest__targets" role="group" aria-label="Cilj pauze">
+        @for (seconds of targets; track seconds) {
+          <button
+            type="button"
+            class="rest__target"
+            [class.rest__target--on]="seconds === target()"
+            [attr.aria-pressed]="seconds === target()"
+            (click)="choose(seconds)"
+          >
+            {{ label(seconds) }}
+          </button>
+        }
+      </div>
+    }
+  </section>
+}

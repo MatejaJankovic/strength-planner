@@ -219,6 +219,8 @@ export interface ExercisePlanDto {
   weightStepKg: number;
   /** Sprava: "Barbell", "Dumbbell", "Machine", "Cable", "Bodyweight". */
   equipment?: string;
+  /** "Compound" ili "Isolation"; ekran ga čita da zagrevanje i ploče predlaže samo uz složenu vežbu. */
+  exerciseType?: string;
   /**
    * Vezba nosi deo telesne mase, pa je `targetWeightKg` ono sto se DODAJE, a 0 znaci
    * „sopstvenom masom". Netacno i za vezbu sa telesnom masom kad profil nema unetu masu.

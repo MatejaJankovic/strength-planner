@@ -65,6 +65,14 @@ public class ExercisePlanDto
     public string Equipment { get; set; } = string.Empty;
 
     /// <summary>
+    /// "Compound" ili "Isolation". Ekran ga čita da bi zagrevanje i spisak ploča predlagao samo
+    /// uz složenu vežbu sa šipkom: pregib ili skull crusher se rade lakom ili EZ šipkom, pa
+    /// šipka od 20 kg i rampa zagrevanja tu ne bi pomogli nego zavarali. Popunjava se samo na
+    /// putanji koju koristi ekran treninga (kao <see cref="Equipment"/>).
+    /// </summary>
+    public string ExerciseType { get; set; } = string.Empty;
+
+    /// <summary>
     /// Vežba nosi deo telesne mase, pa je <see cref="TargetWeightKg"/> ono što se DODAJE
     /// (pojas, traka), a 0 znači „sopstvenom masom". Netačno i za vežbu sa telesnom masom
     /// ako profil nema unetu masu: tada se ne zna šta bi se dodavalo.

@@ -554,6 +554,28 @@ trening ne troši bateriju). Radi samo preko HTTPS-a, a pregledač ga može da o
 tada se ekran gasi kao i obično, a trening radi bez greške. Na nekim verzijama iPhone-a zaključavanje u aplikaciji
 sa početnog ekrana ne radi iako ga pregledač prihvata; oznaka na vrhu tada piše nešto što nije tačno.
 
+**Pauza između serija.** Čim sačuvaš seriju na treningu koji je u toku, uz vrh ekrana se pojavi traka sa
+vremenom pauze; ostaje zalepljena dok skroluješ do sledeće vežbe. Dugme sa zastavicom otvara cilj pauze
+(1:30, 2:00, 3:00, 5:00 ili bez cilja), koji se pamti na tom telefonu. Kad cilj istekne, traka pozeleni i piše
+„Pauza je istekla", a telefon jednom zavibrira ako to njegov pregledač dozvoljava (na iPhone-u vibracije
+uglavnom nema); sat posle toga nastavlja da broji. Vreme se računa po satu, ne po otkucajima, pa pokazuje pravu
+pauzu i kad je pregledač usporio ili uspavao karticu. Pauza se ne pamti: ako se stranica osveži, ili telefon izbaci
+aplikaciju iz memorije dok je zaključan, traka nestaje i tek sledeća sačuvana serija pokreće novu pauzu.
+Obaveštenje ne stiže dok je ekran zaključan: traka se gleda, ne sluša. Ne kreće dok ispravljaš završen trening,
+a nestaje kad trening završiš ili izađeš sa ekrana. Ako čuvanje serije ne uspe, pauza ostaje (serija je ipak
+odrađena), a novi pokušaj je vraća na nulu.
+
+**Ploče i zagrevanje (složene vežbe sa šipkom).** Uz čučanj, potisak, mrtvo dizanje i slične vežbe ispod težine
+piše koje ploče idu sa svake strane šipke, pa ne računaš napamet. Računa se sa šipkom od 20 kg (i piše se uz
+ploče, da se vidi na čemu se računa) i pločama 25, 20, 15, 10, 5, 2,5 i 1,25 kg; ako se težina ne može sastaviti
+iz njih, piše koliko po strani ostaje. Šipka i ploče se ne mogu podesiti: ako u tvojoj teretani šipka ima drugu
+težinu, spisak ploča važi samo okvirno. Za težinu manju od same šipke ne piše ništa. Pregib i skull crusher su
+takođe „sa šipkom", ali se rade lakom ili EZ šipkom, pa za njih nema ni ploča ni zagrevanja. Pre prve radne
+serije složene vežbe sa šipkom predlaže se i zagrevanje: 40%, 60% i 80% radne težine (5, 3 i 1 ponavljanje),
+zaokruženo na korak vežbe; kad je radna težina blizu same šipke, to je prazna šipka. To je uobičajena praksa, a ne
+izmerena vrednost, i podsetnik je, a ne serija: zagrevanje se ne upisuje, ne ulazi u volumen i ne utiče na
+progresiju. Nestaje čim sačuvaš prvu radnu seriju.
+
 **Instalacija na početni ekran.** Kad se aplikacija otvori preko HTTPS-a (na računaru u kući: `scripts/local-https.sh`,
 vidi README), u pregledaču izaberi „Dodaj na početni ekran" (Chrome: meni sa tri tačke; Safari: dugme za deljenje).
 Ikona otvara aplikaciju bez trake pregledača. Aplikacija i dalje traži vezu sa serverom.

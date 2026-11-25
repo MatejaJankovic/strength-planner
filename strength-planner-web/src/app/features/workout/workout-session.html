@@ -31,6 +31,8 @@
     <p class="card__hint">Ekran ostaje upaljen dok traje trening.</p>
   }
 
+  <app-rest-timer />
+
   @if (summary(); as result) {
     <app-completion-summary [outcome]="result" [title]="summaryTitle()" />
     @for (text of revisionTexts(); track text) {
@@ -146,6 +148,16 @@
           </p>
         } @else if (plan.targetWeightKg == null) {
           <p class="card__hint">Nema 1RM za ovu vežbu - unesi težinu po osećaju.</p>
+        }
+
+        @if (platesHint(plan, draft); as plates) {
+          <p class="card__hint">{{ plates }}</p>
+        }
+
+        @if (warmupHint(plan, draft); as warmup) {
+          <p class="card__hint">
+            <strong>Zagrevanje</strong> (ne upisuje se i ne ulazi u volumen): {{ warmup }}
+          </p>
         }
 
         @switch (loadNote(plan, draft)) {
