@@ -9,3 +9,4 @@
 *.log
 tests/
 strength-planner-web/
+.certs/

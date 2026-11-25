@@ -45,6 +45,35 @@ Swagger UI je dostupan u Development okruženju na `/swagger`
 (npr. `https://localhost:<port>/swagger`; tačan port je u
 `src/StrengthPlanner.API/Properties/launchSettings.json`).
 
+## Telefon u lokalnoj mreži (HTTPS)
+
+Instalacija na početni ekran, service worker i „ekran se ne gasi" (dolaze u narednim granama) rade samo u
+bezbednom kontekstu. Računar `localhost` smatra bezbednim, a telefon adresu računara u mreži ne, pa je
+potreban HTTPS sa sertifikatom kome telefon veruje. Ništa se ne preuzima: koristi se `openssl` koji dolazi
+uz Git za Windows.
+
+```bash
+# u Git Bash-u (ne u PowerShell-u: tamo `bash` može da bude WSL, koji vidi drugu mrežnu adresu)
+# jednom, i kad se promeni adresa računara: CA se pravi u ~/.strength-planner-ca, sertifikat u .certs/
+scripts/local-https.sh
+
+# dva razvojna servera, svaki u svom terminalu
+dotnet run --project src/StrengthPlanner.API --launch-profile http
+npm --prefix strength-planner-web run start:lan
+```
+
+Zatim jednom instaliraj `.certs/strength-planner-ca.crt` na telefon kao pouzdan sertifikat
+(koraci za Android i iPhone ispisuje skripta) i otvori `https://<adresa računara>:4200`.
+
+Posle ponovnog pokretanja skripte treba ponovo pokrenuti `start:lan`: server čita sertifikat samo pri
+pokretanju. Dok `start:lan` radi, aplikaciji (i API-ju kroz proksi, bez prijave) može da pristupi svaki
+uređaj u istoj mreži: koristi se samo u poverljivoj mreži.
+
+Telefon traži samo razvojni server aplikacije: on prosleđuje `/api` na API na računaru
+(`strength-planner-web/proxy.conf.json`), pa API ne mora da bude dostupan sa telefona i nema CORS-a ni
+mešovitog sadržaja. Obična komanda `npm start` ostaje kakva je bila. Detalji i ograničenja:
+`docs/features/local-https.md`.
+
 ## Pokretanje za odbranu
 
 Iz korena projekta pokreni:
