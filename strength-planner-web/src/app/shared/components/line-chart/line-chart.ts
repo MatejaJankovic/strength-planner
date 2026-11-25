@@ -21,6 +21,31 @@ import { ThemeService } from '../../../core/theme/theme.service';
 
 Chart.register(LineController, LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Filler);
 
+export interface ChartColors {
+  primary: string;
+  ink: string;
+  /** Tekst na `ink` pozadini (tooltip): u tamnoj temi je `ink` svetao, pa tekst na njemu mora da bude taman. */
+  onInk: string;
+  muted: string;
+  border: string;
+}
+
+/**
+ * Boje grafikona iz tokena teme. Platno ne zna za CSS, pa se vrednosti čitaju pri crtanju; rezervne su
+ * svetle vrednosti iz `styles.scss`, za slučaj da token ne postoji.
+ */
+export function chartColors(css: { getPropertyValue(name: string): string }): ChartColors {
+  const read = (name: string, fallback: string) => css.getPropertyValue(name).trim() || fallback;
+
+  return {
+    primary: read('--color-primary', '#0e5c63'),
+    ink: read('--color-ink', '#14151a'),
+    onInk: read('--color-on-ink', '#ffffff'),
+    muted: read('--color-muted', '#66707c'),
+    border: read('--color-border', '#dce1e6'),
+  };
+}
+
 @Component({
   selector: 'app-line-chart',
   template: `<div class="chart"><canvas #canvas></canvas></div>`,
@@ -56,12 +81,7 @@ export class LineChart implements OnDestroy {
 
     this.chart?.destroy();
 
-    const css = getComputedStyle(document.documentElement);
-    const primary = css.getPropertyValue('--color-primary').trim() || '#0e5c63';
-    const ink = css.getPropertyValue('--color-ink').trim() || '#14151a';
-    const onInk = css.getPropertyValue('--color-on-ink').trim() || '#ffffff';
-    const muted = css.getPropertyValue('--color-muted').trim() || '#66707c';
-    const border = css.getPropertyValue('--color-border').trim() || '#dce1e6';
+    const { primary, ink, onInk, muted, border } = chartColors(getComputedStyle(document.documentElement));
     const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const tabular = { family: 'Space Grotesk, Inter, sans-serif' };
 
