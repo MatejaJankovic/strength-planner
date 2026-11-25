@@ -63,7 +63,7 @@ form {
 }
 
 .field__error {
-  color: var(--color-above, #e4572e);
+  color: var(--color-above);
   font-size: 0.8rem;
   margin: 0;
 }
@@ -79,7 +79,7 @@ form {
 }
 
 .control--invalid {
-  border-color: var(--color-above, #e4572e);
+  border-color: var(--color-above);
 }
 
 .btn {
@@ -97,7 +97,7 @@ form {
 
 .btn--primary {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-primary);
 
   &:disabled {
     cursor: default;
@@ -122,13 +122,13 @@ form {
 }
 
 .alert--error {
-  background: color-mix(in srgb, #e4572e 12%, transparent);
-  color: var(--color-above, #e4572e);
+  background: color-mix(in srgb, var(--color-above) 12%, transparent);
+  color: var(--color-above);
 }
 
 .alert--ok {
-  background: color-mix(in srgb, #1f9e8a 12%, transparent);
-  color: var(--color-optimal, #1f9e8a);
+  background: color-mix(in srgb, var(--color-optimal) 12%, transparent);
+  color: var(--color-optimal);
 }
 
 .sr-only {

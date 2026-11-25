@@ -11,10 +11,10 @@
 
 .panel__error {
   align-items: center;
-  background: color-mix(in srgb, var(--volume-above) 12%, white);
-  border: 1px solid color-mix(in srgb, var(--volume-above) 45%, white);
+  background: color-mix(in srgb, var(--volume-above) 12%, var(--color-elevated));
+  border: 1px solid color-mix(in srgb, var(--volume-above) 45%, var(--color-elevated));
   border-radius: 0.55rem;
-  color: #8a2f18;
+  color: var(--color-danger-ink);
   display: flex;
   font-size: 0.88rem;
   font-weight: 600;
@@ -35,7 +35,7 @@
   background: var(--color-primary);
   border: 0;
   border-radius: 0.5rem;
-  color: #fff;
+  color: var(--color-on-primary);
   cursor: pointer;
   display: inline-flex;
   font-weight: 800;
@@ -91,7 +91,7 @@
 
 .week__head {
   align-items: center;
-  background: color-mix(in srgb, var(--color-primary) 6%, white);
+  background: color-mix(in srgb, var(--color-primary) 6%, var(--color-elevated));
   border-bottom: 1px solid var(--color-border);
   display: flex;
   gap: 0.6rem;
@@ -100,7 +100,7 @@
 }
 
 .week--deload .week__head {
-  background: color-mix(in srgb, var(--color-accent) 16%, white);
+  background: color-mix(in srgb, var(--color-accent) 16%, var(--color-elevated));
 }
 
 .week__title {
@@ -113,7 +113,7 @@
   align-items: center;
   background: var(--color-accent);
   border-radius: 999px;
-  color: #3d2c00;
+  color: var(--color-accent-ink-strong);
   display: inline-flex;
   font-size: 0.76rem;
   font-weight: 800;
@@ -151,7 +151,7 @@
 }
 
 .session--next {
-  background: color-mix(in srgb, var(--color-accent) 9%, white);
+  background: color-mix(in srgb, var(--color-accent) 9%, var(--color-elevated));
   box-shadow: inset 0.28rem 0 0 0 var(--color-accent);
 }
 
@@ -197,7 +197,7 @@
 // Vežbe bez poznatog maksimuma. Napomena, ne prepreka: plan radi i bez njih, samo prvi put
 // težinu unosi vežbač. Rad traži da se to kaže, a ne da se ćuti.
 .missing {
-  background: color-mix(in srgb, var(--color-primary) 7%, white);
+  background: color-mix(in srgb, var(--color-primary) 7%, var(--color-elevated));
   border-radius: 0.6rem;
   display: grid;
   gap: 0.6rem;

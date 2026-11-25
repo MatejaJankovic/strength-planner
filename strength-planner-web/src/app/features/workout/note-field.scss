@@ -3,7 +3,7 @@
 }
 
 .note {
-  background: color-mix(in srgb, var(--color-accent) 10%, white);
+  background: color-mix(in srgb, var(--color-accent) 10%, var(--color-elevated));
   border-left: 3px solid var(--color-accent);
   border-radius: 0.4rem;
   display: grid;
@@ -54,12 +54,12 @@
 }
 
 .note__count--full {
-  color: #97371f;
+  color: var(--color-above-ink);
   font-weight: 700;
 }
 
 .note__error {
-  color: #8a2f18;
+  color: var(--color-danger-ink);
   font-size: 0.85rem;
   font-weight: 600;
   margin: 0;
@@ -97,7 +97,7 @@
 .note__btn--primary {
   background: var(--color-primary);
   border-color: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-primary);
 }
 
 .note__btn--add {

@@ -26,9 +26,9 @@
 }
 
 .panel__error {
-  background: color-mix(in srgb, var(--volume-above) 12%, white);
-  border: 1px solid color-mix(in srgb, var(--volume-above) 45%, white);
-  color: #8a2f18;
+  background: color-mix(in srgb, var(--volume-above) 12%, var(--color-elevated));
+  border: 1px solid color-mix(in srgb, var(--volume-above) 45%, var(--color-elevated));
+  color: var(--color-danger-ink);
   font-size: 0.88rem;
 }
 
@@ -38,7 +38,7 @@
   align-items: center;
   background: var(--color-primary);
   border: 0;
-  color: #fff;
+  color: var(--color-on-primary);
   cursor: pointer;
   display: inline-flex;
   font-weight: 800;
@@ -122,7 +122,7 @@
 }
 
 .done-note {
-  background: color-mix(in srgb, var(--color-primary) 8%, white);
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-elevated));
   color: var(--color-primary);
 }
 
@@ -159,13 +159,13 @@
 }
 
 .done-note--skipped {
-  background: color-mix(in srgb, var(--color-muted) 12%, white);
+  background: color-mix(in srgb, var(--color-muted) 12%, var(--color-elevated));
   color: var(--color-muted);
 }
 
 .cta--finish {
   background: var(--color-accent);
-  color: #3d2c00;
+  color: var(--color-accent-ink-strong);
 }
 
 .cta:disabled {
@@ -175,9 +175,9 @@
 
 .cta__spinner {
   animation: wk-spin 0.7s linear infinite;
-  border: 2px solid rgb(255 255 255 / 45%);
+  border: 2px solid color-mix(in srgb, var(--color-on-primary) 45%, transparent);
   border-radius: 50%;
-  border-top-color: #fff;
+  border-top-color: var(--color-on-primary);
   height: 1.15rem;
   width: 1.15rem;
 }
@@ -217,7 +217,7 @@
 
 // Zašto predlog serija odstupa od propisa — bez ikone se razlika čita kao greška u planu.
 .card__hint--warn {
-  color: var(--color-above, #e4572e);
+  color: var(--color-above);
 }
 
 .card__hint--volume,
@@ -260,7 +260,7 @@
   align-items: center;
   background: var(--color-ink);
   border: 0;
-  color: #fff;
+  color: var(--color-on-ink);
   cursor: pointer;
   display: inline-flex;
   font-family: var(--font-display);
@@ -278,8 +278,8 @@
 }
 
 .reps__btn:disabled {
-  background: #d3d8de;
-  color: #7b8490;
+  background: var(--color-disabled-bg);
+  color: var(--color-disabled-ink);
   cursor: not-allowed;
 }
 
@@ -322,7 +322,7 @@
 .rir__btn.is-active {
   background: var(--color-primary);
   border-color: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-primary);
 }
 
 // Uz uključen otkaz RIR nema smisla; eksplicitna boja bi inače pregazila
@@ -354,9 +354,9 @@
 }
 
 .failure.is-active {
-  background: color-mix(in srgb, #e4572e 12%, transparent);
-  border-color: color-mix(in srgb, #e4572e 45%, transparent);
-  color: var(--color-above, #e4572e);
+  background: color-mix(in srgb, var(--color-above) 12%, transparent);
+  border-color: color-mix(in srgb, var(--color-above) 45%, transparent);
+  color: var(--color-above);
 }
 
 .entry__actions {
@@ -374,7 +374,7 @@
 .entry__add {
   background: var(--color-primary);
   border: 0;
-  color: #fff;
+  color: var(--color-on-primary);
   flex: 1;
   font-weight: 800;
 }
@@ -409,12 +409,12 @@
 }
 
 .set.is-editing {
-  background: color-mix(in srgb, var(--color-primary) 8%, white);
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-elevated));
 }
 
 .set__index {
   align-items: center;
-  background: #e8ecef;
+  background: var(--color-chip);
   border-radius: 0.4rem;
   color: var(--color-muted);
   display: inline-flex;
@@ -436,7 +436,7 @@
 }
 
 .set__rir--failure {
-  color: var(--color-above, #e4572e);
+  color: var(--color-above);
   font-weight: 800;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -465,7 +465,7 @@
   background: var(--color-ink);
   border-radius: 0.6rem;
   bottom: calc(90px + env(safe-area-inset-bottom));
-  color: #fff;
+  color: var(--color-on-ink);
   display: flex;
   font-weight: 700;
   gap: 0.5rem;

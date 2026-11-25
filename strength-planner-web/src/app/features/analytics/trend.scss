@@ -57,7 +57,7 @@
 .range__btn.is-active {
   background: var(--color-primary);
   border-color: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-primary);
 }
 
 .t-note {
@@ -66,7 +66,7 @@
 }
 
 .t-note--error {
-  color: var(--color-above, #e4572e);
+  color: var(--color-above);
 }
 
 .t-note--scale {
@@ -113,7 +113,7 @@
 }
 
 .trow__tag {
-  background: color-mix(in srgb, var(--color-accent, #f2a900) 18%, transparent);
+  background: color-mix(in srgb, var(--color-accent) 18%, transparent);
   border-radius: 999px;
   color: var(--color-muted);
   font-size: 0.72rem;
@@ -128,7 +128,7 @@
 }
 
 .track {
-  background: var(--color-surface, #eef1f3);
+  background: var(--color-surface);
   border-radius: 999px;
   height: 0.55rem;
   overflow: hidden;
@@ -148,7 +148,7 @@
   background: var(--color-primary);
   border: 0;
   border-radius: 0.5rem;
-  color: #fff;
+  color: var(--color-on-primary);
   cursor: pointer;
   font-weight: 800;
   justify-self: start;
