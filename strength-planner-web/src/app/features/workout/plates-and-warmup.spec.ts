@@ -40,9 +40,18 @@ describe('platesFor', () => {
     }
   });
 
-  it('pokretni zarez ne kvari zbir malih ploča (2.5 + 1.25)', () => {
-    // 47.5: po strani 13.75 = 10 + 2.5 + 1.25.
+  it('male ploče se sabiraju tačno (47.5: po strani 13.75 = 10 + 2.5 + 1.25)', () => {
     expect(platesFor(47.5)).toEqual({ plates: [10, 2.5, 1.25], remainderPerSideKg: 0, belowBar: false });
+  });
+
+  it('korak koji nije stepen dvojke ne ostavlja šum pokretnog zareza u ostatku', () => {
+    // 54.3 kg (korak 2.33 daje ovakve težine): po strani 17.15 = 15 + 1.25, ostaje 0.9.
+    // Bez zaokruživanja ostatak je 0.8999999999999986 i tako se ispisuje.
+    const load = platesFor(54.3);
+
+    expect(load.plates).toEqual([15, 1.25]);
+    expect(load.remainderPerSideKg).toBe(0.9);
+    expect(platesLabel(load)).toContain('0,9 kg po strani');
   });
 
   it('drugi skup ploča (bez 1.25) menja rezultat', () => {
@@ -105,6 +114,13 @@ describe('warmupSets', () => {
       { weightKg: 20, reps: 5 },
       { weightKg: 27.5, reps: 1 },
     ]);
+  });
+
+  it('ni zaokruživanje na veliki korak ne sme da da težinu koja nije ispod radne', () => {
+    // 80% od 90 kg je 72, a korak od 100 kg to zaokružuje na 100: preko radne težine.
+    const sets = warmupSets(90, 100);
+
+    expect(sets.every((set) => set.weightKg < 90)).toBe(true);
   });
 
   it('nevažan korak ili težina ne daju zagrevanje', () => {

@@ -11,7 +11,11 @@ export interface PlateLoad {
   belowBar: boolean;
 }
 
-/** Zaokruživanje na dve decimale: 2.5 + 1.25 u pokretnom zarezu nije uvek tačno 3.75. */
+/**
+ * Zaokruživanje na dve decimale. Ploče iz teretane (višekratnici od 1.25) su tačne u pokretnom zarezu,
+ * ali težina može da dođe sa korakom koji nije stepen dvojke (npr. 2.33 kg): ostatak bi tada izašao
+ * kao 0.8999999999999986 i tako bi se i ispisao.
+ */
 function round2(value: number): number {
   return Math.round(value * 100) / 100;
 }
