@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using StrengthPlanner.Application.Security;
 using StrengthPlanner.Domain.Algorithms;
 using StrengthPlanner.Domain.Entities;
 
@@ -21,6 +22,9 @@ public class WorkoutSessionConfiguration : IEntityTypeConfiguration<WorkoutSessi
         builder.Property(s => s.Status)
             .HasConversion<string>()
             .HasMaxLength(16);
+
+        builder.Property(s => s.Note)
+            .HasMaxLength(NotePolicy.MaximumLength);
 
         // Kaskadni lanac: Sessions -> ExercisePlans.
         builder.HasMany(s => s.ExercisePlans)

@@ -106,6 +106,36 @@ describe('TrainingHistory', () => {
     expect(rendered).toContain('čet, 12. nov');
   });
 
+  it('beleška uz trening se vidi u istoriji, a trening bez nje ništa ne dobija', () => {
+    open();
+    request(1).flush(
+      pageOf(
+        [
+          entry('a', new Date(2026, 10, 12, 12), { note: 'Spavao 5h, bolelo koleno' }),
+          entry('b', new Date(2026, 10, 5, 12)),
+        ],
+        2,
+      ),
+    );
+
+    const rendered = text();
+    const notes = Array.from(fixture.nativeElement.querySelectorAll('.entry__note')).map(
+      (element) => (element as HTMLElement).textContent?.trim(),
+    );
+
+    expect(rendered).toContain('Spavao 5h, bolelo koleno');
+    expect(notes).toEqual(['Spavao 5h, bolelo koleno']);
+  });
+
+  it('beleška se vidi i uz preskočen trening', () => {
+    open();
+    request(1).flush(
+      pageOf([entry('a', new Date(2026, 10, 12, 12), { status: 'Skipped', note: 'Bolestan' })], 1),
+    );
+
+    expect(text()).toContain('Bolestan');
+  });
+
   it('preskočen trening je označen, nema serija, a nepoznat dan se ne piše kao datum', () => {
     open();
     request(1).flush(

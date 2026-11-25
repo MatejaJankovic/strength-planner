@@ -14,6 +14,12 @@ public class WorkoutSessionDto
     public DateTime? Date { get; set; }
     public string Status { get; set; } = string.Empty;
 
+    /// <summary>
+    /// The lifter's note about this workout; null when there is none. Filled on the session endpoint
+    /// the workout screen reads, not on the plan and macrocycle endpoints, which build this DTO too.
+    /// </summary>
+    public string? Note { get; set; }
+
     /// <summary>Set only for a finished workout: whether it can still be corrected.</summary>
     public SessionCorrectionDto? Correction { get; set; }
     public List<ExercisePlanDto> ExercisePlans { get; set; } = new();

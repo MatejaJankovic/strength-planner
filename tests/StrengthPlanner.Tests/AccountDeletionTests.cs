@@ -147,6 +147,8 @@ public class AccountDeletionTests
     [InlineData(typeof(UserWorkoutTemplateExercise), nameof(UserWorkoutTemplateExercise.ExerciseId))]
     [InlineData(typeof(ExercisePlan), nameof(ExercisePlan.ExerciseId))]
     [InlineData(typeof(OneRepMaxRecord), nameof(OneRepMaxRecord.ExerciseId))]
+    [InlineData(typeof(UserExerciseSetting), nameof(UserExerciseSetting.ExerciseId))]
+    [InlineData(typeof(UserExerciseNote), nameof(UserExerciseNote.ExerciseId))]
     public void ExerciseIsGuardedAgainstDeletionWhileReferenced(Type entityType, string propertyName)
     {
         var entity = Model.FindEntityType(entityType)

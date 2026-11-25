@@ -9,6 +9,7 @@ using StrengthPlanner.Infrastructure.Authentication;
 using StrengthPlanner.Infrastructure.Exercises;
 using StrengthPlanner.Infrastructure.Identity;
 using StrengthPlanner.Infrastructure.Mesocycles;
+using StrengthPlanner.Infrastructure.Notes;
 using StrengthPlanner.Infrastructure.OneRepMax;
 using StrengthPlanner.Infrastructure.Persistence;
 using StrengthPlanner.Infrastructure.Templates;
@@ -82,6 +83,7 @@ public static class DependencyInjection
         services.AddScoped<ISessionRevisionService, SessionRevisionService>();
         services.AddScoped<ITrainingHistoryService, TrainingHistoryService>();
         services.AddScoped<IExerciseSubstitutionService, ExerciseSubstitutionService>();
+        services.AddScoped<IWorkoutNoteService, WorkoutNoteService>();
         services.AddScoped<VolumeLandmarkService>();
         services.AddScoped<WeeklyVolumeTargetResolver>();
         services.AddScoped<WeeklySetPlanner>();

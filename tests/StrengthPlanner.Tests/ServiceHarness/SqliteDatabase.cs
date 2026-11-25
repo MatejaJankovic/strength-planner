@@ -54,14 +54,49 @@ internal sealed class SqliteDatabase : IDisposable
     /// <summary>The one account every row belongs to; the ownership filters read it.</summary>
     public Guid UserId { get; } = Guid.NewGuid();
 
-    /// <summary>A fresh context, so a test reads what was saved rather than what is tracked.</summary>
-    public AppDbContext NewContext()
+    /// <summary>
+    /// A fresh context, so a test reads what was saved rather than what is tracked. Interceptors let a
+    /// test do something in the middle of a call, such as a second writer slipping in between a read
+    /// and the save that follows it, which is the only way to make a race happen on purpose.
+    /// </summary>
+    public AppDbContext NewContext(params Microsoft.EntityFrameworkCore.Diagnostics.IInterceptor[] interceptors)
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(_connection)
+            .AddInterceptors(interceptors)
+            .Options;
+
+        return new AppDbContext(options, new FixedUser(UserId));
+    }
+
+    /// <summary>
+    /// A second account, for the tests that must show one lifter cannot see or change what another
+    /// lifter owns. The harness account stays the one every other test works as.
+    /// </summary>
+    public Guid AddUser()
+    {
+        var id = Guid.NewGuid();
+        using var db = NewContext();
+        db.Users.Add(new ApplicationUser
+        {
+            Id = id,
+            UserName = $"{id}@example.test",
+            NormalizedUserName = $"{id}@EXAMPLE.TEST".ToUpperInvariant(),
+            Email = $"{id}@example.test",
+            NormalizedEmail = $"{id}@EXAMPLE.TEST".ToUpperInvariant()
+        });
+        db.SaveChanges();
+        return id;
+    }
+
+    /// <summary>A context that reads and writes as another account (see <see cref="AddUser"/>).</summary>
+    public AppDbContext NewContextFor(Guid userId)
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseSqlite(_connection)
             .Options;
 
-        return new AppDbContext(options, new FixedUser(UserId));
+        return new AppDbContext(options, new FixedUser(userId));
     }
 
     /// <summary>Adds a system exercise and returns its id.</summary>

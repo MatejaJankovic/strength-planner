@@ -33,6 +33,14 @@
 
   <app-rest-timer />
 
+  <app-note-field
+    label="Beleška o treningu"
+    addLabel="Dodaj belešku o treningu"
+    kind="session"
+    [targetId]="ws.id"
+    [value]="ws.note"
+  />
+
   @if (summary(); as result) {
     <app-completion-summary [outcome]="result" [title]="summaryTitle()" />
     @for (text of revisionTexts(); track text) {
@@ -117,6 +125,13 @@
             <app-stat-chip label="Opseg" [value]="repRange(plan)" />
             <app-stat-chip label="RIR cilj" [value]="plan.targetRir" />
           </div>
+          <app-note-field
+            label="Beleška uz vežbu"
+            addLabel="Dodaj belešku uz vežbu"
+            kind="exercise"
+            [targetId]="plan.exerciseId"
+            [value]="plan.exerciseNote"
+          />
           @if (plan.targetSets !== plan.prescribedSets) {
             <p class="card__hint card__hint--volume">
               <mat-icon aria-hidden="true">tune</mat-icon>

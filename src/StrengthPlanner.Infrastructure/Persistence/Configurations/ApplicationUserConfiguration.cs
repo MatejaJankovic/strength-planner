@@ -32,6 +32,12 @@ public class ApplicationUserConfiguration : IEntityTypeConfiguration<Application
             .HasForeignKey(setting => setting.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // Beleške uz vežbe: isto kao podešavanja, nestaju sa nalogom.
+        builder.HasMany<UserExerciseNote>()
+            .WithOne()
+            .HasForeignKey(note => note.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         builder.HasMany<UserVolumeLandmark>()
             .WithOne()
             .HasForeignKey(landmark => landmark.UserId)

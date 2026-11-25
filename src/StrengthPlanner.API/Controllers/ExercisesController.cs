@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using StrengthPlanner.Application.DTOs.Exercises;
+using StrengthPlanner.Application.DTOs.Notes;
 using StrengthPlanner.Application.Interfaces;
 
 namespace StrengthPlanner.API.Controllers;
@@ -11,10 +12,12 @@ namespace StrengthPlanner.API.Controllers;
 public class ExercisesController : AuthorizedControllerBase
 {
     private readonly IExerciseService _exerciseService;
+    private readonly IWorkoutNoteService _notes;
 
-    public ExercisesController(IExerciseService exerciseService)
+    public ExercisesController(IExerciseService exerciseService, IWorkoutNoteService notes)
     {
         _exerciseService = exerciseService;
+        _notes = notes;
     }
 
     /// <summary>Katalog vežbi vidljivih korisniku (sistemske + njegove custom).</summary>
@@ -62,6 +65,22 @@ public class ExercisesController : AuthorizedControllerBase
             cancellationToken);
 
         return Ok(exercise);
+    }
+
+    /// <summary>
+    /// Postavlja ili briše korisnikovu belešku uz vežbu (podešavanje sprave, napomena). Prikazuje se
+    /// pri svakom treningu te vežbe.
+    /// </summary>
+    [HttpPut("{exerciseId:guid}/note")]
+    [ProducesResponseType(typeof(NoteDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SetNote(
+        Guid exerciseId,
+        SetNoteRequest request,
+        CancellationToken cancellationToken)
+    {
+        return Ok(await _notes.SetExerciseNoteAsync(GetUserId(), exerciseId, request.Note, cancellationToken));
     }
 
     /// <summary>Nazivi mišićnih grupa (za formu dodavanja vežbe).</summary>

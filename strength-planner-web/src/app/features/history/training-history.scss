@@ -152,3 +152,16 @@
 .entry__exercises {
   overflow-wrap: anywhere;
 }
+
+// Beleška uz trening, skraćena na dva reda: cela se vidi na ekranu treninga.
+.entry__note {
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--color-muted);
+  display: -webkit-box;
+  font-size: 0.82rem;
+  font-style: italic;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}

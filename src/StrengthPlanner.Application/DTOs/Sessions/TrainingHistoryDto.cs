@@ -38,6 +38,9 @@ public class HistoryEntryDto
     public string BlockName { get; set; } = string.Empty;
     public string Goal { get; set; } = string.Empty;
 
+    /// <summary>The lifter's note about the workout; null when there is none.</summary>
+    public string? Note { get; set; }
+
     public int SetCount { get; set; }
 
     /// <summary>Weight x reps over every set, with the body mass the movement carries.</summary>

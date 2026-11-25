@@ -51,7 +51,8 @@ public class TrainingHistoryService : ITrainingHistoryService
                 session.TrainingWeek.MesocycleId,
                 session.TrainingWeek.Mesocycle.Name,
                 session.TrainingWeek.Mesocycle.Goal,
-                session.TrainingWeek.Mesocycle.StartDate))
+                session.TrainingWeek.Mesocycle.StartDate,
+                session.Note))
             .ToListAsync(cancellationToken);
 
         var lastSetBySession = (await _db.SetLogs
@@ -139,6 +140,7 @@ public class TrainingHistoryService : ITrainingHistoryService
                     PlanName = planNameByMesocycle.GetValueOrDefault(row.Header.MesocycleId, row.Header.BlockName),
                     BlockName = row.Header.BlockName,
                     Goal = row.Header.Goal.ToString(),
+                    Note = row.Header.Note,
                     SetCount = sets.Count,
                     TonnageKg = sets.Sum(set => (set.WeightKg + set.BodyweightLoadKg) * set.Reps),
                     Exercises = sessionPlans
@@ -169,5 +171,6 @@ public class TrainingHistoryService : ITrainingHistoryService
         Guid MesocycleId,
         string BlockName,
         Goal Goal,
-        DateTime MesocycleStart);
+        DateTime MesocycleStart,
+        string? Note);
 }

@@ -568,6 +568,33 @@ namespace StrengthPlanner.Infrastructure.Persistence.Migrations
                     b.ToTable("TrainingWeeks");
                 });
 
+            modelBuilder.Entity("StrengthPlanner.Domain.Entities.UserExerciseNote", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ExerciseId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExerciseId");
+
+                    b.HasIndex("UserId", "ExerciseId")
+                        .IsUnique();
+
+                    b.ToTable("UserExerciseNotes");
+                });
+
             modelBuilder.Entity("StrengthPlanner.Domain.Entities.UserExerciseSetting", b =>
                 {
                     b.Property<Guid>("Id")
@@ -788,6 +815,10 @@ namespace StrengthPlanner.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<bool>("RevisionPending")
                         .HasColumnType("boolean");
@@ -1048,6 +1079,23 @@ namespace StrengthPlanner.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("Mesocycle");
+                });
+
+            modelBuilder.Entity("StrengthPlanner.Domain.Entities.UserExerciseNote", b =>
+                {
+                    b.HasOne("StrengthPlanner.Domain.Entities.Exercise", "Exercise")
+                        .WithMany()
+                        .HasForeignKey("ExerciseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("StrengthPlanner.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Exercise");
                 });
 
             modelBuilder.Entity("StrengthPlanner.Domain.Entities.UserExerciseSetting", b =>
