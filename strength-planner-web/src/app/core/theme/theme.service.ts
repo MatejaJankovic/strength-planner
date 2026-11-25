@@ -63,8 +63,9 @@ export class ThemeService {
   constructor() {
     const onSystemChange = (event: MediaQueryListEvent) => this.systemDark.set(event.matches);
 
-    this.systemQuery?.addEventListener('change', onSystemChange);
-    inject(DestroyRef).onDestroy(() => this.systemQuery?.removeEventListener('change', onSystemChange));
+    // `?.` i na metodama: stariji Safari (do 14) ima `matchMedia`, ali bez `addEventListener` na rezultatu.
+    this.systemQuery?.addEventListener?.('change', onSystemChange);
+    inject(DestroyRef).onDestroy(() => this.systemQuery?.removeEventListener?.('change', onSystemChange));
 
     effect(() => this.apply(this.preferenceSignal(), this.effective()));
   }

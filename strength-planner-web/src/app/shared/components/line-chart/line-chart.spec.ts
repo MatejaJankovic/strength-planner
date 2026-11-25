@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { THEME_STORAGE_KEY, ThemeService } from '../../../core/theme/theme.service';
-import { LineChart, chartColors } from './line-chart';
+import { LineChart, chartColors, tooltipColors } from './line-chart';
 
 describe('chartColors', () => {
   const read = (values: Record<string, string>) => ({ getPropertyValue: (name: string) => values[name] ?? '' });
@@ -27,6 +27,12 @@ describe('chartColors', () => {
       muted: '#66707c',
       border: '#dce1e6',
     });
+  });
+
+  it('tooltip: pozadina je „ink", a tekst naslova i sadržaja „on-ink" (ne beo u obe teme)', () => {
+    const dark = chartColors(read({ '--color-ink': '#e8ebef', '--color-on-ink': '#14151a' }));
+
+    expect(tooltipColors(dark)).toEqual({ backgroundColor: '#e8ebef', titleColor: '#14151a', bodyColor: '#14151a' });
   });
 
   it('tekst tooltip-a se ne poklapa sa njegovom pozadinom u obe teme', () => {

@@ -22,8 +22,9 @@ import { ThemePicker } from '../../shared/components/theme-picker/theme-picker';
 /**
  * Podešavanja: izgled aplikacije (tema), pa lozinka, odjava i brisanje naloga.
  *
- * Izgled se menja odmah i važi samo za ovaj telefon. Ostale tri stvari dele jedno svojstvo — tiču se pristupa nalogu, a ne trenažnih podataka —
- * pa su izdvojene sa ekrana profila, koji je sada pregled i ulaz u ostale ekrane.
+ * Izgled se menja odmah i važi samo za ovaj telefon. Ostale tri stvari dele jedno svojstvo — tiču se
+ * pristupa nalogu, a ne trenažnih podataka — pa su izdvojene sa ekrana profila, koji je sada pregled
+ * i ulaz u ostale ekrane.
  */
 @Component({
   selector: 'app-settings-page',

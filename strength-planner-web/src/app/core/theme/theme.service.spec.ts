@@ -187,6 +187,15 @@ describe('ThemeService', () => {
     expect(attribute()).toBe('dark');
   });
 
+  it('matchMedia bez addEventListener (Safari do 14): servis se pravi, a sistemska tema se čita jednom', () => {
+    window.matchMedia = vi.fn(() => ({ matches: true }) as unknown as MediaQueryList);
+
+    const theme = create();
+
+    expect(theme.effective()).toBe('dark');
+    expect(() => TestBed.resetTestingModule()).not.toThrow();
+  });
+
   it('bez matchMedia (stariji pregledač) tema je svetla, a izbor i dalje radi', () => {
     window.matchMedia = undefined as unknown as typeof window.matchMedia;
 

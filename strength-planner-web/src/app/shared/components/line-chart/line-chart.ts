@@ -30,6 +30,11 @@ export interface ChartColors {
   border: string;
 }
 
+/** Boje tooltip-a: tekst na pozadini „ink" mora da prati tu pozadinu, a ne da ostane beo. */
+export function tooltipColors(colors: ChartColors): { backgroundColor: string; titleColor: string; bodyColor: string } {
+  return { backgroundColor: colors.ink, titleColor: colors.onInk, bodyColor: colors.onInk };
+}
+
 /**
  * Boje grafikona iz tokena teme. Platno ne zna za CSS, pa se vrednosti čitaju pri crtanju; rezervne su
  * svetle vrednosti iz `styles.scss`, za slučaj da token ne postoji.
@@ -81,7 +86,8 @@ export class LineChart implements OnDestroy {
 
     this.chart?.destroy();
 
-    const { primary, ink, onInk, muted, border } = chartColors(getComputedStyle(document.documentElement));
+    const colors = chartColors(getComputedStyle(document.documentElement));
+    const { primary, muted, border } = colors;
     const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const tabular = { family: 'Space Grotesk, Inter, sans-serif' };
 
@@ -94,6 +100,7 @@ export class LineChart implements OnDestroy {
             label: this.seriesLabel(),
             data: values,
             borderColor: primary,
+            // Dve cifre providnosti na kraju: `--color-primary` mora da ostane `#rrggbb` (proverava skripta za kontrast).
             backgroundColor: `${primary}1f`,
             borderWidth: 2,
             tension: 0.25,
@@ -113,9 +120,7 @@ export class LineChart implements OnDestroy {
           tooltip: {
             // Pozadina je „ink" (u tamnoj temi svetla), pa i tekst na njoj mora da prati: podrazumevani beli
             // tekst na svetloj pozadini ne bi bio čitljiv.
-            backgroundColor: ink,
-            titleColor: onInk,
-            bodyColor: onInk,
+            ...tooltipColors(colors),
             titleFont: tabular,
             bodyFont: tabular,
             callbacks: { label: (item) => `${item.formattedValue} kg` },
