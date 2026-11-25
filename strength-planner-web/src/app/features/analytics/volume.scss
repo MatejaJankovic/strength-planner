@@ -149,10 +149,12 @@
   // pocinju na svojoj tacki pa deluju pomereno udesno za svoju sirinu.
   transform: translateX(-50%);
   width: 2px;
+  // Oreol samo u tamnoj temi (u svetloj je providan): svetla crta na svetloj boji trake bi inače nestala.
+  box-shadow: 0 0 0 1px var(--color-marker-halo);
 }
 
 .marker--mev {
-  background: rgb(20 21 26 / 45%);
+  background: color-mix(in srgb, var(--color-ink) 45%, transparent);
 }
 
 .marker--mrv {

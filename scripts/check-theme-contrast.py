@@ -15,9 +15,10 @@ Izlaz je tabela; kod izlaza je 1 ako neki par u TAMNOJ temi pada ispod praga. Sv
 Uz kontrast proverava još dve stvari koje nijedan test ne vidi:
   - da `public/theme-init.js` (skripta koja postavlja temu pre prvog iscrtavanja) i `theme.service.ts` imaju
     isti ključ u pregledaču i iste boje trake pregledača;
-  - da u stilovima komponenata nema boje napisane kao vrednost (heksadecimalno, `white`, `rgb(...)`): takva
-    boja ostaje svetla u tamnoj temi. Izuzeci su senke i zatamnjenje (tamno na svetlom i na tamnom) i
-    prsten fokusa, koji se namerno meša sa belim.
+  - da u stilovima komponenata nema boje napisane kao vrednost (heksadecimalno, imenovana, `rgb()`, `hsl()`,
+    `oklch()` i slično): takva boja ostaje svetla u tamnoj temi. Izuzeci su samo senke (`rgb(20 21 26 / N%)`
+    u redu sa `box-shadow`: tamno na svetlom i na tamnom) i prsten fokusa, koji se namerno meša sa belim;
+  - da je `--color-primary` heksadecimalna vrednost sa šest cifara u obe teme (grafikon na nju dodaje providnost).
 """
 from __future__ import annotations
 
@@ -29,7 +30,14 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 STYLES = ROOT / "strength-planner-web" / "src" / "styles.scss"
 
 
+def strip_comments(text: str) -> str:
+    """Skida `/* ... */` i `// ...` komentare; redovi ostaju, da brojevi redova važe. `//` posle `:` (adresa) ostaje."""
+    text = re.sub(r"/\*.*?\*/", lambda match: "\n" * match.group(0).count("\n"), text, flags=re.S)
+    return "\n".join(re.sub(r"(?<![:\w])//.*$", "", line) for line in text.split("\n"))
+
+
 def read_tokens(text: str) -> tuple[dict[str, str], dict[str, str]]:
+    text = strip_comments(text)
     light_block = re.search(r":root\s*\{(.*?)\n\}", text, re.S).group(1)
     dark_block = re.search(r"@mixin dark-tokens\s*\{(.*?)\n\}", text, re.S).group(1)
     pattern = re.compile(r"--([\w-]+):\s*([^;]+);")
@@ -81,7 +89,12 @@ class Theme:
         return mix(self.rgb(name), percent, self.rgb(base))
 
 
-# (opis, tekst, pozadina, prag): tekst i pozadina su ili ime tokena ili ("tint", ime, procenat, osnova).
+def marker_backdrop(t: Theme):
+    """Na čemu stoji oznaka granice: oreol ako ga tema ima (tamna), inače sama traka (svetla)."""
+    return t.rgb("color-chip") if t.tokens["color-marker-halo"] == "transparent" else t.rgb("color-marker-halo")
+
+
+# (opis, tekst, pozadina, prag): boje su već izračunate (tintovi mešani kao u pregledaču).
 def pairs(theme: Theme):
     t = theme
     return [
@@ -109,6 +122,9 @@ def pairs(theme: Theme):
         ("onemogućeno dugme", t.rgb("color-disabled-ink"), t.rgb("color-disabled-bg"), 3.0),
         ("prsten fokusa na stranici", t.rgb("focus-ring"), t.rgb("color-surface"), 3.0),
         ("ivica kartice prema stranici", t.rgb("color-border"), t.rgb("color-surface"), 1.0),
+        ("oznaka MRV prema oreolu (ili traci)", t.rgb("color-ink"), marker_backdrop(t), 3.0),
+        ("oznaka MAV prema oreolu (ili traci)", t.rgb("color-accent"), marker_backdrop(t), 3.0),
+        ("oznaka MEV (ink 45%) prema oreolu (ili traci)", mix(t.rgb("color-ink"), 45, t.rgb("color-chip")), marker_backdrop(t), 3.0),
     ]
 
 
@@ -133,34 +149,61 @@ def check_init_script() -> list[str]:
     return problems
 
 
-ALLOWED_LITERALS = re.compile(
-    r"rgb\(20 21 26 / \d+%\)"  # senke i zatamnjenje: tamno na svetlom, i tamno na tamnom
-    r"|var\(--focus-ring\) 72%, white"  # prsten fokusa: namerno se meša sa belim
-    r"|white-space"
+SHADOW_RGB = re.compile(r"rgb\(20 21 26 / \d+%\)")  # senka: tamno na svetlom, i tamno na tamnom
+FOCUS_RING = re.compile(r"var\(--focus-ring\) 72%, white")  # prsten fokusa: namerno se meša sa belim
+LITERAL = re.compile(
+    r"#[0-9a-fA-F]{3,8}\b"
+    r"|\b(?:white|black|red|blue|green|gray|grey|orange|yellow|purple|pink|silver|navy|teal|maroon|aqua|lime|olive|fuchsia)\b(?!-)"
+    r"|\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\("
 )
 
 
 def check_stray_literals() -> list[str]:
     """Boje u stilovima komponenata moraju da dolaze iz tokena, ne da budu napisane."""
     problems = []
-    literal = re.compile(r"#[0-9a-fA-F]{3,8}\b|\bwhite\b|\bblack\b|rgba?\(")
 
     for sheet in sorted((APP / "src").rglob("*.scss")):
         if sheet.name == "styles.scss":
             continue
 
-        for number, line in enumerate(sheet.read_text(encoding="utf-8").splitlines(), start=1):
-            code = line.split("//")[0]
-            if literal.search(ALLOWED_LITERALS.sub("", code)):
+        for number, line in enumerate(strip_comments(sheet.read_text(encoding="utf-8")).split("\n"), start=1):
+            code = FOCUS_RING.sub("", line)
+            if "box-shadow" in code:
+                code = SHADOW_RGB.sub("", code)
+
+            if LITERAL.search(code):
                 problems.append(f"{sheet.relative_to(APP).as_posix()}:{number}: {line.strip()}")
 
     return problems
 
 
+def check_token_forms(light_tokens: dict[str, str], dark_tokens: dict[str, str]) -> list[str]:
+    """`--color-primary` mora da bude `#rrggbb` u obe teme: grafikon dodaje providnost kao dve cifre na kraju."""
+    problems = []
+
+    for label, tokens in (("svetla", light_tokens), ("tamna", dark_tokens)):
+        if not re.fullmatch(r"#[0-9a-fA-F]{6}", tokens["color-primary"]):
+            problems.append(f"{label} tema: --color-primary nije #rrggbb ({tokens['color-primary']})")
+
+    return problems
+
+
 def main() -> int:
+    # Izlaz je srpski: bez ovoga pada na Windows konzoli i pri preusmeravanju (cp1252).
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+
     light_tokens, dark_overrides = read_tokens(STYLES.read_text(encoding="utf-8"))
     dark_tokens = {**light_tokens, **dark_overrides}
     failed_dark = 0
+
+    # Prvo oblik tokena: sa vrednošću koju račun ne razume bilo bi bačen izuzetak umesto poruke koja kaže šta je loše.
+    form_problems = check_token_forms(light_tokens, dark_tokens)
+    if form_problems:
+        print("Oblik tokena:")
+        for problem in form_problems:
+            print("  " + problem)
+        return 1
 
     for label, theme in (("SVETLA", Theme(light_tokens)), ("TAMNA", Theme(dark_tokens))):
         print(f"\n{label} tema")
