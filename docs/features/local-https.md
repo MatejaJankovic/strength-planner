@@ -8,9 +8,12 @@ ne smatra, pa bi sve to na telefonu bilo tiho isključeno.
 ## Šta je urađeno
 
 - `scripts/local-https.sh` pravi lokalni sertifikacioni autoritet (jednom) i sertifikat servera za
-  `localhost`, ime računara i njegove IPv4 adrese u mreži (plus adrese zadate kao argumenti). Sve
-  ide u `.certs/`, koji je u `.gitignore`. Koristi samo `openssl` (dolazi uz Git za Windows); ništa se
-  ne preuzima. Sertifikat servera traje 397 dana (granica koju Apple dozvoljava), CA deset godina.
+  `localhost`, ime računara (golo i `ime.local`) i njegove IPv4 adrese u mreži (plus adrese i imena
+  zadata kao argumenti). **CA ide u `~/.strength-planner-ca`** (van repozitorijuma, zajednički za sve
+  kopije repozitorijuma: ovaj projekat se radi u više worktree-ova, a telefon ne sme da uči novi CA po
+  kopiji), **sertifikat i ključ servera u `.certs/`** (u `.gitignore` i `.dockerignore`), odakle ih čita
+  razvojni server. Koristi samo `openssl` (dolazi uz Git za Windows); ništa se ne preuzima. Sertifikat
+  servera traje 397 dana, CA deset godina.
 - Konfiguracija `lan` u Angularu (`npm run start:lan`): HTTPS sa tim sertifikatom, sluša na svim
   adresama, sopstveno okruženje (`environment.lan.ts`) sa relativnim `/api`, i proksi
   (`proxy.conf.json`) koji `/api` prosleđuje na API na računaru.
@@ -37,6 +40,34 @@ API pokretan sa `--launch-profile http` ostaje kakav je bio.
   lanac sa `CERT_TRUST_REVOCATION_STATUS_UNKNOWN`, jer privatni CA nema CRL. `openssl s_client` je isti
   lanac potvrdio, a `curl --ssl-no-revoke` takođe. Telefoni ne traže opoziv za korisnički instalirane CA.
 
+## Šta je pregled našao (ispravljeno)
+
+Pregled agentom je našao propuste u skripti, i svaki je ponovljen i ispravljen:
+
+- **Neuspelo potpisivanje je ostavljalo ključ koji ne odgovara sertifikatu, bez poruke.** Ključ se pravio
+  pre potpisivanja, a greške su išle u `/dev/null`: pogrešno otkucana adresa (`192.168.1.300`) je tiho
+  prekidala skriptu, a `start:lan` bi pao sa „key values mismatch", daleko od uzroka. Sada se sve pravi u
+  privremenom direktorijumu i seli tek kad lanac prođe proveru, greške se ispisuju, adrese se proveravaju
+  (okteti 0-255) i skripta ne ostavlja ni `.csr` ni `.ext`. Moja prva ispravka je pustila `192.168.1.300`
+  kao *ime* računara (`DNS:192.168.1.300`) i tiho napravila sertifikat; to je našao sopstveni test, pa
+  broj sa tačkama koji nije ispravna adresa sada prekida skriptu.
+- **Parsiranje `ipconfig` zavisi od jezika Windowsa**: izlaz je u kodnoj strani sistema, pa UTF-8 `sed`
+  pada na slovima pre „IPv4" i pravi smeće umesto adrese. Sada radi pod `LC_ALL=C`, i skripta
+  upozorava kad ne nađe nijednu adresu u mreži (sertifikat tada važi samo za `localhost`).
+- **Iz PowerShell-a `bash` može da bude WSL** (ovde je prvi na putanji `C:\Windows\System32\bash.exe`),
+  koji vidi drugu adresu: README i zaglavlje skripte sada kažu da se pokreće u Git Bash-u.
+- **CA je bio u radnom stablu**, pa je svaki worktree pravio svoj, a telefon bi skupljao „StrengthPlanner
+  lokalni CA" po kopiji. CA je sada u `~/.strength-planner-ca`.
+- **Polovina CA-a se tiho menjala novim** (poverenje na svakom telefonu bi nestalo): sada je greška.
+- Ključevi se prave sa `umask 077` i `chmod 600`; golo ime računara dobija i `ime.local`; IPv6 se preskače
+  umesto da uđe u sertifikat kao nevažeće ime; `.certs/` je i u `.dockerignore` (kontekst izgradnje API-ja
+  je koren repozitorijuma, pa bi ključ inače išao Docker-u).
+- **Pogrešan razlog za 397 dana**: Apple-ovo ograničenje važi za javne CA, ne za korisnički instalirane.
+  Rok je i dalje kratak, jer ključ stoji nešifrovan na disku.
+- Iz pregleda još: skripta ne radi na macOS-u (`declare -A`, `ipconfig`); pretpostavljeno je samo Git za
+  Windows. `lan` izgradnja je razvojna (`production: false`), pa će sledeća grana morati da registruje
+  service worker i ovde, ne samo u produkciji.
+
 ## Šta nije proveravano
 
 - **Instalacija CA-a na pravom telefonu i otvaranje aplikacije sa njega.** Nije bilo uređaja; lanac,
@@ -53,6 +84,10 @@ API pokretan sa `--launch-profile http` ostaje kakav je bio.
 - Ko ima `.certs/ca.key` može da izda sertifikat za bilo koji sajt telefonu koji veruje ovom CA-u. Ključ
   ne napušta računar, ne šalje se i ne commit-uje (`.certs/` je ignorisan), a CA se sa telefona uklanja
   kad pristup više nije potreban.
-- API ograničava broj zahteva po adresi pošiljaoca; kroz proksi svi zahtevi stižu sa `127.0.0.1`, pa
-  dele jedan budžet. Za jednog korisnika to nije problem.
+- API ograničava broj zahteva po adresi pošiljaoca (prijava 20 u minuti, registracija 5 na sat); kroz
+  proksi svi zahtevi stižu sa `127.0.0.1`, pa dele jedan budžet, a `X-Forwarded-For` se ne veruje (loopback
+  nije u poznatim mrežama, što je dobro: uređaj iz mreže ne može da se predstavi drugom adresom). Posledica
+  je da svaki uređaj u mreži, dok server radi, može sa oko 21 zahteva u minuti da potroši budžet prijave
+  vlasnika, i da (5 na sat) pravi naloge u razvojnoj bazi. Za razvoj u kućnoj mreži to je prihvatljivo, ali
+  je razlog više za „samo u poverljivoj mreži".
 - Ovo je za razvoj. Produkcioni HTTPS je `docker-compose.tls.yml` i ne dira se.
