@@ -13,10 +13,11 @@ import { E1rmTrend } from './e1rm-trend';
 import { Volume } from './volume';
 import { PrList } from './pr-list';
 import { Tonnage } from './tonnage';
+import { Trend } from './trend';
 
 @Component({
   selector: 'app-analytics-home',
-  imports: [MatIconModule, EmptyState, Loading, E1rmTrend, Volume, PrList, Tonnage],
+  imports: [MatIconModule, EmptyState, Loading, E1rmTrend, Volume, PrList, Tonnage, Trend],
   templateUrl: './analytics-home.html',
   styleUrl: './analytics-home.scss',
 })

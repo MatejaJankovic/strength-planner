@@ -1,0 +1,89 @@
+<div class="controls">
+  <div class="control control--range">
+    <span class="control__label">Opseg</span>
+    <div class="range" role="group" aria-label="Opseg pregleda">
+      @for (option of ranges; track option.weeks) {
+        <button
+          class="range__btn"
+          type="button"
+          [class.is-active]="range() === option.weeks"
+          [attr.aria-pressed]="range() === option.weeks"
+          (click)="selectRange(option.weeks)"
+        >
+          {{ option.label }}
+        </button>
+      }
+    </div>
+  </div>
+
+  <div class="control">
+    <label class="control__label" for="trend-metric">Mera</label>
+    <select
+      id="trend-metric"
+      class="control__select"
+      [value]="metricKey()"
+      (change)="selectMetric($any($event.target).value)"
+    >
+      <option value="tonnage">Tonaža</option>
+      <option value="sets">Serije (ukupno)</option>
+      @for (muscle of muscles(); track muscle) {
+        <option [value]="'muscle:' + muscle">Serije: {{ muscle }}</option>
+      }
+    </select>
+  </div>
+</div>
+
+@if (loading()) {
+  <p class="t-note" role="status">Učitavam pregled…</p>
+} @else if (error(); as message) {
+  <p class="t-note t-note--error" role="alert">{{ message }}</p>
+  <button class="retry" type="button" (click)="retry()">Pokušaj ponovo</button>
+} @else if (!hasAnyTraining()) {
+  <p class="t-note">Nema treninga u izabranom opsegu.</p>
+} @else {
+  <ul class="trows">
+    @for (row of rows(); track row.weekStart) {
+      <li class="trow" [class.trow--empty]="row.isEmpty">
+        @if (row.blockBanner; as banner) {
+          <p class="trow__block">{{ banner }}</p>
+        }
+        <div class="trow__head">
+          <span class="trow__week">
+            {{ row.label }}
+            @if (row.isCurrent) {
+              <span class="trow__tag">u toku</span>
+            }
+            @if (row.isDeload) {
+              <span class="trow__tag">Deload</span>
+            }
+          </span>
+          @if (row.isEmpty) {
+            <span class="trow__none">bez treninga</span>
+          } @else {
+            <span class="trow__value numeric">
+              {{ (row.value | number: isTonnage() ? '1.0-0' : '1.0-1') + (isTonnage() ? ' kg' : ' serija') }}
+            </span>
+          }
+        </div>
+        @if (!row.isEmpty) {
+          <div class="track">
+            <div class="track__bar" [style.width.%]="row.barPct"></div>
+          </div>
+        }
+      </li>
+    }
+  </ul>
+
+  <p class="t-total">
+    Ukupno u opsegu:
+    <span class="numeric">
+      {{ (total() | number: isTonnage() ? '1.0-0' : '1.0-1') + (isTonnage() ? ' kg' : ' serija') }}
+    </span>
+  </p>
+
+  <p class="t-note t-note--scale">
+    Nedelje idu od ponedeljka. Blok počinje u nedelji u kojoj ima najviše serija novog bloka. Pad
+    na granici bloka ili u deload nedelji nije gubitak snage: i jedno i drugo je u planu. Serije
+    se broje kao u nedeljnom volumenu (RIR do 3 cela serija, RIR 4 pola, dalje ništa).
+  </p>
+}

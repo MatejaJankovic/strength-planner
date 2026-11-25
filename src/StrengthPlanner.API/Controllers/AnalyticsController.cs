@@ -63,6 +63,26 @@ public class AnalyticsController : AuthorizedControllerBase
         return Ok(tonnage);
     }
 
+    /// <summary>
+    /// Tonaža i serije po kalendarskim nedeljama kroz sve planove i blokove. <c>weeks</c> je koliko
+    /// nedelja unazad od tekuće (do 520); 0 ili izostavljeno je cela istorija.
+    /// </summary>
+    // Deset godina: dalje od toga serija nema, a granica sprečava upit sa besmisleno velikim opsegom.
+    private const int MaxTrendWeeks = 520;
+
+    [HttpGet("trend")]
+    [ProducesResponseType(typeof(TrendDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetTrend(
+        [FromQuery] int weeks = 0,
+        CancellationToken cancellationToken = default)
+    {
+        var trend = await _analyticsService.GetTrendAsync(
+            GetUserId(),
+            weeks <= 0 ? null : Math.Min(weeks, MaxTrendWeeks),
+            cancellationToken);
+        return Ok(trend);
+    }
+
     /// <summary>Vraća personal records po vežbi.</summary>
     [HttpGet("prs")]
     [ProducesResponseType(typeof(IReadOnlyList<PersonalRecordDto>), StatusCodes.Status200OK)]

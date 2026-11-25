@@ -1091,7 +1091,7 @@ Process notes:
 - **Many files are CRLF and some carry a BOM;** exact-string edits from a script failed until the
   script normalised line endings and wrote them back as found.
 
-Deliberately **out of scope**: i18n, full-history analytics, undulating periodization,
+Deliberately **out of scope**: i18n, undulating periodization,
 PWA/offline, changing an already-generated block's periodization model, email delivery (so no
 password reset and no email confirmation), and a dark theme (the reference screenshots for
 round 8 were dark; only their structure was taken).

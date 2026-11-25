@@ -2,7 +2,13 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_BASE_URL } from './api-base';
-import { E1rmPointDto, PersonalRecordDto, VolumeItemDto, WeeklyTonnageDto } from '../models/analytics.models';
+import {
+  E1rmPointDto,
+  PersonalRecordDto,
+  TrendDto,
+  VolumeItemDto,
+  WeeklyTonnageDto,
+} from '../models/analytics.models';
 
 @Injectable({ providedIn: 'root' })
 export class AnalyticsService {
@@ -25,6 +31,13 @@ export class AnalyticsService {
 
   personalRecords(): Observable<PersonalRecordDto[]> {
     return this.http.get<PersonalRecordDto[]>(`${this.apiUrl}/analytics/prs`);
+  }
+
+  /** Tonaža i serije po kalendarskim nedeljama kroz sve blokove; `weeks` 0 je cela istorija. */
+  trend(weeks: number): Observable<TrendDto> {
+    return this.http.get<TrendDto>(`${this.apiUrl}/analytics/trend`, {
+      params: new HttpParams().set('weeks', weeks),
+    });
   }
 
   tonnage(mesocycleId: string): Observable<WeeklyTonnageDto[]> {

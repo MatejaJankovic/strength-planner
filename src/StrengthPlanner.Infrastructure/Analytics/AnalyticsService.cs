@@ -158,6 +158,107 @@ public class AnalyticsService : IAnalyticsService
             .ToList();
     }
 
+    public async Task<TrendDto> GetTrendAsync(
+        Guid userId,
+        int? weeks,
+        CancellationToken cancellationToken = default)
+    {
+        var now = DateTime.UtcNow;
+        DateTime? since = weeks is null
+            ? null
+            : WeeklyTrend.WeekStartOf(now).AddDays(-7 * (Math.Max(1, weeks.Value) - 1));
+
+        // Serije bez mišića, pa mišići posebno: spajanje preko SelectMany se ne prevodi na SQLite
+        // (APPLY), a jedan upit manje po seriji je ionako jeftiniji nego jedan red po mišiću.
+        var rows = await _db.SetLogs
+            .AsNoTracking()
+            .Where(set => set.ExercisePlan.WorkoutSession.TrainingWeek.Mesocycle.UserId == userId
+                          && (since == null || set.PerformedAt >= since))
+            .Select(set => new
+            {
+                set.PerformedAt,
+                set.WeightKg,
+                set.BodyweightLoadKg,
+                set.Reps,
+                set.Rir,
+                set.IsFailure,
+                set.ExercisePlan.ExerciseId,
+                BlockId = set.ExercisePlan.WorkoutSession.TrainingWeek.MesocycleId,
+                BlockName = set.ExercisePlan.WorkoutSession.TrainingWeek.Mesocycle.Name,
+                set.ExercisePlan.WorkoutSession.TrainingWeek.IsDeload
+            })
+            .ToListAsync(cancellationToken);
+
+        var exerciseIds = rows.Select(row => row.ExerciseId).Distinct().ToList();
+        var musclesByExercise = (await _db.ExerciseMuscles
+                .AsNoTracking()
+                .Where(link => exerciseIds.Contains(link.ExerciseId))
+                .Select(link => new { link.ExerciseId, link.MuscleGroupId, link.Contribution })
+                .ToListAsync(cancellationToken))
+            .GroupBy(link => link.ExerciseId)
+            .ToDictionary(
+                group => group.Key,
+                group => (IReadOnlyList<TrendMuscle>)group
+                    .Select(link => new TrendMuscle(link.MuscleGroupId, link.Contribution))
+                    .ToList());
+
+        var planNameByBlock = (await _db.MacrocycleBlocks
+                .AsNoTracking()
+                .Where(block => block.MesocycleId != null && block.Macrocycle.UserId == userId)
+                .Select(block => new { MesocycleId = block.MesocycleId!.Value, block.Macrocycle.Name })
+                .ToListAsync(cancellationToken))
+            .ToDictionary(row => row.MesocycleId, row => row.Name);
+
+        var sets = rows
+            .Select(row => new TrendSet(
+                row.PerformedAt,
+                row.WeightKg + row.BodyweightLoadKg,
+                row.Reps,
+                row.Rir,
+                row.IsFailure,
+                row.BlockId,
+                row.BlockName,
+                planNameByBlock.GetValueOrDefault(row.BlockId, row.BlockName),
+                row.IsDeload,
+                musclesByExercise.GetValueOrDefault(row.ExerciseId, [])))
+            .ToList();
+
+        var trend = WeeklyTrend.Build(sets, now, weeks);
+
+        var muscleNames = await _db.MuscleGroups
+            .AsNoTracking()
+            .ToDictionaryAsync(group => group.Id, group => group.Name, cancellationToken);
+
+        var trained = trend
+            .SelectMany(week => week.StimulativeSetsByMuscle.Keys)
+            .Distinct()
+            .Select(id => muscleNames.GetValueOrDefault(id, string.Empty))
+            .Where(name => name.Length > 0)
+            .Order(StringComparer.Ordinal)
+            .ToList();
+
+        return new TrendDto
+        {
+            Muscles = trained,
+            Weeks = trend
+                .Select(week => new TrendWeekDto
+                {
+                    WeekStart = week.WeekStart,
+                    TonnageKg = week.TonnageKg,
+                    Sets = week.Sets,
+                    StimulativeSets = week.StimulativeSets,
+                    StimulativeSetsByMuscle = week.StimulativeSetsByMuscle
+                        .Where(entry => muscleNames.ContainsKey(entry.Key))
+                        .ToDictionary(entry => muscleNames[entry.Key], entry => entry.Value),
+                    BlockName = week.BlockName,
+                    PlanName = week.PlanName,
+                    IsDeload = week.IsDeload,
+                    BlockStarts = week.BlockStarts
+                })
+                .ToList()
+        };
+    }
+
     private sealed record PersonalRecordSource(
         Guid ExerciseId,
         string Exercise,
