@@ -39,12 +39,17 @@ zagrejati.
   komentariše: aplikacija ne zna koju šipku lifter ima, pa bi „manje od šipke" tvrdilo nešto što ne zna.
 - **Ploče se prikazuju dok se trening sprema ili traje**, ne na završenom ili preskočenom: tamo se ništa ne
   stavlja na šipku. Zagrevanje samo dok traje.
+- **Računica pomagala ostaje na klijentu, ne u domenu.** Plan runde je za nju predviđao domen i xUnit. Ploče i
+  zagrevanje su samo prikaz: nijedno pravilo na serveru ih ne čita, pa nema druge kopije koju bi trebalo držati
+  usklađenom (za razliku od `step-absorption`, gde progresija na serveru i kartica na klijentu moraju da se slože
+  i dele datoteku sa slučajevima). Kad zagrevanje jednog dana bude nešto što server upisuje ili računa, ono se
+  seli u `Domain/Algorithms`.
 - **Vibracija jednom po dostignutom cilju.** Isti cilj izabran ponovo ne ponavlja je; novi cilj koji je pauza
   već prešla vibrira; nova pauza je ponovo naoružava.
 
 ## Merenja
 
-- Testovi: klijent 281 → 351, server 1378 → 1379 (jedan servisni test za tip vežbe).
+- Testovi: klijent 281 → 360, server 1378 → 1379 (jedan servisni test za tip vežbe).
 - **Vraćanje pravila na committed stablu** (`features/workout`, 153 testa u početku), prva serija od 17
   izmena: 16 ruši bar jedan test, jedna ruši build (vidi niže). Tajmer: bez ponovnog osvežavanja kad kartica
   „prespava" 1; cilj 0 računat kao dostignut 1; vibracija na svakom otkucaju 2; isti cilj izabran ponovo 1;
@@ -62,12 +67,58 @@ zagrejati.
   završetku treninga trake nema; u ispravci završenog treninga dodata serija ne pokreće pauzu. Zagrevanje i
   ploče se vide samo uz Overhead Press i Deadlift, ne uz pregib, skull crusher, mašinu i kabl.
 
+## Šta je pregled našao (ispravljeno)
+
+Pregled je radio agent koji samo čita (kopija projekta van repozitorijuma, izmerene tvrdnje), a svaku tvrdnju sam
+proverio pre ispravke.
+
+- **Stanje „Pauza je istekla" je prelivalo stranicu bočno na uskim telefonima.** Sat, poruka koja se skuplja i tri
+  dugmeta od 44 px delili su jedan red koji se nije prelamao: +32 px na 320 px, +43 px uz sat `12:41 / 5:00`, +9 px
+  na 360 px uz sat `10:05 / 5:00`. Moja provera „bez preliva" je merena samo na 375 px. Poruka je sada u svom redu
+  i red se prelama; uživo na 320, 360 i 375 px, uz satove do `62:10 / 5:00`, preliva nema ni u jednom stanju.
+- **Neaktivna traka je svuda dodavala 16 px.** Host je stavka mreže ekrana i bez sadržaja zauzima red i razmak:
+  razmak zaglavlje–kartice je bio 32 px umesto 16, i na planiranom, završenom i preskočenom treningu. Host se sada
+  skriva dok je prazan (`:host(:empty)`, komentar koji ostavlja `@if` se ne računa); uživo 16 px.
+- **Lepljenje je radilo samo zato što Chromium popušta.** Zalepljena stavka mreže ograničena je svojom oblašću u
+  mreži (red visok koliko i traka), a Chromium je ograničava celim kontejnerom. Firefox i Safari tu mogu da se
+  ponašaju po specifikaciji, a tad bi bio isti kvar kao u prvoj verziji. Host ekrana je sada kolona (flex), čiji je
+  blok celo telo kontejnera u svim pregledačima; uživo traka ostaje na vrhu posle skrolovanja od 1500 px, a
+  planiran, u toku i završen trening zadržavaju pune širine i nemaju preliv. `workout-session.scss` raste sa 6,17 na
+  6,19 kB (tvrda granica je 8). **U Firefox-u i Safari-ju nije proveravano.**
+- **Tri ponašanja koja su ispravna u kodu nisu držali testovi** (agent ih je pokvario u kopiji i svih 164 ostalo
+  zeleno): drugi `start()` je pravio drugi otkucaj (`stop()` bi očistio samo poslednji), izmena već sačuvane serije
+  bi pokrenula pauzu, i zagrevanje na završenom ili preskočenom treningu (moj test sa naslovom „ni posle završetka"
+  otvarao je samo planiran). Sva tri sada imaju test; svaki, vraćen na staro, ruši po jedan.
+- **Šum pokretnog zareza u zagrevanju** (`24.400000000000002 kg`) za korak koji nije stepen dvojke; agent je
+  izbrojao 3806 od 13224 oznaka sa takvim korakom. Ista bolest kao u `plates.ts`, ispravljena samo tamo. Sada
+  se zaokružuje na dve decimale, uz test preko 11 koraka i težina 25–300 kg.
+- **Oprema se poredila osetljivo na velika slova**, iako server poredi bez toga i čuva vežbu napravljenu preko API-ja
+  kako je uneta (`load-input-note.ts` to već radi). `barbell` sada važi isto što i `Barbell`.
+- **`platesFor(Infinity)` ne bi stao** (`Infinity - 25` je opet `Infinity`). Ekran ne može da napravi takvu
+  težinu, pa je zaštita jeftina. Njeno vraćanje na staro nije mereno: test bi se zakačio u beskonačnoj petlji
+  umesto da padne.
+- **Otvoren izbor cilja se vraćao sa sledećom pauzom.** Komponent živi koliko i ekran, pa je `choosing` preživljavao
+  zatvaranje trake. Sada se gasi čim pauze nema (dugme ili kraj treninga); vraćanje ruši 2 testa.
+- **Vodič je tvrdio više nego što je beleška priznavala**: „pokazuje pravu pauzu i kad je telefon bio zaključan".
+  Pauza se ne pamti, pa osvežavanje stranice ili izbacivanje aplikacije iz memorije (iOS) je gasi; vodič to sada
+  kaže, kao i ono što se dešava kad čuvanje serije ne uspe (pauza ostaje, novi pokušaj je vraća na nulu; test
+  postoji, vraćanje ruši 1).
+- **Nije menjano:** forma za sopstvenu vežbu početno nudi „Barbell" i „Compound", pa vežba sačuvana bez dodira oba
+  izbora dobija ploče i zagrevanje. Oba izbora su vidljiva i korisnik ih postavlja sam; šta forma nudi kao
+  početnu vrednost je odluka o formi za sopstvenu vežbu, ne o ovoj grani.
+
+Merenje vraćanjem posle ispravki (173 testa): drugi `start()` bez zaštite 1; izmena serije pokreće pauzu 1;
+zagrevanje na završenom i preskočenom 1; neuspelo čuvanje zaustavlja pauzu 1; zaokruživanje zagrevanja 1; oprema
+osetljiva na velika slova 1; otvoren izbor cilja ostaje 2.
+
 ## Šta nije proveravano
 
 - **Vibracija na pravom telefonu.** Uživo je provereno da se `navigator.vibrate` poziva jednom sa pravim
   obrascem; da li telefon zaista vibrira zavisi od uređaja (iPhone uglavnom nema Vibration API).
 - **Pauza u pozadinskoj kartici na telefonu.** Računa se po satu, pa bi trebalo da prikaže pravo vreme kad se
   vratiš, ali to je pokriveno testom koji pomera sat, ne telefonom koji je bio zaključan.
+- **Lepljenje u Firefox-u i Safari-ju.** Uživo je meren samo Chromium. Raspored je sada takav da specifikacija
+  ne ostavlja dvosmislenost (stavka fleksa, blok je ceo kontejner), ali to nije isto što i proveriti.
 - Obaveštenje dok je ekran zaključan ne postoji: traka se gleda, ne sluša. Zvuk takođe ne.
 
 ## Šta je ova grana namerno ostavila

@@ -559,8 +559,11 @@ vremenom pauze; ostaje zalepljena dok skroluješ do sledeće vežbe. Dugme sa za
 (1:30, 2:00, 3:00, 5:00 ili bez cilja), koji se pamti na tom telefonu. Kad cilj istekne, traka pozeleni i piše
 „Pauza je istekla", a telefon jednom zavibrira ako to njegov pregledač dozvoljava (na iPhone-u vibracije
 uglavnom nema); sat posle toga nastavlja da broji. Vreme se računa po satu, ne po otkucajima, pa pokazuje pravu
-pauzu i kad je telefon bio zaključan. Obaveštenje ne stiže dok je ekran zaključan: traka se gleda, ne sluša.
-Ne kreće dok ispravljaš završen trening, a nestaje kad trening završiš ili izađeš sa ekrana.
+pauzu i kad je pregledač usporio ili uspavao karticu. Pauza se ne pamti: ako se stranica osveži, ili telefon izbaci
+aplikaciju iz memorije dok je zaključan, traka nestaje i tek sledeća sačuvana serija pokreće novu pauzu.
+Obaveštenje ne stiže dok je ekran zaključan: traka se gleda, ne sluša. Ne kreće dok ispravljaš završen trening,
+a nestaje kad trening završiš ili izađeš sa ekrana. Ako čuvanje serije ne uspe, pauza ostaje (serija je ipak
+odrađena), a novi pokušaj je vraća na nulu.
 
 **Ploče i zagrevanje (složene vežbe sa šipkom).** Uz čučanj, potisak, mrtvo dizanje i slične vežbe ispod težine
 piše koje ploče idu sa svake strane šipke, pa ne računaš napamet. Računa se sa šipkom od 20 kg (i piše se uz

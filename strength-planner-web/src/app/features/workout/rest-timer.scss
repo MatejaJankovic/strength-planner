@@ -65,8 +65,10 @@
   margin: 0 0 0.45rem;
 }
 
+// `margin-left: auto`: kad se dugmad prelome u drugi red, stoje udesno kao i u prvom.
 .rest__actions {
   display: flex;
+  margin-left: auto;
 }
 
 .rest__icon {
