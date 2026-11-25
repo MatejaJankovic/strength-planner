@@ -20,12 +20,10 @@ import { EmptyState } from '../../shared/components/empty-state/empty-state';
 import { Loading } from '../../shared/components/loading/loading';
 import { SetFeedback, setFeedback } from './set-feedback';
 import { repTargetFor } from './step-absorption';
-import { nextWeightLabel, nextWeightTone } from './next-weight-label';
 import { LoadInputNote, loadInputNote, zeroLoadWarning } from './load-input-note';
 import { loadLabel } from './load-label';
 import { repRangeLabel } from '../../shared/rep-range-label';
-import { LoadFloorNote, loadFloorNote } from './load-floor-note';
-import { adjustmentCause } from './adjustment-cause';
+import { CompletionSummary } from './completion-summary';
 import { isCalibrationEntry } from './calibration';
 
 interface SetDraft {
@@ -40,7 +38,7 @@ const REP_STEP_MAX = 100;
 
 @Component({
   selector: 'app-workout-session',
-  imports: [DecimalPipe, MatIconModule, WeightStepper, StatChip, EmptyState, Loading],
+  imports: [DecimalPipe, MatIconModule, WeightStepper, StatChip, EmptyState, Loading, CompletionSummary],
   templateUrl: './workout-session.html',
   styleUrl: './workout-session.scss',
 })
@@ -184,23 +182,6 @@ export class WorkoutSession {
     }
   }
 
-  /** Oznaka „Sledeće" u rezimeu: predlog i razlika prema podignutoj težini. */
-  protected nextWeight(summary: CompletedExerciseSummaryDto): string {
-    return nextWeightLabel(summary);
-  }
-
-  protected nextWeightTone(summary: CompletedExerciseSummaryDto): StatChipTone {
-    return nextWeightTone(summary);
-  }
-
-  /**
-   * Zašto rezime kaže da sledeći put nema kilograma više (vidi load-floor-note.ts).
-   * Server u oba slučaja vraća istu zastavicu, a uzrok se čita iz dela telesne mase.
-   */
-  protected floorNote(summary: CompletedExerciseSummaryDto): LoadFloorNote | null {
-    return loadFloorNote(summary);
-  }
-
   /**
    * Opterećenje jedne odrađene serije. Kod vežbe sa telesnom masom je upisana težina samo
    * ono što je dodato, pa se piše „TM + 5 kg".
@@ -212,9 +193,6 @@ export class WorkoutSession {
   protected setLoad(set: SetLogDto): string {
     return loadLabel(set.weightKg, set.bodyweightLoadKg > 0);
   }
-
-  /** Oznaka uz pomeren predlog serija u rezimeu: mišić, i "pun trening" kad ga je spustila granica. */
-  protected readonly adjustmentCause = adjustmentCause;
 
   /** Tekst upozorenja na nulu, iz iste datoteke koja bira napomenu - da bi ga test video. */
   protected readonly zeroLoadWarning = zeroLoadWarning;

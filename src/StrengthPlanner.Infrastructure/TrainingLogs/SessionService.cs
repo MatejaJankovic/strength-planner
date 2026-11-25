@@ -22,8 +22,8 @@ public class SessionService : ISessionService
     private readonly DeloadService _deloads;
     private readonly WeeklySetPlanner _setPlanner;
     private readonly IMacrocycleService _macrocycles;
+    private readonly SessionOutcomes _outcomes;
     private readonly E1RmCalculator _e1RmCalculator = new();
-    private readonly ProgressionEngine _progressionEngine = new();
 
     public SessionService(
         AppDbContext db,
@@ -37,6 +37,7 @@ public class SessionService : ISessionService
         _deloads = deloads;
         _setPlanner = setPlanner;
         _macrocycles = macrocycles;
+        _outcomes = new SessionOutcomes(db);
     }
 
     public async Task<WorkoutSessionDto> GetByIdAsync(
@@ -264,6 +265,67 @@ public class SessionService : ISessionService
     {
         await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
 
+        var session = await ClaimForCompletionAsync(userId, sessionId, cancellationToken);
+        var now = DateTime.UtcNow;
+
+        var nextPlans = await _outcomes.LoadNextPlansAsync(session, cancellationToken);
+
+        // Status je već upisan uslovnim UPDATE-om; ovo samo usklađuje učitanu instancu
+        // sa bazom da bi DTO ispod prijavio tačno stanje.
+        session.Status = SessionStatus.Completed;
+
+        var outcome = await _outcomes.ApplyAsync(userId, session, nextPlans, now, cancellationToken);
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        var autoDeload = await CloseWeekAsync(userId, session, now, cancellationToken);
+
+        // Rezime se zaključuje TEK ovde: sve do ovog trenutka je moglo da prepiše težinu
+        // naredne nedelje — progresija, pravilo za narednu nedelju, pa i auto-deload.
+        outcome.Finalize();
+
+        // Sve što se tiče samog treninga mora da bude upisano pre prelaska na sledeći
+        // blok — generator ispod poziva svoj SaveChanges, pa se na njega ne oslanjamo.
+        await _db.SaveChangesAsync(cancellationToken);
+
+        var volumeAdjustments = await RebalanceRestOfWeekAsync(userId, session, cancellationToken);
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        // Kada je ovim treningom ceo blok zaokružen, sledeći iz plana se generiše odmah,
+        // od 1RM vrednosti koje važe sada. Ide poslednje: tek posle progresije i deload-a
+        // je stanje bloka konačno.
+        //
+        // Neuspeh ovde ne sme da obori završetak treninga. Generator odbija šablon kome
+        // neka vežba više ne postoji (obrisana custom vežba, promenjen seed), a kako se
+        // ovo dešava u istoj transakciji, izuzetak bi poništio i status sesije i e1RM
+        // zapise — pa korisnik svoj trening ne bi mogao da završi nikada, zbog usputne
+        // pogodnosti. Blok ostaje negenerisan i biće preuzet pri sledećem pokušaju.
+        var nextBlock = await AdvanceBlockIfFinishedAsync(
+            userId,
+            session.TrainingWeek.MesocycleId,
+            now,
+            transaction,
+            cancellationToken);
+
+        await transaction.CommitAsync(cancellationToken);
+
+        return BuildCompletionResult(session, outcome, autoDeload, volumeAdjustments, nextBlock);
+    }
+
+    /// <summary>
+    /// Loads the session and takes it over for completion.
+    ///
+    /// The check on the status is only a quick exit: a read without a lock does not stop two
+    /// simultaneous requests from both passing it. The conditional UPDATE claims the session
+    /// atomically — the second request waits its turn and gets zero rows, so progression, the
+    /// e1RM records and the volume limits are counted exactly once.
+    /// </summary>
+    private async Task<WorkoutSession> ClaimForCompletionAsync(
+        Guid userId,
+        Guid sessionId,
+        CancellationToken cancellationToken)
+    {
         var session = await _db.WorkoutSessions
             .Include(workoutSession => workoutSession.TrainingWeek)
                 .ThenInclude(week => week.Mesocycle)
@@ -286,10 +348,6 @@ public class SessionService : ISessionService
             throw new TrainingLogException(TrainingLogErrorType.Conflict, "Workout session is already completed.");
         }
 
-        // Provera iznad je samo brzi izlaz: čitanje bez zaključavanja ne sprečava da dva
-        // istovremena zahteva oba prođu. Uslovni UPDATE preuzima sesiju atomično — drugi
-        // zahtev čeka na redu i dobija nula redova, pa se progresija, e1RM zapisi i
-        // granice volumena obračunavaju tačno jednom.
         var claimed = await _db.WorkoutSessions
             .Where(candidate => candidate.Id == sessionId && candidate.Status != SessionStatus.Completed)
             .ExecuteUpdateAsync(
@@ -301,297 +359,82 @@ public class SessionService : ISessionService
             throw new TrainingLogException(TrainingLogErrorType.Conflict, "Workout session is already completed.");
         }
 
-        var exerciseIds = session.ExercisePlans
-            .Select(plan => plan.ExerciseId)
-            .Distinct()
-            .ToList();
-        var weightStepByExerciseId = await WeightStepResolver.ResolveAsync(
-            _db,
-            userId,
-            exerciseIds,
-            cancellationToken);
-        // Deo telesne mase kakav vazi SADA. Ono sto je odradjeno nosi svoj snimak (SetLog),
-        // ali propis za narednu nedelju gleda unapred, pa polazi od mase iz profila.
-        var bodyweightByExerciseId = await BodyweightPortionResolver.ResolveAsync(
-            _db,
-            userId,
-            exerciseIds,
-            cancellationToken);
-        var previousMaxByExerciseId = await _db.OneRepMaxRecords
-            .AsNoTracking()
-            .Where(record => record.UserId == userId && exerciseIds.Contains(record.ExerciseId))
-            .GroupBy(record => record.ExerciseId)
-            .Select(group => new { ExerciseId = group.Key, ValueKg = group.Max(record => record.ValueKg) })
-            .ToDictionaryAsync(record => record.ExerciseId, record => record.ValueKg, cancellationToken);
+        return session;
+    }
 
-        // Za preračun opterećenja se gleda samo skorašnji prozor, isto kao pri generisanju
-        // bloka. Rekord od pre pola godine je istorija, a ne procena trenutne snage — a
-        // ovde bi postao ciljno opterećenje naredne nedelje. Sirov maksimum prozora je
-        // zamenjen pravilom iz domena (OneRepMaxBaseline): jedna naduvana procena ne sme
-        // osam nedelja da bude polazna težina.
-        var samplesByExerciseId = (await _db.OneRepMaxRecords
-                .AsNoTracking()
-                .Where(record => record.UserId == userId && exerciseIds.Contains(record.ExerciseId))
-                .Select(record => new
-                {
-                    record.ExerciseId,
-                    record.ValueKg,
-                    record.Source,
-                    record.RecordedAt
-                })
-                .ToListAsync(cancellationToken))
-            .GroupBy(record => record.ExerciseId)
-            .ToDictionary(
-                group => group.Key,
-                group => (IReadOnlyList<OneRepMaxSample>)group
-                    .Select(record => new OneRepMaxSample(record.ValueKg, record.Source, record.RecordedAt))
-                    .ToList());
-
-        // Samo sesije koje još nisu završene: complete van redosleda ne sme da
-        // prepiše ciljeve već odrađenih treninga.
-        var nextPlans = await _db.ExercisePlans
-            .Include(plan => plan.WorkoutSession)
-                .ThenInclude(workoutSession => workoutSession.TrainingWeek)
-            .Where(plan => plan.WorkoutSession.TrainingWeek.MesocycleId == session.TrainingWeek.MesocycleId
-                           && plan.WorkoutSession.DayLabel == session.DayLabel
-                           && plan.WorkoutSession.TrainingWeek.WeekNumber > session.TrainingWeek.WeekNumber
-                           && plan.WorkoutSession.Status != SessionStatus.Completed
-                           && exerciseIds.Contains(plan.ExerciseId))
-            .OrderBy(plan => plan.WorkoutSession.TrainingWeek.WeekNumber)
-            .ThenBy(plan => plan.Order)
-            .ToListAsync(cancellationToken);
-
-        var now = DateTime.UtcNow;
-        // Status je već upisan uslovnim UPDATE-om; ovo samo usklađuje učitanu instancu
-        // sa bazom da bi DTO ispod prijavio tačno stanje.
-        session.Status = SessionStatus.Completed;
-
-        var summaries = new List<CompletedExerciseSummaryDto>();
-
-        // Deload je pauza, ne korak nazad: progresija za nedelju posle njega polazi od
-        // poslednje trenažne nedelje, a ne od olakšanih serija samog deload-a. Nedelja
-        // posle deload-a postoji kad je umor povukao rasterećenje ranije i time oslobodio
-        // planirano (vidi DeloadService.RestorePlannedDeloadAsync).
-        var resumePoints = session.TrainingWeek.IsDeload
-            ? await LoadResumePointsAsync(userId, session, weightStepByExerciseId, cancellationToken)
-            : new Dictionary<Guid, ResumePoint>();
-
-        foreach (var plan in session.ExercisePlans.OrderBy(plan => plan.Order))
-        {
-            var nextPlan = nextPlans.FirstOrDefault(candidate => candidate.ExerciseId == plan.ExerciseId);
-            var logs = plan.SetLogs
-                .OrderBy(set => set.SetNumber)
-                .ToList();
-
-            var summary = new CompletedExerciseSummaryDto
-            {
-                ExercisePlanId = plan.Id,
-                ExerciseId = plan.ExerciseId,
-                ExerciseName = plan.Exercise.Name
-            };
-
-            var weightStepKg = WeightStepResolver.StepFor(weightStepByExerciseId, plan.ExerciseId);
-
-            // Referentna težina je najteža koju je vežbač podigao, a ne prosek svih serija:
-            // prosek je jednu back-off seriju pretvarao u niži predlog od težine koja je u
-            // istom treningu podignuta više puta.
-            var load = WorkingLoad.Select(logs.Select(ToLoggedSet).ToList());
-
-            // Deload serije su namerno submaksimalne — njihov e1RM bi veštački
-            // oborio trend snage i start sledećeg mezociklusa, pa se ne upisuje.
-            var bestEstimate = load is null || session.TrainingWeek.IsDeload
-                ? null
-                : EstimateBestOneRepMax(logs);
-            if (bestEstimate.HasValue)
-            {
-                summary.E1Rm = bestEstimate.Value;
-                summary.IsPr = previousMaxByExerciseId.TryGetValue(plan.ExerciseId, out var previousMax)
-                               && bestEstimate.Value > previousMax;
-
-                _db.OneRepMaxRecords.Add(new OneRepMaxRecord
-                {
-                    Id = Guid.NewGuid(),
-                    UserId = userId,
-                    ExerciseId = plan.ExerciseId,
-                    ValueKg = bestEstimate.Value,
-                    Source = OneRepMaxSource.Estimated,
-                    RecordedAt = now
-                });
-            }
-
-            // Progresija sudi o onome sto je podignuto, pa uzima snimak referentne serije,
-            // a ne trenutnu masu iz profila: promena mase u profilu ne sme naknadno da
-            // promeni kako je prosao trening od prosle nedelje.
-            var progression = load is null
-                ? null
-                : _progressionEngine.ComputeNext(
-                    load.ReferenceWeightKg,
-                    load.WorkingSets,
-                    plan.TargetRir,
-                    plan.RepRangeMin,
-                    plan.RepRangeMax,
-                    weightStepKg,
-                    load.ReferenceBodyweightLoadKg);
-
-            // Ono što je vežbač podigao u OVOM treningu; za preskočenu vežbu planirana
-            // težina. Iz toga se na kraju računa razlika koju rezime prikazuje.
-            summary.UsedWeightKg = load?.ReferenceWeightKg ?? plan.TargetWeightKg;
-            summary.BodyweightLoadKg = load?.ReferenceBodyweightLoadKg
-                                       ?? BodyweightPortionResolver.PortionFor(bodyweightByExerciseId, plan.ExerciseId);
-            summary.IsBodyweight = summary.BodyweightLoadKg > 0;
-            summary.LoadFloorReached = progression?.LoadFloorReached ?? false;
-
-            var referenceWeightKg = summary.UsedWeightKg;
-            var progressionWeightKg = progression?.NextWeightKg;
-            var currentPrescription = PrescriptionOf(plan);
-            var nextBodyweightLoadKg = BodyweightPortionResolver.PortionFor(
-                bodyweightByExerciseId,
-                plan.ExerciseId);
-
-            // Važi i kad je naredna nedelja opet deload (planirani koji je već počeo, pa
-            // ga auto-deload nije oslobodio): bez ovoga bi se 90% primenilo na već
-            // rasterećenu težinu i druga deload nedelja bi pala na 81%.
-            if (session.TrainingWeek.IsDeload && nextPlan is not null)
-            {
-                if (resumePoints.TryGetValue(plan.ExerciseId, out var resume))
-                {
-                    currentPrescription = resume.Prescription;
-                    referenceWeightKg = resume.ReferenceWeightKg;
-                    progressionWeightKg = resume.ProgressionWeightKg;
-                }
-                else
-                {
-                    // Nema odrađene trenažne nedelje za ovaj dan (npr. cela je preskočena),
-                    // pa se referenca vraća iz same deload težine: ona nosi 90% prethodne.
-                    referenceWeightKg = NextWeekLoad.UndoDeload(
-                        plan.TargetWeightKg,
-                        weightStepKg,
-                        nextBodyweightLoadKg);
-                    progressionWeightKg = null;
-
-                    // Vraćena težina je trenažna, pa ide uz RIR cilja, a ne uz RIR deload-a:
-                    // prevod preko deload RIR-a bi je naduvao za dve rezerve (kablovsko
-                    // letenje 30 kg bi dobilo 32.5 - korak koji niko nije zaradio).
-                    currentPrescription = currentPrescription with
-                    {
-                        TargetRir = GoalPrescriptions.ForGoal(session.TrainingWeek.Mesocycle.Goal).TargetRir
-                    };
-                }
-            }
-
-            if (nextPlan is not null)
-            {
-                // Procena iz ovog treninga ulazi kao još jedan uzorak, a ne kao presuda:
-                // pravilo je bira samo ako nije samotni ekstrem u prozoru.
-                var samples = samplesByExerciseId.GetValueOrDefault(plan.ExerciseId, []).ToList();
-                if (bestEstimate.HasValue)
-                {
-                    samples.Add(new OneRepMaxSample(bestEstimate.Value, OneRepMaxSource.Estimated, now));
-                }
-
-                var baselineOneRepMax = OneRepMaxBaseline.Select(
-                    samples,
-                    now,
-                    TrainingConstants.OneRepMaxLookbackDays,
-                    allowStaleFallback: false);
-
-                var nextWeight = NextWeekLoad.For(
-                    referenceWeightKg,
-                    progressionWeightKg,
-                    currentPrescription,
-                    PrescriptionOf(nextPlan),
-                    nextPlan.WorkoutSession.TrainingWeek.IsDeload,
-                    baselineOneRepMax,
-                    weightStepKg,
-                    nextBodyweightLoadKg);
-
-                // Null znači da o vežbi nema nijednog podatka; zatečeni cilj se tada ne
-                // prepisuje praznom vrednošću.
-                if (nextWeight is not null)
-                {
-                    nextPlan.TargetWeightKg = nextWeight;
-                }
-            }
-
-            summaries.Add(summary);
-        }
-
-        await _db.SaveChangesAsync(cancellationToken);
-
-        // Granice volumena uče iz svake nedelje koja je u celosti odrađena a još nije
-        // obračunata; sama metoda uslovnim UPDATE-om obezbeđuje da se nedelja obračuna
-        // tačno jednom. Ostaje u istoj transakciji kao i završetak sesije, pa se ili
-        // upiše sve ili ništa.
+    /// <summary>
+    /// What the week's end does: the volume limits learn from every week that is fully done
+    /// and not yet counted, and the fatigue score may pull a deload forward.
+    ///
+    /// Both are conditional UPDATEs on the week, so a week is counted exactly once. They stay
+    /// in the same transaction as the completion, so either everything is written or nothing.
+    /// The fatigue score goes AFTER the progression: a deload rewrites the loads that the
+    /// progression has just filled in for the next week.
+    /// </summary>
+    private async Task<DeloadOutcome?> CloseWeekAsync(
+        Guid userId,
+        WorkoutSession session,
+        DateTime now,
+        CancellationToken cancellationToken)
+    {
         await _volumeLandmarks.AdaptPendingWeeksAsync(
             userId,
             session.TrainingWeek.MesocycleId,
             now,
             cancellationToken);
 
-        // Procena umora ide POSLE progresije: deload prepisuje opterećenja koja je
-        // progresija upravo popunila za narednu nedelju.
-        var autoDeload = await _deloads.EvaluatePendingWeeksAsync(
+        return await _deloads.EvaluatePendingWeeksAsync(
             userId,
             session.TrainingWeek.MesocycleId,
             cancellationToken);
+    }
 
-        // Rezime se zaključuje TEK ovde: sve do ovog trenutka je moglo da prepiše težinu
-        // naredne nedelje — progresija, pravilo za narednu nedelju, pa i auto-deload.
-        FinalizeSummaries(summaries, nextPlans);
+    /// <summary>
+    /// The set plan is recalculated AFTER the deload, and only once the deload is WRITTEN.
+    /// Both parts of that order carry weight:
+    ///
+    /// After the deload, because a deload changes the prescription the balancing starts from.
+    /// After the write, because balancing asks the database which weeks are deloads — and
+    /// DeloadService leaves the conversion of a week in the change tracker. Without the
+    /// SaveChanges before this call the query still sees the old state, takes the freshly
+    /// relieved week for an ordinary one and gives it back four sets in place of the halved
+    /// two: the user gets a "deload" with the volume of a full training week. Measured before
+    /// the fix — the whole week went from two to four sets per exercise.
+    ///
+    /// This workout wrote part of the week's volume (or skipped it), so the workouts still to
+    /// come in that week get a proposal that brings the week back into the target zone. A
+    /// block that follows its template literally is not balanced here either. Had it been
+    /// skipped only at generation, the first completed workout would have put the sets back on
+    /// the target volume — and the choice would have held exactly until that first workout.
+    /// </summary>
+    private async Task<IReadOnlyList<SetAdjustment>> RebalanceRestOfWeekAsync(
+        Guid userId,
+        WorkoutSession session,
+        CancellationToken cancellationToken)
+    {
+        if (session.TrainingWeek.Mesocycle.SetAllocation != SetAllocation.TargetVolume)
+        {
+            return [];
+        }
 
-        // Sve što se tiče samog treninga mora da bude upisano pre prelaska na sledeći
-        // blok — generator ispod poziva svoj SaveChanges, pa se na njega ne oslanjamo.
-        await _db.SaveChangesAsync(cancellationToken);
-
-        // Predlog serija se preračunava POSLE deload-a, i to tek pošto je deload UPISAN.
-        // Oba dela ovog redosleda nose težinu:
-        //
-        // Posle deload-a, jer rasterećenje menja propis od koga balansiranje polazi.
-        // Posle upisa, jer balansiranje pita bazu koje su nedelje deload — a DeloadService
-        // pretvaranje nedelje ostavlja u change trackeru. Bez SaveChanges iznad, upit i
-        // dalje vidi staro stanje, sveže rasterećenu nedelju uzima kao običnu i vraća joj
-        // prepolovljene serije na četiri: korisnik dobije „deload" sa volumenom pune
-        // trenažne nedelje. Izmereno pre ispravke — cela nedelja se vratila sa dve na
-        // četiri serije po vežbi.
-        //
-        // Ovim treningom je deo nedeljnog volumena upisan (ili propušten), pa treninzi koji
-        // u toj nedelji tek predstoje dobijaju predlog koji nedelju vraća u ciljnu zonu.
-        // Blok koji prati šablon doslovno se ne balansira ni ovde. Da se preskakalo samo
-        // pri generisanju, prvi završen trening bi vratio serije na ciljni volumen — pa bi
-        // izbor važio tačno do prvog treninga.
-        var volumeAdjustments =
-            session.TrainingWeek.Mesocycle.SetAllocation == SetAllocation.TargetVolume
-                ? await _setPlanner.RebalanceAsync(
-                    userId,
-                    session.TrainingWeek.MesocycleId,
-                    cancellationToken)
-                : [];
-
-        await _db.SaveChangesAsync(cancellationToken);
-
-        // Kada je ovim treningom ceo blok zaokružen, sledeći iz plana se generiše odmah,
-        // od 1RM vrednosti koje važe sada. Ide poslednje: tek posle progresije i deload-a
-        // je stanje bloka konačno.
-        //
-        // Neuspeh ovde ne sme da obori završetak treninga. Generator odbija šablon kome
-        // neka vežba više ne postoji (obrisana custom vežba, promenjen seed), a kako se
-        // ovo dešava u istoj transakciji, izuzetak bi poništio i status sesije i e1RM
-        // zapise — pa korisnik svoj trening ne bi mogao da završi nikada, zbog usputne
-        // pogodnosti. Blok ostaje negenerisan i biće preuzet pri sledećem pokušaju.
-        var nextBlock = await AdvanceBlockIfFinishedAsync(
+        return await _setPlanner.RebalanceAsync(
             userId,
             session.TrainingWeek.MesocycleId,
-            now,
-            transaction,
             cancellationToken);
+    }
 
-        await transaction.CommitAsync(cancellationToken);
-
+    private static CompleteSessionResultDto BuildCompletionResult(
+        WorkoutSession session,
+        SessionOutcome outcome,
+        DeloadOutcome? autoDeload,
+        IReadOnlyList<SetAdjustment> volumeAdjustments,
+        MacrocycleAdvance? nextBlock)
+    {
         return new CompleteSessionResultDto
         {
             SessionId = session.Id,
             Status = session.Status.ToString(),
-            Exercises = summaries,
+            Exercises = outcome.Summaries,
             // Prijavljuje se samo tekuća nedelja. Balansiranje dodiruje i one koje tek
             // dolaze (granice volumena su se možda pomerile ovim treningom), ali posledica
             // OVOG treninga koju korisnik može da vidi na svom planu je ono što mu preostaje
@@ -631,113 +474,6 @@ public class SessionService : ISessionService
                 }
         };
     }
-
-    /// <summary>
-    /// Fills in what the summary reports about the next session, once nothing can change it
-    /// any more.
-    ///
-    /// The proposal is read from the stored plan of the next week, not from the progression
-    /// result: the week may have become a deload in the meantime, and that rewrites the
-    /// target on the very same tracked entities. The old version only patched the summary
-    /// when an auto-deload happened, and left the arrow from the progression result behind
-    /// in every other case — including a planned deload, where the proposal is 90% of the
-    /// load lifted and the summary still showed it rising.
-    ///
-    /// With no next week in this block there is no proposal to show: the next block derives
-    /// its own weights from the estimated maximum when it is generated.
-    /// </summary>
-    private static void FinalizeSummaries(
-        List<CompletedExerciseSummaryDto> summaries,
-        IReadOnlyList<ExercisePlan> nextPlans)
-    {
-        foreach (var summary in summaries)
-        {
-            var nextPlan = nextPlans.FirstOrDefault(plan => plan.ExerciseId == summary.ExerciseId);
-
-            summary.NextWeightKg = nextPlan?.TargetWeightKg;
-            summary.WeightChangeKg = NextWeekLoad.ChangeKg(summary.UsedWeightKg, summary.NextWeightKg);
-            summary.WeightIncreased = summary.WeightChangeKg > 0;
-        }
-    }
-
-    /// <summary>
-    /// Where progression resumes from after a deload week, per exercise: the most recent
-    /// completed training session of the same day, with its own prescription, reference load
-    /// and progression result.
-    /// </summary>
-    private async Task<Dictionary<Guid, ResumePoint>> LoadResumePointsAsync(
-        Guid userId,
-        WorkoutSession deloadSession,
-        IReadOnlyDictionary<Guid, decimal> weightStepByExerciseId,
-        CancellationToken cancellationToken)
-    {
-        var plans = await _db.ExercisePlans
-            .AsNoTracking()
-            .Include(plan => plan.SetLogs)
-            .Include(plan => plan.WorkoutSession)
-            .Where(plan => plan.WorkoutSession.TrainingWeek.MesocycleId == deloadSession.TrainingWeek.MesocycleId
-                           && plan.WorkoutSession.TrainingWeek.Mesocycle.UserId == userId
-                           && plan.WorkoutSession.DayLabel == deloadSession.DayLabel
-                           && plan.WorkoutSession.Status == SessionStatus.Completed
-                           && !plan.WorkoutSession.TrainingWeek.IsDeload
-                           && plan.WorkoutSession.TrainingWeek.WeekNumber < deloadSession.TrainingWeek.WeekNumber)
-            .OrderByDescending(plan => plan.WorkoutSession.TrainingWeek.WeekNumber)
-            .ToListAsync(cancellationToken);
-
-        var resumePoints = new Dictionary<Guid, ResumePoint>();
-
-        foreach (var plan in plans)
-        {
-            // Upit je poređan od najsvežije nedelje, pa prvi nalaz po vežbi i jeste onaj
-            // od koga se nastavlja.
-            if (resumePoints.ContainsKey(plan.ExerciseId))
-            {
-                continue;
-            }
-
-            var load = WorkingLoad.Select(plan.SetLogs
-                .OrderBy(set => set.SetNumber)
-                .Select(ToLoggedSet)
-                .ToList());
-
-            if (load is null)
-            {
-                continue;
-            }
-
-            var progression = _progressionEngine.ComputeNext(
-                load.ReferenceWeightKg,
-                load.WorkingSets,
-                plan.TargetRir,
-                plan.RepRangeMin,
-                plan.RepRangeMax,
-                WeightStepResolver.StepFor(weightStepByExerciseId, plan.ExerciseId),
-                load.ReferenceBodyweightLoadKg);
-
-            resumePoints[plan.ExerciseId] = new ResumePoint(
-                PrescriptionOf(plan),
-                load.ReferenceWeightKg,
-                progression.NextWeightKg);
-        }
-
-        return resumePoints;
-    }
-
-    private static LoadPrescription PrescriptionOf(ExercisePlan plan)
-    {
-        return new LoadPrescription(plan.RepRangeMin, plan.RepRangeMax, plan.TargetRir);
-    }
-
-    private static LoggedSet ToLoggedSet(SetLog set)
-    {
-        return new LoggedSet(set.WeightKg, set.Reps, set.Rir, set.IsFailure, set.BodyweightLoadKg);
-    }
-
-    /// <summary>Where progression stood before a deload week interrupted it.</summary>
-    private sealed record ResumePoint(
-        LoadPrescription Prescription,
-        decimal ReferenceWeightKg,
-        decimal ProgressionWeightKg);
 
     /// <summary>Body mass the exercises of this session carry for the lifter right now.</summary>
     /// <summary>
@@ -894,7 +630,7 @@ public class SessionService : ISessionService
                     earlier.TargetWeightKg,
                     progressionWeightKg: null,
                     earlier.Prescription,
-                    PrescriptionOf(plan),
+                    SessionLoadInputs.PrescriptionOf(plan),
                     week.IsDeload,
                     oneRepMax,
                     weightStepKg,
@@ -951,19 +687,6 @@ public class SessionService : ISessionService
             .Include(workoutSession => workoutSession.ExercisePlans)
                 .ThenInclude(plan => plan.SetLogs)
             .Where(workoutSession => workoutSession.TrainingWeek.Mesocycle.UserId == userId);
-    }
-
-    /// <summary>
-    /// Best e1RM the session produced, or null when no set may produce one.
-    ///
-    /// The recorded <c>Rir</c> is used on purpose, not <see cref="WorkingSet.EffectiveRir"/>:
-    /// Epley assumes a set to failure, so 0 is the right value for one, while effective RIR
-    /// can go negative and serves auto-regulation alone. Which sets qualify is
-    /// <see cref="E1RmCalculator.CanEstimateFrom"/>, shared with the fatigue score.
-    /// </summary>
-    private decimal? EstimateBestOneRepMax(IReadOnlyList<SetLog> logs)
-    {
-        return _e1RmCalculator.BestEstimate(logs.Select(ToLoggedSet));
     }
 
     private static WorkoutSessionDto ToDto(

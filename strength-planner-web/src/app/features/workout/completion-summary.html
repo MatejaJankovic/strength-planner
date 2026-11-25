@@ -1,0 +1,109 @@
+@let result = outcome();
+<section class="summary">
+  <div class="summary__head">
+    <mat-icon aria-hidden="true">verified</mat-icon>
+    <h2>Trening završen</h2>
+  </div>
+
+  @if (result.autoDeload; as deload) {
+    <div class="deload-note" role="status">
+      <mat-icon aria-hidden="true">battery_alert</mat-icon>
+      <div>
+        <strong>Nedelja {{ deload.deloadWeek }} je pretvorena u deload.</strong>
+        <p>
+          Nedelja {{ deload.triggeredByWeek }} pokazala je nakupljen umor
+          (ocena {{ deload.fatigueScore | number: '1.0-2' }} od 1). Serije su
+          prepolovljene, a opterećenje spušteno na 90% - pa da se vratiš jači.
+        </p>
+        @if (deload.plannedDeloadReleasedWeek; as released) {
+          <p>
+            Planirani deload u nedelji {{ released }} je otpao - mezociklus nosi
+            jedno rasterećenje, a ono je sada ranije.
+          </p>
+        }
+      </div>
+    </div>
+  }
+  @if (result.volumeAdjustments.length > 0) {
+    <div class="deload-note" role="status">
+      <mat-icon aria-hidden="true">tune</mat-icon>
+      <div>
+        <strong>Predlog serija je prilagođen za ostatak nedelje.</strong>
+        <p>
+          Ovaj trening je promenio nedeljni volumen, pa treninzi koji tek predstoje nose
+          nov predlog. Nedelja cilja svoju zonu volumena, a nijedan trening ne sme da
+          pretrpa jedan mišić.
+        </p>
+        <ul class="adjustments">
+          @for (change of result.volumeAdjustments; track change.sessionId + change.exerciseName) {
+            <li class="adjustment">
+              <span class="adjustment__where">{{ change.dayLabel }}</span>
+              <span class="adjustment__name">{{ change.exerciseName }}</span>
+              <span class="adjustment__sets numeric">
+                {{ change.fromSets }} → {{ change.toSets }}
+                <mat-icon aria-hidden="true">
+                  {{ change.toSets > change.fromSets ? 'arrow_upward' : 'arrow_downward' }}
+                </mat-icon>
+              </span>
+              @if (adjustmentCause(change); as cause) {
+                <span class="adjustment__muscle">{{ cause }}</span>
+              }
+            </li>
+          }
+        </ul>
+      </div>
+    </div>
+  }
+  @if (result.nextBlock; as next) {
+    <div class="deload-note deload-note--next" role="status">
+      <mat-icon aria-hidden="true">flag</mat-icon>
+      <div>
+        <strong>Blok {{ next.blockOrder }} od {{ next.blockCount }} je otvoren.</strong>
+        <p>
+          Plan "{{ next.planName }}" nastavlja sa ciljem
+          {{ next.goal === 'Strength' ? 'snage' : 'hipertrofije' }}. Novi mezociklus je
+          generisan od tvojih sadašnjih 1RM vrednosti i već je aktivan.
+        </p>
+      </div>
+    </div>
+  }
+  <ul class="summary__list">
+    @for (ex of result.exercises; track ex.exercisePlanId) {
+      <li class="summary__item">
+        <span class="summary__name">{{ ex.exerciseName }}</span>
+        <div class="summary__chips">
+          @if (ex.e1Rm != null) {
+            <app-stat-chip
+              [label]="ex.isBodyweight ? 'e1RM (ukupno)' : 'e1RM'"
+              [value]="(ex.e1Rm | number: '1.0-1') + ' kg'"
+            />
+          }
+          @if (ex.isPr) {
+            <app-stat-chip label="PR" tone="accent" />
+          }
+          @if (ex.nextWeightKg != null) {
+            <app-stat-chip
+              label="Sledeće"
+              [value]="nextWeight(ex)"
+              [tone]="nextWeightTone(ex)"
+            />
+          }
+        </div>
+        @switch (floorNote(ex)) {
+          @case ('at-bodyweight') {
+            <p class="summary__note">
+              Ispod sopstvene mase nema šta da se skine, pa sledeći put napreduj kroz
+              ponavljanja.
+            </p>
+          }
+          @case ('unloaded') {
+            <p class="summary__note">
+              Ova vežba nije bila opterećena, pa napredak ide kroz ponavljanja, ne kroz
+              kilograme.
+            </p>
+          }
+        }
+      </li>
+    }
+  </ul>
+</section>
