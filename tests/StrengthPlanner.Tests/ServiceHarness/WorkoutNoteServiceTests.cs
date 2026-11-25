@@ -1,4 +1,7 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using StrengthPlanner.Application.DTOs.Notes;
 using StrengthPlanner.Application.Exceptions;
 using StrengthPlanner.Application.Security;
 using StrengthPlanner.Domain.Entities;
@@ -286,7 +289,191 @@ public class WorkoutNoteServiceTests
         Assert.Equal(expected, NotePolicy.Normalize(input));
     }
 
+    // --- two writers at once -----------------------------------------------------------------------
+
+    /// <summary>
+    /// Two tabs, or a phone and a computer, write the first note of an exercise at the same moment: the
+    /// second insert meets the unique index. It must not become a 500; the write is done again and the
+    /// last one wins.
+    /// </summary>
+    [Fact]
+    public async Task TwoFirstWritesAtOnce_BothSucceed_AndTheLastOneWins()
+    {
+        using var database = new SqliteDatabase();
+        var exercise = database.AddExercise("Seated Row");
+        var otherDevice = new BeforeTheFirstSave(async () =>
+        {
+            await using var other = database.NewContext();
+            await new WorkoutNoteService(other).SetExerciseNoteAsync(database.UserId, exercise, "druga kartica", CancellationToken.None);
+        });
+
+        await using var db = database.NewContext(otherDevice);
+        var result = await new WorkoutNoteService(db).SetExerciseNoteAsync(database.UserId, exercise, "prva kartica", CancellationToken.None);
+
+        Assert.Equal("prva kartica", result.Note);
+        Assert.Equal("prva kartica", (await StoredExerciseNotesAsync(database)).Single().Text);
+    }
+
+    [Fact]
+    public async Task AnUpdate_WhoseRowWasDeletedMeanwhile_IsWrittenAgain()
+    {
+        using var database = new SqliteDatabase();
+        var exercise = database.AddExercise("Seated Row");
+        await SetExerciseNoteAsync(database, exercise, "stara");
+        var otherDevice = new BeforeTheFirstSave(async () =>
+        {
+            await using var other = database.NewContext();
+            await new WorkoutNoteService(other).SetExerciseNoteAsync(database.UserId, exercise, null, CancellationToken.None);
+        });
+
+        await using var db = database.NewContext(otherDevice);
+        var result = await new WorkoutNoteService(db).SetExerciseNoteAsync(database.UserId, exercise, "nova", CancellationToken.None);
+
+        Assert.Equal("nova", result.Note);
+        Assert.Equal("nova", (await StoredExerciseNotesAsync(database)).Single().Text);
+    }
+
+    [Fact]
+    public async Task AClear_WhoseRowWasDeletedMeanwhile_IsHarmless()
+    {
+        using var database = new SqliteDatabase();
+        var exercise = database.AddExercise("Seated Row");
+        await SetExerciseNoteAsync(database, exercise, "stara");
+        var otherDevice = new BeforeTheFirstSave(async () =>
+        {
+            await using var other = database.NewContext();
+            await new WorkoutNoteService(other).SetExerciseNoteAsync(database.UserId, exercise, null, CancellationToken.None);
+        });
+
+        await using var db = database.NewContext(otherDevice);
+        var result = await new WorkoutNoteService(db).SetExerciseNoteAsync(database.UserId, exercise, null, CancellationToken.None);
+
+        Assert.Null(result.Note);
+        Assert.Empty(await StoredExerciseNotesAsync(database));
+    }
+
+    /// <summary>A save that keeps failing is a 409 with a message, like the weight step beside it, not a 500.</summary>
+    [Fact]
+    public async Task AWriteThatKeepsFailing_IsAConflict()
+    {
+        using var database = new SqliteDatabase();
+        var exercise = database.AddExercise("Seated Row");
+
+        await using var db = database.NewContext(new AlwaysFailingSave());
+        var error = await Assert.ThrowsAsync<TrainingLogException>(() =>
+            new WorkoutNoteService(db).SetExerciseNoteAsync(database.UserId, exercise, "x", CancellationToken.None));
+
+        Assert.Equal(TrainingLogErrorType.Conflict, error.ErrorType);
+    }
+
+    // --- what the limits and the index rest on ---------------------------------------------------------
+
+    [Fact]
+    public async Task TheSameLifter_CannotHaveTwoNotesOnOneExercise()
+    {
+        using var database = new SqliteDatabase();
+        var exercise = database.AddExercise("Seated Row");
+
+        await using var db = database.NewContext();
+        db.UserExerciseNotes.Add(new UserExerciseNote { Id = Guid.NewGuid(), UserId = database.UserId, ExerciseId = exercise, Text = "a" });
+        db.UserExerciseNotes.Add(new UserExerciseNote { Id = Guid.NewGuid(), UserId = database.UserId, ExerciseId = exercise, Text = "b" });
+
+        // Without the index two rows would sit side by side and the workout screen, which reads the
+        // notes into a dictionary by exercise, would fail for that exercise.
+        await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
+    }
+
+    [Fact]
+    public void TheLimit_IsFiveHundred_AsInTheClient()
+    {
+        // `NOTE_MAX_LENGTH` in strength-planner-web/src/app/features/workout/note-field.ts is the same number,
+        // and its spec pins it too: a change here without the client lets a lifter type more than the
+        // server takes.
+        Assert.Equal(500, NotePolicy.MaximumLength);
+    }
+
+    [Fact]
+    public void TheLimit_MatchesTheColumnsThatStoreIt()
+    {
+        using var database = new SqliteDatabase();
+        using var db = database.NewContext();
+
+        Assert.Equal(
+            NotePolicy.MaximumLength,
+            db.Model.FindEntityType(typeof(UserExerciseNote))!.FindProperty(nameof(UserExerciseNote.Text))!.GetMaxLength());
+        Assert.Equal(
+            NotePolicy.MaximumLength,
+            db.Model.FindEntityType(typeof(WorkoutSession))!.FindProperty(nameof(WorkoutSession.Note))!.GetMaxLength());
+    }
+
+    [Fact]
+    public void TheRequest_CapsTheRawText_AtTheSameLimit()
+    {
+        var attribute = typeof(SetNoteRequest).GetProperty(nameof(SetNoteRequest.Note))!
+            .GetCustomAttributes(typeof(MaxLengthAttribute), inherit: false)
+            .Cast<MaxLengthAttribute>()
+            .Single();
+
+        Assert.Equal(NotePolicy.MaximumLength, attribute.Length);
+    }
+
+    /// <summary>
+    /// The limit is measured after trimming only inside the service: the request attribute runs first
+    /// and counts the spaces. The real client cannot send such a note (its textarea limit counts spaces
+    /// too), so only a direct caller sees the difference.
+    /// </summary>
+    [Fact]
+    public async Task TextThatOnlyFitsAfterTrimming_IsRefusedByTheRequest_ButAcceptedByTheService()
+    {
+        using var database = new SqliteDatabase();
+        var exercise = database.AddExercise("Seated Row");
+        var padded = new string('x', NotePolicy.MaximumLength) + "  ";
+
+        var request = new SetNoteRequest { Note = padded };
+        Assert.False(Validator.TryValidateObject(request, new ValidationContext(request), null, validateAllProperties: true));
+
+        Assert.Equal(NotePolicy.MaximumLength, (await SetExerciseNoteAsync(database, exercise, padded)).Note!.Length);
+    }
+
     // --- helpers ---------------------------------------------------------------------------------
+
+    /// <summary>Does something once, just before the first save, as a second writer would.</summary>
+    private sealed class BeforeTheFirstSave : SaveChangesInterceptor
+    {
+        private readonly Func<Task> _action;
+        private bool _done;
+
+        public BeforeTheFirstSave(Func<Task> action)
+        {
+            _action = action;
+        }
+
+        public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData,
+            InterceptionResult<int> result,
+            CancellationToken cancellationToken = default)
+        {
+            if (!_done)
+            {
+                _done = true;
+                await _action();
+            }
+
+            return result;
+        }
+    }
+
+    private sealed class AlwaysFailingSave : SaveChangesInterceptor
+    {
+        public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData,
+            InterceptionResult<int> result,
+            CancellationToken cancellationToken = default)
+        {
+            throw new DbUpdateException("The save fails every time.");
+        }
+    }
+
 
     private static async Task<StrengthPlanner.Application.DTOs.Notes.NoteDto> SetExerciseNoteAsync(
         SqliteDatabase database,

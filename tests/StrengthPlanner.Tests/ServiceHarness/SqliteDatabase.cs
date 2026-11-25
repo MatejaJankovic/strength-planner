@@ -54,11 +54,16 @@ internal sealed class SqliteDatabase : IDisposable
     /// <summary>The one account every row belongs to; the ownership filters read it.</summary>
     public Guid UserId { get; } = Guid.NewGuid();
 
-    /// <summary>A fresh context, so a test reads what was saved rather than what is tracked.</summary>
-    public AppDbContext NewContext()
+    /// <summary>
+    /// A fresh context, so a test reads what was saved rather than what is tracked. Interceptors let a
+    /// test do something in the middle of a call, such as a second writer slipping in between a read
+    /// and the save that follows it, which is the only way to make a race happen on purpose.
+    /// </summary>
+    public AppDbContext NewContext(params Microsoft.EntityFrameworkCore.Diagnostics.IInterceptor[] interceptors)
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseSqlite(_connection)
+            .AddInterceptors(interceptors)
             .Options;
 
         return new AppDbContext(options, new FixedUser(UserId));

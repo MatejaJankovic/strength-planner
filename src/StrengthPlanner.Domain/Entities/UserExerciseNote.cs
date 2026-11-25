@@ -20,6 +20,4 @@ public class UserExerciseNote
     public Exercise Exercise { get; set; } = null!;
 
     public string Text { get; set; } = string.Empty;
-
-    public DateTime UpdatedAt { get; set; }
 }

@@ -3,7 +3,11 @@ using StrengthPlanner.Application.Security;
 
 namespace StrengthPlanner.Application.DTOs.Notes;
 
-/// <summary>Sets a note; null or only whitespace clears it.</summary>
+/// <summary>
+/// Sets a note; null or only whitespace clears it. The call replaces the note, so a body without the
+/// property (<c>{}</c>, or a misspelt name) clears it too. The attribute caps the raw text, spaces
+/// included; the service checks the length again after trimming.
+/// </summary>
 public class SetNoteRequest
 {
     [MaxLength(NotePolicy.MaximumLength)]

@@ -57,6 +57,39 @@ public class WorkoutNoteService : IWorkoutNoteService
             throw new TrainingLogException(TrainingLogErrorType.NotFound, "Exercise was not found.");
         }
 
+        try
+        {
+            await StoreExerciseNoteAsync(userId, exerciseId, text, cancellationToken);
+        }
+        catch (DbUpdateException)
+        {
+            // Two writes at once (two tabs, or a phone and a computer): the unique index on
+            // (UserId, ExerciseId) refuses the second insert, or the row that this write meant to
+            // change or remove was already gone. Writing a note is idempotent, so the whole thing is
+            // read again and done once more; the last write wins, as for the note of a workout.
+            _db.ChangeTracker.Clear();
+
+            try
+            {
+                await StoreExerciseNoteAsync(userId, exerciseId, text, cancellationToken);
+            }
+            catch (DbUpdateException)
+            {
+                throw new TrainingLogException(
+                    TrainingLogErrorType.Conflict,
+                    "The note for this exercise was changed concurrently. Try again.");
+            }
+        }
+
+        return new NoteDto { Note = text };
+    }
+
+    private async Task StoreExerciseNoteAsync(
+        Guid userId,
+        Guid exerciseId,
+        string? text,
+        CancellationToken cancellationToken)
+    {
         var existing = await _db.UserExerciseNotes.FirstOrDefaultAsync(
             userNote => userNote.UserId == userId && userNote.ExerciseId == exerciseId,
             cancellationToken);
@@ -75,18 +108,15 @@ public class WorkoutNoteService : IWorkoutNoteService
                 Id = Guid.NewGuid(),
                 UserId = userId,
                 ExerciseId = exerciseId,
-                Text = text,
-                UpdatedAt = DateTime.UtcNow
+                Text = text
             });
         }
         else
         {
             existing.Text = text;
-            existing.UpdatedAt = DateTime.UtcNow;
         }
 
         await _db.SaveChangesAsync(cancellationToken);
-        return new NoteDto { Note = text };
     }
 
     /// <summary>The trimmed note, or null for an empty one; too long is a 400 even if the DTO check was skipped.</summary>
