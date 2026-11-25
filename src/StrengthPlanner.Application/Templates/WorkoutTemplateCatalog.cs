@@ -111,9 +111,13 @@ public static class WorkoutTemplateCatalog
                     "Bench Press", "Overhead Press", "Incline Bench Press",
                     "Lateral Raise", "Cable Fly", "Dumbbell Fly", "Triceps Pushdown", "Overhead Triceps Extension"
                 ]),
+                // Lat Pulldown umesto Seated Cable Row-a (R20, leđa po glavama): dok su leđa bila
+                // zbirna, dva veslanja i jedan zgib su izgledali kao tri vežbe za leđa, a latovi su
+                // imali jednu vežbu i 4-5 serija uz MEV 5-6. Sa pulldown-om imaju dve, a gornja leđa
+                // zadržavaju veslanje (izmereno: docs/features/back-heads.md).
                 new("Pull",
                 [
-                    "Barbell Row", "Pull-up", "Seated Cable Row",
+                    "Barbell Row", "Pull-up", "Lat Pulldown",
                     "Face Pull", "Barbell Curl", "Lateral Raise", "Calf Raise", "Hammer Curl"
                 ]),
                 new("Legs",
@@ -351,9 +355,12 @@ public static class WorkoutTemplateCatalog
                     "Single-Leg Romanian Deadlift", "Front Squat",
                     "Seated Leg Curl", "Calf Raise", "Machine Crunch", "Cable Crunch"
                 ]),
+                // Seated Cable Row posle zgiba (R20): gornja leđa su imala jedno veslanje nedeljno
+                // (Upper A) i bila ispod MEV-a u svakoj nedelji. Stoji drugi, jer zgib ostaje glavno
+                // dizanje dana; ovo je dan za gornje telo, pa ne istiskuje noge.
                 new("Upper B",
                 [
-                    "Pull-up", "Incline Bench Press",
+                    "Pull-up", "Seated Cable Row", "Incline Bench Press",
                     "Dumbbell Fly", "Overhead Triceps Extension", "Hammer Curl", "Rear Delt Fly"
                 ]),
                 new("Legs C",
