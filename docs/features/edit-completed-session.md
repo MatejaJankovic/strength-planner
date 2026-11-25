@@ -82,7 +82,8 @@ odeljak „Ispravka završenog treninga".
   provere), 213 → 223 na klijentu.
 - Vraćanje pravila na committed stablu (pre dopune testova za deload): granice se ne poništavaju
   1 od 1325 pada; procena se ne uklanja 2; ocena se ne poništava 1; prozor se ignoriše pri
-  izmeni serije 1; pomeraj se ne beleži 2.
+  izmeni serije 1; pomeraj se ne beleži 2. Posle dopune testova za deload: oznaka „deload ostaje" uvek `false` ruši
+  1, a ispravka koja ne proverava deload ruši 3.
 - **Dva moja testa za deload su pala iz pogrešnih razloga**, pa su ispravljena umesto da se
   tvrdnja oslabi. Nedelja sa dvadeset otkaza nije prešla prag od 0,60, jer je imala jedan jak
   signal, a prag traži dva. A serija sa RIR 0 koja je bila upisana direktno u bazu prošla je kao
