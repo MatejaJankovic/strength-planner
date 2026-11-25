@@ -529,6 +529,23 @@ Grešku ispravljaš ikonicama pored serije: **olovka** za izmenu, **kanta** za b
 > kad ga vratiš na plan), a zamena nije moguća kad na vežbi već postoji upisana serija. Trening
 > koji novu vežbu već ima zadržava staru, da je ne bi imao dvaput.
 >
+> **Dodavanje i uklanjanje vežbe.** Dugme **„Dodaj vežbu"** na dnu ekrana treninga nudi vežbe koje se
+> rade sa opterećenjem, a još nisu u tom danu, sa mišićem koji direktno rade; dugme **„Ukloni vežbu"**
+> stoji na kartici. Oba važe za taj dan **do kraja bloka**: u ovom treningu i u svakom sledećem treningu
+> istog dana koji još čeka. Odrađeni, započeti i preskočeni treninzi ostaju kakvi su bili, a vežba na kojoj
+> već postoji upisana serija ne uklanja se. Dodata vežba ide na kraj dana i dobija ono što bi joj blok
+> propisao da je od početka bila u šablonu: opseg i rezervu prema tipu (složena ili izolaciona) i prema
+> nedelji, broj serija prema tvom nivou, a težina se računa iz maksimuma, kao kod zamene. Kad blok cilja
+> zonu volumena, serije ostalih vežbi se ponovo raspoređuju, pa dodata vežba i susedne mogu da dobiju
+> više ili manje serija nego što propis kaže, kao i svaka druga. Dan sme da ima najviše 12 vežbi i mora da
+> zadrži bar jednu. Uklonjena vežba se ne pamti: ako je kasnije dodaš, kreće od propisa bloka, a ne od
+> onoga što si u njoj već radio.
+>
+> **Blok koji je već imao rasterećenje zbog umora ne prima nove vežbe.** Posle takvog rasterećenja
+> nedelje više ne prate raspored bloka (planirana nedelja rasterećenja se oslobađa i preuzima fazu
+> one koja je postala rasterećenje), pa propis po broju nedelje ne bi bio onaj koji nedelja nosi. Ekran
+> to kaže kad pokušaš da dodaš vežbu; dodaj je u sledećem bloku. Uklanjanje je u takvom bloku moguće.
+>
 > Ugrađeni šabloni za zadnju ložu koriste **sedeći** pregib (Seated Leg Curl): u njemu je kuk
 > savijen, pa mišić radi izdužen, i uz isti volumen dao je veći rast od ležećeg (Maeo i sar.
 > 2021). Ako tvoj blok još ima Leg Curl, zamena vežbe ti nudi sedeći. Sledeći blok postojećeg
