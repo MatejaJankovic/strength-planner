@@ -426,6 +426,57 @@ describe('WorkoutSession: izmena bloka', () => {
     }
   });
 
+  it('poruka posle zamene vežbe nestaje sama', () => {
+    vi.useFakeTimers();
+    try {
+      open('Planned');
+      const component = fixture.componentInstance as unknown as {
+        openSwap(target: ReturnType<typeof plan>): void;
+        swapChoice: { set(value: string): void };
+        confirmSwap(target: ReturnType<typeof plan>): void;
+      };
+
+      component.openSwap(plan('p1', 'Vežba 1'));
+      http.expectOne((request) => request.url.endsWith('/sessions/plans/p1/alternatives')).flush([
+        { exerciseId: 'alt', name: 'Druga', equipment: 'Barbell', isCustom: false },
+      ]);
+      component.swapChoice.set('alt');
+      component.confirmSwap(plan('p1', 'Vežba 1'));
+      http
+        .expectOne((request) => request.method === 'POST' && request.url.endsWith('/sessions/plans/p1/substitute'))
+        .flush(session('Planned', [plan('p1', 'Druga'), plan('p2')]));
+      fixture.detectChanges();
+      expect((fixture.nativeElement as HTMLElement).textContent).toContain('Vežba je zamenjena do kraja bloka.');
+
+      vi.advanceTimersByTime(3300);
+      fixture.detectChanges();
+      expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Vežba je zamenjena do kraja bloka.');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('poruka posle preskakanja treninga nestaje sama', () => {
+    vi.useFakeTimers();
+    try {
+      open('Planned');
+      const component = fixture.componentInstance as unknown as { skip(): void };
+
+      component.skip();
+      http
+        .expectOne((request) => request.method === 'POST' && request.url.endsWith('/skip'))
+        .flush(session('Skipped', [plan('p1'), plan('p2')]));
+      fixture.detectChanges();
+      expect((fixture.nativeElement as HTMLElement).textContent).toContain('Trening je preskočen.');
+
+      vi.advanceTimersByTime(3300);
+      fixture.detectChanges();
+      expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Trening je preskočen.');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('dodavanje kroz ekran menja trening koji se prikazuje', () => {
     open('Planned');
 
