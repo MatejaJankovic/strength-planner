@@ -130,6 +130,46 @@ public class BlockEditServiceTests
                 .Order());
     }
 
+    /// <summary>
+    /// Trening kome je upisana serija je počet, ma šta stoji u njegovom statusu (isto pravilo kao kod
+    /// balansiranja nedelje): dodata vežba mu ne menja sadržaj dok ga vežbač radi.
+    /// </summary>
+    [Fact]
+    public async Task APlannedSessionThatAlreadyHasALoggedSet_DoesNotGetTheExercise()
+    {
+        using var database = new SqliteDatabase();
+        await SeedAsync(database, SetAllocation.FollowTemplate);
+
+        await using (var context = database.NewContext())
+        {
+            context.SetLogs.Add(new SetLog
+            {
+                Id = Guid.NewGuid(),
+                ExercisePlanId = await PlanId(context, "Day A", 3, Bench),
+                SetNumber = 1,
+                WeightKg = 80m,
+                Reps = 8,
+                Rir = 2,
+                PerformedAt = DateTime.UtcNow
+            });
+            await context.SaveChangesAsync();
+        }
+
+        await using (var context = database.NewContext())
+        {
+            await Service(context).AddExerciseAsync(database.UserId, await SessionId(context, "Day A", 2), CableFly);
+        }
+
+        await using var read = database.NewContext();
+        Assert.Equal(
+            [2, 4, 5, 6],
+            read.ExercisePlans
+                .Where(plan => plan.ExerciseId == CableFly)
+                .Select(plan => plan.WorkoutSession.TrainingWeek.WeekNumber)
+                .ToList()
+                .Order());
+    }
+
     [Fact]
     public async Task AddingToAWeek_RebalancesIt_WhenTheBlockAimsAtTheVolumeTarget()
     {
