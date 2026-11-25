@@ -59,24 +59,24 @@ public class SubjectiveFatigueServiceTests
     public async Task TheAnswerGivenWithCompleting_IsStored()
     {
         using var database = new SqliteDatabase();
-        var seed = await SeedAsync(database, null, null);
+        var seed = await SeedAsync(database, [null, null]);
 
-        await CompleteAsync(database, seed.WeekThreeSession, 4);
+        await CompleteAsync(database, seed.Session, 4);
 
         await using var read = database.NewContext();
-        Assert.Equal(4, (await read.WorkoutSessions.SingleAsync(session => session.Id == seed.WeekThreeSession)).PerceivedFatigue);
+        Assert.Equal(4, (await read.WorkoutSessions.SingleAsync(session => session.Id == seed.Session)).PerceivedFatigue);
     }
 
     [Fact]
     public async Task NoAnswer_IsStoredAsNoAnswer()
     {
         using var database = new SqliteDatabase();
-        var seed = await SeedAsync(database, null, null);
+        var seed = await SeedAsync(database, [null, null]);
 
-        await CompleteAsync(database, seed.WeekThreeSession, null);
+        await CompleteAsync(database, seed.Session, null);
 
         await using var read = database.NewContext();
-        Assert.Null((await read.WorkoutSessions.SingleAsync(session => session.Id == seed.WeekThreeSession)).PerceivedFatigue);
+        Assert.Null((await read.WorkoutSessions.SingleAsync(session => session.Id == seed.Session)).PerceivedFatigue);
     }
 
     [Theory]
@@ -86,13 +86,13 @@ public class SubjectiveFatigueServiceTests
     public async Task AnAnswerOutsideOneToFive_IsRefused_AndTheWorkoutIsNotCompleted(int rating)
     {
         using var database = new SqliteDatabase();
-        var seed = await SeedAsync(database, null, null);
+        var seed = await SeedAsync(database, [null, null]);
 
-        var error = await Assert.ThrowsAsync<TrainingLogException>(() => CompleteAsync(database, seed.WeekThreeSession, rating));
+        var error = await Assert.ThrowsAsync<TrainingLogException>(() => CompleteAsync(database, seed.Session, rating));
 
         Assert.Equal(TrainingLogErrorType.Validation, error.ErrorType);
         await using var read = database.NewContext();
-        var session = await read.WorkoutSessions.SingleAsync(candidate => candidate.Id == seed.WeekThreeSession);
+        var session = await read.WorkoutSessions.SingleAsync(candidate => candidate.Id == seed.Session);
         Assert.Equal(SessionStatus.InProgress, session.Status);
         Assert.Null(session.PerceivedFatigue);
     }
@@ -104,7 +104,7 @@ public class SubjectiveFatigueServiceTests
     public async Task TheBaseline_IsReadFromTheSameBlockOnly()
     {
         using var database = new SqliteDatabase();
-        var seed = await SeedAsync(database, 2, 3);
+        var seed = await SeedAsync(database, [2, 3]);
 
         // Drugi blok istog vežbača sa odgovorom 1 u svakoj nedelji: da je osnova čitana odatle, porast bi bio veći.
         await using (var db = database.NewContext())
@@ -137,25 +137,48 @@ public class SubjectiveFatigueServiceTests
             await db.SaveChangesAsync();
         }
 
-        await CompleteAsync(database, seed.WeekThreeSession, 4);
+        await CompleteAsync(database, seed.Session, 4);
 
         await using var read = database.NewContext();
-        var score = (await read.TrainingWeeks.SingleAsync(week => week.Id == seed.WeekThree)).FatigueScore!.Value;
+        var score = (await read.TrainingWeeks.SingleAsync(week => week.Id == seed.Week)).FatigueScore!.Value;
 
         Assert.Equal(await ScoreOfWeekThreeAsync(2, 3, 4), score);
     }
 
+    /// <summary>
+    /// Nedelja rasterećenja usred bloka se ne broji u osnovu: vežbač se u njoj oseća bolje, pa bi spustila
+    /// osnovu i naduvala porast sledeće nedelje. Odgovori 2, 3, (rasterećenje) 1, pa 3: bez rasterećenja je
+    /// osnova 2.5 i porast 0.5 (signal na pola težine, 0.10); sa njim bi osnova bila 2 i porast 1.0 (0.20).
+    /// </summary>
+    [Fact]
+    public async Task ADeloadWeekInTheMiddle_DoesNotLowerTheBaseline()
+    {
+        var control = await ScoreOfWeekAsync([null, null, null], null, deloadWeek: 3);
+        var score = await ScoreOfWeekAsync([2, 3, 1], 3, deloadWeek: 3);
+
+        Assert.Equal(control + 0.10m, score);
+    }
+
     // ---- priprema ------------------------------------------------------------------------
 
-    private static async Task<decimal> ScoreOfWeekThreeAsync(int? weekOne, int? weekTwo, int? weekThree)
+    private static Task<decimal> ScoreOfWeekThreeAsync(int? weekOne, int? weekTwo, int? weekThree)
+    {
+        return ScoreOfWeekAsync([weekOne, weekTwo], weekThree);
+    }
+
+    /// <summary>
+    /// Ocena nedelje koja se završava (posle nedelja sa datim odgovorima). <paramref name="deloadWeek"/> je
+    /// nedelja rasterećenja usred bloka; njen odgovor je u spisku kao i svaki drugi.
+    /// </summary>
+    private static async Task<decimal> ScoreOfWeekAsync(IReadOnlyList<int?> earlierAnswers, int? answer, int? deloadWeek = null)
     {
         using var database = new SqliteDatabase();
-        var seed = await SeedAsync(database, weekOne, weekTwo);
+        var seed = await SeedAsync(database, earlierAnswers, deloadWeek);
 
-        await CompleteAsync(database, seed.WeekThreeSession, weekThree);
+        await CompleteAsync(database, seed.Session, answer);
 
         await using var read = database.NewContext();
-        return (await read.TrainingWeeks.SingleAsync(week => week.Id == seed.WeekThree)).FatigueScore!.Value;
+        return (await read.TrainingWeeks.SingleAsync(week => week.Id == seed.Week)).FatigueScore!.Value;
     }
 
     private static async Task CompleteAsync(SqliteDatabase database, Guid sessionId, int? rating)
@@ -164,15 +187,20 @@ public class SubjectiveFatigueServiceTests
         await SessionCompletionTests.NewService(context).CompleteAsync(database.UserId, sessionId, rating, CancellationToken.None);
     }
 
-    private sealed record Seed(Guid WeekThree, Guid WeekThreeSession);
+    /// <summary>Nedelja koja se završava i njen trening.</summary>
+    private sealed record Seed(Guid Week, Guid Session);
 
     /// <summary>
-    /// Linearni blok hipertrofije od šest nedelja, jedan trening ("Day A") nedeljno. Prve dve nedelje su odrađene i
-    /// ocenjene (sa datim odgovorima), treća je u toku sa tri serije po planu (RIR 1, vrh opsega nije dostignut), a
-    /// ostale čekaju. Serije su iste u svim nedeljama, pa jedini signal koji se razlikuje je odgovor.
+    /// Linearni blok hipertrofije od šest nedelja, jedan trening ("Day A") nedeljno. Nedelje sa datim odgovorima su
+    /// odrađene i ocenjene, sledeća je u toku sa tri serije po planu (RIR 1, vrh opsega nije dostignut), a ostale
+    /// čekaju. Serije su iste u svim nedeljama, pa jedini signal koji se razlikuje je odgovor. Poslednja nedelja
+    /// je rasterećenje, osim ako je <paramref name="deloadWeek"/> druga.
     /// </summary>
-    private static async Task<Seed> SeedAsync(SqliteDatabase database, int? weekOneAnswer, int? weekTwoAnswer)
+    private static async Task<Seed> SeedAsync(SqliteDatabase database, IReadOnlyList<int?> answers, int? deloadWeek = null)
     {
+        var current = answers.Count + 1;
+        var deload = deloadWeek ?? 6;
+
         var quads = Guid.NewGuid();
         var squat = Guid.NewGuid();
 
@@ -210,13 +238,13 @@ public class SubjectiveFatigueServiceTests
             IsActive = true
         };
 
-        Guid weekThree = default, sessionThree = default;
+        Guid currentWeek = default, currentSession = default;
         var setLogs = new List<SetLog>();
 
         for (var weekNumber = 1; weekNumber <= 6; weekNumber++)
         {
-            var week = new TrainingWeek { Id = Guid.NewGuid(), WeekNumber = weekNumber, IsDeload = weekNumber == 6 };
-            if (weekNumber <= 2)
+            var week = new TrainingWeek { Id = Guid.NewGuid(), WeekNumber = weekNumber, IsDeload = weekNumber == deload };
+            if (weekNumber < current)
             {
                 // Već ocenjena nedelja: ocena nije predmet ovog testa, a mora da postoji da je ne bi računao iznova.
                 week.FatigueScore = 0m;
@@ -229,8 +257,8 @@ public class SubjectiveFatigueServiceTests
             {
                 Id = Guid.NewGuid(),
                 DayLabel = "Day A",
-                Status = weekNumber <= 2 ? SessionStatus.Completed : weekNumber == 3 ? SessionStatus.InProgress : SessionStatus.Planned,
-                PerceivedFatigue = weekNumber == 1 ? weekOneAnswer : weekNumber == 2 ? weekTwoAnswer : null
+                Status = weekNumber < current ? SessionStatus.Completed : weekNumber == current ? SessionStatus.InProgress : SessionStatus.Planned,
+                PerceivedFatigue = weekNumber < current ? answers[weekNumber - 1] : null
             };
             var plan = new ExercisePlan
             {
@@ -249,7 +277,7 @@ public class SubjectiveFatigueServiceTests
             session.ExercisePlans.Add(plan);
             week.Sessions.Add(session);
 
-            if (weekNumber <= 3)
+            if (weekNumber <= current)
             {
                 for (var number = 1; number <= 3; number++)
                 {
@@ -266,10 +294,10 @@ public class SubjectiveFatigueServiceTests
                 }
             }
 
-            if (weekNumber == 3)
+            if (weekNumber == current)
             {
-                weekThree = week.Id;
-                sessionThree = session.Id;
+                currentWeek = week.Id;
+                currentSession = session.Id;
             }
         }
 
@@ -279,6 +307,6 @@ public class SubjectiveFatigueServiceTests
         db.SetLogs.AddRange(setLogs);
         await db.SaveChangesAsync();
 
-        return new Seed(weekThree, sessionThree);
+        return new Seed(currentWeek, currentSession);
     }
 }
