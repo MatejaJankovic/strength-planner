@@ -10,6 +10,7 @@ import {
   CompleteSessionResultDto,
   ExerciseAlternativeDto,
   ExercisePlanDto,
+  SessionRevisionResultDto,
   SetLogDto,
   WorkoutSessionDto,
 } from '../../core/models/training.models';
@@ -23,6 +24,7 @@ import { LoadInputNote, loadInputNote, zeroLoadWarning } from './load-input-note
 import { loadLabel } from './load-label';
 import { repRangeLabel } from '../../shared/rep-range-label';
 import { CompletionSummary } from './completion-summary';
+import { correctionNote, recalculates, revisionNotes } from './correction-note';
 import { isCalibrationEntry } from './calibration';
 
 interface SetDraft {
@@ -68,6 +70,12 @@ export class WorkoutSession {
   protected readonly session = signal<WorkoutSessionDto | null>(null);
   protected readonly summary = signal<CompleteSessionResultDto | null>(null);
 
+  // Ispravka završenog treninga: izmene serija se upisuju odmah, a preračun (procena,
+  // težine, ocena nedelje) tek kad se ispravka sačuva.
+  protected readonly correcting = signal(false);
+  protected readonly revising = signal(false);
+  protected readonly revision = signal<SessionRevisionResultDto | null>(null);
+
   private readonly drafts = signal<Record<string, SetDraft>>({});
   private readonly editingSetId = signal<Record<string, string | null>>({});
   protected readonly savingPlanId = signal<string | null>(null);
@@ -77,6 +85,20 @@ export class WorkoutSession {
   protected readonly isInProgress = computed(() => this.status() === 'InProgress');
   protected readonly isCompleted = computed(() => this.status() === 'Completed');
   protected readonly isSkipped = computed(() => this.status() === 'Skipped');
+
+  protected readonly correction = computed(() => this.session()?.correction ?? null);
+  /** Unos serija je otvoren dok trening traje i dok se završen trening ispravlja. */
+  protected readonly canEnterSets = computed(() => this.isInProgress() || this.correcting());
+  protected readonly correctionText = computed(() =>
+    correctionNote(this.correction(), this.correcting()),
+  );
+  protected readonly savesCorrection = computed(() => recalculates(this.correction()));
+  protected readonly revisionTexts = computed(() =>
+    revisionNotes(this.revision(), this.session()?.weekNumber ?? 0),
+  );
+  protected readonly summaryTitle = computed(() =>
+    this.revision() ? 'Ispravka sačuvana' : 'Trening završen',
+  );
 
   protected readonly loggedSetCount = computed(() =>
     (this.session()?.exercisePlans ?? []).reduce((total, plan) => total + plan.setLogs.length, 0),
@@ -94,6 +116,8 @@ export class WorkoutSession {
       next: (session) => {
         this.session.set(session);
         this.initDrafts(session);
+        // Izmene serija koje nisu sačuvane preživljavaju osvežavanje ekrana: server ih pamti.
+        this.correcting.set(session.correction?.revisionPending === true);
         this.loading.set(false);
       },
       error: (err: unknown) => {
@@ -415,11 +439,72 @@ export class WorkoutSession {
         this.completing.set(false);
         this.showToast('Trening završen');
         window.scrollTo({ top: 0 });
+        this.refreshCorrection();
       },
       error: (err: unknown) => {
         this.completing.set(false);
         this.actionError.set(extractErrorMessage(err, 'Ne mogu da završim trening. Pokušaj ponovo.'));
       },
+    });
+  }
+
+  // --- correcting a finished workout ----------------------------------------
+
+  protected startCorrection(): void {
+    this.actionError.set(null);
+    this.correcting.set(true);
+  }
+
+  /**
+   * Kraj ispravke. Ako ima nesačuvanih izmena i trening se preračunava, čuva ih; inače samo
+   * zatvara režim (trening koji se ispravlja kao istorija nema šta da preračuna).
+   */
+  protected finishCorrection(): void {
+    if (this.revising()) {
+      return;
+    }
+
+    if (!this.savesCorrection() || !this.correction()?.revisionPending) {
+      this.correcting.set(false);
+      return;
+    }
+
+    this.revising.set(true);
+    this.actionError.set(null);
+
+    this.sessionService.revise(this.sessionId).subscribe({
+      next: (result) => {
+        this.revision.set(result);
+        this.summary.set(result.result);
+        this.session.update((session) =>
+          session?.correction
+            ? { ...session, correction: { ...session.correction, revisionPending: false } }
+            : session,
+        );
+        this.correcting.set(false);
+        this.revising.set(false);
+        this.showToast('Ispravka sačuvana');
+        window.scrollTo({ top: 0 });
+        this.refreshCorrection();
+      },
+      error: (err: unknown) => {
+        this.revising.set(false);
+        this.actionError.set(extractErrorMessage(err, 'Ispravka nije sačuvana. Pokušaj ponovo.'));
+      },
+    });
+  }
+
+  /**
+   * Prozor ispravke se čita sa servera posle završetka i posle čuvanja: odgovor na završetak
+   * ga ne nosi, a posle čuvanja se mogao promeniti.
+   */
+  private refreshCorrection(): void {
+    this.sessionService.getById(this.sessionId).subscribe({
+      next: (fresh) =>
+        this.session.update((session) =>
+          session ? { ...session, correction: fresh.correction } : session,
+        ),
+      error: () => undefined,
     });
   }
 
@@ -567,6 +652,11 @@ export class WorkoutSession {
       }
       return {
         ...session,
+        // Izmena serije u završenom treningu znači da rezultat više ne opisuje njegove serije.
+        correction:
+          this.correcting() && session.correction?.mode === 'Recalculate'
+            ? { ...session.correction, revisionPending: true }
+            : session.correction,
         exercisePlans: session.exercisePlans.map((plan) =>
           plan.id === planId ? { ...plan, setLogs: updater(plan.setLogs) } : plan,
         ),

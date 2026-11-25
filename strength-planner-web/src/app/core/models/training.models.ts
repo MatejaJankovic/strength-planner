@@ -175,6 +175,26 @@ export interface WorkoutSessionDto {
   date?: string | null;
   status: 'Planned' | 'InProgress' | 'Completed' | 'Skipped' | string;
   exercisePlans: ExercisePlanDto[];
+  /** Samo za završen trening: da li se još može ispraviti i kako se ispravka primenjuje. */
+  correction?: SessionCorrectionDto | null;
+}
+
+export interface SessionCorrectionDto {
+  canCorrect: boolean;
+  /** `Recalculate`, ili `HistoryOnly` za trening završen pre beleženja rezultata po treningu. */
+  mode: 'Recalculate' | 'HistoryOnly' | string;
+  /** Zašto se ne može ispraviti: `NextWorkoutStarted` ili `NextBlockOpened`. */
+  blockedBy?: string | null;
+  /** Serije su menjane, a ispravka nije sačuvana. */
+  revisionPending: boolean;
+}
+
+export interface SessionRevisionResultDto {
+  result: CompleteSessionResultDto;
+  previousFatigueScore?: number | null;
+  fatigueScore?: number | null;
+  /** Deload koji je ranije uveden ostaje, iako ispravljene serije ne bi dale toliki umor. */
+  deloadKept: boolean;
 }
 
 export interface ExercisePlanDto {

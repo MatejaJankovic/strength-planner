@@ -21,6 +21,9 @@ import { nextWeightLabel, nextWeightTone } from './next-weight-label';
 export class CompletionSummary {
   readonly outcome = input.required<CompleteSessionResultDto>();
 
+  /** Naslov: „Trening završen“, ili „Ispravka sačuvana“ kad se rezime čita posle ispravke. */
+  readonly title = input('Trening završen');
+
   /** Oznaka „Sledeće": predlog i razlika prema podignutoj težini. */
   protected nextWeight(summary: CompletedExerciseSummaryDto): string {
     return nextWeightLabel(summary);

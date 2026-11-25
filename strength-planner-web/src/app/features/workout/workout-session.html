@@ -28,12 +28,30 @@
   </header>
 
   @if (summary(); as result) {
-    <app-completion-summary [outcome]="result" />
-  } @else if (isCompleted()) {
+    <app-completion-summary [outcome]="result" [title]="summaryTitle()" />
+    @for (text of revisionTexts(); track text) {
+      <p class="done-note" role="status">
+        <mat-icon aria-hidden="true">info</mat-icon>
+        {{ text }}
+      </p>
+    }
+  } @else if (isCompleted() && !correcting()) {
     <p class="done-note" role="status">
       <mat-icon aria-hidden="true">verified</mat-icon>
-      Ovaj trening je završen. Prikaz je samo za pregled.
+      Ovaj trening je završen.
     </p>
+  }
+
+  @if (isCompleted()) {
+    @if (correctionText(); as text) {
+      <p class="card__hint">{{ text }}</p>
+    }
+    @if (correction()?.canCorrect && !correcting()) {
+      <button class="cta cta--quiet" type="button" (click)="startCorrection()">
+        <mat-icon aria-hidden="true">edit</mat-icon>
+        Ispravi trening
+      </button>
+    }
   }
 
   @if (isPlanned()) {
@@ -109,7 +127,7 @@
           [label]="plan.isBodyweight ? 'Dodatno opterećenje' : 'Težina serije'"
           [value]="draft.weightKg"
           [step]="plan.weightStepKg"
-          [disabled]="!isInProgress()"
+          [disabled]="!canEnterSets()"
           (valueChange)="setWeight(plan.id, $event)"
         />
 
@@ -183,7 +201,7 @@
           </p>
         }
 
-        @if (isInProgress()) {
+        @if (canEnterSets()) {
           <div class="entry">
             <div class="entry__field">
               <span class="entry__label">
@@ -329,7 +347,7 @@
                 } @else {
                   <span class="set__rir numeric">RIR {{ set.rir }}</span>
                 }
-                @if (isInProgress()) {
+                @if (canEnterSets()) {
                   <span class="set__actions">
                     <button
                       class="iconbtn"
@@ -352,7 +370,7 @@
               </li>
             }
           </ul>
-        } @else if (isInProgress()) {
+        } @else if (canEnterSets()) {
           <p class="card__hint">Još nema serija - dodaj prvu iznad.</p>
         }
 
@@ -412,6 +430,17 @@
         Završavam…
       } @else {
         Završi trening
+      }
+    </button>
+  } @else if (correcting()) {
+    <button class="cta cta--finish" type="button" [disabled]="revising()" (click)="finishCorrection()">
+      @if (revising()) {
+        <span class="cta__spinner" aria-hidden="true"></span>
+        Čuvam…
+      } @else if (savesCorrection()) {
+        Sačuvaj ispravku
+      } @else {
+        Gotovo
       }
     </button>
   }

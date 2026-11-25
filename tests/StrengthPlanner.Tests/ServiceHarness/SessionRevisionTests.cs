@@ -98,6 +98,52 @@ public class SessionRevisionTests
     }
 
     /// <summary>
+    /// Twenty hard sets at the ceiling of the volume score high enough to pull
+    /// the next week forward as a deload. A week that was entered easy and corrected to that is
+    /// treated as if it had been entered right: the deload comes, and the report says it did.
+    /// </summary>
+    [Fact]
+    public async Task ACorrectionThatRaisesTheScoreOverTheThreshold_PullsTheDeloadForward()
+    {
+        using var database = new SqliteDatabase();
+        var seed = await SeedAsync(database, sets: 20, reps: 10, rir: 3);
+        var first = await CompleteAsync(database, seed.SessionOne);
+        Assert.Null(first.AutoDeload);
+
+        await SetEverySetAsync(database, seed.SessionOne, reps: 0, rir: 0, isFailure: false, hard: true);
+        var result = await ReviseAsync(database, seed.SessionOne);
+
+        Assert.NotNull(result.Result.AutoDeload);
+        Assert.Equal(2, result.Result.AutoDeload.DeloadWeek);
+        Assert.False(result.DeloadKept);
+        await using var read = database.NewContext();
+        Assert.True((await read.TrainingWeeks.SingleAsync(week => week.MesocycleId == seed.MesocycleId && week.WeekNumber == 2)).IsAutoDeload);
+    }
+
+    /// <summary>
+    /// The reverse: the sets were entered hard and pulled a deload forward, then corrected to
+    /// easy ones. The next week was rewritten for the deload and the lifter may have seen it, so
+    /// it stays, and the report says so instead of quietly undoing it.
+    /// </summary>
+    [Fact]
+    public async Task ADeloadThatWasPulledForward_StaysWhenTheCorrectedScoreWouldNotHaveCalledForIt()
+    {
+        using var database = new SqliteDatabase();
+        var seed = await SeedAsync(database, sets: 20, reps: 0, rir: 0, hard: true);
+        var first = await CompleteAsync(database, seed.SessionOne);
+        Assert.NotNull(first.AutoDeload);
+
+        await SetEverySetAsync(database, seed.SessionOne, reps: 10, rir: 3, isFailure: false);
+        var result = await ReviseAsync(database, seed.SessionOne);
+
+        Assert.True(result.DeloadKept);
+        Assert.Null(result.Result.AutoDeload);
+        Assert.True(result.FatigueScore < result.PreviousFatigueScore);
+        await using var read = database.NewContext();
+        Assert.True((await read.TrainingWeeks.SingleAsync(week => week.MesocycleId == seed.MesocycleId && week.WeekNumber == 2)).IsAutoDeload);
+    }
+
+    /// <summary>
     /// The limits are not recalculated on top of the old move: that would count the week
     /// twice. Twenty easy sets raise the ceiling by one (20 to 21); corrected to twenty hard
     /// ones the same week lowers it (to 19), and not to 20, which is what counting it twice
@@ -331,30 +377,52 @@ public class SessionRevisionTests
             .FirstAsync();
     }
 
+    /// <summary>
+    /// A hard week, with two real signals so it can pull a deload forward by itself: half the
+    /// sets taken to failure, the rest six reps (two under the range of eight) with one in
+    /// reserve, and at twenty sets the volume sits on the ceiling. Failures are left out of the
+    /// reserve signal, so it takes the second half to carry that one. The sets are not zero
+    /// in reserve, because the service reads such a set as a failure and the halves would blur.
+    /// </summary>
+    private static (int Reps, int Rir, bool IsFailure) HardSet(int number)
+    {
+        return number % 2 == 0 ? (8, 0, true) : (6, 1, false);
+    }
+
     /// <summary>Changes every logged set of the session through the same service the screen uses.</summary>
     private static async Task SetRepsAsync(SqliteDatabase database, Guid sessionId, int reps)
     {
         await SetEverySetAsync(database, sessionId, reps, rir: 1, isFailure: false);
     }
 
-    private static async Task SetEverySetAsync(SqliteDatabase database, Guid sessionId, int reps, int rir, bool isFailure)
+    private static async Task SetEverySetAsync(
+        SqliteDatabase database,
+        Guid sessionId,
+        int reps,
+        int rir,
+        bool isFailure,
+        bool hard = false)
     {
         List<Guid> setIds;
         await using (var db = database.NewContext())
         {
             setIds = await db.SetLogs
                 .Where(set => set.ExercisePlan.WorkoutSessionId == sessionId)
+                .OrderBy(set => set.SetNumber)
                 .Select(set => set.Id)
                 .ToListAsync();
         }
 
+        var number = 0;
         foreach (var setId in setIds)
         {
+            number++;
+            var (setReps, setRir, failure) = hard ? HardSet(number) : (reps, rir, isFailure);
             await using var context = database.NewContext();
             await new SetLogService(context).UpdateSetAsync(
                 database.UserId,
                 setId,
-                new UpdateSetLogRequest { WeightKg = 100m, Reps = reps, Rir = rir, IsFailure = isFailure });
+                new UpdateSetLogRequest { WeightKg = 100m, Reps = setReps, Rir = setRir, IsFailure = failure });
         }
     }
 
@@ -390,7 +458,12 @@ public class SessionRevisionTests
     /// sets of 100 kg; the second is planned. The block follows its template, so finishing a
     /// workout does not rebalance anything that is not under test here.
     /// </summary>
-    private static async Task<Seed> SeedAsync(SqliteDatabase database, int sets, int reps, int rir)
+    private static async Task<Seed> SeedAsync(
+        SqliteDatabase database,
+        int sets,
+        int reps,
+        int rir,
+        bool hard = false)
     {
         var quads = Guid.NewGuid();
         var squat = Guid.NewGuid();
@@ -472,13 +545,15 @@ public class SessionRevisionTests
             {
                 for (var number = 1; number <= sets; number++)
                 {
+                    var (setReps, setRir, failure) = hard ? HardSet(number) : (reps, rir, false);
                     plan.SetLogs.Add(new SetLog
                     {
                         Id = Guid.NewGuid(),
                         SetNumber = number,
                         WeightKg = 100m,
-                        Reps = reps,
-                        Rir = rir,
+                        Reps = setReps,
+                        Rir = setRir,
+                        IsFailure = failure,
                         PerformedAt = DateTime.UtcNow
                     });
                 }
