@@ -547,6 +547,11 @@ Grešku ispravljaš ikonicama pored serije: **olovka** za izmenu, **kanta** za b
 > lakše, pa sledeći trening dobija veće opterećenje. Uz to serija sa RIR 4 u stimulativni
 > volumen ulazi upola, a sa RIR 5 ne ulazi uopšte.
 
+**Ekran se ne gasi dok trening traje.** Na ekranu treninga koji je u toku telefon ne gasi ekran sam, pa ga ne
+moraš otključavati pred svaku seriju; to piše na vrhu („Ekran ostaje upaljen dok traje trening"). Prestaje kad
+završiš trening ili izađeš sa ekrana. Radi samo u bezbednom kontekstu (HTTPS), i pregledač ga može da odbije (npr.
+štednja baterije): tada se ekran gasi kao i obično, a trening radi bez ikakve greške.
+
 ### 3. Završi trening
 
 Dugme **„Završi trening"** na dnu. Tek tada se sve obračunava. Završen trening se ne
@@ -1141,6 +1146,6 @@ Namerno je van opsega, da ne bi bilo iznenađenja:
 
 - nema slanja mejlova → nema potvrde naloga ni oporavka lozinke;
 - nema više jezika (interfejs je samo na srpskom);
-- nema offline režima ni instalacije kao aplikacije (PWA);
+- nema offline režima: instalacija na početni ekran postoji, ali aplikacija i dalje traži vezu sa serverom;
 - **ne može se promeniti periodizacija već generisanog bloka** — pravi se novi;
 - nema deljenja plana, trenera ni više korisnika na jednom nalogu;

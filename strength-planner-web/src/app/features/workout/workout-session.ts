@@ -1,10 +1,11 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { DecimalPipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { extractErrorMessage } from '../../core/api/http-error';
 import { SessionService } from '../../core/api/session.service';
+import { WakeLockService } from '../../core/wake-lock.service';
 import {
   AddSetLogRequest,
   CompleteSessionResultDto,
@@ -47,6 +48,7 @@ export class WorkoutSession {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly sessionService = inject(SessionService);
+  private readonly wakeLock = inject(WakeLockService);
 
   private readonly sessionId = this.route.snapshot.paramMap.get('id') ?? '';
 
@@ -107,8 +109,22 @@ export class WorkoutSession {
     (this.session()?.exercisePlans ?? []).reduce((total, plan) => total + plan.setLogs.length, 0),
   );
 
+  /** Ekran je upaljen zbog treninga; ekran treninga to kaže, da se zna zašto se telefon ne gasi. */
+  protected readonly screenStaysOn = this.wakeLock.active;
+
   constructor() {
     this.load();
+
+    // Ekran se drži upaljenim samo dok trening traje: ne dok se pregleda ili ispravlja završen.
+    effect(() => {
+      if (this.isInProgress()) {
+        void this.wakeLock.hold();
+      } else {
+        void this.wakeLock.release();
+      }
+    });
+
+    inject(DestroyRef).onDestroy(() => void this.wakeLock.release());
   }
 
   protected load(): void {
