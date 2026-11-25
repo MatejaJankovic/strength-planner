@@ -246,6 +246,19 @@ describe('NoteField', () => {
       expect(button('Sačuvaj').disabled).toBe(false);
     });
 
+    it('greška za čuvanje koje je krenulo za staru vežbu se ne prikazuje uz novu', () => {
+      create('exercise', null, 'vezba-A');
+      button('Dodaj belešku').click();
+      type('Za vežbu A');
+      button('Sačuvaj').click();
+      const request = http.expectOne((candidate) => candidate.url.endsWith('/exercises/vezba-A/note'));
+
+      swapTo('vezba-B', null);
+      request.flush({ title: 'x' }, { status: 500, statusText: 'Server Error' });
+
+      expect(root().querySelector('[role="alert"]')).toBeNull();
+    });
+
     it('beleška nove vežbe sa servera se prikazuje', () => {
       create('exercise', 'Stara', 'vezba-A');
 
