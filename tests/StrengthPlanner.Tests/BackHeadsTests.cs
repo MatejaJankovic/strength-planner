@@ -1,4 +1,5 @@
 using StrengthPlanner.Application.Templates;
+using StrengthPlanner.Domain.Algorithms;
 
 namespace StrengthPlanner.Tests;
 
@@ -62,6 +63,52 @@ public class BackHeadsTests
     public void HingesAndFacePull_CreditHalfASetToTheUpperBack(string exercise)
     {
         Assert.Equal([(ExerciseCatalog.UpperBack, 0.5m)], BackCredits(exercise));
+    }
+
+    /// <summary>
+    /// Koliko je nedelja (šablon × nivo × cilj × model × nedelja, posle balansiranja) svaka glava leđa ispod svog MEV-a,
+    /// po šablonu. Brojevi su zabeleženi tačno i isti su kao u <c>docs/features/back-heads.md</c>: zbirna grupa leđa je
+    /// ovo krila, a dve izmene šablona (Push/Pull/Legs: Lat Pulldown umesto drugog veslanja; Legs Specialization:
+    /// drugo veslanje na Upper B) bez ovoga nisu imale nijedan test koji bi pao kad se vrate (izmereno: 0).
+    /// </summary>
+    [Fact]
+    public void TheShortfallOfEachBackHead_IsRecordedPerTemplate()
+    {
+        var shortfall = new SortedDictionary<string, string>();
+
+        foreach (var week in TemplateWeekSimulation.EveryTrainingWeek())
+        {
+            foreach (var head in new[] { ExerciseCatalog.Lats, ExerciseCatalog.UpperBack })
+            {
+                var seed = ExerciseCatalog.VolumeLandmarks.Single(landmark => landmark.Muscle == head);
+                var mev = ExperienceProgramming.ScaleLandmarks(
+                    new VolumeLandmarkValues(seed.Mev, seed.Mav, seed.Mrv),
+                    week.Level).Mev;
+
+                if (week.Weekly(head) < mev)
+                {
+                    var key = $"{week.Template.Key}/{head}";
+                    shortfall[key] = (int.Parse(shortfall.GetValueOrDefault(key, "0")) + 1).ToString();
+                }
+            }
+        }
+
+        Assert.Equal(
+            new SortedDictionary<string, string>
+            {
+                ["full-body-2/Lats"] = "21",
+                ["full-body-2/Upper Back"] = "76",
+                ["full-body-4/Upper Back"] = "4",
+                ["full-body/Upper Back"] = "37",
+                ["legs-specialization/Upper Back"] = "18",
+                ["push-pull-legs-6/Upper Back"] = "4",
+                ["push-pull-legs/Lats"] = "49",
+                ["upper-lower-ppl/Upper Back"] = "18",
+                ["upper-lower-x3/Upper Back"] = "4",
+                ["upper-lower/Lats"] = "13",
+                ["upper-lower/Upper Back"] = "4",
+            }.Select(entry => $"{entry.Key}: {entry.Value}"),
+            shortfall.Select(entry => $"{entry.Key}: {entry.Value}"));
     }
 
     /// <summary>
