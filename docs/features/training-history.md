@@ -32,6 +32,10 @@ koji mu je plan dao, pa nedelja bloka u kojoj je bio. Poslednje dve su pretposta
   uzima `now`; stvaran datum se nikad ne dira). Dva testa.
 - Testovi: 1327 → 1350 na serveru (13 za istoriju, uz ostale iz pregleda #118), 223 → 236 na
   klijentu (oblikovanje i ekran).
+- Vraćanje pravila na committed stablu: poredak od najstarijeg ruši 2 testa; trening bez serija sa
+  podrazumevanim datumom 3; izveden datum koji se ne steže na „sada" 1; upit zaglavlja bez
+  filtra po korisniku 1 (test sklopa ima i globalni filter vlasnika, pa tuđi nalog vidi prazno
+  samo uz eksplicitan uslov).
 - Uživo, 375 px: istorija sa tri treninga (dva završena, jedan preskočen), plan i nedelja, 35 i
   34 serije, tonaža 19 920 i 21 330 kg, vežbe skraćene na tri uz „+3"; `scrollWidth` 375 =
   `clientWidth` 375. Pločica „Istorija" na profilu vodi na ekran.
