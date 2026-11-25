@@ -59,6 +59,10 @@
                     <span class="entry__exercises">{{ exercises(entry.exercises) }}</span>
                   }
                 }
+
+                @if (entry.note) {
+                  <span class="entry__note">{{ entry.note }}</span>
+                }
               </span>
 
               <mat-icon class="entry__chevron" aria-hidden="true">chevron_right</mat-icon>

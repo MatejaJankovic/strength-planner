@@ -1,0 +1,107 @@
+:host {
+  display: block;
+}
+
+.note {
+  background: color-mix(in srgb, var(--color-accent) 10%, white);
+  border-left: 3px solid var(--color-accent);
+  border-radius: 0.4rem;
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.55rem 0.7rem;
+}
+
+.note__label {
+  color: var(--color-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+// Beleška se prikazuje onako kako je napisana: novi redovi ostaju, a dugačka reč ne širi ekran.
+.note__text {
+  font-size: 0.92rem;
+  line-height: 1.4;
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.note__input {
+  background: var(--color-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 0.4rem;
+  box-sizing: border-box;
+  color: var(--color-ink);
+  font: inherit;
+  font-size: 1rem; // 16 px: manje bi naterao iOS da uveća stranicu pri fokusu.
+  min-height: 5rem;
+  padding: 0.5rem 0.6rem;
+  resize: vertical;
+  width: 100%;
+}
+
+.note__count {
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  margin: 0;
+  text-align: right;
+}
+
+.note__count--full {
+  color: #97371f;
+  font-weight: 700;
+}
+
+.note__error {
+  color: #8a2f18;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.note__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.note__btn {
+  align-items: center;
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  color: var(--color-muted);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  gap: 0.3rem;
+  justify-self: start;
+  min-height: 44px;
+  padding: 0 0.9rem;
+}
+
+.note__btn mat-icon {
+  flex: none;
+  font-size: 1.1rem;
+  height: 1.1rem;
+  width: 1.1rem;
+}
+
+.note__btn--primary {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.note__btn--add {
+  width: 100%;
+}
+
+.note__btn:disabled {
+  cursor: default;
+  opacity: 0.6;
+}

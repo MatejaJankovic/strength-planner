@@ -576,6 +576,18 @@ zaokruženo na korak vežbe; kad je radna težina blizu same šipke, to je prazn
 izmerena vrednost, i podsetnik je, a ne serija: zagrevanje se ne upisuje, ne ulazi u volumen i ne utiče na
 progresiju. Nestaje čim sačuvaš prvu radnu seriju.
 
+**Beleške.** Na ekranu treninga mogu da se pišu dve vrste beleški, slobodnog teksta do 500 karaktera, obe samo tvoje:
+
+- **Uz trening** („Beleška o treningu", ispod zaglavlja): kako je prošao, šta je bolelo. Vidi se i u Istoriji, skraćena
+  na dva reda.
+- **Uz vežbu** (na kartici vežbe): podešavanje sprave („sedište 4, pin 7"), napomena koja štiti rame. Pripada vežbi, a
+  ne ovom treningu: pojavljuje se pri svakom treningu te vežbe, u ovom bloku i u svim sledećim. Kad vežbu zameniš
+  drugom, važi beleška te druge vežbe (ako je ima), a ova ostaje sačuvana za dan kad se vratiš na nju.
+
+Pišu se u svakom stanju treninga, i na završenom i na preskočenom. Nisu podatak o treningu: ništa ne preračunavaju
+i ne otvaraju ispravku. Beleška se čuva tek na „Sačuvaj" (otkucano a nesačuvano se gubi pri izlasku sa ekrana), a
+prazna beleška briše staru.
+
 **Instalacija na početni ekran.** Kad se aplikacija otvori preko HTTPS-a (na računaru u kući: `scripts/local-https.sh`,
 vidi README), u pregledaču izaberi „Dodaj na početni ekran" (Chrome: meni sa tri tačke; Safari: dugme za deljenje).
 Ikona otvara aplikaciju bez trake pregledača. Aplikacija i dalje traži vezu sa serverom.

@@ -1,0 +1,43 @@
+@if (editing()) {
+  <div class="note note--editing">
+    <label class="note__label" [for]="fieldId">{{ label() }}</label>
+    <textarea
+      #field
+      class="note__input"
+      [id]="fieldId"
+      rows="3"
+      [maxLength]="maxLength"
+      [value]="draft()"
+      (input)="setDraft(field.value)"
+      [disabled]="saving()"
+    ></textarea>
+    <p class="note__count" [class.note__count--full]="draft().length >= maxLength">
+      {{ draft().length }} / {{ maxLength }}
+    </p>
+
+    @if (error(); as message) {
+      <p class="note__error" role="alert">{{ message }}</p>
+    }
+
+    <div class="note__actions">
+      <button type="button" class="note__btn note__btn--primary" [disabled]="saving()" (click)="save()">
+        {{ saving() ? 'Čuvam…' : 'Sačuvaj' }}
+      </button>
+      <button type="button" class="note__btn" [disabled]="saving()" (click)="cancel()">Otkaži</button>
+    </div>
+  </div>
+} @else if (saved(); as text) {
+  <div class="note">
+    <p class="note__label">{{ label() }}</p>
+    <p class="note__text">{{ text }}</p>
+    <button type="button" class="note__btn" (click)="edit()">
+      <mat-icon aria-hidden="true">edit</mat-icon>
+      Izmeni
+    </button>
+  </div>
+} @else {
+  <button type="button" class="note__btn note__btn--add" (click)="edit()">
+    <mat-icon aria-hidden="true">edit_note</mat-icon>
+    Dodaj belešku: {{ label().toLowerCase() }}
+  </button>
+}

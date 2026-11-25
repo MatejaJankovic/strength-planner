@@ -27,6 +27,7 @@ import { repRangeLabel } from '../../shared/rep-range-label';
 import { CompletionSummary } from './completion-summary';
 import { correctionNote, recalculates, revisionNotes } from './correction-note';
 import { isCalibrationEntry } from './calibration';
+import { NoteField } from './note-field';
 import { RestTimer } from './rest-timer';
 import { RestTimerService } from './rest-timer.service';
 import { platesHint, warmupHint } from './workout-aids';
@@ -51,6 +52,7 @@ const REP_STEP_MAX = 100;
     EmptyState,
     Loading,
     CompletionSummary,
+    NoteField,
     RestTimer,
   ],
   templateUrl: './workout-session.html',

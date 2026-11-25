@@ -174,6 +174,8 @@ export interface WorkoutSessionDto {
   dayLabel: string;
   date?: string | null;
   status: 'Planned' | 'InProgress' | 'Completed' | 'Skipped' | string;
+  /** Korisnikova beleška uz ovaj trening; može i na završenom i na preskočenom. */
+  note?: string | null;
   exercisePlans: ExercisePlanDto[];
   /** Samo za završen trening: da li se još može ispraviti i kako se ispravka primenjuje. */
   correction?: SessionCorrectionDto | null;
@@ -221,6 +223,8 @@ export interface ExercisePlanDto {
   equipment?: string;
   /** "Compound" ili "Isolation"; ekran ga čita da zagrevanje i ploče predlaže samo uz složenu vežbu. */
   exerciseType?: string;
+  /** Korisnikova beleška uz vežbu (podešavanje sprave...); prikazuje se pri svakom treningu te vežbe. */
+  exerciseNote?: string | null;
   /**
    * Vezba nosi deo telesne mase, pa je `targetWeightKg` ono sto se DODAJE, a 0 znaci
    * „sopstvenom masom". Netacno i za vezbu sa telesnom masom kad profil nema unetu masu.
@@ -385,4 +389,11 @@ export interface HistoryEntryDto {
   setCount: number;
   tonnageKg: number;
   exercises: string[];
+  /** Korisnikova beleška uz trening. */
+  note?: string | null;
+}
+
+/** Beleška kakva je sačuvana (bez okolnih razmaka), ili null kad je obrisana. */
+export interface NoteDto {
+  note: string | null;
 }

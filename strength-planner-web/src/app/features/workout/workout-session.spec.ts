@@ -330,6 +330,100 @@ describe('WorkoutSession: pomagala', () => {
     });
   });
 
+  describe('beleške', () => {
+    function notesShown(): string[] {
+      fixture.detectChanges();
+      return Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('.note__text')).map(
+        (element) => element.textContent ?? '',
+      );
+    }
+
+    function addButton(label: string): HTMLButtonElement {
+      const found = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('button')).find((button) =>
+        (button.textContent ?? '').includes(label),
+      );
+      if (!found) {
+        throw new Error(`Nema dugmeta „${label}"`);
+      }
+      return found;
+    }
+
+    it('beleška uz trening i beleška uz vežbu se prikazuju svaka na svom mestu', () => {
+      open(
+        session(
+          'InProgress',
+          [
+            plan({ exerciseNote: 'Sedište 4, pin 7' }),
+            plan({ id: 'p2', exerciseId: 'e2', exerciseName: 'Row', exerciseNote: null }),
+          ],
+          { note: 'Težak dan' },
+        ),
+      );
+
+      // Jedna beleška uz trening, jedna uz prvu vežbu; druga vežba je bez nje i nudi dodavanje.
+      expect(notesShown()).toEqual(['Težak dan', 'Sedište 4, pin 7']);
+      expect(text()).toContain('Dodaj belešku: beleška uz vežbu');
+    });
+
+    it('može se pisati u svakom statusu treninga, i na završenom i na preskočenom', () => {
+      for (const status of ['Planned', 'InProgress', 'Completed', 'Skipped']) {
+        TestBed.resetTestingModule();
+        TestBed.configureTestingModule({
+          providers: [
+            provideHttpClient(),
+            provideHttpClientTesting(),
+            provideRouter([]),
+            { provide: WakeLockService, useValue: wakeLock },
+          ],
+        });
+        http = TestBed.inject(HttpTestingController);
+        restTimer = TestBed.inject(RestTimerService);
+
+        open(session(status, [plan()]));
+
+        expect(text(), status).toContain('Dodaj belešku: beleška o treningu');
+        http.verify();
+      }
+    });
+
+    it('beleška uz trening ide treningu, a čuvanje ne pokreće pauzu i ne menja trening', () => {
+      open(session('InProgress', [plan()]));
+      addButton('Dodaj belešku: beleška o treningu').click();
+      fixture.detectChanges();
+
+      const field = (fixture.nativeElement as HTMLElement).querySelector('textarea')!;
+      field.value = 'Spavao 5h';
+      field.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      addButton('Sačuvaj').click();
+
+      http
+        .expectOne((request) => request.method === 'PUT' && request.url.endsWith('/sessions/s1/note'))
+        .flush({ note: 'Spavao 5h' });
+
+      expect(notesShown()).toEqual(['Spavao 5h']);
+      // Ni pauza ni ponovno učitavanje treninga: beleška nije podatak o treningu.
+      expect(restTimer.running()).toBe(false);
+      http.expectNone((request) => request.method === 'GET');
+    });
+
+    it('beleška uz vežbu ide vežbi, ne planu', () => {
+      open(session('InProgress', [plan({ exerciseId: 'e-77' })]));
+      addButton('Dodaj belešku: beleška uz vežbu').click();
+      fixture.detectChanges();
+
+      const field = (fixture.nativeElement as HTMLElement).querySelector('textarea')!;
+      field.value = 'Sedište 4';
+      field.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      addButton('Sačuvaj').click();
+
+      http
+        .expectOne((request) => request.method === 'PUT' && request.url.endsWith('/exercises/e-77/note'))
+        .flush({ note: 'Sedište 4' });
+    });
+  });
+
   describe('ploče', () => {
     it('piše ploče za vežbu sa šipkom, po težini koja se unosi', () => {
       open(session('InProgress', [plan()]));
