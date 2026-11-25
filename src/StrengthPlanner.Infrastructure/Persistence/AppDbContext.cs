@@ -52,6 +52,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
     public DbSet<OneRepMaxRecord> OneRepMaxRecords => Set<OneRepMaxRecord>();
     public DbSet<VolumeLandmark> VolumeLandmarks => Set<VolumeLandmark>();
     public DbSet<UserExerciseSetting> UserExerciseSettings => Set<UserExerciseSetting>();
+    public DbSet<UserExerciseNote> UserExerciseNotes => Set<UserExerciseNote>();
     public DbSet<UserVolumeLandmark> UserVolumeLandmarks => Set<UserVolumeLandmark>();
     public DbSet<VolumeLandmarkChange> VolumeLandmarkChanges => Set<VolumeLandmarkChange>();
     public DbSet<UserWorkoutTemplate> UserWorkoutTemplates => Set<UserWorkoutTemplate>();
@@ -100,6 +101,9 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
 
         modelBuilder.Entity<UserExerciseSetting>()
             .HasQueryFilter(setting => setting.UserId == CurrentUserId);
+
+        modelBuilder.Entity<UserExerciseNote>()
+            .HasQueryFilter(note => note.UserId == CurrentUserId);
 
         modelBuilder.Entity<UserVolumeLandmark>()
             .HasQueryFilter(landmark => landmark.UserId == CurrentUserId);

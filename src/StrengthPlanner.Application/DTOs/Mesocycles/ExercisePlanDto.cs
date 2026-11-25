@@ -73,6 +73,13 @@ public class ExercisePlanDto
     public string ExerciseType { get; set; } = string.Empty;
 
     /// <summary>
+    /// The lifter's own note about this exercise (machine settings, a cue), shown every time
+    /// the exercise comes up. Null when there is none. Filled with <see cref="Equipment"/>, on
+    /// the session endpoint.
+    /// </summary>
+    public string? ExerciseNote { get; set; }
+
+    /// <summary>
     /// Vežba nosi deo telesne mase, pa je <see cref="TargetWeightKg"/> ono što se DODAJE
     /// (pojas, traka), a 0 znači „sopstvenom masom". Netačno i za vežbu sa telesnom masom
     /// ako profil nema unetu masu: tada se ne zna šta bi se dodavalo.

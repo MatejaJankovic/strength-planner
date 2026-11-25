@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using StrengthPlanner.Application.DTOs.Mesocycles;
+using StrengthPlanner.Application.DTOs.Notes;
 using StrengthPlanner.Application.DTOs.Sessions;
 using StrengthPlanner.Application.Interfaces;
 
@@ -14,15 +15,18 @@ public class SessionsController : AuthorizedControllerBase
     private readonly ISessionService _sessionService;
     private readonly ISessionRevisionService _revisions;
     private readonly IExerciseSubstitutionService _substitutions;
+    private readonly IWorkoutNoteService _notes;
 
     public SessionsController(
         ISessionService sessionService,
         ISessionRevisionService revisions,
-        IExerciseSubstitutionService substitutions)
+        IExerciseSubstitutionService substitutions,
+        IWorkoutNoteService notes)
     {
         _sessionService = sessionService;
         _revisions = revisions;
         _substitutions = substitutions;
+        _notes = notes;
     }
 
     /// <summary>Vraća detalj sesije sa planovima i logovima.</summary>
@@ -109,6 +113,22 @@ public class SessionsController : AuthorizedControllerBase
         var userId = GetUserId();
         var sessionId = await _substitutions.SubstituteAsync(userId, planId, request.ExerciseId, cancellationToken);
         return Ok(await _sessionService.GetByIdAsync(userId, sessionId, cancellationToken));
+    }
+
+    /// <summary>
+    /// Postavlja ili briše belešku uz trening. Dozvoljeno u svakom statusu, i na završenom i na
+    /// preskočenom: beleška nije podatak o treningu, pa ništa ne preračunava i ne otvara ispravku.
+    /// </summary>
+    [HttpPut("{id:guid}/note")]
+    [ProducesResponseType(typeof(NoteDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SetNote(
+        Guid id,
+        SetNoteRequest request,
+        CancellationToken cancellationToken)
+    {
+        return Ok(await _notes.SetSessionNoteAsync(GetUserId(), id, request.Note, cancellationToken));
     }
 
     /// <summary>Vraća preskočen trening na plan.</summary>

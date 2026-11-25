@@ -64,6 +64,36 @@ internal sealed class SqliteDatabase : IDisposable
         return new AppDbContext(options, new FixedUser(UserId));
     }
 
+    /// <summary>
+    /// A second account, for the tests that must show one lifter cannot see or change what another
+    /// lifter owns. The harness account stays the one every other test works as.
+    /// </summary>
+    public Guid AddUser()
+    {
+        var id = Guid.NewGuid();
+        using var db = NewContext();
+        db.Users.Add(new ApplicationUser
+        {
+            Id = id,
+            UserName = $"{id}@example.test",
+            NormalizedUserName = $"{id}@EXAMPLE.TEST".ToUpperInvariant(),
+            Email = $"{id}@example.test",
+            NormalizedEmail = $"{id}@EXAMPLE.TEST".ToUpperInvariant()
+        });
+        db.SaveChanges();
+        return id;
+    }
+
+    /// <summary>A context that reads and writes as another account (see <see cref="AddUser"/>).</summary>
+    public AppDbContext NewContextFor(Guid userId)
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(_connection)
+            .Options;
+
+        return new AppDbContext(options, new FixedUser(userId));
+    }
+
     /// <summary>Adds a system exercise and returns its id.</summary>
     public Guid AddExercise(string name, ExerciseType type = ExerciseType.Compound, string equipment = "Barbell")
     {

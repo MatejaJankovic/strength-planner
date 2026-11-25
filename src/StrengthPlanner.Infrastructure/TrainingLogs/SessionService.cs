@@ -11,6 +11,7 @@ using StrengthPlanner.Domain.Enums;
 using StrengthPlanner.Infrastructure.Analytics;
 using StrengthPlanner.Infrastructure.Exercises;
 using StrengthPlanner.Infrastructure.Mesocycles;
+using StrengthPlanner.Infrastructure.Notes;
 using StrengthPlanner.Infrastructure.Persistence;
 
 namespace StrengthPlanner.Infrastructure.TrainingLogs;
@@ -443,6 +444,17 @@ public class SessionService : ISessionService
             await ResolveEstimatedTargetsAsync(userId, session, portions, weightStepOverrides, cancellationToken),
             isLastTrainingWeek);
 
+        // Beleške uz vežbe čitaju se posebno: vezane su za vežbu i korisnika, a ne za plan.
+        var exerciseNotes = await ExerciseNoteResolver.ResolveAsync(
+            _db,
+            userId,
+            session.ExercisePlans.Select(plan => plan.ExerciseId).Distinct().ToList(),
+            cancellationToken);
+        foreach (var planDto in dto.ExercisePlans)
+        {
+            planDto.ExerciseNote = exerciseNotes.GetValueOrDefault(planDto.ExerciseId);
+        }
+
         // Samo završen trening ima prozor ispravke; za ostale polje ostaje prazno.
         if (session.Status == SessionStatus.Completed)
         {
@@ -655,6 +667,7 @@ public class SessionService : ISessionService
             DayLabel = session.DayLabel,
             Date = session.Date,
             Status = session.Status.ToString(),
+            Note = session.Note,
             ExercisePlans = session.ExercisePlans
                 .OrderBy(plan => plan.Order)
                 .Select(plan => new ExercisePlanDto

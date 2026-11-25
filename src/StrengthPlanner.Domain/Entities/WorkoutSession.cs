@@ -30,5 +30,12 @@ public class WorkoutSession
     /// </summary>
     public bool RevisionPending { get; set; }
 
+    /// <summary>
+    /// The lifter's note about this workout (how it went, what hurt). Editable in every status,
+    /// finished and skipped included, because nothing in the planning reads it: writing one never
+    /// opens a correction or moves a weight.
+    /// </summary>
+    public string? Note { get; set; }
+
     public ICollection<ExercisePlan> ExercisePlans { get; set; } = new List<ExercisePlan>();
 }
