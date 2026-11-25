@@ -1,5 +1,6 @@
 import { HistoryEntryDto } from '../../core/models/training.models';
 import {
+  countLabel,
   dayLabel,
   exercisesLabel,
   groupByMonth,
@@ -38,8 +39,17 @@ describe('history formatting', () => {
   });
 
   it('nepoznat dan se ne piše kao datum', () => {
-    expect(whenLabel({ date: NOV_12, dateKnown: true, weekNumber: 2 })).toBe('čet, 12. nov');
-    expect(whenLabel({ date: NOV_12, dateKnown: false, weekNumber: 3 })).toBe('nedelja 3');
+    expect(whenLabel({ date: NOV_12, dateKnown: true })).toBe('čet, 12. nov');
+    expect(whenLabel({ date: NOV_12, dateKnown: false })).toBe('');
+  });
+
+  it('broj treninga ima ispravan oblik i za 21, 22 i 11', () => {
+    expect(countLabel(1)).toBe('1 trening');
+    expect(countLabel(2)).toBe('2 treninga');
+    expect(countLabel(11)).toBe('11 treninga');
+    expect(countLabel(21)).toBe('21 trening');
+    expect(countLabel(22)).toBe('22 treninga');
+    expect(countLabel(111)).toBe('111 treninga');
   });
 
   it('tonaža ima razmak u hiljadama koji ne puca na dva reda', () => {

@@ -7,7 +7,7 @@ import { HistoryEntryDto } from '../../core/models/training.models';
 import { EmptyState } from '../../shared/components/empty-state/empty-state';
 import { Loading } from '../../shared/components/loading/loading';
 import { SubscreenHeader } from '../../shared/components/subscreen-header/subscreen-header';
-import { exercisesLabel, groupByMonth, tonnageLabel, whenLabel } from './history-format';
+import { countLabel, exercisesLabel, groupByMonth, tonnageLabel, whenLabel } from './history-format';
 
 const PAGE_SIZE = 20;
 
@@ -31,6 +31,9 @@ export class TrainingHistory {
   protected readonly loading = signal(true);
   protected readonly loadingMore = signal(false);
   protected readonly error = signal<string | null>(null);
+  // Greška dok se učitava još: spisak ostaje, a ponovni pokušaj traži istu stranicu. Poseban
+  // signal, jer jedan zajednički je brisao sve učitane stranice za grešku jedne.
+  protected readonly loadMoreError = signal<string | null>(null);
 
   private readonly entries = signal<HistoryEntryDto[]>([]);
   protected readonly total = signal(0);
@@ -40,6 +43,7 @@ export class TrainingHistory {
   protected readonly hasMore = computed(() => this.entries().length < this.total());
 
   protected readonly when = whenLabel;
+  protected readonly count = countLabel;
   protected readonly tonnage = tonnageLabel;
   protected readonly exercises = exercisesLabel;
 
@@ -61,22 +65,30 @@ export class TrainingHistory {
     }
 
     this.loadingMore.set(true);
-    this.fetchNext(() => this.loadingMore.set(false));
+    this.loadMoreError.set(null);
+    this.fetchNext(() => this.loadingMore.set(false), this.loadMoreError);
   }
 
-  private fetchNext(done: () => void): void {
+  private fetchNext(done: () => void, errorSignal = this.error): void {
     const next = this.page + 1;
 
     this.historyService.page(next, PAGE_SIZE).subscribe({
       next: (result) => {
         this.page = next;
         this.total.set(result.total);
-        this.entries.update((current) => [...current, ...result.items]);
+        // Trening završen između dva čitanja pomera sve za jedno mesto, pa se poslednji
+        // trening prve stranice vraća na vrhu druge; duplikat bi dao dva ista ključa.
+        this.entries.update((current) => {
+          const seen = new Set(current.map((entry) => entry.sessionId));
+          return [...current, ...result.items.filter((entry) => !seen.has(entry.sessionId))];
+        });
         done();
       },
       error: (err: unknown) => {
         done();
-        this.error.set(extractErrorMessage(err, 'Ne mogu da učitam istoriju. Proveri vezu i pokušaj ponovo.'));
+        errorSignal.set(
+          extractErrorMessage(err, 'Ne mogu da učitam istoriju. Proveri vezu i pokušaj ponovo.'),
+        );
       },
     });
   }

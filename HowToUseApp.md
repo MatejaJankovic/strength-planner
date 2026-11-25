@@ -1126,4 +1126,4 @@ Namerno je van opsega, da ne bi bilo iznenađenja:
 - nema offline režima ni instalacije kao aplikacije (PWA);
 - **ne može se promeniti periodizacija već generisanog bloka** — pravi se novi;
 - nema deljenja plana, trenera ni više korisnika na jednom nalogu;
-- analitika pokriva tekuće blokove, ne celu istoriju kroz sve planove.
+- analitika pokriva tekuće blokove, ne celu istoriju kroz sve planove (spisak svih odrađenih treninga je u Istoriji).

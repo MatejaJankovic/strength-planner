@@ -1,11 +1,9 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using StrengthPlanner.Application.DTOs.Sessions;
 using StrengthPlanner.Application.Interfaces;
 
 namespace StrengthPlanner.API.Controllers;
 
-[Authorize]
 [ApiController]
 [Route("api/history")]
 public class HistoryController : AuthorizedControllerBase

@@ -36,11 +36,18 @@ export function dayLabel(iso: string): string {
 }
 
 /**
- * Kad tačan dan nije poznat (preskočen trening, ili stari trening bez ijedne serije), piše se
- * samo nedelja: datum koji bi bio izveden iz plana izgledao bi kao činjenica.
+ * Kad tačan dan nije poznat (preskočen trening, ili stari trening bez ijedne serije), ne piše se
+ * ništa: datum koji bi bio izveden iz plana izgledao bi kao činjenica, a nedelja već stoji u
+ * podnaslovu.
  */
-export function whenLabel(entry: Pick<HistoryEntryDto, 'date' | 'dateKnown' | 'weekNumber'>): string {
-  return entry.dateKnown ? dayLabel(entry.date) : `nedelja ${entry.weekNumber}`;
+export function whenLabel(entry: Pick<HistoryEntryDto, 'date' | 'dateKnown'>): string {
+  return entry.dateKnown ? dayLabel(entry.date) : '';
+}
+
+/** „21 trening", „22 treninga": broj određuje oblik po srpskim pravilima, ne samo jedinica. */
+export function countLabel(count: number): string {
+  const singular = count % 10 === 1 && count % 100 !== 11;
+  return `${count} ${singular ? 'trening' : 'treninga'}`;
 }
 
 /** „4 380 kg", sa nerazdvojivim razmakom u hiljadama da broj ne pukne na dva reda. */

@@ -12,7 +12,8 @@ namespace StrengthPlanner.Tests.ServiceHarness;
 /// </summary>
 public class TrainingHistoryTests
 {
-    private static readonly DateTime Day1 = new(2026, 10, 5, 18, 0, 0, DateTimeKind.Utc);
+    // Daleko u prošlosti: izvedeni datumi se stežu na "sada", pa bi blizak datum zavisio od sata.
+    private static readonly DateTime Day1 = new(2024, 10, 5, 18, 0, 0, DateTimeKind.Utc);
 
     [Fact]
     public async Task ItListsFinishedAndSkippedWorkouts_AcrossBlocks_NewestFirst()
@@ -92,9 +93,9 @@ public class TrainingHistoryTests
     }
 
     [Theory]
-    [InlineData(0, 0)]
-    [InlineData(-3, 500)]
-    public async Task ABadPage_IsClamped_NotRejected(int page, int pageSize)
+    [InlineData(0, 0, 1)]
+    [InlineData(-3, 500, TrainingHistoryService.MaxPageSize)]
+    public async Task ABadPage_IsClamped_NotRejected(int page, int pageSize, int expectedPageSize)
     {
         using var database = new SqliteDatabase();
         await SeedAsync(database);
@@ -102,8 +103,63 @@ public class TrainingHistoryTests
         var history = await GetAsync(database, page, pageSize);
 
         Assert.Equal(1, history.Page);
-        Assert.InRange(history.PageSize, 1, TrainingHistoryService.MaxPageSize);
+        Assert.Equal(expectedPageSize, history.PageSize);
         Assert.NotEmpty(history.Items);
+    }
+
+    /// <summary>
+    /// A page number so large that (page - 1) x pageSize overflows an int used to wrap to a
+    /// negative offset, and a negative Skip returns the first page instead of an empty one.
+    /// </summary>
+    [Fact]
+    public async Task AHugePage_IsPastTheEnd_NotTheFirstPage()
+    {
+        using var database = new SqliteDatabase();
+        await SeedAsync(database);
+
+        var history = await GetAsync(database, page: 100_000_000, pageSize: 50);
+
+        Assert.Empty(history.Items);
+        Assert.Equal(5, history.Total);
+    }
+
+    /// <summary>
+    /// A workout finished before completion times were stored is dated by its last set. A set
+    /// added while correcting it must not be stamped with now, or the old workout would move to
+    /// today and to the top of the history.
+    /// </summary>
+    [Fact]
+    public async Task AddingASet_ToAnOldWorkout_DoesNotMoveItToToday()
+    {
+        using var database = new SqliteDatabase();
+        var seed = await SeedAsync(database);
+        Guid planId;
+        await using (var db = database.NewContext())
+        {
+            // The same day of the next week is still to be done, so the workout can be corrected.
+            (await db.WorkoutSessions.SingleAsync(session => session.Id == seed.OldBlockSecond)).Status = SessionStatus.Planned;
+            await db.SaveChangesAsync();
+            planId = await db.ExercisePlans
+                .Where(plan => plan.WorkoutSessionId == seed.OldBlockFirst)
+                .Select(plan => plan.Id)
+                .FirstAsync();
+        }
+
+        await using (var context = database.NewContext())
+        {
+            await new SetLogService(context).AddSetAsync(
+                database.UserId,
+                planId,
+                new StrengthPlanner.Application.DTOs.SetLogs.AddSetLogRequest { WeightKg = 100m, Reps = 5, Rir = 2 });
+        }
+
+        var history = await GetAsync(database, 1, 20);
+        var old = history.Items.Single(item => item.SessionId == seed.OldBlockFirst);
+
+        Assert.Equal(Day1, old.Date);
+        Assert.Equal(seed.OldBlockFirst, history.Items[^1].SessionId);
+        Assert.Equal(3, old.SetCount);
+        Assert.True(old.DateKnown);
     }
 
     [Fact]

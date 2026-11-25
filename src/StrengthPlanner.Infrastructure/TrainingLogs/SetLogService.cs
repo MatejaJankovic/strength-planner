@@ -83,7 +83,9 @@ public class SetLogService : ISetLogService
             Rir = request.Rir,
             IsFailure = isFailure,
             BodyweightLoadKg = bodyweightLoadKg,
-            PerformedAt = DateTime.UtcNow
+            PerformedAt = correction is null
+                ? DateTime.UtcNow
+                : await CorrectionTimeAsync(planInfo.SessionId, cancellationToken)
         };
 
         _db.SetLogs.Add(setLog);
@@ -225,6 +227,23 @@ public class SetLogService : ISetLogService
     /// sledeći blok plana generisan. Serija upisana posle toga bi bila rad koji nijedan
     /// obračun nije video. Trening se prvo vraća na plan, pa se loguje.
     /// </summary>
+    /// <summary>
+    /// When a set added while correcting a finished workout is stamped as having been done: the
+    /// workout's own last set. Stamping it with now would move an old workout to today, because a
+    /// workout finished before completion times were stored is dated by its last set (history,
+    /// <see cref="HistoryDate"/>); one with a completion time keeps it, and the same time is used
+    /// there too so the set does not land after the workout it belongs to.
+    /// </summary>
+    private async Task<DateTime> CorrectionTimeAsync(Guid sessionId, CancellationToken cancellationToken)
+    {
+        var lastSetAt = await _db.SetLogs
+            .Where(set => set.ExercisePlan.WorkoutSessionId == sessionId)
+            .Select(set => (DateTime?)set.PerformedAt)
+            .MaxAsync(cancellationToken);
+
+        return lastSetAt ?? DateTime.UtcNow;
+    }
+
     private static void EnsureSessionIsEditable(SessionStatus status)
     {
         if (!SessionLifecycle.IsSettled(status))

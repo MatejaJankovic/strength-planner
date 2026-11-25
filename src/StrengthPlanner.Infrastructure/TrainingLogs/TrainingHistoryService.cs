@@ -56,7 +56,10 @@ public class TrainingHistoryService : ITrainingHistoryService
 
         var lastSetBySession = (await _db.SetLogs
                 .AsNoTracking()
-                .Where(set => set.ExercisePlan.WorkoutSession.TrainingWeek.Mesocycle.UserId == userId)
+                // Samo treninzi bez vremena završetka se datiraju po poslednjoj seriji; ostalima
+                // serije ne trebaju, pa se i ne čitaju.
+                .Where(set => set.ExercisePlan.WorkoutSession.TrainingWeek.Mesocycle.UserId == userId
+                              && set.ExercisePlan.WorkoutSession.CompletedAt == null)
                 .GroupBy(set => set.ExercisePlan.WorkoutSessionId)
                 .Select(group => new { SessionId = group.Key, Last = group.Max(set => set.PerformedAt) })
                 .ToListAsync(cancellationToken))
@@ -87,10 +90,16 @@ public class TrainingHistoryService : ITrainingHistoryService
             .OrderByDescending(row => row.Date.Value)
             .ThenByDescending(row => row.Header.WeekNumber)
             .ThenBy(row => row.Header.DayLabel, StringComparer.Ordinal)
+            // Poslednji ključ: dva treninga sa istim datumom, nedeljom i danom (npr. dva
+            // preskočena u različitim blokovima) bi inače menjala mesto između stranica.
+            .ThenBy(row => row.Header.Id)
             .ToList();
 
+        // Pomeraj se računa u long: sa velikim brojem strane bi int prelio u negativan, a Skip
+        // sa negativnim brojem vraća prvu stranicu umesto prazne.
+        var skip = (long)(page - 1) * pageSize;
         var pageRows = ordered
-            .Skip((page - 1) * pageSize)
+            .Skip(skip > int.MaxValue ? int.MaxValue : (int)skip)
             .Take(pageSize)
             .ToList();
 

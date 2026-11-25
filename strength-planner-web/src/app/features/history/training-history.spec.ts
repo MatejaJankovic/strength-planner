@@ -127,7 +127,9 @@ describe('TrainingHistory', () => {
     const rendered = text();
 
     expect(rendered).toContain('Preskočen');
+    // Nedelja stoji u podnaslovu, a datum se ne izmišlja.
     expect(rendered).toContain('nedelja 3');
+    expect((fixture.nativeElement as HTMLElement).querySelector('.entry__when')).toBeNull();
     expect(rendered).not.toContain('čet, 12. nov');
     expect(rendered).not.toContain('0 serija');
   });
@@ -145,6 +147,44 @@ describe('TrainingHistory', () => {
 
     expect(fixture.nativeElement.querySelectorAll('.entry').length).toBe(2);
     expect(text()).not.toContain('Učitaj još');
+  });
+
+  it('neuspelo "Učitaj još" ostavlja učitano i ponavlja istu stranicu', () => {
+    open();
+    request(1).flush(pageOf([entry('a', new Date(2026, 10, 12, 12))], 3));
+    text();
+
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.btn--more')?.click();
+    request(2).flush(null, { status: 500, statusText: 'Server Error' });
+    fixture.detectChanges();
+
+    // Prva stranica je i dalje tu, greška stoji uz dugme, a dugme nudi ponovni pokušaj.
+    expect(fixture.nativeElement.querySelectorAll('.entry').length).toBe(1);
+    expect(text()).toContain('Ne mogu da učitam istoriju');
+    expect(text()).toContain('Pokušaj ponovo');
+
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.btn--more')?.click();
+    request(2).flush(
+      pageOf([entry('b', new Date(2026, 10, 5, 12)), entry('c', new Date(2026, 10, 1, 12))], 3, 2),
+    );
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelectorAll('.entry').length).toBe(3);
+    expect(text()).not.toContain('Ne mogu da učitam istoriju');
+  });
+
+  it('trening koji se pojavi na dve stranice se prikazuje jednom', () => {
+    open();
+    request(1).flush(pageOf([entry('a', new Date(2026, 10, 12, 12))], 3));
+    text();
+
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.btn--more')?.click();
+    request(2).flush(
+      pageOf([entry('a', new Date(2026, 10, 12, 12)), entry('b', new Date(2026, 10, 5, 12))], 3, 2),
+    );
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelectorAll('.entry').length).toBe(2);
   });
 
   it('prazna istorija kaže da još nema treninga', () => {
