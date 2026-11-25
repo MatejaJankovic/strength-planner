@@ -684,6 +684,7 @@ public class SessionService : ISessionService
                         plan.ExerciseId,
                         plan.Exercise.WeightStepKg),
                     Equipment = plan.Exercise.Equipment,
+                    ExerciseType = plan.Exercise.Type.ToString(),
                     IsBodyweight = BodyweightPortionResolver.PortionFor(bodyweightPortions, plan.ExerciseId) > 0,
                     BodyweightLoadKg = BodyweightPortionResolver.PortionFor(bodyweightPortions, plan.ExerciseId),
                     IsCalibration = CalibrationSet.AppliesTo(
