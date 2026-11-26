@@ -47,8 +47,8 @@ Periodizovan blok od šest nedelja, srednji nivo (prag 0.60), udeo blokova sa de
 | sa potvrdom, težina 0.25 | 0 / 0.5 / 0.9 | 6.1 / 6.4 / 5.9% | 27.1 / 30.7 / 33.8% | 75.0 / 72.9 / 70.3% |
 | **sa potvrdom, težina 0.20 (izgrađeno)** | 0 / 0.5 / 0.9 | **5.3 / 5.8 / 5.4%** | 21.2 / 24.6 / 28.9% | **72.5 / 71.0 / 69.0%** |
 
-- **Nepotvrđen odgovor nije prihvatljiv.** Vežbač koji napreduje na MRV-u dobijao bi lažno rasterećenje u 20-50%
-  blokova, tim više što odgovor više deli sa slabim danom. Slab dan spušta snagu i rezervu, a diže i odgovor: tri
+- **Nepotvrđen odgovor nije prihvatljiv.** Vežbač koji napreduje na MRV-u dobijao bi lažno rasterećenje u 20-44%
+  blokova (do 50% uz težinu 0.25, koja nije izgrađena), tim više što odgovor više deli sa slabim danom. Slab dan spušta snagu i rezervu, a diže i odgovor: tri
   signala iz jednog uzroka. Korelacija člana odgovora sa članom rezerve u nedeljama bez pravog umora je 0.00, +0.20,
   +0.42 i +0.68 za RHO 0, 0.3, 0.6 i 0.9 (sa padom snage skoro ista), pa „nezavisnost" nije osobina signala nego
   pretpostavka koja zavisi od ponašanja vežbača.

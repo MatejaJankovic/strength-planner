@@ -183,7 +183,7 @@ počela.
 
 | Grana | O čemu je | PR |
 |---|---|---|
-| [Lokalni HTTPS za telefon](local-https.md) | Service worker i Wake Lock rade samo u bezbednom kontekstu, a adresa računara u mreži to nije; CA van repozitorijuma, proksi umesto TLS-a na API-ju | #121 |
+| [Lokalni HTTPS za telefon](local-https.md) | Wake Lock i instalacija traže bezbedan kontekst, a adresa računara u mreži to nije; CA van repozitorijuma, proksi umesto TLS-a na API-ju | #121 |
 | [Instalacija i ekran koji se ne gasi](installable-app.md) | Manifest, ikone, Wake Lock koji se otpušta posle 15 minuta bez dodira; bez service worker-a | #122 |
 | [Pomagala na treningu](workout-aids.md) | Tajmer pauze, ploče za šipku i zagrevanje, računato na klijentu | #123 |
 | [Beleške uz trening i uz vežbu](workout-notes.md) | Podešavanje sprave i napomene imaju gde da se upišu; beleška vežbe pripada vežbi, ne planu | #124 |

@@ -27,7 +27,7 @@ trake pregledača, i ekran koji se ne gasi dok trening traje.
 
 ## Merenja
 
-- Testovi klijenta: 258 → 281 (devetnaest za `WakeLockService`, pet za ožičenje u ekranu treninga).
+- Testovi klijenta: 258 → 281 (osamnaest za `WakeLockService`, pet za ožičenje u ekranu treninga; pre pregleda ih je za servis bilo deset, a za ekran nijedan).
 - Vraćanje pravila na committed stablu: bez ponovnog traženja kad kartica opet postane vidljiva ruši 2 testa;
   zaključavanje koje stigne posle `release()` ne otpušta se 1; odbijen zahtev baca grešku 2.
 - Razvojni server servira manifest kao `application/manifest+json` i sve četiri ikone (200, `image/png`);

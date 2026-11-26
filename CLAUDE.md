@@ -1114,8 +1114,9 @@ workout, and undoes exactly what they wrote.
 Decisions worth keeping:
 
 - **A correction is possible while the next workout of the same day is still planned.** After that its
-  load was computed from these sets (started) or the week was closed without it (skipped), and the
-  last workout of a block has nothing to hand its target to, so the next block is not yet generated.
+  load was computed from these sets (started) or the week was closed without it (skipped). The last
+  workout of a block has no next workout to hand its target to, so there the window is open only while
+  the next block has not been generated, because generating it spends the estimates.
 - **Old workouts are corrected as history only.** Workouts finished before the change (425 in the
   development database) have no completion time and no link to their estimate, so editing them changes
   the record and what reads it, and recomputes nothing. The owner chose this.
@@ -1149,12 +1150,14 @@ the one that touches every screen.
 Server 1378 → 1413, client 258 → 425.
 
 The finding that shaped the round: **the shape from rounds 9 and 12 came back on the client.** The wake
-lock had 19 tests for the service and none for the screen that is supposed to ask for it, so deleting the
-`effect` that does so left the whole suite green; review found it and `workout-session.spec.ts` now exists.
+lock service had ten tests and the screen that is supposed to ask for it had none, so deleting the `effect` that
+does so left the whole suite green; review found it, the service ended with eighteen tests after that pass,
+and `workout-session.spec.ts` now exists.
 The dark theme went further: it worked in the dev server and **not in a production build behind the CSP**,
 because Angular inlines only the light tokens as critical CSS and loads the rest through
-`<link media="print" onload=...>`, which `script-src 'self'` blocks. Only a review that ran the real
-configuration found it; `inlineCritical` is off in the production build for that reason.
+`<link media="print" onload=...>`, which `script-src 'self'` blocks. A read-only review found it and it was then reproduced by serving the
+production build with the CSP header copied from `security-headers.conf` (nginx itself was not run: Docker was
+unavailable); `inlineCritical` is off in the production build for that reason.
 
 Decisions worth keeping:
 
@@ -1173,8 +1176,8 @@ Decisions worth keeping:
   because the same text sits on a light background in one theme and a dark one in the other. The light
   theme was measured unchanged: 3356 elements on eleven screens, 0 differences.
 
-Measurements: the contrast table measured the wrong pair for three buttons and was green, and the real
-screen read 1.49:1; `--color-above` and `--color-optimal` had never existed, so every component using them
+Measurements: the contrast table measured the wrong pair for a badge and two buttons and was green, and the
+real screen read 1.49:1 in the dark theme; `--color-above` and `--color-optimal` had never existed, so every component using them
 had always fallen back to its bright default; and the chart tooltip was light text on a background that is
 light in dark mode. All three were found by measuring the rendered screen, not by the table.
 
@@ -1196,7 +1199,9 @@ confirmed answer cannot reach the advanced deload threshold alone, and they can;
 splits the back deleted the weekly `VolumeLandmarkChange` rows by cascade, so a workout corrected afterwards
 would have been counted a second time; and a maintenance block built from a custom template still prescribed
 a set to failure, because the calibration rule read the rep range and not the goal, while the guide said it
-never does. Each time the code was right where it had been measured and wrong at a place nobody had pointed at.
+never does. In three of the four (#126, #128, #129) the code was right where it had been measured and wrong at a
+place nobody had pointed at; in #127 the code was right and the claims about it (guide, note, a comment,
+a test) were wrong.
 
 Decisions worth keeping:
 
@@ -1206,8 +1211,8 @@ Decisions worth keeping:
 - **A reason for a refusal cannot depend on the error text**, because production sends none
   (`ProblemDetails.Detail` equals `Title`); it travels as data or is mapped from the status.
 - **A subjective answer counts only when the previous week confirms it**, at weight 0.20 (the score now
-  goes to 1.20). Without confirmation 20-50% of blocks of a lifter who is progressing at MRV were deloaded
-  falsely in the simulation; with it about 5%. "Independent signals" is an assumption about the lifter
+  goes to 1.20). Without confirmation about 20-44% of blocks of a lifter who is progressing at MRV were deloaded
+  falsely in the simulation (up to 50% at weight 0.25, which was not built); with it about 5%. "Independent signals" is an assumption about the lifter
   there, not a property of the signal, and the simulation parameters for the answer are assumptions
   because the app had never collected it.
 - **The back is two heads, not three.** Lats and upper back, MRV 15 each (RP: about 30 at four back
