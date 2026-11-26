@@ -125,6 +125,32 @@ public class MaintenanceGoalServiceTests
         Assert.Equal(90m, deload.TargetWeightKg);
     }
 
+    /// <summary>
+    /// Lični šablon zadržava opseg koji je korisnik uneo, pa 5-8 uz tri u rezervi staje ispod Epley granice (8 + 3 = 11)
+    /// i kalibraciona serija bi se čitala. U rastućem bloku to je i tačno; u bloku održavanja je ne sme biti, ni među
+    /// serijama koje čitaju granice, ocena umora i polazna težina (<c>CalibrationSets</c>), ni na ekranu treninga.
+    /// </summary>
+    [Theory]
+    [InlineData(Goal.Hypertrophy, true)]
+    [InlineData(Goal.Maintenance, false)]
+    public async Task ACustomRangeInTheLastTrainingWeek_IsACalibrationSet_OnlyInABlockThatBuilds(Goal goal, bool expected)
+    {
+        using var database = new SqliteDatabase();
+        var (mesocycleId, sessionId) = await SeedLastTrainingWeekAsync(database, goal);
+
+        await using var read = database.NewContext();
+        var ids = await CalibrationSets.IdsAsync(read, database.UserId, mesocycleId, CancellationToken.None);
+
+        Assert.Equal(expected, ids.Count == 1);
+
+        // Isto i na ekranu treninga: oznaka „serija do otkaza" se čita iz istog pravila, na drugom mestu poziva.
+        await using var screen = database.NewContext();
+        var session = await SessionCompletionTests.NewService(screen)
+            .GetByIdAsync(database.UserId, sessionId, CancellationToken.None);
+
+        Assert.Equal(expected, Assert.Single(session.ExercisePlans).IsCalibration);
+    }
+
     // ---- granice se ne uče --------------------------------------------------------------------------------------
 
     /// <summary>
@@ -338,6 +364,87 @@ public class MaintenanceGoalServiceTests
     }
 
     private sealed record Seed(Guid Squat, Guid WeekOne, Guid SessionOne, Guid SessionTwo);
+
+    /// <summary>
+    /// Ravan blok od četiri nedelje (četvrta je rasterećenje), srednji nivo; u trećoj, poslednjoj trenažnoj, prva vežba
+    /// dana je složena, opseg 5-8 uz tri u rezervi, i ima prvu upisanu seriju.
+    /// </summary>
+    private static async Task<(Guid MesocycleId, Guid SessionId)> SeedLastTrainingWeekAsync(SqliteDatabase database, Goal goal)
+    {
+        var quads = Guid.NewGuid();
+        var squat = Guid.NewGuid();
+
+        await using var db = database.NewContext();
+        db.MuscleGroups.Add(new MuscleGroup { Id = quads, Name = "Quads" });
+        db.Exercises.Add(new Exercise
+        {
+            Id = squat,
+            Name = "Back Squat",
+            Type = ExerciseType.Compound,
+            Equipment = "Barbell",
+            WeightStepKg = 2.5m,
+            Muscles = [new ExerciseMuscle { MuscleGroupId = quads, Contribution = 1.0m }]
+        });
+
+        var mesocycle = new Mesocycle
+        {
+            Id = Guid.NewGuid(),
+            UserId = database.UserId,
+            Name = "Blok",
+            Goal = goal,
+            PeriodizationModel = PeriodizationModel.Flat,
+            SetAllocation = SetAllocation.FollowTemplate,
+            ExperienceLevel = ExperienceLevel.Intermediate,
+            StartDate = new DateTime(2026, 11, 9, 0, 0, 0, DateTimeKind.Utc),
+            IsActive = true
+        };
+        var sessionId = Guid.Empty;
+
+        for (var weekNumber = 1; weekNumber <= 4; weekNumber++)
+        {
+            var week = new TrainingWeek { Id = Guid.NewGuid(), WeekNumber = weekNumber, IsDeload = weekNumber == 4 };
+            mesocycle.Weeks.Add(week);
+
+            if (weekNumber != 3)
+            {
+                continue;
+            }
+
+            var plan = new ExercisePlan
+            {
+                Id = Guid.NewGuid(),
+                ExerciseId = squat,
+                Order = 1,
+                TargetSets = 3,
+                PrescribedSets = 3,
+                RepRangeMin = 5,
+                RepRangeMax = 8,
+                BaseRepRangeMin = 5,
+                BaseRepRangeMax = 8,
+                TargetRir = 3,
+                TargetWeightKg = 100m
+            };
+            plan.SetLogs.Add(new SetLog
+            {
+                Id = Guid.NewGuid(),
+                SetNumber = CalibrationSet.SetNumber,
+                WeightKg = 100m,
+                Reps = 8,
+                Rir = 0,
+                IsFailure = true,
+                PerformedAt = DateTime.UtcNow
+            });
+
+            var session = new WorkoutSession { Id = Guid.NewGuid(), DayLabel = "Day A", Status = SessionStatus.Completed };
+            session.ExercisePlans.Add(plan);
+            week.Sessions.Add(session);
+            sessionId = session.Id;
+        }
+
+        db.Mesocycles.Add(mesocycle);
+        await db.SaveChangesAsync();
+        return (mesocycle.Id, sessionId);
+    }
 
     /// <summary>
     /// Blok od četiri nedelje, jedan trening nedeljno, jedan mišić (četvoroglavi, MEV 8, MAV 12, MRV 20) i jedna vežba.

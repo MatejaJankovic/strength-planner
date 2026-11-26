@@ -18,8 +18,8 @@ public sealed record GoalPrescription(int RepRangeMin, int RepRangeMax, int Targ
 /// three in reserve. By Epley a set is worth reps + reserve, and 6 + 3 and 10 + 3 are the same
 /// 9 to 13 that 8 + 1 and 12 + 1 are, so the weight on the bar is the one the hypertrophy block
 /// used, for two fewer reps and two more in hand. Intensity is what holds strength and size
-/// when volume and frequency are cut (Spiering et al. 2021; Bickel et al. 2011), and the
-/// reserve is what keeps the block from being training in its own right. Three is also the
+/// when volume and frequency are cut (Spiering et al. 2021; Bickel et al. 2011, both read
+/// through their abstracts), and the reserve is what keeps the block from being training in its own right. Three is also the
 /// largest reserve a set still counts as a full set at and still yields a maximum from
 /// (<see cref="TrainingConstants.E1RmMaxRir"/>).
 /// </summary>
@@ -100,11 +100,12 @@ public static class GoalPrescriptions
     /// Whether a completed week of a block with this goal moves the lifter's volume limits.
     ///
     /// Not a maintenance block. Its volume sits at MEV on purpose, so a week says nothing about
-    /// MAV or MRV (the target is judged only from a week near it, the ceiling only from one near
-    /// it), and what it does say about the other two is wrong more often than right: a week at
-    /// MEV is "at least the minimum" for the recovery rule, so tiredness caused by a busy stretch
-    /// would lower MRV, and strength that merely recovers after a hard block would lower MEV and
-    /// with it the next maintenance target. Measured in <c>docs/features/maintenance-goal.md</c>.
+    /// MAV (judged only from a week near it) or about raising MRV (only from a week near it),
+    /// and what it does say about the rest is wrong more often than right: a week at MEV is "at
+    /// least the minimum" for the recovery rule that lowers MRV, so tiredness caused by a busy
+    /// stretch would lower it, and strength that merely recovers after a hard block would lower
+    /// MEV and with it the next maintenance target. Measured in
+    /// <c>docs/features/maintenance-goal.md</c>.
     /// A goal that is unknown (the mesocycle was not found) learns nothing.
     /// </summary>
     public static bool LearnsVolumeLimits(Goal? goal)

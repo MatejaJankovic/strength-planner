@@ -9,7 +9,8 @@ namespace StrengthPlanner.Tests;
 /// Svako pravilo koje čita cilj dobilo je treću vrednost, a ovde se beleži šta ono sa njom radi i zašto: volumen oko
 /// MEV-a, težine se ne podižu, granice se iz takvog bloka ne uče, blok je uvek ravan i plan održavanja ponavlja
 /// isti blok. Izvor za smisao celine: Spiering i sar. 2021 (intenzitet je promenljiva koja odlučuje, volumen i
-/// učestalost mogu mnogo da se smanje) i Bickel i sar. 2011 (trećina i devetina doze održavaju mišićnu masu).
+/// učestalost mogu mnogo da se smanje) i Bickel i sar. 2011 (trećina i devetina doze održavaju mišićnu masu), oba
+/// čitana preko sažetaka, ne celog teksta.
 /// </summary>
 public class MaintenanceGoalTests
 {
@@ -247,6 +248,8 @@ public class MaintenanceGoalTests
     [Fact]
     public void TheFlag_ChangesOnlyTheTopOfTheRange()
     {
+        var heldWhereTheOtherStepped = 0;
+
         foreach (var load in Loads)
         foreach (var step in Steps)
         foreach (var reps in new[] { 6, 7, 8, 9, 10 })
@@ -261,6 +264,18 @@ public class MaintenanceGoalTests
                 continue;
             }
 
+            // Tačno na cilju (deset ponavljanja, tri u rezervi) težina stoji za svaki teg i korak; bez ovoga bi zastavica
+            // koja se zanemaruje prošla obe granice ispod, jer je običan odgovor tada i gornja i donja granica.
+            if (rir == 3)
+            {
+                Assert.Equal(load, maintenance.NextWeightKg);
+            }
+
+            if (maintenance.NextWeightKg < standard.NextWeightKg)
+            {
+                heldWhereTheOtherStepped++;
+            }
+
             Assert.True(
                 maintenance.NextWeightKg >= load,
                 $"{load} kg, step {step}, {reps} x RIR {rir}: held at {maintenance.NextWeightKg}");
@@ -268,6 +283,9 @@ public class MaintenanceGoalTests
                 maintenance.NextWeightKg <= standard.NextWeightKg,
                 $"{load} kg, step {step}, {reps} x RIR {rir}: {maintenance.NextWeightKg} above {standard.NextWeightKg}");
         }
+
+        // Da provera nije prazna: na vrhu opsega održavanje stvarno drži tamo gde bi običan blok podigao.
+        Assert.True(heldWhereTheOtherStepped > 0);
     }
 
     [Theory]
@@ -322,15 +340,18 @@ public class MaintenanceGoalTests
     // ---- kalibracija --------------------------------------------------------------------------------------------
 
     /// <summary>
-    /// Serija do otkaza bi bila guranje, a i ne može da se pročita: 10 + 3 ponavljanja je iznad Epley granice (12).
-    /// Pravilo kalibracije ne čita cilj nego propis, pa zaključak sledi iz brojeva, i ovaj test je čuva ako se opseg
-    /// ili rezerva promene: kontrola ispod pokazuje da provera nije prazna.
+    /// Serija do otkaza bi bila guranje, pa je blok održavanja nema. Ugrađeni propis (6-10 uz tri u rezervi) bi je ionako
+    /// preskočio, jer staje oko 13, iznad Epley granice (12); ali lični šablon zadržava opseg koji je korisnik uneo, i
+    /// 5-8 uz tri u rezervi staje na 11. Pregled #129 je našao da je tu serija do otkaza ostajala, uprkos uputstvu.
+    /// Zato odluka ne sledi iz brojeva nego iz cilja, a kontrola uz svaki opseg pokazuje da bi rastući blok sa istim
+    /// opsegom tu seriju imao.
     /// </summary>
-    [Fact]
-    public void ACalibrationSet_IsNeverPrescribedInAMaintenanceBlock()
+    [Theory]
+    [InlineData(6, 10, 3)]
+    [InlineData(5, 8, 3)]
+    [InlineData(5, 5, 3)]
+    public void ACalibrationSet_IsNeverPrescribedInAMaintenanceBlock_WhateverTheRange(int min, int max, int rir)
     {
-        var maintenance = GoalPrescriptions.ForGoal(Goal.Maintenance);
-
         foreach (var level in Enum.GetValues<ExperienceLevel>())
         {
             Assert.False(CalibrationSet.AppliesTo(
@@ -339,18 +360,62 @@ public class MaintenanceGoalTests
                 order: 1,
                 ExerciseType.Compound,
                 suitsLowReps: true,
-                maintenance.RepRangeMax,
-                maintenance.TargetRir));
+                max,
+                rir,
+                Goal.Maintenance));
         }
 
-        var strength = GoalPrescriptions.ForGoal(Goal.Strength);
-        Assert.True(CalibrationSet.AppliesTo(
-            ExperienceLevel.Intermediate,
-            isLastTrainingWeek: true,
-            order: 1,
-            ExerciseType.Compound,
-            suitsLowReps: true,
-            strength.RepRangeMax,
-            strength.TargetRir));
+        // Kontrola: isti opseg u bloku koji gradi daje kalibraciju tamo gde se serija može pročitati (max + rir <= 12).
+        Assert.Equal(
+            max + rir <= TrainingConstants.EpleyRepCap,
+            CalibrationSet.AppliesTo(
+                ExperienceLevel.Intermediate,
+                isLastTrainingWeek: true,
+                order: 1,
+                ExerciseType.Compound,
+                suitsLowReps: true,
+                max,
+                rir,
+                Goal.Hypertrophy));
+    }
+
+    /// <summary>
+    /// Isto što i gore, ali na prelazu koji se ne vidi iz prostih brojeva: blok održavanja ne drži ništa što zavisi od
+    /// toga da je rezerva tri.
+    /// </summary>
+    [Fact]
+    public void TheMaintenanceRange_IsOneThatTheCalibrationCapWouldSkipAnyway()
+    {
+        var maintenance = GoalPrescriptions.ForGoal(Goal.Maintenance);
+
+        Assert.True(CalibrationSet.ExpectedRepsAtFailure(maintenance.RepRangeMax, maintenance.TargetRir) > TrainingConstants.EpleyRepCap);
+    }
+
+    // ---- sastav dana i opšta pravila koja održavanje deli sa hipertrofijom -------------------------------------------
+
+    /// <summary>
+    /// Čarobnjak pokazuje dane hipertrofije i za održavanje (<c>TemplateService.DaysFor</c>), što je tačno samo dok
+    /// budžet složenih vežbi za održavanje stoji kao za hipertrofiju. Ovo je to što ga drži, pa pregled dana u čarobnjaku
+    /// i trening koji server sastavi ne mogu da se razilaze a da test ne pukne.
+    /// </summary>
+    [Fact]
+    public void MaintenanceComposesEveryDay_AsHypertrophyDoes()
+    {
+        foreach (var level in Enum.GetValues<ExperienceLevel>())
+        {
+            Assert.Equal(
+                ExperienceProgramming.MaxCompoundsPerSession(level, Goal.Hypertrophy),
+                ExperienceProgramming.MaxCompoundsPerSession(level, Goal.Maintenance));
+
+            foreach (var template in WorkoutTemplateCatalog.GetAll())
+            {
+                foreach (var day in template.Days)
+                {
+                    Assert.Equal(
+                        SessionComposition.ForLevel(day.Exercises, ExerciseCatalog.IsCompound, level, Goal.Hypertrophy),
+                        SessionComposition.ForLevel(day.Exercises, ExerciseCatalog.IsCompound, level, Goal.Maintenance));
+                }
+            }
+        }
     }
 }

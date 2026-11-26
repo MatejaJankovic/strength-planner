@@ -25,16 +25,19 @@ public static class CalibrationSets
     {
         ArgumentNullException.ThrowIfNull(db);
 
-        var level = await db.Mesocycles
+        var block = await db.Mesocycles
             .AsNoTracking()
             .Where(mesocycle => mesocycle.Id == mesocycleId && mesocycle.UserId == userId)
-            .Select(mesocycle => (ExperienceLevel?)mesocycle.ExperienceLevel)
+            .Select(mesocycle => new { mesocycle.ExperienceLevel, mesocycle.Goal })
             .FirstOrDefaultAsync(cancellationToken);
 
-        if (level is null or ExperienceLevel.Beginner)
+        if (block is null || block.ExperienceLevel == ExperienceLevel.Beginner)
         {
             return [];
         }
+
+        var level = block.ExperienceLevel;
+        var goal = block.Goal;
 
         var weeks = await db.TrainingWeeks
             .AsNoTracking()
@@ -73,13 +76,14 @@ public static class CalibrationSets
 
         return candidates
             .Where(set => CalibrationSet.AppliesTo(
-                level.Value,
+                level,
                 isLastTrainingWeek: true,
                 set.Order,
                 set.Type,
                 set.SuitsLowReps,
                 set.RepRangeMax,
-                set.TargetRir))
+                set.TargetRir,
+                goal))
             .Select(set => set.Id)
             .ToHashSet();
     }

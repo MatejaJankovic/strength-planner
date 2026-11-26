@@ -275,8 +275,8 @@ zaista dobija, a koliko ih uđe i koje odlučuje tvoj nivo iskustva (složene ve
 >   sledeći cilj održavanja. Ocena umora radi kao i uvek i može da povuče deload.
 >
 > Blok održavanja je uvek **ravan** (četiri nedelje, četvrta je deload, a početnik je trenira kao
-> ostale), šta god da zatražiš, i nikad nema seriju do otkaza za procenu maksimuma. Plan sa više
-> blokova održavanja ponavlja isti blok umesto da smenjuje ciljeve.
+> ostale), šta god da zatražiš, i nikad nema seriju do otkaza za procenu maksimuma, ni uz lični šablon
+> sa sopstvenim opsegom. Plan sa više blokova održavanja ponavlja isti blok umesto da smenjuje ciljeve.
 
 > Opseg prati vežbu, a ciljni RIR blok. Trojka na bočnom podizanju nije provera sile:
 > snaga se izražava u pokretima koji mogu da nose opterećenje, pa izolacija i u bloku snage
@@ -1116,7 +1116,7 @@ simulacije za odgovor nisu merene** (aplikacija ga do sada nije prikupljala): ko
 i koliko deli uzrok sa slabim danom su brojevi izabrani u rasponu, ne izmereni.
 
 **Deload rasterećuje i napor.** Ciljni RIR deload nedelje je tvoj ciljni RIR **+2**
-(hipertrofija 3, snaga 4). Pad opterećenja od 10% po Epley-u vredi oko tri ponavljanja, pa
+(hipertrofija 3, snaga 4; najviše 4, pa kod održavanja, čiji je ciljni RIR 3, deload nosi samo jedan više). Pad opterećenja od 10% po Epley-u vredi oko tri ponavljanja, pa
 se isti opseg na 90% odrađuje sa više u rezervi: sa maksimumom od 130 kg deload je 90 kg, a
 RIR 1 se na toj težini dostiže tek na dvanaestom ponavljanju — po naporu skoro normalna
 radna serija. Opseg ponavljanja se ne dira, jer bi to promenilo i sam pokret.

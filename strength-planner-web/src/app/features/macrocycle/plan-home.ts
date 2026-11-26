@@ -454,10 +454,13 @@ export class PlanHome {
   /** Blok sa ovim ciljem nema izbor rasporeda: održavanje je uvek ravno. */
   protected readonly fixesTheModel = fixesTheModel;
 
+  /** Raspored koji održavanje dobija; naziv i trajanje se čitaju iz istog spiska kao za ostale. */
+  protected readonly flatModel = PeriodizationModel.Flat;
+
   /** Šta cilj menja u bloku, kad nije očigledno iz imena. */
   protected goalEffect(goal: Goal): string {
     return goal === Goal.Maintenance
-      ? 'Oko minimalnog volumena (MEV), težine se ne podižu i granice se iz ovog bloka ne uče. Plan od više blokova održavanja ponavlja isti blok.'
+      ? 'Oko minimalnog volumena (MEV), težina se ne podiže kad stigneš do vrha opsega i granice se iz ovog bloka ne uče. Plan od više blokova održavanja ponavlja isti blok.'
       : '';
   }
 

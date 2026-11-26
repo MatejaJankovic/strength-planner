@@ -153,8 +153,9 @@ public class MacrocycleService : IMacrocycleService
 
         return MacrocyclePlanner
             .AlternatingGoals(blockCount, firstGoal)
-            // Prvi blok gradi volumen, naredni ga pretvara u snagu; model periodizacije se
-            // predlaže isti za svaki blok (Periodization.SuggestedModel).
+            // Prvi blok gradi volumen, naredni ga pretvara u snagu, a plan održavanja ponavlja održavanje;
+            // model periodizacije se predlaže isti za svaki blok (Periodization.SuggestedModel), osim što je
+            // održavanje uvek ravno (Periodization.ModelFor).
             .Select(goal => new CreateMacrocycleBlockDto
             {
                 Goal = goal,

@@ -37,7 +37,7 @@ public static class WeeklyVolumeTarget
     ///
     /// A maintenance block aims at MEV, the least the app knows to defend. The literature says
     /// less would hold what a block built, down to a third or a ninth of the training dose
-    /// (Bickel et al. 2011; Spiering et al. 2021), but nothing in the model describes a volume
+    /// (Bickel et al. 2011; Spiering et al. 2021, both read through their abstracts), but nothing in the model describes a volume
     /// below MEV: it is the lowest of the three limits, and the limits are not learned in a
     /// maintenance block, so no week would ever say where below it the real floor is. Aiming at
     /// it is the cautious reading of "least that holds"; a lower share is one constant away.

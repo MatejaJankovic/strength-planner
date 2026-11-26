@@ -322,7 +322,8 @@ describe('PlanHome - sadržaj šablona u čarobnjaku', () => {
     );
     expect(fixture.nativeElement.querySelector('#block-model-0')).toBeNull();
     expect(fixture.nativeElement.textContent).toContain('Održavanje je uvek ravno');
-    expect(fixture.nativeElement.textContent).toContain('težine se ne podižu');
+    expect(fixture.nativeElement.textContent).toContain('težina se ne podiže kad stigneš do vrha opsega');
+    expect(fixture.nativeElement.textContent).toContain('Ravan · 4 ned.');
   });
 
   it('izbor rasporeda se vraća kad se cilj promeni nazad na rastući', async () => {
@@ -334,7 +335,7 @@ describe('PlanHome - sadržaj šablona u čarobnjaku', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('#block-model-0')).not.toBeNull();
-    expect(fixture.nativeElement.textContent).not.toContain('težine se ne podižu');
+    expect(fixture.nativeElement.textContent).not.toContain('težina se ne podiže kad stigneš');
   });
 
   /** Plan održavanja ponavlja isti blok, kao MacrocyclePlanner.AlternatingGoals na serveru. */

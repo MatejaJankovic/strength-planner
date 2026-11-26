@@ -15,22 +15,22 @@ public class CalibrationSetTests
     [InlineData(ExperienceLevel.Beginner, false)]
     public void AppliesOnlyFromTheIntermediateLevel(ExperienceLevel level, bool expected)
     {
-        Assert.Equal(expected, CalibrationSet.AppliesTo(level, true, 1, ExerciseType.Compound, true, 6, 1));
+        Assert.Equal(expected, CalibrationSet.AppliesTo(level, true, 1, ExerciseType.Compound, true, 6, 1, Goal.Hypertrophy));
     }
 
     [Fact]
     public void AppliesOnlyToTheFirstExercise_InTheLastTrainingWeek()
     {
-        Assert.False(CalibrationSet.AppliesTo(ExperienceLevel.Advanced, false, 1, ExerciseType.Compound, true, 6, 1));
-        Assert.False(CalibrationSet.AppliesTo(ExperienceLevel.Advanced, true, 2, ExerciseType.Compound, true, 6, 1));
+        Assert.False(CalibrationSet.AppliesTo(ExperienceLevel.Advanced, false, 1, ExerciseType.Compound, true, 6, 1, Goal.Hypertrophy));
+        Assert.False(CalibrationSet.AppliesTo(ExperienceLevel.Advanced, true, 2, ExerciseType.Compound, true, 6, 1, Goal.Hypertrophy));
     }
 
     [Fact]
     public void AppliesOnlyToACompoundThatSuitsLowReps()
     {
         // Izolacija ili iskorak: maksimum tu nije mera koju plan koristi.
-        Assert.False(CalibrationSet.AppliesTo(ExperienceLevel.Advanced, true, 1, ExerciseType.Isolation, true, 6, 1));
-        Assert.False(CalibrationSet.AppliesTo(ExperienceLevel.Advanced, true, 1, ExerciseType.Compound, false, 6, 1));
+        Assert.False(CalibrationSet.AppliesTo(ExperienceLevel.Advanced, true, 1, ExerciseType.Isolation, true, 6, 1, Goal.Hypertrophy));
+        Assert.False(CalibrationSet.AppliesTo(ExperienceLevel.Advanced, true, 1, ExerciseType.Compound, false, 6, 1, Goal.Hypertrophy));
     }
 
     /// <summary>
@@ -50,7 +50,7 @@ public class CalibrationSetTests
     {
         Assert.Equal(
             expected,
-            CalibrationSet.AppliesTo(ExperienceLevel.Intermediate, true, 1, ExerciseType.Compound, true, repRangeMax, targetRir));
+            CalibrationSet.AppliesTo(ExperienceLevel.Intermediate, true, 1, ExerciseType.Compound, true, repRangeMax, targetRir, Goal.Hypertrophy));
     }
 
     [Fact]
@@ -92,6 +92,6 @@ public class CalibrationSetTests
 
         Assert.Equal(
             expected,
-            CalibrationSet.AppliesTo(ExperienceLevel.Intermediate, true, 1, ExerciseType.Compound, true, week.RepRangeMax, week.TargetRir));
+            CalibrationSet.AppliesTo(ExperienceLevel.Intermediate, true, 1, ExerciseType.Compound, true, week.RepRangeMax, week.TargetRir, goal));
     }
 }

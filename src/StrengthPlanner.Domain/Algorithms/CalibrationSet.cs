@@ -27,7 +27,12 @@ namespace StrengthPlanner.Domain.Algorithms;
 /// <see cref="TrainingConstants.EpleyRepCap"/> no estimate is taken at all. The last week of
 /// a flat or inverse hypertrophy block (8-12 at RIR 1, the lowest target a week prescribes)
 /// would fail near 13 and is skipped; the linear block every block is proposed with ends at
-/// 6-10 at RIR 1, and every strength week fits.</item>
+/// 6-10 at RIR 1, and every strength week fits;</item>
+/// <item>never in a maintenance block, whatever its range. A set to failure is the one thing
+/// that block does not ask for (<see cref="GoalPrescriptions.StepsLoadAtTopOfRange"/> is the
+/// same decision for the load). The built-in prescription, 6-10 at three in reserve, would
+/// fail near 13 and be skipped on its own, but a custom template keeps the range its owner
+/// typed, and 5-8 with three in reserve would otherwise be read at 11.</item>
 /// </list>
 /// </summary>
 public static class CalibrationSet
@@ -43,9 +48,11 @@ public static class CalibrationSet
         ExerciseType type,
         bool suitsLowReps,
         int repRangeMax,
-        int targetRir)
+        int targetRir,
+        Goal goal)
     {
         return level != ExperienceLevel.Beginner
+               && goal != Goal.Maintenance
                && isLastTrainingWeek
                && order == 1
                && type == ExerciseType.Compound
