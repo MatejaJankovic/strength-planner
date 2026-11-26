@@ -3,6 +3,7 @@ import { Component, input } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { CompleteSessionResultDto, CompletedExerciseSummaryDto } from '../../core/models/training.models';
 import { StatChip, StatChipTone } from '../../shared/components/stat-chip/stat-chip';
+import { goalGenitive } from '../../core/models/goal';
 import { adjustmentCause } from './adjustment-cause';
 import { LoadFloorNote, loadFloorNote } from './load-floor-note';
 import { nextWeightLabel, nextWeightTone } from './next-weight-label';
@@ -43,4 +44,7 @@ export class CompletionSummary {
 
   /** Oznaka uz pomeren predlog serija: mišić, i "pun trening" kad ga je spustila granica. */
   protected readonly adjustmentCause = adjustmentCause;
+
+  /** Cilj sledećeg bloka u rečenici o njemu. */
+  protected readonly goalGenitive = goalGenitive;
 }

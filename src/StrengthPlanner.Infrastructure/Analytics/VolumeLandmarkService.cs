@@ -126,6 +126,21 @@ public sealed class VolumeLandmarkService
             return;
         }
 
+        // Blok održavanja ne uči granice: nedelja je namerno na MEV-u, pa o MAV-u i MRV-u ne
+        // kaže ništa, a umor ili pad na minimalnom volumenu je skoro sigurno život, ne trening
+        // (VolumeAdaptation, Goal.Maintenance). Nedelja je ipak obračunata (datum je upisan), da
+        // se ne bi stalno vraćala među neobračunate.
+        var goal = await _db.Mesocycles
+            .AsNoTracking()
+            .Where(mesocycle => mesocycle.Id == mesocycleId && mesocycle.UserId == userId)
+            .Select(mesocycle => (Goal?)mesocycle.Goal)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (!GoalPrescriptions.LearnsVolumeLimits(goal))
+        {
+            return;
+        }
+
         var responses = await GetWeeklyResponsesAsync(userId, trainingWeekId, cancellationToken);
         if (responses.Count == 0)
         {

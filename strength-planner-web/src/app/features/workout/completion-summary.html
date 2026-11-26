@@ -61,7 +61,7 @@
         <strong>Blok {{ next.blockOrder }} od {{ next.blockCount }} je otvoren.</strong>
         <p>
           Plan "{{ next.planName }}" nastavlja sa ciljem
-          {{ next.goal === 'Strength' ? 'snage' : 'hipertrofije' }}. Novi mezociklus je
+          {{ goalGenitive(next.goal) }}. Novi mezociklus je
           generisan od tvojih sadašnjih 1RM vrednosti i već je aktivan.
         </p>
       </div>

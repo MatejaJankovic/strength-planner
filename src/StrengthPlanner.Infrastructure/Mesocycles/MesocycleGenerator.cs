@@ -153,7 +153,7 @@ public class MesocycleGenerator : IMesocycleGenerator
             weightStepByExerciseId,
             bodyweightByExerciseId,
             experienceLevel,
-            request.PeriodizationModel,
+            Periodization.ModelFor(request.Goal, request.PeriodizationModel),
             request.SetAllocation);
 
         _db.Mesocycles.Add(mesocycle);

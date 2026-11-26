@@ -223,6 +223,20 @@ public static class Periodization
     /// </summary>
     public static PeriodizationModel SuggestedModel => PeriodizationModel.LinearRising;
 
+    /// <summary>
+    /// The model a block of this goal is built with, given the one asked for.
+    ///
+    /// A maintenance block is flat whatever was asked: periodization moves reps, reserve and sets
+    /// through the block to build something up and draw it down, and a block whose whole point is
+    /// to hold steady has nothing to build. A volume phase would add sets above the MEV it aims at
+    /// and an intensity phase would take the reserve down to where the block stops being easy.
+    /// Every other goal takes the model that was asked for.
+    /// </summary>
+    public static PeriodizationModel ModelFor(Goal goal, PeriodizationModel requested)
+    {
+        return goal == Goal.Maintenance ? PeriodizationModel.Flat : requested;
+    }
+
     /// <summary>How many weeks a block of this model runs.</summary>
     public static int DurationWeeks(PeriodizationModel model)
     {

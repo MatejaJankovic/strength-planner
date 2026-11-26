@@ -181,7 +181,8 @@ public sealed class SessionOutcomes
                     plan.RepRangeMin,
                     plan.RepRangeMax,
                     weightStepKg,
-                    load.ReferenceBodyweightLoadKg);
+                    load.ReferenceBodyweightLoadKg,
+                    GoalPrescriptions.StepsLoadAtTopOfRange(session.TrainingWeek.Mesocycle.Goal));
 
             // Ono što je vežbač podigao u OVOM treningu; za preskočenu vežbu planirana
             // težina. Iz toga se na kraju računa razlika koju rezime prikazuje.
@@ -321,7 +322,8 @@ public sealed class SessionOutcomes
                 plan.RepRangeMin,
                 plan.RepRangeMax,
                 WeightStepResolver.StepFor(weightStepByExerciseId, plan.ExerciseId),
-                load.ReferenceBodyweightLoadKg);
+                load.ReferenceBodyweightLoadKg,
+                GoalPrescriptions.StepsLoadAtTopOfRange(deloadSession.TrainingWeek.Mesocycle.Goal));
 
             resumePoints[plan.ExerciseId] = new ResumePoint(
                 SessionLoadInputs.PrescriptionOf(plan),

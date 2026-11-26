@@ -6,6 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MacrocycleService } from '../../core/api/macrocycle.service';
 import { MesocycleService } from '../../core/api/mesocycle.service';
 import { extractErrorMessage } from '../../core/api/http-error';
+import { fixesTheModel, goalAfter, goalLabel, modelFor } from '../../core/models/goal';
 import {
   Goal,
   CreateMacrocycleBlockDto,
@@ -72,6 +73,7 @@ export class PlanHome {
   protected readonly goalOptions = [
     { value: Goal.Hypertrophy, label: 'Hipertrofija' },
     { value: Goal.Strength, label: 'Snaga' },
+    { value: Goal.Maintenance, label: 'Održavanje' },
   ];
 
   /**
@@ -294,10 +296,11 @@ export class PlanHome {
       return;
     }
 
-    // Novi blok podrazumevano smenjuje cilj prethodnog i nasleđuje njegov šablon i model.
+    // Novi blok podrazumevano smenjuje cilj prethodnog (održavanje ga ponavlja) i nasleđuje njegov šablon i
+    // model; iza bloka održavanja koji je ravan novi blok je održavanje, pa model ne treba ponovo nametati.
     this.blocks.update((blocks) => {
       const last = blocks[blocks.length - 1];
-      const goal = last.goal === Goal.Hypertrophy ? Goal.Strength : Goal.Hypertrophy;
+      const goal = goalAfter(last.goal);
 
       return [
         ...blocks,
@@ -321,10 +324,15 @@ export class PlanHome {
 
   protected setBlockGoal(index: number, raw: string): void {
     const goal = Number(raw) as Goal;
-    // Model ne prati cilj: predlog je isti za oba, pa bi promena cilja samo poništila model
-    // koji je korisnik možda već izabrao.
+    // Model ne prati cilj: predlog je isti za hipertrofiju i snagu, pa bi promena cilja samo
+    // poništila model koji je korisnik možda već izabrao. Izuzetak je održavanje, koje je uvek
+    // ravno, pa ekran odmah pokazuje model koji će blok zaista dobiti.
     this.blocks.update((blocks) =>
-      blocks.map((block, i) => (i === index ? { ...block, goal } : block)),
+      blocks.map((block, i) =>
+        i === index
+          ? { ...block, goal, periodizationModel: modelFor(goal, block.periodizationModel) }
+          : block,
+      ),
     );
   }
 
@@ -441,8 +449,19 @@ export class PlanHome {
     return plan.blocks.reduce((weeks, block) => weeks + block.durationWeeks, 0);
   }
 
-  protected goalLabel(goal: Goal): string {
-    return goal === Goal.Strength ? 'Snaga' : 'Hipertrofija';
+  protected readonly goalLabel = goalLabel;
+
+  /** Blok sa ovim ciljem nema izbor rasporeda: održavanje je uvek ravno. */
+  protected readonly fixesTheModel = fixesTheModel;
+
+  /** Raspored koji održavanje dobija; naziv i trajanje se čitaju iz istog spiska kao za ostale. */
+  protected readonly flatModel = PeriodizationModel.Flat;
+
+  /** Šta cilj menja u bloku, kad nije očigledno iz imena. */
+  protected goalEffect(goal: Goal): string {
+    return goal === Goal.Maintenance
+      ? 'Oko minimalnog volumena (MEV), težina se ne podiže kad stigneš do vrha opsega i granice se iz ovog bloka ne uče. Plan od više blokova održavanja ponavlja isti blok.'
+      : '';
   }
 
   /**

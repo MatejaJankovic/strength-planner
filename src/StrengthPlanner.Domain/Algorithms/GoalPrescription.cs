@@ -13,6 +13,15 @@ public sealed record GoalPrescription(int RepRangeMin, int RepRangeMax, int Targ
 /// why they live in the domain: the generator writes them into the first block, and the
 /// deload logic needs the same values later to work out what a week should look like once
 /// fatigue has rearranged the block.
+///
+/// Maintenance keeps the load of a hypertrophy block and asks for less of it: 6-10 reps with
+/// three in reserve. By Epley a set is worth reps + reserve, and 6 + 3 and 10 + 3 are the same
+/// 9 to 13 that 8 + 1 and 12 + 1 are, so the weight on the bar is the one the hypertrophy block
+/// used, for two fewer reps and two more in hand. Intensity is what holds strength and size
+/// when volume and frequency are cut (Spiering et al. 2021; Bickel et al. 2011, both read
+/// through their abstracts), and the reserve is what keeps the block from being training in its own right. Three is also the
+/// largest reserve a set still counts as a full set at and still yields a maximum from
+/// (<see cref="TrainingConstants.E1RmMaxRir"/>).
 /// </summary>
 public static class GoalPrescriptions
 {
@@ -20,6 +29,7 @@ public static class GoalPrescriptions
     {
         Goal.Strength => new GoalPrescription(RepRangeMin: 3, RepRangeMax: 6, TargetRir: 2),
         Goal.Hypertrophy => new GoalPrescription(RepRangeMin: 8, RepRangeMax: 12, TargetRir: 1),
+        Goal.Maintenance => new GoalPrescription(RepRangeMin: 6, RepRangeMax: 10, TargetRir: 3),
         _ => throw new ArgumentOutOfRangeException(nameof(goal), goal, "Unsupported training goal.")
     };
 
@@ -73,6 +83,34 @@ public static class GoalPrescriptions
             RepRangeMin = accessory.RepRangeMin,
             RepRangeMax = accessory.RepRangeMax
         };
+    }
+
+    /// <summary>
+    /// Whether reaching the top of the rep range raises the load. It does in a block that builds
+    /// something, and not in one that keeps it: double progression is how a load grows, and a
+    /// maintenance block is the one whose loads are held (Spiering et al. 2021 find intensity
+    /// the variable that decides whether strength and size are kept).
+    /// </summary>
+    public static bool StepsLoadAtTopOfRange(Goal goal)
+    {
+        return goal != Goal.Maintenance;
+    }
+
+    /// <summary>
+    /// Whether a completed week of a block with this goal moves the lifter's volume limits.
+    ///
+    /// Not a maintenance block. Its volume sits at MEV on purpose, so a week says nothing about
+    /// MAV (judged only from a week near it) or about raising MRV (only from a week near it),
+    /// and what it does say about the rest is wrong more often than right: a week at MEV is "at
+    /// least the minimum" for the recovery rule that lowers MRV, so tiredness caused by a busy
+    /// stretch would lower it, and strength that merely recovers after a hard block would lower
+    /// MEV and with it the next maintenance target. Measured in
+    /// <c>docs/features/maintenance-goal.md</c>.
+    /// A goal that is unknown (the mesocycle was not found) learns nothing.
+    /// </summary>
+    public static bool LearnsVolumeLimits(Goal? goal)
+    {
+        return goal is Goal.Strength or Goal.Hypertrophy;
     }
 
     /// <summary>

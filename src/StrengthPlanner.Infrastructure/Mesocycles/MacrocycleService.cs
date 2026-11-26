@@ -103,7 +103,8 @@ public class MacrocycleService : IMacrocycleService
                 Order = index + 1,
                 Goal = block.Goal,
                 TemplateKey = block.TemplateKey,
-                PeriodizationModel = block.PeriodizationModel,
+                // Blok održavanja je uvek ravan, šta god da je traženo (Periodization.ModelFor).
+                PeriodizationModel = Periodization.ModelFor(block.Goal, block.PeriodizationModel),
                 // „Prati moj šablon" važi samo za lični šablon; ugrađeni se uvek balansira.
                 SetAllocation = AllocationFor(block.SetAllocation, block.TemplateKey)
             });
@@ -152,13 +153,14 @@ public class MacrocycleService : IMacrocycleService
 
         return MacrocyclePlanner
             .AlternatingGoals(blockCount, firstGoal)
-            // Prvi blok gradi volumen, naredni ga pretvara u snagu; model periodizacije se
-            // predlaže isti za svaki blok (Periodization.SuggestedModel).
+            // Prvi blok gradi volumen, naredni ga pretvara u snagu, a plan održavanja ponavlja održavanje;
+            // model periodizacije se predlaže isti za svaki blok (Periodization.SuggestedModel), osim što je
+            // održavanje uvek ravno (Periodization.ModelFor).
             .Select(goal => new CreateMacrocycleBlockDto
             {
                 Goal = goal,
                 TemplateKey = templateKey,
-                PeriodizationModel = Periodization.SuggestedModel
+                PeriodizationModel = Periodization.ModelFor(goal, Periodization.SuggestedModel)
             })
             .ToList();
     }

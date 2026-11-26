@@ -34,14 +34,25 @@ public static class WeeklyVolumeTarget
 {
     /// <summary>
     /// Weekly volume a block of this goal aims at, before the week's own shift.
+    ///
+    /// A maintenance block aims at MEV, the least the app knows to defend. The literature says
+    /// less would hold what a block built, down to a third or a ninth of the training dose
+    /// (Bickel et al. 2011; Spiering et al. 2021, both read through their abstracts), but nothing in the model describes a volume
+    /// below MEV: it is the lowest of the three limits, and the limits are not learned in a
+    /// maintenance block, so no week would ever say where below it the real floor is. Aiming at
+    /// it is the cautious reading of "least that holds"; a lower share is one constant away.
     /// </summary>
     public static decimal ForGoal(Goal goal, VolumeLandmarkValues landmarks)
     {
         ArgumentNullException.ThrowIfNull(landmarks);
 
-        return goal == Goal.Strength
-            ? (landmarks.Mev + landmarks.Mav) / 2m
-            : landmarks.Mav;
+        return goal switch
+        {
+            Goal.Strength => (landmarks.Mev + landmarks.Mav) / 2m,
+            Goal.Hypertrophy => landmarks.Mav,
+            Goal.Maintenance => landmarks.Mev,
+            _ => throw new ArgumentOutOfRangeException(nameof(goal), goal, "Unsupported training goal.")
+        };
     }
 
     /// <summary>

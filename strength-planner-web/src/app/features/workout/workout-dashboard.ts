@@ -6,7 +6,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { extractErrorMessage } from '../../core/api/http-error';
 import { MesocycleService } from '../../core/api/mesocycle.service';
 import { OneRepMaxService } from '../../core/api/one-rep-max.service';
-import { Goal, WorkoutSessionDto } from '../../core/models/training.models';
+import { goalLabel } from '../../core/models/goal';
+import { WorkoutSessionDto } from '../../core/models/training.models';
 import { StatChip, StatChipTone } from '../../shared/components/stat-chip/stat-chip';
 import { EmptyState } from '../../shared/components/empty-state/empty-state';
 import { Loading } from '../../shared/components/loading/loading';
@@ -153,9 +154,7 @@ export class WorkoutDashboard {
     });
   }
 
-  protected goalLabel(goal: Goal): string {
-    return goal === Goal.Strength ? 'Snaga' : 'Hipertrofija';
-  }
+  protected readonly goalLabel = goalLabel;
 
   protected statusMeta(status: WorkoutSessionDto['status']): StatusMeta {
     switch (status) {

@@ -301,6 +301,58 @@ describe('PlanHome - sadržaj šablona u čarobnjaku', () => {
 
     expect(component().blocks().map((block: any) => block.periodizationModel)).toEqual([0, 0]);
   });
+
+  /**
+   * Održavanje je uvek ravno (Periodization.ModelFor na serveru), pa ekran ne nudi izbor
+   * rasporeda i odmah pokazuje model koji će blok zaista dobiti, umesto da izabrani model
+   * pokaže a server ga tiho zameni.
+   */
+  it('blok održavanja je ravan i nema izbor rasporeda', async () => {
+    openWizard();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('#block-model-0')).not.toBeNull();
+
+    component().setBlockModel(0, '3');
+    component().setBlockGoal(0, '2');
+    fixture.detectChanges();
+
+    expect(component().blocks()[0]).toEqual(
+      expect.objectContaining({ goal: 2, periodizationModel: 0 }),
+    );
+    expect(fixture.nativeElement.querySelector('#block-model-0')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Održavanje je uvek ravno');
+    expect(fixture.nativeElement.textContent).toContain('težina se ne podiže kad stigneš do vrha opsega');
+    expect(fixture.nativeElement.textContent).toContain('Ravan · 4 ned.');
+  });
+
+  it('izbor rasporeda se vraća kad se cilj promeni nazad na rastući', async () => {
+    openWizard();
+    await fixture.whenStable();
+
+    component().setBlockGoal(0, '2');
+    component().setBlockGoal(0, '1');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('#block-model-0')).not.toBeNull();
+    expect(fixture.nativeElement.textContent).not.toContain('težina se ne podiže kad stigneš');
+  });
+
+  /** Plan održavanja ponavlja isti blok, kao MacrocyclePlanner.AlternatingGoals na serveru. */
+  it('novi blok iza održavanja je održavanje i ravan je', async () => {
+    openWizard();
+    await fixture.whenStable();
+
+    component().setBlockGoal(0, '2');
+    component().addBlock();
+
+    expect(
+      component().blocks().map((block: any) => [block.goal, block.periodizationModel]),
+    ).toEqual([
+      [2, 0],
+      [2, 0],
+    ]);
+  });
 });
 
 /**

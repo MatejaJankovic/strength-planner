@@ -719,7 +719,8 @@ public class SessionService : ISessionService
                         plan.Exercise.Type,
                         plan.Exercise.SuitsLowReps,
                         plan.RepRangeMax,
-                        plan.TargetRir),
+                        plan.TargetRir,
+                        mesocycle.Goal),
                     SetLogs = plan.SetLogs
                         .OrderBy(set => set.SetNumber)
                         .Select(SetLogMapper.ToDto)
