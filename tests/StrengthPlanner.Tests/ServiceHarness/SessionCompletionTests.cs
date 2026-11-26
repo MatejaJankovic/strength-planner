@@ -106,6 +106,36 @@ public class SessionCompletionTests
     }
 
     /// <summary>
+    /// Završava se samo trening koji traje. Planiran nije počeo (završetak bez serija bi iz ničega upisao posledice
+    /// nedelje), a preskočen je odgovor vežbača, koji se ne pretvara u završen trening mimo ekrana. Ekran nijedno ne
+    /// nudi; do sada ih je izravan poziv API-ja prihvatao oba, jer je provera bila samo „nije završen".
+    /// </summary>
+    [Theory]
+    [InlineData(SessionStatus.Planned)]
+    [InlineData(SessionStatus.Skipped)]
+    public async Task Completing_ASessionThatIsNotInProgress_Conflicts_AndWritesNothing(SessionStatus status)
+    {
+        using var database = new SqliteDatabase();
+        var seed = await SeedAsync(database, SetAllocation.FollowTemplate);
+
+        await using (var db = database.NewContext())
+        {
+            var session = await db.WorkoutSessions.SingleAsync(candidate => candidate.Id == seed.WeekOneSession);
+            session.Status = status;
+            await db.SaveChangesAsync();
+        }
+
+        var error = await Assert.ThrowsAsync<StrengthPlanner.Application.Exceptions.TrainingLogException>(
+            () => CompleteAsync(database, seed.WeekOneSession));
+
+        Assert.Equal(StrengthPlanner.Application.Exceptions.TrainingLogErrorType.Conflict, error.ErrorType);
+        await using var read = database.NewContext();
+        Assert.Equal(status, (await read.WorkoutSessions.SingleAsync(candidate => candidate.Id == seed.WeekOneSession)).Status);
+        Assert.Equal(0, await read.OneRepMaxRecords.CountAsync(record => record.Source == OneRepMaxSource.Estimated));
+        Assert.Null((await read.TrainingWeeks.SingleAsync(week => week.Id == seed.WeekOne)).FatigueScore);
+    }
+
+    /// <summary>
     /// Trening iz drugog naloga se ne vidi: obračun je ograničen po korisniku.
     /// </summary>
     [Fact]
