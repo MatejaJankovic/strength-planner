@@ -341,8 +341,9 @@ public class MaintenanceGoalTests
 
     private static decimal MaintenanceScore(decimal rirDeviation, decimal failureShare)
     {
-        // Ravan blok, druga nedelja: čitanje snage još nema prethodno (pa se ne potvrđuje), odgovora nema, a volumen je
-        // oko MEV-a, daleko ispod praga udela MRV-a.
+        // Ravan blok, prva ili druga nedelja (ocena prve deluje na drugu, druge na treću; treće na četvrtu, koja je već
+        // deload): čitanje snage nema prethodno (pa se ne potvrđuje), odgovora nema, a volumen je oko MEV-a, ispod praga
+        // udela MRV-a (vidi TheVolumeSignal_IsZeroForEveryMaintenanceWeek).
         return FatigueEvaluator.Score(new WeeklyFatigue(
             rirDeviation,
             AchievableRirDeficit: 3m,
@@ -357,8 +358,9 @@ public class MaintenanceGoalTests
     /// <summary>
     /// Koliko često deload stiže u održavanju. Rezerva se meri prema dubini do koje serija sme da side ispod cilja (cilj
     /// 3, pa tri), signal volumena je nula, a u ravnom bloku nema potvrđene snage ni odgovora. Srednji nivo (prag 0.60)
-    /// zato dostiže prag samo kad je pola serija do otkaza, a ostale su sve na RIR 0; napredni (0.50) još treba pun
-    /// signal rezerve. Znači: skoro nikad, osim u nedelji u kojoj je sve bilo na granici, što je baš nedelja kojoj
+    /// zato dostiže prag samo kad je pola serija do otkaza, a ostale su sve na RIR 0; napredni (0.50) uz pola do otkaza
+    /// traži prosečno oko dve rezerve ispod cilja (0.25 / 0.35 pune rezerve od tri), a uz trećinu do otkaza pune tri.
+    /// Znači: skoro nikad, osim u nedelji u kojoj je sve bilo na granici, što je baš nedelja kojoj
     /// deload treba. Izmereno nad pravom ocenom; volumen je ionako najmanji, pa deload tu daje malo.
     /// </summary>
     [Fact]
@@ -373,15 +375,42 @@ public class MaintenanceGoalTests
         Assert.True(MaintenanceScore(-2m, 0.5m) < advanced);
         // Sve dovršene serije na RIR 0 i pola do otkaza: tačno prag srednjeg nivoa.
         Assert.True(MaintenanceScore(-3m, 0.5m) >= intermediate);
-        // Sa manje otkaza srednji nivo ne stiže, a napredni stiže tek sa trećinom do otkaza.
+        // Sa manje otkaza srednji nivo ne stiže, a napredni stiže tek sa oko trećinom do otkaza (0.3) uz pune tri rezerve.
         Assert.True(MaintenanceScore(-3m, 0.25m) < intermediate);
         Assert.True(MaintenanceScore(-3m, 0.25m) < advanced);
         Assert.True(MaintenanceScore(-3m, 0.3m) >= advanced);
+        // Napredni uz pola do otkaza: prag je na prosečnih -2.14 (0.25 / 0.35 od tri), ne na -3.
+        Assert.True(MaintenanceScore(-2.1m, 0.5m) < advanced);
+        Assert.True(MaintenanceScore(-2.2m, 0.5m) >= advanced);
 
         // Isti nedeljni signali u hipertrofiji (cilj 1, pa dubina 1): pola serija do otkaza uz jednu rezervu ispod cilja
         // je već prag. Održavanje je tu tri puta manje osetljivo na rezervu, što je posledica toga da je cilj 3.
         var hypertrophy = FatigueEvaluator.Score(new WeeklyFatigue(-1m, 1m, 0.5m, 0m, 0.4m, 0m, 0m, 0m));
         Assert.True(hypertrophy >= intermediate);
+    }
+
+    /// <summary>
+    /// Ocena u prethodnom testu uzima signal volumena kao nulu. To je pretpostavka o generisanoj nedelji, pa je ovde
+    /// izmerena: nijedan mišić nijednog ugrađenog šablona na nijednom nivou ne prelazi 80% svog MRV-a u nedelji održavanja
+    /// (prag na kome signal počinje da raste, <c>FatigueEvaluator</c>).
+    /// </summary>
+    [Fact]
+    public void TheVolumeSignal_IsZeroForEveryMaintenanceWeek()
+    {
+        var highest = 0m;
+
+        foreach (var week in TemplateWeekSimulation.EveryMaintenanceWeek())
+        {
+            foreach (var seed in ExerciseCatalog.VolumeLandmarks)
+            {
+                var mrv = ExperienceProgramming.ScaleLandmarks(
+                    new VolumeLandmarkValues(seed.Mev, seed.Mav, seed.Mrv),
+                    week.Level).Mrv;
+                highest = Math.Max(highest, week.Weekly(seed.Muscle) / mrv);
+            }
+        }
+
+        Assert.True(highest < 0.80m, $"highest share of MRV in a maintenance week: {highest:0.00}");
     }
 
     // ---- kalibracija --------------------------------------------------------------------------------------------

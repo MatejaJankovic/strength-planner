@@ -130,7 +130,10 @@ public class MaintenanceGoalServiceTests
     /// samo jedan korak: serija upisana sa RIR 4 broji pola, sa 5 ništa. Balansiranje meri odrađeno stimulativnim
     /// serijama, pa trening koji vežbač odradi lakše od plana ostatku nedelje dodaje serije ka MEV-u. Izmereno: dan A od
     /// četiri serije, dan B propisan sa četiri, MEV 8: do RIR 3 ostaje četiri, uz RIR 4 postaje šest (četiri serije
-    /// broje dve), a uz RIR 5 ostaje šest, jer balansiranje ne diže jedan trening preko polovine propisanog.
+    /// broje dve), a uz RIR 5 ostaje šest. Granica je po vežbi, ne po treningu: najviše dve serije više od propisa
+    /// (<c>WeeklySetAllocation.MaxDriftFromPrescription</c>) i najviše šest po vežbi, pa dan sa više vežbi može da dobije
+    /// po dve na svakoj. Ovde je jedna vežba po danu, što je i razlog što se sa RIR 4 stalo na šest; test ne razlikuje
+    /// koliko kredita dobija RIR 4 (0, 0.25 i 0.5 daju isto), nego samo da RIR 4 i više ne broji celo.
     /// </summary>
     [Theory]
     [InlineData(2, 4)]
