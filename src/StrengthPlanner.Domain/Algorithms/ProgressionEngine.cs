@@ -50,6 +50,13 @@ public sealed class ProgressionEngine
     /// reps are the prescription there and the reserve carries the step, as round 10 decided;
     /// on a light load the coarse step then remains a limitation of the prescription.
     ///
+    /// <paramref name="stepAtTopOfRange"/> false (a maintenance block, see
+    /// <see cref="GoalPrescriptions.StepsLoadAtTopOfRange"/>) takes the step out: reaching the top
+    /// of the range is where double progression raises the load, and a block that only keeps what
+    /// was built has nothing to raise it for. The load then waits, exactly as it does where a step
+    /// does not fit: it is never lowered by reaching the top, and a positive RIR correction still
+    /// applies, because that restores the effort the block asks for and is not progress.
+    ///
     /// The load increment used for the double-progression step and for rounding comes
     /// from the exercise (2.5 kg when none is supplied), so dumbbells and machines step
     /// realistically. Rounding never reverses the direction of the correction, and with no
@@ -64,7 +71,8 @@ public sealed class ProgressionEngine
         int repRangeMin,
         int repRangeMax,
         decimal? weightStepKg = null,
-        decimal bodyweightLoadKg = 0m)
+        decimal bodyweightLoadKg = 0m,
+        bool stepAtTopOfRange = true)
     {
         ArgumentNullException.ThrowIfNull(workingSets);
 
@@ -109,6 +117,12 @@ public sealed class ProgressionEngine
                 usedWeightKg,
                 farHarderThanPlanned: averageRir < 0 && deviation <= -TrainingConstants.StepDownRirShortfall);
             atBodyweightFloor = BodyweightLoad.IsAtBodyweightFloor(usedTotalKg * (1 + correction), bodyweightLoadKg);
+        }
+        else if (!stepAtTopOfRange)
+        {
+            // Održavanje: vrh opsega ne podiže težinu. Isto što i kad korak ne staje - težina
+            // čeka, ne pada, a korekcija naviše (set je lakši od cilja) prolazi kao i inače.
+            nextWeight = ApplyCorrection(usedTotalKg, Math.Max(0m, correction), stepKg, bodyweightLoadKg, usedWeightKg);
         }
         else if (StepAbsorption.IsNarrow(repRangeMin, repRangeMax, targetRir)
                  || StepAbsorption.FitsAtTarget(usedTotalKg, stepKg, repRangeMin, repRangeMax, targetRir))

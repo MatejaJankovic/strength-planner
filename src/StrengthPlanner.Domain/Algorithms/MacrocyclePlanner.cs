@@ -21,7 +21,9 @@ public static class MacrocyclePlanner
 
     /// <summary>
     /// Returns the goals for <paramref name="blockCount"/> blocks, alternating from
-    /// <paramref name="firstGoal"/>.
+    /// <paramref name="firstGoal"/>. A maintenance plan does not alternate: it is the same
+    /// block repeated, because the reason to choose it is a stretch of time with little of
+    /// either, and a hypertrophy block slipped in after the first would be a different plan.
     /// </summary>
     public static IReadOnlyList<Goal> AlternatingGoals(int blockCount, Goal firstGoal)
     {
@@ -30,6 +32,11 @@ public static class MacrocyclePlanner
             throw new ArgumentOutOfRangeException(
                 nameof(blockCount),
                 $"A plan holds between {MinBlocks} and {MaxBlocks} blocks.");
+        }
+
+        if (firstGoal == Goal.Maintenance)
+        {
+            return Enumerable.Repeat(Goal.Maintenance, blockCount).ToList();
         }
 
         var other = firstGoal == Goal.Hypertrophy ? Goal.Strength : Goal.Hypertrophy;

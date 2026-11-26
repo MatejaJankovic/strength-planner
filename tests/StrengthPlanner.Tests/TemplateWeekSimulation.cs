@@ -21,12 +21,19 @@ internal static class TemplateWeekSimulation
         return new Guid(MD5.HashData(Encoding.UTF8.GetBytes(muscle)));
     }
 
-    /// <summary>Svaka trenažna nedelja svakog ugrađenog šablona, na svakom nivou, cilju i modelu.</summary>
+    /// <summary>
+    /// Ciljevi blokova koji nešto grade. Zapisani spiskovi izuzetaka u testovima katalog-a (ispod MEV-a,
+    /// iznad MRV-a, po treningu) opisuju njih; blok održavanja cilja MEV pa se ne meri istim merilom i ima
+    /// svoju nedelju, <see cref="EveryMaintenanceWeek"/>.
+    /// </summary>
+    public static readonly Goal[] GrowthGoals = [Goal.Strength, Goal.Hypertrophy];
+
+    /// <summary>Svaka trenažna nedelja svakog ugrađenog šablona, na svakom nivou, cilju rasta i modelu.</summary>
     public static IEnumerable<SimulatedWeek> EveryTrainingWeek()
     {
         foreach (var template in WorkoutTemplateCatalog.GetAll())
         foreach (var level in Enum.GetValues<ExperienceLevel>())
-        foreach (var goal in Enum.GetValues<Goal>())
+        foreach (var goal in GrowthGoals)
         foreach (var model in Enum.GetValues<PeriodizationModel>())
         {
             for (var weekNumber = 1; weekNumber <= Periodization.DurationWeeks(model); weekNumber++)
@@ -36,6 +43,19 @@ internal static class TemplateWeekSimulation
                     yield return Build(template, level, goal, model, weekNumber);
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// Trenažna nedelja bloka održavanja svakog ugrađenog šablona na svakom nivou. Blok održavanja je uvek
+    /// ravan (<see cref="Periodization.ModelFor"/>), pa su sve njegove trenažne nedelje iste i dovoljna je jedna.
+    /// </summary>
+    public static IEnumerable<SimulatedWeek> EveryMaintenanceWeek()
+    {
+        foreach (var template in WorkoutTemplateCatalog.GetAll())
+        foreach (var level in Enum.GetValues<ExperienceLevel>())
+        {
+            yield return Build(template, level, Goal.Maintenance, PeriodizationModel.Flat, 1);
         }
     }
 

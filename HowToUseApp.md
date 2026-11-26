@@ -251,6 +251,32 @@ zaista dobija, a koliko ih uđe i koje odlučuje tvoj nivo iskustva (složene ve
 |---|---|---|
 | **Snaga** | 3–6 za glavna dizanja, 8–12 za ostale složene vežbe, **10–20 za izolacije** | 2 |
 | **Hipertrofija** | 8–12 za složene vežbe, **10–20 za izolacije** | 1 |
+| **Održavanje** | 6–10 za složene vežbe, **10–20 za izolacije** | 3 |
+
+> **Održavanje** je blok za period kad nemaš vremena ili energije i hoćeš samo da sačuvaš ono što
+> si izgradio. Tri stvari ga razlikuju od ostalih ciljeva.
+>
+> - **Volumen oko MEV-a.** Nedeljni cilj svakog mišića je njegov MEV, najmanje što aplikacija
+>   zna da brani. Literatura kaže da bi i manje držalo: trećina ili devetina doze održala je
+>   mišićnu masu kod mladih (Bickel i sar. 2011), a jedan trening nedeljno sa jednom serijom po
+>   vežbi snagu i veličinu mišića do 32 nedelje, ako se težina zadrži (Spiering i sar. 2021;
+>   oba rada su čitana preko sažetaka, ne celog teksta).
+>   Ispod MEV-a aplikacija ništa ne opisuje, pa cilj stoji na njemu. Šablon i dalje nosi
+>   *sve* svoje vežbe, svaka sa najmanje dve serije, pa mišić sa mnogo vežbi završi iznad MEV-a;
+>   za kraći trening napravi lični šablon sa manje vežbi i izaberi održavanje.
+> - **Težine se ne podižu.** Isti opseg znači istu težinu kao u hipertrofiji: 6 + 3 i 10 + 3 su,
+>   po Epley-u, isto što i 8 + 1 i 12 + 1, pa je šipka ista, uz dva ponavljanja manje i dva više
+>   u rezervi. Kad sve serije stignu do vrha opsega, težina **ostaje** (u ostalim blokovima tad
+>   raste). Serija mnogo lakša od cilja i dalje daje težu težinu, jer to vraća napor na cilj, a
+>   ne napreduje.
+> - **Granice se iz ovog bloka ne uče.** Nedelja je namerno na MEV-u, pa o MAV-u i MRV-u ne kaže
+>   ništa, a umor ili pad snage na tako malom volumenu je skoro sigurno život, ne trening. Umor
+>   spustio bi MRV, a snaga koja se samo oporavlja posle teškog bloka spustila bi MEV i time i
+>   sledeći cilj održavanja. Ocena umora radi kao i uvek i može da povuče deload.
+>
+> Blok održavanja je uvek **ravan** (četiri nedelje, četvrta je deload, a početnik je trenira kao
+> ostale), šta god da zatražiš, i nikad nema seriju do otkaza za procenu maksimuma. Plan sa više
+> blokova održavanja ponavlja isti blok umesto da smenjuje ciljeve.
 
 > Opseg prati vežbu, a ciljni RIR blok. Trojka na bočnom podizanju nije provera sile:
 > snaga se izražava u pokretima koji mogu da nose opterećenje, pa izolacija i u bloku snage
@@ -277,7 +303,7 @@ zaista dobija, a koliko ih uđe i koje odlučuje tvoj nivo iskustva (složene ve
 > (Prestes i sar. 2009), a pregled istraživanja zaključuje da obrnut nije efikasniji ni za
 > snagu (González-Ravé i sar. 2022). Ni za rast mišića obrnut model nema prednost. Obrnut
 > model i dalje možeš da izabereš. Promena cilja bloka ne menja model koji si izabrao, a novi
-> blok dobija model prethodnog.
+> blok dobija model prethodnog. Izuzetak je održavanje: ono je uvek ravno i ekran ne nudi izbor.
 >
 > Linearan blok počinje lakši po **rezervi**, ne po ponavljanjima: kod hipertrofije opseg 8–12
 > već stoji na gornjoj granici od 12, preko koje procena maksimuma ne važi (a izolacija 10–20
@@ -317,7 +343,8 @@ bez njih, samo prvi put težinu uneseš po osećaju — ali više nije ni preću
 ### B) Više blokova u lancu
 
 Isti čarobnjak, samo dodaš blokove: do **6**, dugmetom „Dodaj blok". Podrazumevano smenjuju
-ciljeve (hipertrofija → snaga → …), ali svakom bloku sam biraš cilj, raspored i šablon.
+ciljeve (hipertrofija → snaga → …; blok održavanja ostaje održavanje), ali svakom bloku sam biraš
+cilj, raspored i šablon.
 Ispod se vidi ukupno trajanje plana.
 
 Ključna stvar: **generiše se samo prvi blok**. Ostali čekaju svoj red i prave se tek kad
@@ -716,7 +743,8 @@ stimulativnih serija odradio i gde to pada u odnosu na tvoje granice.
 Marker cilja prati **nedelju**, a ne MAV. U bloku hipertrofije nedelja sa više serija od
 osnovne gađa iznad MAV-a (do MRV-a), a nedelja sa manje serija ispod njega; u linearnom bloku
 to su nedelje 4 i 5, odnosno prva. Blok snage polazi od sredine između MEV-a i MAV-a, jer teže
-serije koštaju više oporavka, pa i njegove najobimnije nedelje ostaju oko MAV-a. Kada se razlikuju, u redu piše i jedno i drugo: `cilj ove nedelje 22
+serije koštaju više oporavka, pa i njegove najobimnije nedelje ostaju oko MAV-a. Blok održavanja
+cilja MEV. Kada se razlikuju, u redu piše i jedno i drugo: `cilj ove nedelje 22
 (MAV 16)`. U deload nedelji cilja nema — manji volumen je tamo namera.
 
 **Rame se prati po glavama**: prednji, bočni i zadnji deltoid imaju svaki svoje granice.
@@ -781,6 +809,11 @@ Serija preko 12 ponavljanja ne daje procenu maksimuma, pa se izolacija u opsegu 
 poredi drugačije: **na istoj težini**, po ponavljanjima plus rezervi. Više ponavljanja na
 istoj težini je rast snage, i to baš onoliki koliki bi rekle dve procene. Bez toga bi bočni i
 zadnji deltoid i listovi, koje treniraju samo izolacije, prestali da uče granice.
+
+Blok **održavanja** ne uči ništa od ovoga: nedelja je obračunata, ali granice ostaju gde su bile
+(vidi „Održavanje" u koraku 2 pravljenja plana). Izmereno nad pravilom: nedelja na MEV-u sa umorom
+spustila bi MRV za jedan, a nedelja na MEV-u u kojoj snaga raste dve nedelje zaredom po 4% spustila
+bi MEV.
 
 Nedelja koja nema sa čim da se uporedi — prva u bloku, ili ona čija se ponavljanja ne
 poklapaju sa prethodnom, ili, kod izolacije, nedelja posle koraka težine — **ne pomera** ni

@@ -540,7 +540,7 @@ public class WorkoutTemplateCatalogTests
 
         foreach (var template in WorkoutTemplateCatalog.GetAll())
         foreach (var level in Enum.GetValues<ExperienceLevel>())
-        foreach (var goal in Enum.GetValues<Goal>())
+        foreach (var goal in TemplateWeekSimulation.GrowthGoals)
         {
             var week = TemplateWeekSimulation.Build(template, level, goal, PeriodizationModel.Flat, 1);
 
@@ -698,7 +698,7 @@ public class WorkoutTemplateCatalogTests
         var belowMev = new List<string>();
 
         foreach (var key in new[] { WorkoutTemplateCatalog.UpperLowerThreeXKey, WorkoutTemplateCatalog.UpperLowerKey })
-        foreach (var goal in Enum.GetValues<Goal>())
+        foreach (var goal in TemplateWeekSimulation.GrowthGoals)
         foreach (var model in offered)
         {
             var template = WorkoutTemplateCatalog.GetByKey(key)!;

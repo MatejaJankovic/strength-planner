@@ -290,6 +290,12 @@ volumena (#4). Sve i dalje u jednoj transakciji. Predlog: tačke (4)–(6) dodat
 nedelju (#65, #67). Predlog: „за хипертрофију: 8-12 понављања на вишезглобним вежбама и 10-20
 на изолацијама, уз један до два понављања у резерви, а распоред помера опсег кроз блок".
 
+**Ciljevi bloka.** ¶188, ¶265, ¶307 i ¶559 navode dva cilja, „снага или хипертрофија". Danas postoji i
+treći, održavanje (R20.4): blok sa volumenom oko MEV-a, težinama koje se ne podižu i granicama koje se iz njega ne uče,
+uvek ravan i bez serije do otkaza. Predlog za ¶307: „са једним циљем (снага, хипертрофија или одржавање)", a u ¶559 uz
+primer za hipertrofiju dodati: „за одржавање: 6-10 понављања са три у резерви, уз волумен око минималног ефективног".
+Poglavlje 8 treba da pomene održavanje kao rešen pravac, ne kao ograničenje; vrhunac forme (peaking) nije izabran.
+
 **Stranice klijenta.** ¶498 navodi stranicu „мезоциклус" i `MesocycleService`. Stranica
 `/mesocycle` je uklonjena u #46, a trening se pravi samo kroz plan. Predlog: „мезоциклус"
 zameniti sa „план".
@@ -311,6 +317,7 @@ mestom gde je svaki upotrebljen:
 | Prestes i sar. 2009, González-Ravé i sar. 2022 | linearan model kao predlog | periodization-shapes.md |
 | Pancar i sar. 2026, Coleman i sar. 2024 | deload početnika i trenirani vežbači | beginner-deload.md |
 | Bosquet i sar. 2013 | pad snage posle pauze nije jedan broj | stale-maximum-notice.md |
+| Spiering i sar. 2021, Bickel i sar. 2011 (čitani preko sažetaka) | intenzitet drži snagu i veličinu mišića kad se volumen i učestalost smanje; trećina i devetina doze | maintenance-goal.md |
 
 Ime fajla beleške je u `docs/features/`. Pre unosa u tezu svaki izvor treba proveriti u
 originalu (godina, časopis, strana), jer su beleške pisane za pregled koda, a ne kao

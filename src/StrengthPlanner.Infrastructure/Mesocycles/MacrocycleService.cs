@@ -103,7 +103,8 @@ public class MacrocycleService : IMacrocycleService
                 Order = index + 1,
                 Goal = block.Goal,
                 TemplateKey = block.TemplateKey,
-                PeriodizationModel = block.PeriodizationModel,
+                // Blok održavanja je uvek ravan, šta god da je traženo (Periodization.ModelFor).
+                PeriodizationModel = Periodization.ModelFor(block.Goal, block.PeriodizationModel),
                 // „Prati moj šablon" važi samo za lični šablon; ugrađeni se uvek balansira.
                 SetAllocation = AllocationFor(block.SetAllocation, block.TemplateKey)
             });
@@ -158,7 +159,7 @@ public class MacrocycleService : IMacrocycleService
             {
                 Goal = goal,
                 TemplateKey = templateKey,
-                PeriodizationModel = Periodization.SuggestedModel
+                PeriodizationModel = Periodization.ModelFor(goal, Periodization.SuggestedModel)
             })
             .ToList();
     }

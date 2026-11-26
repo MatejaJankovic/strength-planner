@@ -1,6 +1,8 @@
+/** Mora da prati Domain.Enums.Goal. */
 export enum Goal {
   Strength = 0,
   Hypertrophy = 1,
+  Maintenance = 2,
 }
 
 /** Kako se propis menja kroz nedelje bloka. */
@@ -309,7 +311,7 @@ export interface MacrocycleAdvanceDto {
   planName: string;
   blockOrder: number;
   blockCount: number;
-  /** Cilj novog bloka ("Strength" ili "Hypertrophy"). */
+  /** Cilj novog bloka ("Strength", "Hypertrophy" ili "Maintenance"). */
   goal: string;
   mesocycleId: string;
   mesocycleName: string;
@@ -403,7 +405,7 @@ export interface HistoryEntryDto {
   isDeload: boolean;
   planName: string;
   blockName: string;
-  goal: 'Strength' | 'Hypertrophy' | string;
+  goal: 'Strength' | 'Hypertrophy' | 'Maintenance' | string;
   setCount: number;
   tonnageKg: number;
   exercises: string[];

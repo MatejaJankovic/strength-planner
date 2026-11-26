@@ -259,27 +259,40 @@
                   </option>
                 }
               </select>
+              @if (goalEffect(block.goal); as effect) {
+                <p class="field__hint">{{ effect }}</p>
+              }
             </div>
 
-            <div class="field">
-              <label class="field__label" [attr.for]="'block-model-' + $index">Raspored</label>
-              <select
-                class="control control--compact"
-                [attr.id]="'block-model-' + $index"
-                [attr.aria-label]="'Raspored bloka ' + ($index + 1)"
-                (change)="setBlockModel($index, $any($event.target).value)"
-              >
-                @for (option of modelOptions; track option.value) {
-                  <option
-                    [value]="option.value"
-                    [selected]="option.value === block.periodizationModel"
-                  >
-                    {{ option.label }} · {{ option.weeks }} ned.
-                  </option>
-                }
-              </select>
-              <p class="field__hint">{{ modelEffect(block.periodizationModel) }}</p>
-            </div>
+            @if (fixesTheModel(block.goal)) {
+              <div class="field">
+                <span class="field__label">Raspored</span>
+                <p class="field__hint">
+                  Ravan · 4 ned. Održavanje je uvek ravno: sve nedelje su iste, a četvrta je
+                  deload (početnik je trenira kao ostale).
+                </p>
+              </div>
+            } @else {
+              <div class="field">
+                <label class="field__label" [attr.for]="'block-model-' + $index">Raspored</label>
+                <select
+                  class="control control--compact"
+                  [attr.id]="'block-model-' + $index"
+                  [attr.aria-label]="'Raspored bloka ' + ($index + 1)"
+                  (change)="setBlockModel($index, $any($event.target).value)"
+                >
+                  @for (option of modelOptions; track option.value) {
+                    <option
+                      [value]="option.value"
+                      [selected]="option.value === block.periodizationModel"
+                    >
+                      {{ option.label }} · {{ option.weeks }} ned.
+                    </option>
+                  }
+                </select>
+                <p class="field__hint">{{ modelEffect(block.periodizationModel) }}</p>
+              </div>
+            }
 
             @if (offersAllocationChoice(block.templateKey)) {
               <div class="field">
