@@ -155,11 +155,27 @@ Pregled je radio agent koji samo čita.
   maksimuma, koja se i dalje upisuje iz serija (uz RIR do 3).
 - **Upozorenje šablona** iz čarobnjaka („dva treninga nedeljno… rast je mali") ostaje i uz održavanje, gde je beznačajno.
 - **RIR 3 je poslednji korak punog kredita** (`StimulativeVolume.FullCreditRir`): serija upisana sa RIR 4 broji pola, pa
-  vežbač koji upisuje labavije od plana pokazuje manje stimulativnog volumena od propisa, a balansiranje bi u narednim
-  treninzima nedelje dodalo serije ka MEV-u, što ide protiv ideje najmanjeg treninga. Redovni trening na planu uvek broji
-  celo (kao i do sada, nijedna trenažna nedelja ne propisuje više od RIR 3); koliko često to dodaje serije nije mereno.
-- **Ocena umora pri malom volumenu.** Volumen je daleko ispod MRV-a, pa signal volumena (0.15) skoro uvek stoji na nuli, a
-  prag od 0.60 dostižu samo rezerva i otkazi zajedno. Koliko često deload stiže u održavanju nije mereno.
+  vežbač koji upisuje labavije od plana pokazuje manje stimulativnog volumena od propisa, a balansiranje u narednim
+  treninzima nedelje dodaje serije ka MEV-u. **Izmereno** (`ASetLoggedLooserThanThePlan_AddsSetsToTheRestOfTheWeek`, MEV 8,
+  dan A od četiri serije, dan B propisan sa četiri): do RIR 3 dan B ostaje na četiri, uz RIR 4 postaje šest, uz RIR 5
+  ostaje šest (balansiranje ne diže jedan trening preko polovine propisanog). Granica je po vežbi, ne po treningu: najviše dve serije više od propisa
+  (`WeeklySetAllocation.MaxDriftFromPrescription`) i najviše šest po vežbi, pa dan sa više vežbi može da dobije po
+  dve na svakoj; ovde je jedna vežba po danu, zbog čega je stalo na šest. Probni sklop ne kaže koliko često pravi šabloni
+  dodaju serije (to nije mereno), niti koliko kredita dobija RIR 4 (0, 0.25 i 0.5 daju isti rezultat; pinovano je samo
+  da RIR 4 i više ne broji celo). Sirovih serija je tada deset naspram osam, a stimulativnih osam uz RIR 4 i šest uz RIR 5,
+  pa nedelja uz RIR 4 izađe tačno na MEV, a uz RIR 5 ostaje dve serije ispod. Ostavljeno: RIR 2 bi
+  dao veću marginu, ali bi težina bila oko 2.6% veća od hipertrofijske i prekinula bi istu težinu po Epley-u, a
+  lifteri pre potcenjuju rezervu nego što je precenjuju (Halperin i sar. 2022), pa upis od 4 pri stvarnom 3 nije
+  uobičajen. Ako se u upotrebi pokaže drugačije, to je jedna konstanta u `GoalPrescriptions.ForGoal`.
+- **Ocena umora pri malom volumenu.** Izmereno nad pravom ocenom (`InAFlatMaintenanceBlock_TheDeloadThreshold_...`):
+  rezerva se meri prema dubini do koje serija sme da side ispod cilja (3), signal volumena je nula (izmereno:
+  nijedan mišić nijednog ugrađenog šablona ne prelazi 80% MRV-a u nedelji održavanja, `TheVolumeSignal_IsZero...`), a u
+  ravnom bloku nema potvrđene snage ni odgovora (ocena prve nedelje deluje na drugu, druge na treću; treće na četvrtu,
+  koja je već deload). Srednji nivo dostiže prag samo kad je pola serija do otkaza a ostale su sve na RIR 0; napredni uz
+  pola do otkaza traži prosečno oko dve rezerve ispod cilja (-2.14), a uz trećinu do otkaza pune tri. Deload se u
+  održavanju dakle ne pokreće osim u nedelji u kojoj je sve bilo na
+  granici (tri puta manje osetljivo na rezervu nego u hipertrofiji). Ostavljeno: volumen je ionako najmanji, pa deload tu
+  daje malo, a nedelja u kojoj je sve na granici je ona kojoj treba.
 - **Izolacije nose 10-20 uz RIR 3**, pa je relativno opterećenje mišića koje treniraju samo izolacije (bočni deltoid,
   listovi) nisko, a napredni ima jednu složenu vežbu po treningu (budžet je kao u hipertrofiji). Obrazloženje „intenzitet
   drži" tu važi slabije; to je izbor, ne greška.
