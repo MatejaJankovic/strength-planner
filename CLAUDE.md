@@ -117,8 +117,8 @@ prose — no need for academic style.
 
 ## Scope note
 
-Seventeen rounds of work, all merged to `main`. Every branch got its own PR, an agent code review, fixes for what the review turned up, and a
-plain-language write-up in `docs/features/`. (This line said "two rounds" until round 9 — a count in prose goes stale
+Twenty rounds of work, all merged to `main`. Every branch got its own PR, an agent code review, fixes for what the review turned up, and a
+plain-language write-up in `docs/features/`. (This line said "two rounds" until round 9 and "seventeen" until round 20 — a count in prose goes stale
 the moment it is written, which is why the rounds below are a list and not a number.)
 
 **Round 1 — five "future improvements" from the thesis conclusion:**
@@ -1091,7 +1091,153 @@ Process notes:
 - **Many files are CRLF and some carry a BOM;** exact-string edits from a script failed until the
   script normalised line endings and wrote them back as found.
 
+**Round 18 — the history becomes something that can be corrected and looked at.** A review of the app
+for daily use rather than for the thesis defence; the plan for rounds 18 to 20 is in
+[`docs/plan-runde-18-20.md`](docs/plan-runde-18-20.md) (#116), with the open decisions answered in it.
+
+| Change | PR |
+|---|---|
+| `SessionService.CompleteAsync` split into named steps, no change in behaviour | #117 |
+| A finished workout can be corrected while nothing has been built on its sets | #118 |
+| A training history across every plan and block | #119 |
+| Tonnage and sets by calendar week across every plan and block | #120 |
+
+Sequential, each merged before the next branched. 930 → 1378 tests on the server, 213 → 258 on the
+client.
+
+The finding that shaped the round: **the method to be split had no test that called it.** Nothing
+in the suite ran `SessionService.CompleteAsync`, so the first thing written was five tests that
+record what it does, run against the *original* service from `main` in a temporary worktree, and
+only then against the split one. The correction in #118 reuses the same steps that complete a
+workout, and undoes exactly what they wrote.
+
+Decisions worth keeping:
+
+- **A correction is possible while the next workout of the same day is still planned.** After that its
+  load was computed from these sets (started) or the week was closed without it (skipped), and the
+  last workout of a block has nothing to hand its target to, so the next block is not yet generated.
+- **Old workouts are corrected as history only.** Workouts finished before the change (425 in the
+  development database) have no completion time and no link to their estimate, so editing them changes
+  the record and what reads it, and recomputes nothing. The owner chose this.
+- **The volume limits keep what each week moved them by** (`VolumeLandmarkChange`), because
+  `UserVolumeLandmark` holds only the current value. Undoing a week is exact for the last counted
+  week and always lands on an *allowed* band for earlier ones, not necessarily the same numbers.
+- **The history is by calendar week, not week of the block.** Blocks are 4 or 6 weeks and do not start
+  on the same day, so "week 3" of two blocks cannot be put side by side. A set belongs to the week it
+  was lifted in.
+- **A date that is not known is not shown as one.** `HistoryDate` falls back from completion time to the
+  last set, to the date the plan gave the workout, to the week of the block, and the last two are marked
+  `dateKnown: false`.
+
+Measurements: a skipped workout showed up *in the future* in the live history, because the date derived
+from the plan was later than today; a test written for the page-size overflow passed for the old logic
+(a page of 100 million overflows into a positive int, and only about 42.9 million overflows negative);
+and the muscle picker on the analytics screen showed "Tonaža" while the rows showed sets of a muscle,
+the `[value]` trap that `profile-home.ts` already documents, once more.
+
+**Round 19 — the app on a phone in the gym.** Five branches, each merged before the next, ending with
+the one that touches every screen.
+
+| Change | PR |
+|---|---|
+| Local HTTPS so a phone can reach the dev server (a CA kept outside the repository, a proxy instead of TLS on the API) | #121 |
+| Installable: manifest, icons, and the screen stays on while a workout is in progress | #122 |
+| Rest timer, plate calculator and warm-up suggestion on the workout screen | #123 |
+| Notes on a workout and on an exercise | #124 |
+| Dark theme, with a switch on the settings screen | #125 |
+
+Server 1378 → 1413, client 258 → 425.
+
+The finding that shaped the round: **the shape from rounds 9 and 12 came back on the client.** The wake
+lock had 19 tests for the service and none for the screen that is supposed to ask for it, so deleting the
+`effect` that does so left the whole suite green; review found it and `workout-session.spec.ts` now exists.
+The dark theme went further: it worked in the dev server and **not in a production build behind the CSP**,
+because Angular inlines only the light tokens as critical CSS and loads the rest through
+`<link media="print" onload=...>`, which `script-src 'self'` blocks. Only a review that ran the real
+configuration found it; `inlineCritical` is off in the production build for that reason.
+
+Decisions worth keeping:
+
+- **No service worker.** There is no offline use, and a worker that caches nothing would only risk an old
+  version staying on the phone. Whether Chrome offers "Install" without one was not checked on a device.
+- **The wake lock is released after 15 minutes without a touch.** Nothing ends a workout by itself, and a
+  phone put down on the last set would otherwise stay lit until the battery died.
+- **The aids are computed on the client.** Plates and warm-up are display only, so no rule on the server
+  reads them and there is no second copy to keep in agreement; when something on the server starts to
+  depend on them, they move to `Domain/Algorithms`. The rest timer counts by wall clock, because a phone
+  between sets is exactly where a browser slows `setInterval`.
+- **A note on an exercise belongs to the exercise, not to the plan**, so it is shown at every workout of
+  that exercise and a swap only changes which note is read. A note is not training data and goes through
+  no part of the workout lifecycle.
+- **Colours are tokens named for their role, not for their colour** (`--color-on-accent`, not "white"),
+  because the same text sits on a light background in one theme and a dark one in the other. The light
+  theme was measured unchanged: 3356 elements on eleven screens, 0 differences.
+
+Measurements: the contrast table measured the wrong pair for three buttons and was green, and the real
+screen read 1.49:1; `--color-above` and `--color-optimal` had never existed, so every component using them
+had always fallen back to its bright default; and the chart tooltip was light text on a background that is
+light in dark mode. All three were found by measuring the rendered screen, not by the table.
+
+**Round 20 — the training model.** From least decision to most, each item measured first.
+
+| Change | PR |
+|---|---|
+| Add and remove an exercise in a running block | #126 |
+| The lifter's own answer about fatigue as a fifth signal of the fatigue score | #127 |
+| The back split into lats and upper back | #128 |
+| Maintenance as a third goal | #129 |
+
+Server 1413 → 1824 (96 of those are existing cases that now also run for the third goal), client 425 → 466.
+
+The finding that shaped the round: **in every branch the review found something the author's own
+measurements had walked past.** A late-added exercise was skipped when a planned deload was released
+(restore found no base sets for it); the guide, the note and a code comment all said the reserve and a
+confirmed answer cannot reach the advanced deload threshold alone, and they can; and the migration that
+splits the back deleted the weekly `VolumeLandmarkChange` rows by cascade, so a workout corrected afterwards
+would have been counted a second time; and a maintenance block built from a custom template still prescribed
+a set to failure, because the calibration rule read the rep range and not the goal, while the guide said it
+never does. Each time the code was right where it had been measured and wrong at a place nobody had pointed at.
+
+Decisions worth keeping:
+
+- **The prescription of an exercise is one function** (`ExercisePrescriptions.For`), used by the generator
+  and by "add exercise", so the two cannot drift. Adding is refused in a block that had a fatigue deload,
+  where the weeks no longer follow the block's schedule.
+- **A reason for a refusal cannot depend on the error text**, because production sends none
+  (`ProblemDetails.Detail` equals `Title`); it travels as data or is mapped from the status.
+- **A subjective answer counts only when the previous week confirms it**, at weight 0.20 (the score now
+  goes to 1.20). Without confirmation 20-50% of blocks of a lifter who is progressing at MRV were deloaded
+  falsely in the simulation; with it about 5%. "Independent signals" is an assumption about the lifter
+  there, not a property of the signal, and the simulation parameters for the answer are assumptions
+  because the app had never collected it.
+- **The back is two heads, not three.** Lats and upper back, MRV 15 each (RP: about 30 at four back
+  sessions, half each); MEV 5 and MAV 9 are half of the old group and have no source. The spinal
+  erectors are not a head because no landmark exists for them. The learned landmarks are translated, not
+  copied: each head takes its own seed plus half of the old drift, rounded up.
+- **Maintenance holds the load, aims at MEV and learns nothing.** 6-10 at three in reserve is the same
+  bar as a hypertrophy block (by Epley reps plus reserve is 9 to 13 in both), the top of the range does
+  not raise the load, and a week at MEV would otherwise lower MRV on tiredness that is not about training
+  and lower MEV on strength that is only recovering. It never prescribes a calibration set to failure,
+  whatever the range. The block is always flat and a maintenance plan repeats the block.
+
+Measurements that contradicted the expectation:
+
+1. **Adding the third goal broke only three tests**, all recorded lists over growth-block weeks; the other
+   96 cases that enumerate the goal passed unchanged, which is how the audit of "every rule that reads the
+   goal" was partly done. The recorded lists describe growth blocks and are limited to them.
+2. **Two reverts left the suite green** (the progression flag when resuming after a deload, the
+   generator's own model rule): the rule is applied at a second place that no test reaches. Both got
+   tests, and one client revert showed a line to be redundant, so it was removed instead.
+3. **The migration's rounding was described wrongly in its own note.** `ROUND(5 + drift / 2.0)` rounds half
+   up, so only −1 goes to zero and every odd drift comes back one step higher on `Down`; the review
+   caught the sentence and the cascade, and both were checked on a *copy* of the development database
+   with synthetic rows, not on the development database itself.
+4. **A late-added exercise has no row in the base week**, which the deload reads; the base sets come from
+   the level when nothing else is known.
+5. **A test of mine claimed the advanced threshold was the same as the intermediate one**, and the guide,
+   the note and a code comment repeated it. The reserve and a confirmed answer reach 0.50 by themselves.
+
 Deliberately **out of scope**: i18n, undulating periodization,
 offline use (installing to the home screen exists since round 19), changing an already-generated block's periodization model, email delivery (so no
-password reset and no email confirmation), and a dark theme (the reference screenshots for
-round 8 were dark; only their structure was taken).
+password reset and no email confirmation), and peaking (a fourth goal after maintenance, which was the one chosen).
+The dark theme that used to be on this list was built in round 19.
