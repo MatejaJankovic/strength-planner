@@ -373,6 +373,12 @@ public class SessionService : ISessionService
     /// <summary>
     /// Loads the session and takes it over for completion.
     ///
+    /// Only a workout that is in progress can be completed. A planned one has not been started
+    /// (and would be completed with no sets, writing a week's worth of consequences from
+    /// nothing), and a skipped one is an answer the lifter gave: completing it behind the
+    /// screen's back would turn that answer into a finished workout. Both are refused, as the
+    /// screen never offers either.
+    ///
     /// The check on the status is only a quick exit: a read without a lock does not stop two
     /// simultaneous requests from both passing it. The conditional UPDATE claims the session
     /// atomically — the second request waits its turn and gets zero rows, so progression, the
@@ -400,23 +406,40 @@ public class SessionService : ISessionService
             throw new TrainingLogException(TrainingLogErrorType.NotFound, "Workout session was not found.");
         }
 
-        if (session.Status == SessionStatus.Completed)
+        if (session.Status != SessionStatus.InProgress)
         {
-            throw new TrainingLogException(TrainingLogErrorType.Conflict, "Workout session is already completed.");
+            throw new TrainingLogException(TrainingLogErrorType.Conflict, CompletionRefusal(session.Status));
         }
 
         var claimed = await _db.WorkoutSessions
-            .Where(candidate => candidate.Id == sessionId && candidate.Status != SessionStatus.Completed)
+            .Where(candidate => candidate.Id == sessionId && candidate.Status == SessionStatus.InProgress)
             .ExecuteUpdateAsync(
                 setters => setters.SetProperty(candidate => candidate.Status, SessionStatus.Completed),
                 cancellationToken);
 
         if (claimed == 0)
         {
-            throw new TrainingLogException(TrainingLogErrorType.Conflict, "Workout session is already completed.");
+            // Status se promenio između čitanja i upisa; poruka se čita iz istog mesta kao gore.
+            var current = await _db.WorkoutSessions
+                .AsNoTracking()
+                .Where(candidate => candidate.Id == sessionId)
+                .Select(candidate => candidate.Status)
+                .FirstAsync(cancellationToken);
+
+            throw new TrainingLogException(TrainingLogErrorType.Conflict, CompletionRefusal(current));
         }
 
         return session;
+    }
+
+    private static string CompletionRefusal(SessionStatus status)
+    {
+        return status switch
+        {
+            SessionStatus.Completed => "Workout session is already completed.",
+            SessionStatus.Skipped => "A skipped workout cannot be completed.",
+            _ => "A workout that has not been started cannot be completed."
+        };
     }
 
     /// <summary>Body mass the exercises of this session carry for the lifter right now.</summary>

@@ -1,6 +1,24 @@
 import { HttpErrorResponse } from '@angular/common/http';
 
 /**
+ * Opšti engleski naslovi koje server šalje uz grešku (Program.cs, mapiranje izuzetaka). U produkciji je to jedino
+ * što stiže (`ProblemDetails.Detail` je isti kao `Title`, vidi `docs/security.md`), a vežbač ga je do sada čitao na
+ * ekranu kao „Request conflicts with current state." Ovde dobijaju srpsku poruku po onome što znače. Naslov koji
+ * nije na ovom spisku prolazi kakav jeste.
+ */
+const GENERIC_TITLES: Readonly<Record<string, string>> = {
+  'Validation failed.': 'Uneti podaci nisu ispravni.',
+  'Model validation failed.': 'Uneti podaci nisu ispravni.',
+  'Invalid request.': 'Zahtev nije ispravan.',
+  'Mesocycle generation failed.': 'Blok nije mogao da se napravi.',
+  'Resource was not found.': 'Traženo ne postoji ili više nije dostupno.',
+  'Request conflicts with current state.':
+    'Radnja nije moguća u trenutnom stanju. Osveži ekran i pokušaj ponovo.',
+  'Unauthorized.': 'Nisi prijavljen ili je prijava istekla.',
+  'Unexpected server error.': 'Greška na serveru. Pokušaj ponovo.',
+};
+
+/**
  * Pulls a human-readable message out of an HTTP error, tolerating the several
  * shapes ASP.NET Core can return: a plain string body, ProblemDetails
  * ({ title }), a custom { message }, an Identity error array
@@ -37,7 +55,7 @@ export function extractErrorMessage(error: unknown, fallback: string): string {
     }
 
     if (typeof record['title'] === 'string') {
-      return record['title'];
+      return GENERIC_TITLES[record['title']] ?? record['title'];
     }
   }
 

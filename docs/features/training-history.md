@@ -30,7 +30,7 @@ koji mu je plan dao, pa nedelja bloka u kojoj je bio. Poslednje dve su pretposta
   30. novembar, a danas je 25., pa je preskočen trening stajao iznad svega odrađenog. Preskakanje
   se desilo u prošlosti, a nema `SkippedAt`, pa se izveden datum steže na „sada" (`HistoryDate.Of`
   uzima `now`; stvaran datum se nikad ne dira). Dva testa.
-- Testovi: 1327 → 1352 na serveru (15 za istoriju, uz ostale iz pregleda #118), 223 → 239 na
+- Testovi: 1335 → 1352 na serveru (15 za istoriju i dva iz pregleda; 1335 je broj na #118, izmeren na tom commit-u), 223 → 239 na
   klijentu (oblikovanje i ekran).
 - Vraćanje pravila na committed stablu: poredak od najstarijeg ruši 2 testa; trening bez serija sa
   podrazumevanim datumom 3; izveden datum koji se ne steže na „sada" 1; upit zaglavlja bez

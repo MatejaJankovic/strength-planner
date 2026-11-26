@@ -136,6 +136,11 @@ openssl rand -base64 48
 - **Migracije se izvršavaju pri svakom startu API-ja.** Zgodno za demo. Za pravu produkciju je
   uobičajeno razdvojiti korak migracije od pokretanja aplikacije, da nadogradnja ne bi menjala
   šemu u trenutku kad se dižu instance.
+- **Pre prve prave isporuke pokreni migracije nad kopijom stvarne baze.** Probni sklop u testovima je SQLite i ne
+  može da izvrši migraciju koja je pisana kao SQL nad PostgreSQL-om (poslednja takva je `SplitBackHeads`, koja
+  prevodi naučene granice leđa na dve grupe). Uzmi `pg_dump`, vrati ga u zasebnu bazu, primeni migracije i uporedi
+  broj redova i naučene granice pre i posle; tek onda u pravu bazu. Razvojna baza je do sada bila jedina na kojoj su
+  takve migracije izvršene.
 
 ## Poznata ograničenja
 
