@@ -167,6 +167,37 @@ uz ugrađeni šablon). Svaka grana sa izmenom koda ima merenje vraćanjem, a sva
 | [Zamena vežbe za ostatak bloka](exercise-substitution.md) | Generisan blok nije mogao da promeni vežbu; sada se menja u svakom treningu istog dana koji čeka, samo vežbom kojoj bi blok propisao isto (isti mišić, tip i opseg) | #111 |
 | [Varijante u izduženom položaju](lengthened-variants.md) | Šabloni su koristili ležeći pregib nogu, iako je sedeći uz isti volumen dao veći rast (Maeo 2021); sada je sedeći u svim šablonima, a Incline Dumbbell Curl je u katalogu za zamenu i lične šablone | #112 |
 
+## Osamnaesti krug — istorija koja može da se ispravi i pregleda
+
+Plan runda 18–20: [`../plan-runde-18-20.md`](../plan-runde-18-20.md). Svaka grana je spojena pre nego što je sledeća
+počela.
+
+| Grana | O čemu je | PR |
+|---|---|---|
+| [Završetak treninga, podeljen na korake](session-completion-steps.md) | Preduslov za ispravku: metoda od 350 linija koju nijedan test nije pozivao, razdvojena bez promene ponašanja | #117 |
+| [Ispravka završenog treninga](edit-completed-session.md) | Pogrešna serija je značila brisanje plana; sada se ispravlja dok ništa nije izgrađeno na njoj, a stari treninzi samo kao istorija | #118 |
+| [Istorija treninga](training-history.md) | Jedno mesto koje nabraja šta je stvarno odrađeno kroz sve planove i blokove | #119 |
+| [Analitika kroz sve blokove](full-history-analytics.md) | Tonaža i serije po kalendarskoj nedelji, sa granicama blokova | #120 |
+
+## Devetnaesti krug — aplikacija na telefonu u teretani
+
+| Grana | O čemu je | PR |
+|---|---|---|
+| [Lokalni HTTPS za telefon](local-https.md) | Wake Lock i instalacija traže bezbedan kontekst, a adresa računara u mreži to nije; CA van repozitorijuma, proksi umesto TLS-a na API-ju | #121 |
+| [Instalacija i ekran koji se ne gasi](installable-app.md) | Manifest, ikone, Wake Lock koji se otpušta posle 15 minuta bez dodira; bez service worker-a | #122 |
+| [Pomagala na treningu](workout-aids.md) | Tajmer pauze, ploče za šipku i zagrevanje, računato na klijentu | #123 |
+| [Beleške uz trening i uz vežbu](workout-notes.md) | Podešavanje sprave i napomene imaju gde da se upišu; beleška vežbe pripada vežbi, ne planu | #124 |
+| [Tamna tema](dark-theme.md) | Sve boje iz tokena po ulozi; svetla tema izmerena nepromenjena; u produkcionom buildu iza CSP-a nije radila dok pregled nije našao uzrok | #125 |
+
+## Dvadeseti krug — model treninga
+
+| Grana | O čemu je | PR |
+|---|---|---|
+| [Izmena bloka koji teče](edit-running-block.md) | Dodavanje i uklanjanje vežbe; propis vežbe je jedna funkcija za generator i za dodavanje | #126 |
+| [Odgovor o umoru](subjective-fatigue.md) | Peti signal ocene umora, uz potvrdu iz prethodne nedelje; simulacija pre gradnje | #127 |
+| [Leđa po glavama](back-heads.md) | Latovi i gornja leđa umesto jedne grupe; naučene granice se prevode, ne kopiraju | #128 |
+| [Održavanje kao treći cilj](maintenance-goal.md) | Volumen oko MEV-a, težine se drže, granice se ne uče; svako pravilo koje čita cilj provereno sa trećom vrednošću | #129 |
+
 ## Ako čitaš samo jedno
 
 [Periodizacija po nedeljama](periodization-models.md) — to je bio najveći raskorak između
