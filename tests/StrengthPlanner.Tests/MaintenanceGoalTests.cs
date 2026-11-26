@@ -337,6 +337,53 @@ public class MaintenanceGoalTests
         Assert.Equal(band, flat);
     }
 
+    // ---- ocena umora --------------------------------------------------------------------------------------------
+
+    private static decimal MaintenanceScore(decimal rirDeviation, decimal failureShare)
+    {
+        // Ravan blok, druga nedelja: čitanje snage još nema prethodno (pa se ne potvrđuje), odgovora nema, a volumen je
+        // oko MEV-a, daleko ispod praga udela MRV-a.
+        return FatigueEvaluator.Score(new WeeklyFatigue(
+            rirDeviation,
+            AchievableRirDeficit: 3m,
+            failureShare,
+            E1RmChangeShare: 0m,
+            VolumeVsMrvShare: 0.4m,
+            PreviousE1RmChangeShare: 0m,
+            SubjectiveRise: 0m,
+            PreviousSubjectiveRise: 0m));
+    }
+
+    /// <summary>
+    /// Koliko često deload stiže u održavanju. Rezerva se meri prema dubini do koje serija sme da side ispod cilja (cilj
+    /// 3, pa tri), signal volumena je nula, a u ravnom bloku nema potvrđene snage ni odgovora. Srednji nivo (prag 0.60)
+    /// zato dostiže prag samo kad je pola serija do otkaza, a ostale su sve na RIR 0; napredni (0.50) još treba pun
+    /// signal rezerve. Znači: skoro nikad, osim u nedelji u kojoj je sve bilo na granici, što je baš nedelja kojoj
+    /// deload treba. Izmereno nad pravom ocenom; volumen je ionako najmanji, pa deload tu daje malo.
+    /// </summary>
+    [Fact]
+    public void InAFlatMaintenanceBlock_TheDeloadThreshold_IsReachedOnlyWhenEverySetIsGround()
+    {
+        var intermediate = ExperienceProgramming.DeloadThreshold(ExperienceLevel.Intermediate)!.Value;
+        var advanced = ExperienceProgramming.DeloadThreshold(ExperienceLevel.Advanced)!.Value;
+
+        // Prosečno jedna rezerva ispod cilja, i pola serija do otkaza: daleko ispod oba praga.
+        Assert.True(MaintenanceScore(-1m, 0.5m) < advanced);
+        // Dve ispod cilja: još ispod oba.
+        Assert.True(MaintenanceScore(-2m, 0.5m) < advanced);
+        // Sve dovršene serije na RIR 0 i pola do otkaza: tačno prag srednjeg nivoa.
+        Assert.True(MaintenanceScore(-3m, 0.5m) >= intermediate);
+        // Sa manje otkaza srednji nivo ne stiže, a napredni stiže tek sa trećinom do otkaza.
+        Assert.True(MaintenanceScore(-3m, 0.25m) < intermediate);
+        Assert.True(MaintenanceScore(-3m, 0.25m) < advanced);
+        Assert.True(MaintenanceScore(-3m, 0.3m) >= advanced);
+
+        // Isti nedeljni signali u hipertrofiji (cilj 1, pa dubina 1): pola serija do otkaza uz jednu rezervu ispod cilja
+        // je već prag. Održavanje je tu tri puta manje osetljivo na rezervu, što je posledica toga da je cilj 3.
+        var hypertrophy = FatigueEvaluator.Score(new WeeklyFatigue(-1m, 1m, 0.5m, 0m, 0.4m, 0m, 0m, 0m));
+        Assert.True(hypertrophy >= intermediate);
+    }
+
     // ---- kalibracija --------------------------------------------------------------------------------------------
 
     /// <summary>

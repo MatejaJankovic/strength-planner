@@ -126,6 +126,38 @@ public class MaintenanceGoalServiceTests
     }
 
     /// <summary>
+    /// Granica punog kredita (<c>StimulativeVolume.FullCreditRir</c> = 3) je i ciljna rezerva održavanja, pa je do nje
+    /// samo jedan korak: serija upisana sa RIR 4 broji pola, sa 5 ništa. Balansiranje meri odrađeno stimulativnim
+    /// serijama, pa trening koji vežbač odradi lakše od plana ostatku nedelje dodaje serije ka MEV-u. Izmereno: dan A od
+    /// četiri serije, dan B propisan sa četiri, MEV 8: do RIR 3 ostaje četiri, uz RIR 4 postaje šest (četiri serije
+    /// broje dve), a uz RIR 5 ostaje šest, jer balansiranje ne diže jedan trening preko polovine propisanog.
+    /// </summary>
+    [Theory]
+    [InlineData(2, 4)]
+    [InlineData(3, 4)]
+    [InlineData(4, 6)]
+    [InlineData(5, 6)]
+    public async Task ASetLoggedLooserThanThePlan_AddsSetsToTheRestOfTheWeek(int loggedRir, int expectedDayBSets)
+    {
+        using var database = new SqliteDatabase();
+        var dayB = await SeedTwoDaysAsync(database, loggedRir);
+
+        await using (var context = database.NewContext())
+        {
+            var dayA = await context.WorkoutSessions
+                .Where(session => session.Status == SessionStatus.InProgress)
+                .Select(session => session.Id)
+                .SingleAsync();
+            await CompleteAsync(database, dayA);
+        }
+
+        await using var read = database.NewContext();
+        var plan = await read.ExercisePlans.SingleAsync(candidate => candidate.WorkoutSessionId == dayB);
+        Assert.Equal(expectedDayBSets, plan.TargetSets);
+        Assert.Equal(4, plan.PrescribedSets);
+    }
+
+    /// <summary>
     /// Lični šablon zadržava opseg koji je korisnik uneo, pa 5-8 uz tri u rezervi staje ispod Epley granice (8 + 3 = 11)
     /// i kalibraciona serija bi se čitala. U rastućem bloku to je i tačno; u bloku održavanja je ne sme biti, ni među
     /// serijama koje čitaju granice, ocena umora i polazna težina (<c>CalibrationSets</c>), ni na ekranu treninga.
@@ -364,6 +396,97 @@ public class MaintenanceGoalServiceTests
     }
 
     private sealed record Seed(Guid Squat, Guid WeekOne, Guid SessionOne, Guid SessionTwo);
+
+    /// <summary>
+    /// Blok održavanja sa balansiranjem ka cilju, jedan mišić (MEV 8). Prva nedelja: dan A u toku sa četiri odrađene
+    /// serije uz zadat RIR, dan B planiran sa četiri. Vraća id dana B.
+    /// </summary>
+    private static async Task<Guid> SeedTwoDaysAsync(SqliteDatabase database, int loggedRir)
+    {
+        var quads = Guid.NewGuid();
+        var squat = Guid.NewGuid();
+
+        await using var db = database.NewContext();
+        db.MuscleGroups.Add(new MuscleGroup { Id = quads, Name = "Quads" });
+        db.VolumeLandmarks.Add(new VolumeLandmark { Id = Guid.NewGuid(), MuscleGroupId = quads, Mev = 8, Mav = 12, Mrv = 20 });
+        db.Profiles.Add(new Profile
+        {
+            Id = Guid.NewGuid(),
+            UserId = database.UserId,
+            Age = 30,
+            BodyweightKg = 80m,
+            ExperienceLevel = ExperienceLevel.Intermediate
+        });
+        db.Exercises.Add(new Exercise
+        {
+            Id = squat,
+            Name = "Back Squat",
+            Type = ExerciseType.Compound,
+            Equipment = "Barbell",
+            WeightStepKg = 2.5m,
+            Muscles = [new ExerciseMuscle { MuscleGroupId = quads, Contribution = 1.0m }]
+        });
+
+        var mesocycle = new Mesocycle
+        {
+            Id = Guid.NewGuid(),
+            UserId = database.UserId,
+            Name = "Blok",
+            Goal = Goal.Maintenance,
+            PeriodizationModel = PeriodizationModel.Flat,
+            SetAllocation = SetAllocation.TargetVolume,
+            ExperienceLevel = ExperienceLevel.Intermediate,
+            StartDate = new DateTime(2026, 11, 9, 0, 0, 0, DateTimeKind.Utc),
+            IsActive = true
+        };
+
+        var week = new TrainingWeek { Id = Guid.NewGuid(), WeekNumber = 1 };
+        mesocycle.Weeks.Add(week);
+        for (var weekNumber = 2; weekNumber <= 4; weekNumber++)
+        {
+            mesocycle.Weeks.Add(new TrainingWeek { Id = Guid.NewGuid(), WeekNumber = weekNumber, IsDeload = weekNumber == 4 });
+        }
+
+        ExercisePlan Plan(Guid sessionId) => new()
+        {
+            Id = Guid.NewGuid(),
+            ExerciseId = squat,
+            Order = 1,
+            TargetSets = 4,
+            PrescribedSets = 4,
+            RepRangeMin = 6,
+            RepRangeMax = 10,
+            BaseRepRangeMin = 6,
+            BaseRepRangeMax = 10,
+            TargetRir = 3,
+            TargetWeightKg = 100m
+        };
+
+        var dayA = new WorkoutSession { Id = Guid.NewGuid(), DayLabel = "Day A", Status = SessionStatus.InProgress };
+        var planA = Plan(dayA.Id);
+        for (var number = 1; number <= 4; number++)
+        {
+            planA.SetLogs.Add(new SetLog
+            {
+                Id = Guid.NewGuid(),
+                SetNumber = number,
+                WeightKg = 100m,
+                Reps = 8,
+                Rir = loggedRir,
+                PerformedAt = DateTime.UtcNow
+            });
+        }
+
+        dayA.ExercisePlans.Add(planA);
+        var dayB = new WorkoutSession { Id = Guid.NewGuid(), DayLabel = "Day B", Status = SessionStatus.Planned };
+        dayB.ExercisePlans.Add(Plan(dayB.Id));
+        week.Sessions.Add(dayA);
+        week.Sessions.Add(dayB);
+
+        db.Mesocycles.Add(mesocycle);
+        await db.SaveChangesAsync();
+        return dayB.Id;
+    }
 
     /// <summary>
     /// Ravan blok od četiri nedelje (četvrta je rasterećenje), srednji nivo; u trećoj, poslednjoj trenažnoj, prva vežba

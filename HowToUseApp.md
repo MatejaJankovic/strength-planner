@@ -272,7 +272,8 @@ zaista dobija, a koliko ih uđe i koje odlučuje tvoj nivo iskustva (složene ve
 > - **Granice se iz ovog bloka ne uče.** Nedelja je namerno na MEV-u, pa o MAV-u i MRV-u ne kaže
 >   ništa, a umor ili pad snage na tako malom volumenu je skoro sigurno život, ne trening. Umor
 >   spustio bi MRV, a snaga koja se samo oporavlja posle teškog bloka spustila bi MEV i time i
->   sledeći cilj održavanja. Ocena umora radi kao i uvek i može da povuče deload.
+>   sledeći cilj održavanja. Ocena umora radi, ali je u održavanju mnogo manje osetljiva (rezerva se meri prema cilju 3, pa deload stiže tek kad
+>   je pola serija do otkaza a ostale su na RIR 0).
 >
 > Blok održavanja je uvek **ravan** (četiri nedelje, četvrta je deload, a početnik je trenira kao
 > ostale), šta god da zatražiš, i nikad nema seriju do otkaza za procenu maksimuma, ni uz lični šablon
