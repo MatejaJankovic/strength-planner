@@ -14,6 +14,7 @@ describe('extractErrorMessage', () => {
     ['Request conflicts with current state.', 409, 'Radnja nije moguća u trenutnom stanju. Osveži ekran i pokušaj ponovo.'],
     ['Resource was not found.', 404, 'Traženo ne postoji ili više nije dostupno.'],
     ['Validation failed.', 400, 'Uneti podaci nisu ispravni.'],
+    ['Model validation failed.', 400, 'Uneti podaci nisu ispravni.'],
     ['Invalid request.', 400, 'Zahtev nije ispravan.'],
     ['Mesocycle generation failed.', 400, 'Blok nije mogao da se napravi.'],
     ['Unauthorized.', 401, 'Nisi prijavljen ili je prijava istekla.'],

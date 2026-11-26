@@ -22,7 +22,7 @@ toku (`InProgress`), i provera i uslovni `UPDATE` to kažu; ostalo je 409.
 Server u produkciji šalje samo opšti naslov (`Detail` je isti kao `Title`), a `extractErrorMessage` ga je prikazivao:
 „Request conflicts with current state." posle preskakanja ili zamene vežbe. Naslovi iz `Program.cs` (osam) sada imaju
 srpsku poruku u `GENERIC_TITLES` (bez prevoda pada 7 testova); naslov koji nije na spisku prolazi kakav jeste, a poruka i spisak grešaka i dalje imaju
-prednost. Izmena je na jednom mestu, pa važi za svih 65 poziva. `blockEditError` ostaje: njegova poruka kaže više od
+prednost. Izmena je na jednom mestu, pa važi za svih 45 poziva u 19 fajlova. `blockEditError` ostaje: njegova poruka kaže više od
 statusa.
 
 ## Ostalo

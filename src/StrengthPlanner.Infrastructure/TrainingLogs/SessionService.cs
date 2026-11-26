@@ -419,7 +419,14 @@ public class SessionService : ISessionService
 
         if (claimed == 0)
         {
-            throw new TrainingLogException(TrainingLogErrorType.Conflict, "Workout session is already completed.");
+            // Status se promenio između čitanja i upisa; poruka se čita iz istog mesta kao gore.
+            var current = await _db.WorkoutSessions
+                .AsNoTracking()
+                .Where(candidate => candidate.Id == sessionId)
+                .Select(candidate => candidate.Status)
+                .FirstAsync(cancellationToken);
+
+            throw new TrainingLogException(TrainingLogErrorType.Conflict, CompletionRefusal(current));
         }
 
         return session;
