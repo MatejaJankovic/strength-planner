@@ -12,12 +12,16 @@ toku (`InProgress`), i provera i uslovni `UPDATE` to kažu; ostalo je 409.
 - Test: planiran i preskočen odbijeni, ništa nije upisano (status, procena maksimuma, ocena umora).
 - Uživo: `POST /complete` na planiran trening daje 409, a status ostaje `Planned`.
 - Nijedan od 1824 postojeća testa nije pao, što znači da nijedan nije oslanjao na staro ponašanje.
+- Vraćanje na committed stablu: brza provera sama ili uslovni `UPDATE` sam ne ruše ništa (jedno čuva drugo, namerno:
+  `UPDATE` je atomski, a brza provera daje poruku), oba vraćena zajedno ruše 2 testa. Prvi pokušaj je dao 0 za sva tri
+  jer je API u pregledu držao DLL, pa se gradnja tiho nije izvršila i testovi su pokrenuti nad starim binarnim kodom;
+  ponovljeno sa zaustavljenim API-jem.
 
 ## Engleski naslovi grešaka na ekranu
 
 Server u produkciji šalje samo opšti naslov (`Detail` je isti kao `Title`), a `extractErrorMessage` ga je prikazivao:
 „Request conflicts with current state." posle preskakanja ili zamene vežbe. Naslovi iz `Program.cs` (osam) sada imaju
-srpsku poruku u `GENERIC_TITLES`; naslov koji nije na spisku prolazi kakav jeste, a poruka i spisak grešaka i dalje imaju
+srpsku poruku u `GENERIC_TITLES` (bez prevoda pada 7 testova); naslov koji nije na spisku prolazi kakav jeste, a poruka i spisak grešaka i dalje imaju
 prednost. Izmena je na jednom mestu, pa važi za svih 65 poziva. `blockEditError` ostaje: njegova poruka kaže više od
 statusa.
 
