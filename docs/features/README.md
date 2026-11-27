@@ -202,7 +202,7 @@ počela.
 
 | Grana | O čemu je | PR |
 |---|---|---|
-| [Isporuka na serveru](compose-production-readiness.md) | Port mimo HTTPS-a, restart, rotacija zapisa, otpremanje i prikaz slike profila iza nginx-a | |
+| [Isporuka na serveru](compose-production-readiness.md) | Port mimo HTTPS-a, restart, rotacija zapisa, otpremanje i prikaz slike profila iza nginx-a | #133 |
 
 ## Ako čitaš samo jedno
 

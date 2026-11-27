@@ -55,14 +55,30 @@ Isti sklop, napravljen iznova od praznog volumena:
   (`sourcing`) umesto da je pokrene. Probano tako, sa lozinkom koja sadrži apostrof i SQL
   fragment: baza se podigne, nalog postoji i nije superkorisnik.
 
-Nove provere: `ProxyUploadLimitTests`, `ContentSecurityPolicyImageTests` i
-`scripts/check-compose.py` (u CI-ju).
+Nove provere: `ProxyUploadLimitTests` (granica otpremanja i razrešavanje adrese API-ja),
+`ContentSecurityPolicyImageTests` i `scripts/check-compose.py`, koji se pokreće ručno pre
+isporuke i ima svoj korak u `ci.yml`.
+
+## Šta je pregled našao
+
+- Testovi su ćutke prolazili kada fajl koji čitaju nije nađen, limit u bilo kom `location`
+  bloku im je bio dovoljan, a zakomentarisano CSP pravilo se računalo kao važeće. Sada padaju.
+- `check-compose.py` je propuštao Caddy vezan za petlju ili na pogrešan port, TLS varijantu bez
+  `Security__RequireHttps` ili `Security__ProxyCount`, izostavljen volumen sa sertifikatima i
+  servis iza profila; pucao je i pri preusmerenom ispisu na Windows-u.
+- Uputstvo za server nije pominjalo da `docker compose up -d` bez TLS fajla gasi TLS postavke
+  API-ja, da `build --pull` ne osvežava `postgres` i `caddy`, ni da domen ne treba da ima AAAA
+  zapis.
+- README je tvrdio da je `docker compose up --build` dovoljno bez `.env`.
 
 ## Ograničenja
 
 - Let's Encrypt nije probano: lokalno Caddy koristi sopstveni autoritet.
 - Restart celog servera nije simuliran; provereno je da politika stoji i da se pad procesa
   oporavlja.
+- Posle prekida API-ja dužeg od desetak sekundi nginx može da vraća 502 još koliko traje
+  `valid=10s`, i kada se adresa nije promenila; ranije se u tom slučaju oporavljao odmah, a posle
+  promene adrese nikako.
 - Slika između 2 MB i 3 MB (iznad granice tela zahteva) dobija opštu poruku o neuspeloj
   validaciji umesto poruke o veličini, a iznad 3 MB nginx-ovu stranicu. Ekran obe zaustavlja
   pre slanja.

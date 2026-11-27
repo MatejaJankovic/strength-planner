@@ -84,10 +84,12 @@ docker compose up --build
 Zatim otvori `http://localhost:8080`. Port je vezan za petlju, pa se aplikacija preko čistog
 HTTP-a otvara samo sa iste mašine; za server vidi `docs/deployment-security.md`.
 
+Pre prvog pokretanja prekopiraj `.env.example` u `.env` i upiši prave lozinke za bazu i
+nasumičan `JWT_KEY` (`openssl rand -base64 48`); bez toga compose odbija da krene, a API ne
+prihvata ključ iz primera.
+
 Pri prvom pokretanju PostgreSQL kontejner inicijalizuje bazu, API sačeka da baza
-postane dostupna, automatski primeni EF migracije i izvrši seed podataka. Primer
-podešavanja je u `.env.example`; `docker-compose.yml` već ima lokalne default
-vrednosti, pa je komanda iznad dovoljna za lokalnu odbranu.
+postane dostupna, automatski primeni EF migracije i izvrši seed podataka.
 
 ## Status
 

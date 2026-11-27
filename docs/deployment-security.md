@@ -24,6 +24,35 @@ sve u istom fajlu, pa nema koraka koji se zaboravlja.
 portovi 80 i 443 moraju da budu dostupni sa interneta. Traži se i Docker Compose v2.24 ili
 noviji.
 
+**Za domen objavi samo A zapis (IPv4), bez AAAA.** Mreža u compose-u je samo IPv4, pa
+aplikacija preko IPv6 ne vidi pravu adresu posetioca, a na toj adresi počiva ograničenje broja
+zahteva. Samo uključivanje IPv6 na toj mreži nije dovoljno: API tada ne veruje zaglavljima koja
+stižu preko IPv6 i vrti preusmeravanje na samog sebe.
+
+### Isti skup fajlova pri svakoj naredbi
+
+Na serveru u `.env` upiši, uz `APP_DOMAIN` i `TLS_EMAIL`:
+
+```bash
+COMPOSE_FILE=docker-compose.yml:docker-compose.tls.yml
+```
+
+Tada svaka `docker compose` naredba koristi oba fajla. Bez toga obično `docker compose up -d`
+napravi API ponovo **bez** postavki za TLS, dok stari Caddy nastavi da radi, pa se na prvi
+pogled ništa ne vidi.
+
+### Nova verzija
+
+```bash
+git pull
+docker compose pull db caddy
+docker compose build --pull
+docker compose up -d
+```
+
+`build --pull` osvežava samo imidže koji se prave ovde (API i web); `postgres` i `caddy` se
+dobijaju sa `pull`. Pre verzije koja nosi migraciju prvo napravi `pg_dump` baze.
+
 > **Pokrenuto lokalno**, sa `APP_DOMAIN=localhost`, gde Caddy izdaje sertifikat iz sopstvenog
 > lokalnog autoriteta: odgovor nosi `Strict-Transport-Security`, a `http://` preusmerava na
 > `https://`. Izdavanje preko Let's Encrypt-a traži pravi domen i nije probano; posle prvog
@@ -44,8 +73,9 @@ serveru „blokira“. Zato odbrana ne sme da počiva na UFW-u. Na Hetzner-u uz 
 Firewall** u konzoli (stoji ispred mašine, pa ga Docker ne zaobilazi) i dozvoli ulaz samo na
 80, 443 i 22.
 
-`scripts/check-compose.py` proverava razrešenu compose konfiguraciju (šta je objavljeno,
-restart politiku i rotaciju zapisa) i pokreće se u CI-ju.
+`scripts/check-compose.py` proverava razrešenu compose konfiguraciju: šta je objavljeno,
+restart politiku, rotaciju zapisa i postavke TLS varijante. Pokreni ga pre isporuke
+(`python scripts/check-compose.py`); isti korak stoji i u `.github/workflows/ci.yml`.
 
 ## Rad bez nadzora
 
@@ -53,8 +83,8 @@ restart politiku i rotaciju zapisa) i pokreće se u CI-ju.
   posle restarta servera. Ručno zaustavljen servis ostaje zaustavljen.
 - **Zapisi.** Svaki servis čuva najviše tri fajla po 10 MB, pa zapisi ne mogu da napune disk.
 - **Nova verzija API-ja.** nginx adresu API kontejnera razrešava dok radi, pa ne mora da se
-  restartuje kada se kontejner napravi ponovo; posle promene adrese oporavak traje do
-  petnaestak sekundi.
+  restartuje kada se kontejner napravi ponovo. Posle promene adrese ili dužeg prekida API-ja
+  oporavak obično traje do petnaestak sekundi, a duže ako ne uspe sama DNS pretraga.
 
 ## Šta je već podešeno
 
@@ -159,8 +189,9 @@ openssl rand -base64 48
 
 - **Rezervne kopije baze.** Volumen `strengthplanner_pgdata` je jedino mesto gde podaci
   postoje.
-- **Nadogradnja osnovnih imidža.** `postgres:16`, `aspnet:8.0` i `nginx-unprivileged:1.27`
-  dobijaju bezbednosne ispravke; povremeno uradi `docker compose build --pull`.
+- **Nadogradnja osnovnih imidža.** `postgres:16`, `caddy:2-alpine`, `aspnet:8.0` i
+  `nginx-unprivileged:1.27` dobijaju bezbednosne ispravke; povremeno prođi kroz korake iz
+  odeljka „Nova verzija“.
 - **Migracije se izvršavaju pri svakom startu API-ja.** Zgodno za demo. Za pravu produkciju je
   uobičajeno razdvojiti korak migracije od pokretanja aplikacije, da nadogradnja ne bi menjala
   šemu u trenutku kad se dižu instance.
