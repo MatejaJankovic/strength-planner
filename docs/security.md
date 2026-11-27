@@ -484,11 +484,11 @@ Navedeno svesno, da ne izgleda kao da je pokriveno, i na nivou posla koji treba 
   sesije. Gotovo je kad posle odjave nijedan keš ne nosi podatke prethodnog naloga.
   Otkazivanje pretplata u komponentama (`takeUntilDestroyed`) je korisno pospremanje, ali
   ovo samo ne zatvara; zaseban posao.
-- **Kontejnerske i TLS izmene nisu pokrenute.** Docker nije bio dostupan pri radu, pa su
-  compose fajlovi, Caddyfile i skripta za bazu provereni statički — osim SQL dela skripte,
-  koji jeste pokrenut nad pravim PostgreSQL-om. Pre oslanjanja uraditi
-  `docker compose build && docker compose up` i proveriti da odgovor nosi
-  `Strict-Transport-Security`.
+- **Izdavanje sertifikata preko Let's Encrypt-a nije probano**, jer traži pravi domen.
+  Compose fajlovi, Caddyfile i skripta za bazu pokrenuti su lokalno (sa
+  `APP_DOMAIN=localhost`, gde Caddy koristi sopstveni lokalni autoritet): `http://` preusmerava
+  na `https://`, a odgovor nosi `Strict-Transport-Security`. Posle prvog dizanja na serveru isto
+  proveriti na svom domenu.
 - **Fontovi se povlače sa gstatic-a**, pa IP adresa korisnika odlazi trećoj strani pri
   svakom otvaranju stranice. Posluživanje sa istog porekla je jače i po privatnosti i po
   CSP-u.

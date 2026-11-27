@@ -1,6 +1,19 @@
+# Zapisi kontejnera se rotiraju. Podrazumevani drajver na Linux serveru (json-file) nema
+# gornju granicu, pa zapisi vremenom popune disk, a pun disk zaustavlja i bazu. Ovako svaki
+# servis drži najviše tri fajla po 10 MB.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   db:
     image: postgres:16
+    # Posle restarta servera (održavanje, nova verzija kernela) ili pada procesa kontejner se
+    # sam podiže. Ručno zaustavljen (`docker compose stop`) ostaje zaustavljen.
+    restart: unless-stopped
+    logging: *logging
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-strengthplanner}
       POSTGRES_USER: ${POSTGRES_USER:-strengthplanner}
@@ -21,6 +34,8 @@ services:
       - no-new-privileges:true
 
   api:
+    restart: unless-stopped
+    logging: *logging
     build:
       context: .
       dockerfile: src/StrengthPlanner.API/Dockerfile
@@ -44,14 +59,20 @@ services:
       - no-new-privileges:true
 
   web:
+    restart: unless-stopped
+    logging: *logging
     build:
       context: ./strength-planner-web
       dockerfile: Dockerfile
     depends_on:
       api:
         condition: service_started
+    # I ovaj port je vezan za petlju: bez TLS-a aplikacija radi preko čistog HTTP-a, pa sme
+    # da se otvori samo sa iste mašine. Sa docker-compose.tls.yml se potpuno uklanja, a spolja
+    # se dolazi kroz Caddy. Docker sam piše pravila zaštitnog zida, pa objavljen port ostaje
+    # dostupan i kada ga UFW na serveru „blokira".
     ports:
-      - "${WEB_PORT:-8080}:8080"
+      - "127.0.0.1:${WEB_PORT:-8080}:8080"
     security_opt:
       - no-new-privileges:true
 

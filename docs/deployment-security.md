@@ -24,13 +24,67 @@ sve u istom fajlu, pa nema koraka koji se zaboravlja.
 portovi 80 i 443 moraju da budu dostupni sa interneta. Traži se i Docker Compose v2.24 ili
 noviji.
 
-> **Nije pokrenuto.** Docker nije bio dostupan pri pisanju ovoga, pa su compose fajl i
-> Caddyfile provereni čitanjem. Posle prvog dizanja proveri da odgovor nosi
-> `Strict-Transport-Security` i da `http://` završava na `https://`.
+**Za domen objavi samo A zapis (IPv4), bez AAAA.** Mreža u compose-u je samo IPv4, pa
+aplikacija preko IPv6 ne vidi pravu adresu posetioca, a na toj adresi počiva ograničenje broja
+zahteva. Samo uključivanje IPv6 na toj mreži nije dovoljno: API tada ne veruje zaglavljima koja
+stižu preko IPv6 i vrti preusmeravanje na samog sebe.
+
+### Isti skup fajlova pri svakoj naredbi
+
+Na serveru u `.env` upiši, uz `APP_DOMAIN` i `TLS_EMAIL`:
+
+```bash
+COMPOSE_FILE=docker-compose.yml:docker-compose.tls.yml
+```
+
+Tada svaka `docker compose` naredba koristi oba fajla. Bez toga obično `docker compose up -d`
+napravi API ponovo **bez** postavki za TLS, dok stari Caddy nastavi da radi, pa se na prvi
+pogled ništa ne vidi.
+
+### Nova verzija
+
+```bash
+git pull
+docker compose pull db caddy
+docker compose build --pull
+docker compose up -d
+```
+
+`build --pull` osvežava samo imidže koji se prave ovde (API i web); `postgres` i `caddy` se
+dobijaju sa `pull`. Pre verzije koja nosi migraciju prvo napravi `pg_dump` baze.
+
+> **Pokrenuto lokalno**, sa `APP_DOMAIN=localhost`, gde Caddy izdaje sertifikat iz sopstvenog
+> lokalnog autoriteta: odgovor nosi `Strict-Transport-Security`, a `http://` preusmerava na
+> `https://`. Izdavanje preko Let's Encrypt-a traži pravi domen i nije probano; posle prvog
+> dizanja na serveru proveri ista dva ishoda na svom domenu.
 
 HSTS namerno šalje Caddy, a ne nginx: preko čistog HTTP-a ga pregledači ignorišu, a ako se
 aplikacija ikada posluži preko HTTP-a posle HTTPS-a, zaključao bi je. Caddy je jedino mesto
 koje pouzdano zna da TLS postoji.
+
+## Šta je izloženo spolja
+
+Uz TLS portove spolja objavljuje samo Caddy, 80 i 443. `web` (nginx) tada nema nijedan
+objavljen port, a API je vezan za petlju. I bez TLS-a je `web` vezan za petlju
+(`127.0.0.1:8080`): aplikacija preko čistog HTTP-a otvara se samo sa iste mašine.
+
+**Docker sam piše pravila zaštitnog zida**, pa objavljen port ostaje dostupan i kada ga UFW na
+serveru „blokira“. Zato odbrana ne sme da počiva na UFW-u. Na Hetzner-u uz to uključi **Cloud
+Firewall** u konzoli (stoji ispred mašine, pa ga Docker ne zaobilazi) i dozvoli ulaz samo na
+80, 443 i 22.
+
+`scripts/check-compose.py` proverava razrešenu compose konfiguraciju: šta je objavljeno,
+restart politiku, rotaciju zapisa i postavke TLS varijante. Pokreni ga pre isporuke
+(`python scripts/check-compose.py`); isti korak stoji i u `.github/workflows/ci.yml`.
+
+## Rad bez nadzora
+
+- **Restart.** Svi servisi imaju `restart: unless-stopped`: podižu se posle pada procesa i
+  posle restarta servera. Ručno zaustavljen servis ostaje zaustavljen.
+- **Zapisi.** Svaki servis čuva najviše tri fajla po 10 MB, pa zapisi ne mogu da napune disk.
+- **Nova verzija API-ja.** nginx adresu API kontejnera razrešava dok radi, pa ne mora da se
+  restartuje kada se kontejner napravi ponovo. Posle promene adrese ili dužeg prekida API-ja
+  oporavak obično traje do petnaestak sekundi, a duže ako ne uspe sama DNS pretraga.
 
 ## Šta je već podešeno
 
@@ -44,6 +98,10 @@ Zaglavlja se **uključuju u svaki `location` blok**, ne samo u `server`. To nije
 odluka: u nginx-u `add_header` iz spoljašnjeg bloka ne važi u `location`-u koji ima svoj
 `add_header`. Da su ostala samo u `server` bloku, nestala bi tačno tamo gde su najpotrebnija
 — na `index.html` i na skriptama, jer ti blokovi postavljaju `Cache-Control`.
+
+`img-src` dozvoljava i `blob:`: slika profila stiže kroz API uz token, pa se prikazuje kao
+`blob:` adresa. nginx uz to prima telo zahteva do 3 MB (`client_max_body_size`), iznad
+granice od 2 MB koju za sliku drži sam API.
 
 CSP dozvoljava `'unsafe-inline'` za stilove, jer ih Angular Material ubacuje inline. Za
 skripte ga **ne** dozvoljava, a to je deo koji zaista štiti.
@@ -131,8 +189,9 @@ openssl rand -base64 48
 
 - **Rezervne kopije baze.** Volumen `strengthplanner_pgdata` je jedino mesto gde podaci
   postoje.
-- **Nadogradnja osnovnih imidža.** `postgres:16`, `aspnet:8.0` i `nginx-unprivileged:1.27`
-  dobijaju bezbednosne ispravke; povremeno uradi `docker compose build --pull`.
+- **Nadogradnja osnovnih imidža.** `postgres:16`, `caddy:2-alpine`, `aspnet:8.0` i
+  `nginx-unprivileged:1.27` dobijaju bezbednosne ispravke; povremeno prođi kroz korake iz
+  odeljka „Nova verzija“.
 - **Migracije se izvršavaju pri svakom startu API-ja.** Zgodno za demo. Za pravu produkciju je
   uobičajeno razdvojiti korak migracije od pokretanja aplikacije, da nadogradnja ne bi menjala
   šemu u trenutku kad se dižu instance.
