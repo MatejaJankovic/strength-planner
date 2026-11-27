@@ -5,8 +5,9 @@
 # skener. Zato su placeholder vrednosti ovde izuzete poimence, a ne pravilom koje bi usput
 # propustilo i pravu tajnu.
 #
-# Sopstvenih [[rules]] nema namerno — koriste se podrazumevana pravila iz gitleaks-a.
-# Ranije je ovde stajalo prazno pravilo `placeholder-noop` sa regexom `$^`, stavljeno uz
+# Sopstvenih pravila za pronalaženje nema namerno — koriste se podrazumevana pravila iz
+# gitleaks-a. Jedini [[rules]] blok, na dnu, ne dodaje pravilo nego postojećem pravilu daje
+# uzak izuzetak. Ranije je ovde stajalo prazno pravilo `placeholder-noop` sa regexom `$^`, stavljeno uz
 # pretpostavku da blok pravila ne sme da bude prazan i da se takav izraz nikada ne poklapa.
 # Oboje je bilo netačno: u Go regex mašini `$^` se poklapa sa praznim redom, pa je pravilo
 # prijavljivalo „tajnu" praktično u svakom commit-u. Upravo lažna uzbuna od koje ovaj fajl
@@ -37,12 +38,21 @@ regexes = [
     # Lozinka korišćena u testovima skripte za bazu, navedena u dokumentaciji kao dokaz da
     # se apostrof više ne prosleđuje u SQL.
     '''ab'c;DROP ROLE postgres;--''',
-    # Izmišljene lozinke koje testovi na klijentu upisuju u obrasce. Ni jedan nalog van testa ih
-    # ne koristi. Navedene su po vrednosti i usidrene, a ne izuzimanjem svih `*.spec.ts`
-    # fajlova: prava tajna zalepljena u test i dalje se prijavljuje. Novi test koji uvede drugu
-    # lozinku dodaje je ovde, ili uzme neku od postojećih.
-    '''^DovoljnoDugaLozinka1$''',
-    '''^DiplomskiRad2026$''',
-    '''^StaraLozinka1234$''',
-    '''^NovaLozinka1234$''',
+]
+
+# Izmišljene lozinke koje testovi na klijentu upisuju u obrasce.
+#
+# Izuzete su samo kada su ispunjena oba uslova: fajl je klijentski test i vrednost je baš
+# jedna od navedenih. Ista vrednost u konfiguraciji se prijavljuje, a izuzetak ne sakriva
+# druge vrednosti u testu; da li će neka biti prijavljena zavisi od pravila skenera. Novi
+# test koji uvede drugu lozinku dodaje je ovde, ili uzme neku od postojećih.
+[[rules]]
+id = "generic-api-key"
+
+[[rules.allowlists]]
+description = "Izmišljene lozinke u klijentskim testovima."
+condition = "AND"
+paths = ['''^strength-planner-web/src/.*\.spec\.ts$''']
+regexes = [
+    '''^(DovoljnoDugaLozinka1|DiplomskiRad2026|StaraLozinka1234|NovaLozinka1234)$''',
 ]
