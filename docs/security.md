@@ -415,8 +415,8 @@ napravljene pre prepisivanja (`backup-*`), koje nikada nisu bile poslate. Obrisa
 jedan `git push --all` bio dovoljan da ih vrati u opticaj. Posle brisanja pretraga po svim
 dostupnim ref-ovima vraća nula pogodaka.
 
-Da se ne oslanja na to da neko pazi, **gitleaks u CI-ju proverava nove commit-e pri svakoj
-izmeni, a celu istoriju po rasporedu** — vidi ispod.
+Da se ne oslanja na to da neko pazi, **gitleaks u CI-ju skenira pri izmenama, a celu
+istoriju po rasporedu** — vidi ispod.
 
 ---
 
@@ -446,10 +446,12 @@ repozitorijumu. Zato:
   NuGet-om čita ispis, jer ta naredba uvek izlazi sa nulom — bez toga bi bio zelen i kada
   nešto nađe. `npm audit --omit=dev` obara build; nalaz u razvojnim zavisnostima samo
   prijavljuje, da ranjivost u alatu ne zaustavi rad na aplikaciji.
-- **gitleaks na push i pull request proverava samo nove commit-e**, a celu istoriju po
-  rasporedu i pri ručnom pokretanju (`gh workflow run CI`).
-- **Izmišljene lozinke iz testova** izuzete su u `.gitleaks.toml` po vrednosti, a ne po
-  fajlu, pa se druga tajna u istom testu i dalje prijavljuje.
+- **gitleaks na push i pull request skenira samo opseg koji akcija sama odredi.** Potpuna
+  provera je skeniranje cele istorije, po rasporedu i pri ručnom pokretanju
+  (`gh workflow run CI`).
+- **Izmišljene lozinke iz testova** izuzete su u `.gitleaks.toml` samo kada su i fajl
+  klijentski test i vrednost baš jedna od navedenih. Izuzetak ne sakriva druge vrednosti;
+  da li će neka biti prijavljena zavisi od pravila skenera.
 - **gitleaks je zakačen za commit, a ne za oznaku `v3`.** Oznakom upravlja tuđi
   repozitorijum i može da se pomeri, a taj korak radi sa tokenom ovog repozitorijuma.
 
@@ -510,5 +512,5 @@ Nekoliko puta je merenje oborilo očekivanje, i to je zabeleženo tamo gde stoji
 preusmeravanje na HTTPS koje nije preusmeravalo, i duga lozinka koja nije bila trošenje
 procesora.
 
-Testova ima **267** (`dotnet test` 260, `npm test` 7), od kojih dvadesetak čuva upravo
-bezbednosna pravila opisana ovde.
+Deo testova na serveru i klijentu čuva upravo bezbednosna pravila opisana ovde, a CI ih
+pokreće uz ostale.

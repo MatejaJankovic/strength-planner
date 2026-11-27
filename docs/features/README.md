@@ -203,7 +203,7 @@ počela.
 | Grana | O čemu je | PR |
 |---|---|---|
 | [Isporuka na serveru](compose-production-readiness.md) | Port mimo HTTPS-a, restart, rotacija zapisa, otpremanje i prikaz slike profila iza nginx-a | #133 |
-| [CI i zavisnosti](ci-and-dependencies.md) | Angular 22.3, bez `overrides` bloka, noviji akcijski koraci i izuzeci za lozinke iz testova | |
+| [CI i zavisnosti](ci-and-dependencies.md) | Angular 22.3, bez `overrides` bloka, noviji akcijski koraci i izuzeci za lozinke iz testova | #134 |
 
 ## Ako čitaš samo jedno
 
