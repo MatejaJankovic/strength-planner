@@ -124,15 +124,13 @@ public class LoginSessionService : ILoginSessionService
             var held = presentedHash;
             var (token, issued) = RefreshTokenPolicy.Issue(sessionId, _macKey);
             var expires = ExpiryFrom(now);
-            var previousHeld = session.HeldTokenHash;
             var previousIssued = session.IssuedTokenHash;
 
-            // Upis prolazi samo ako se red od čitanja nije promenio. Bez ovog uslova bi dva
-            // istovremena zahteva upisala jedan preko drugog i klijent bi dobio token koji
-            // sesija više ne prima.
+            // Upis prolazi samo ako se red od čitanja nije promenio. Svaka rotacija upisuje nov
+            // izdati heš, pa je on dovoljan znak. Bez uslova bi dva istovremena zahteva upisala
+            // jedan preko drugog i vratila u život token koji je već zamenjen.
             var written = await _db.LoginSessions
                 .Where(candidate => candidate.Id == sessionId
-                                    && candidate.HeldTokenHash == previousHeld
                                     && candidate.IssuedTokenHash == previousIssued)
                 .ExecuteUpdateAsync(
                     setters => setters
