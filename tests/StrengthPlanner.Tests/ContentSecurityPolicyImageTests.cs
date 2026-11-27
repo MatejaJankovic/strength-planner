@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using StrengthPlanner.Tests.Testing;
 
 namespace StrengthPlanner.Tests;
 
@@ -8,44 +9,22 @@ namespace StrengthPlanner.Tests;
 /// The profile picture is fetched with the token and shown through a <c>blob:</c> URL. The
 /// policy listed only <c>'self' data:</c>, so the browser refused it in the container deployment.
 /// The development server sends no policy, which is why it was only visible behind nginx.
-///
-/// The test reads the files from the repository. When they are not there (published output
-/// outside the working tree) it stays silent rather than failing: there is nothing to compare.
 /// </summary>
 public class ContentSecurityPolicyImageTests
 {
-    private static string? FindWebFile(params string[] parts)
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-
-        while (directory is not null)
-        {
-            var candidate = Path.Combine(new[] { directory.FullName, "strength-planner-web" }.Concat(parts).ToArray());
-            if (File.Exists(candidate))
-            {
-                return candidate;
-            }
-
-            directory = directory.Parent;
-        }
-
-        return null;
-    }
-
     [Fact]
-    public void ImagePolicyAllowsBlobUrlsWhileTheAppShowsThem()
+    public void EveryImagePolicyAllowsBlobUrls()
     {
-        var headers = FindWebFile("security-headers.conf");
-        var authService = FindWebFile("src", "app", "core", "auth", "auth.service.ts");
-        if (headers is null || authService is null)
+        var headers = WebProjectFiles.ReadNginxConfiguration("security-headers.conf");
+
+        var policies = Regex.Matches(headers, @"Content-Security-Policy\s+""([^""]*)""");
+        Assert.NotEmpty(policies);
+
+        foreach (Match policy in policies)
         {
-            return;
+            var imageSources = Regex.Match(policy.Groups[1].Value, @"(?:^|;)\s*img-src\s+([^;]*)");
+            Assert.True(imageSources.Success, "A Content-Security-Policy in security-headers.conf sets no img-src.");
+            Assert.Contains("blob:", imageSources.Groups[1].Value.Split(' ', StringSplitOptions.RemoveEmptyEntries));
         }
-
-        Assert.Contains("URL.createObjectURL(", File.ReadAllText(authService));
-
-        var imageSources = Regex.Match(File.ReadAllText(headers), @"Content-Security-Policy ""[^""]*?img-src ([^;""]*)");
-        Assert.True(imageSources.Success, "security-headers.conf sets no img-src in its Content-Security-Policy.");
-        Assert.Contains("blob:", imageSources.Groups[1].Value.Split(' ', StringSplitOptions.RemoveEmptyEntries));
     }
 }

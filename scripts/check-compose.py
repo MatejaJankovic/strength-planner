@@ -1,4 +1,5 @@
-"""Proverava razrešenu compose konfiguraciju: šta je izloženo spolja, restart i rotaciju zapisa.
+"""Proverava razrešenu compose konfiguraciju: šta je izloženo spolja, restart, rotaciju zapisa i
+postavke koje TLS varijanta mora da ima.
 
 Pokretanje (iz korena repozitorijuma, traži Docker Compose 2.24 ili noviji, ne i pokrenut Docker):
 
@@ -6,8 +7,9 @@ Pokretanje (iz korena repozitorijuma, traži Docker Compose 2.24 ili noviji, ne 
 
 Zašto postoji. Ove osobine se ne vide ni u jednom testu aplikacije, a gube se jednom linijom:
 objavljen port 8080 uz TLS (put mimo HTTPS-a), servis bez `restart` politike (ostaje ugašen posle
-restarta servera) i zapisi bez gornje granice (pune disk). Čita se `docker compose config`, dakle
-ono što compose zaista radi posle spajanja fajlova, a ne tekst fajlova.
+restarta servera), zapisi bez gornje granice (pune disk) ili API koji uz TLS ne zna da ima dva
+proxy-ja ispred sebe. Čita se `docker compose config`, dakle ono što compose zaista radi posle
+spajanja fajlova, a ne tekst fajlova.
 """
 from __future__ import annotations
 
@@ -35,7 +37,8 @@ LOOPBACK = {"127.0.0.1", "::1"}
 
 def resolve(files: list[str]) -> dict:
     # `--env-file` na prazan fajl: lokalni `.env` ne sme da promeni ishod provere.
-    command = ["docker", "compose", "--env-file", os.devnull]
+    # `--profile *`: servis iza profila se inače izostavlja iz ispisa, a može da se pokrene.
+    command = ["docker", "compose", "--env-file", os.devnull, "--profile", "*"]
     for name in files:
         command += ["-f", name]
     command += ["config", "--format", "json"]
@@ -47,6 +50,7 @@ def resolve(files: list[str]) -> dict:
 
 
 def check(config: dict, public_services: set[str]) -> list[str]:
+    """Pravila koja važe za svaki servis."""
     problems: list[str] = []
     for name, service in config["services"].items():
         if service.get("restart") != "unless-stopped":
@@ -68,18 +72,48 @@ def check(config: dict, public_services: set[str]) -> list[str]:
     return problems
 
 
+def check_base(config: dict) -> list[str]:
+    problems = check(config, public_services=set())
+
+    environment = config["services"]["api"].get("environment") or {}
+    if str(environment.get("Security__RequireHttps", "")).lower() == "true":
+        problems.append("api: HTTPS se ne sme tražiti bez proxy-ja koji ga pruža (petlja preusmeravanja)")
+
+    return problems
+
+
+def check_tls(config: dict) -> list[str]:
+    problems = check(config, public_services={"caddy"})
+    services = config["services"]
+
+    if services["web"].get("ports"):
+        problems.append("web: ne sme da objavljuje nijedan port, spolja se dolazi samo kroz caddy")
+
+    caddy = services.get("caddy") or {}
+    ports = sorted(
+        (str(port.get("published")), str(port.get("target")), port.get("host_ip") or "")
+        for port in caddy.get("ports") or [])
+    if ports != [("443", "443", ""), ("80", "80", "")]:
+        problems.append(f"caddy: očekivani su 80 i 443 na svim adresama, a objavljeno je {ports}")
+
+    if not any(volume.get("target") == "/data" and volume.get("type") == "volume"
+               for volume in caddy.get("volumes") or []):
+        problems.append("caddy: /data mora biti trajan volumen, inače se sertifikat traži pri svakom pravljenju")
+
+    environment = services["api"].get("environment") or {}
+    for key, expected in (("Security__RequireHttps", "true"), ("Security__ProxyCount", "2")):
+        if str(environment.get(key)) != expected:
+            problems.append(f"api: {key} mora biti {expected}, a jeste {environment.get(key)}")
+
+    return problems
+
+
 def main() -> int:
-    problems = [f"[bez TLS-a] {problem}" for problem in check(resolve(BASE), public_services=set())]
+    # Poruke imaju slova van Windows kodne strane; preusmeren ispis bi inače pukao na njima.
+    sys.stdout.reconfigure(encoding="utf-8")
 
-    with_tls = resolve(TLS)
-    problems += [f"[uz TLS] {problem}" for problem in check(with_tls, public_services={"caddy"})]
-
-    if with_tls["services"]["web"].get("ports"):
-        problems.append("[uz TLS] web: ne sme da objavljuje nijedan port, spolja se dolazi samo kroz caddy")
-
-    published = {str(port.get("published")) for port in with_tls["services"]["caddy"].get("ports") or []}
-    if published != {"80", "443"}:
-        problems.append(f"[uz TLS] caddy: očekivani portovi 80 i 443, a objavljeni su {sorted(published)}")
+    problems = [f"[bez TLS-a] {problem}" for problem in check_base(resolve(BASE))]
+    problems += [f"[uz TLS] {problem}" for problem in check_tls(resolve(TLS))]
 
     for problem in problems:
         print(f"::error::{problem}" if os.environ.get("GITHUB_ACTIONS") else problem)
