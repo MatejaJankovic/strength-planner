@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
-import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting, TestRequest } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { AuthService } from './auth.service';
 import { AuthTokenStorage } from './auth-token-storage';
@@ -110,14 +110,71 @@ describe('AuthService — čišćenje keševa pri promeni identiteta', () => {
     http.expectOne((request) => request.url.endsWith('/exercises')).flush([]);
   });
 
-  it('odjava briše token iz localStorage', () => {
-    TestBed.inject(AuthTokenStorage).setToken('token-prethodnog-korisnika');
+  it('odjava briše oba tokena iz localStorage i javlja serveru koja prijava se gasi', () => {
+    TestBed.inject(AuthTokenStorage).save('token-prethodnog-korisnika', 'obnavljanje-prethodnog');
     expect(localStorage.getItem('strength-planner.token')).not.toBeNull();
 
     auth.logout();
 
+    // Uređaj je odjavljen i pre nego što server odgovori.
     expect(localStorage.getItem('strength-planner.token')).toBeNull();
+    expect(localStorage.getItem('strength-planner.refresh-token')).toBeNull();
     expect(auth.currentUser()).toBeNull();
+    const request = http.expectOne((candidate) => candidate.url.endsWith('/auth/logout'));
+    expect(request.request.body).toEqual({ refreshToken: 'obnavljanje-prethodnog' });
+    request.flush(null, { status: 204, statusText: 'No Content' });
+  });
+
+  /** Token sa `sub` claim-om, onakav kakav server izdaje po obliku. */
+  function tokenFor(account: string, issue: number): string {
+    return `header.${btoa(JSON.stringify({ sub: account, issue }))}.signature`;
+  }
+
+  function changePassword(): TestRequest {
+    auth.changePassword({ currentPassword: 'a', newPassword: 'b' }).subscribe();
+    return http.expectOne((request) => request.url.endsWith('/auth/change-password'));
+  }
+
+  function answer(request: TestRequest): void {
+    request.flush({
+      userId: 'u1',
+      email: 'prvi@primer.com',
+      token: tokenFor('u1', 2),
+      expiresAt: '',
+      refreshToken: 'posle-promene',
+    });
+  }
+
+  /** Server je ugasio sve prijave, pa bez novog para ovaj uređaj ostaje bez ičega. */
+  it('promena lozinke čuva oba nova tokena', () => {
+    TestBed.inject(AuthTokenStorage).save(tokenFor('u1', 1), 'pre-promene');
+
+    answer(changePassword());
+
+    expect(localStorage.getItem('strength-planner.token')).toBe(tokenFor('u1', 2));
+    expect(localStorage.getItem('strength-planner.refresh-token')).toBe('posle-promene');
+  });
+
+  it('odgovor na promenu lozinke posle odjave ne prijavljuje ponovo', () => {
+    TestBed.inject(AuthTokenStorage).save(tokenFor('u1', 1), 'pre-promene');
+    const pending = changePassword();
+
+    auth.logout();
+    http.expectOne((request) => request.url.endsWith('/auth/logout')).flush(null);
+    answer(pending);
+
+    expect(localStorage.getItem('strength-planner.token')).toBeNull();
+    expect(localStorage.getItem('strength-planner.refresh-token')).toBeNull();
+  });
+
+  it('odgovor na promenu lozinke ne pregazi prijavu drugog naloga', () => {
+    TestBed.inject(AuthTokenStorage).save(tokenFor('u1', 1), 'pre-promene');
+    const pending = changePassword();
+
+    TestBed.inject(AuthTokenStorage).save(tokenFor('u2', 1), 'drugi-nalog');
+    answer(pending);
+
+    expect(localStorage.getItem('strength-planner.refresh-token')).toBe('drugi-nalog');
   });
 
   /**
@@ -133,10 +190,12 @@ describe('AuthService — čišćenje keševa pri promeni identiteta', () => {
       email: 'drugi@primer.com',
       token: 'novi-token',
       expiresAt: new Date().toISOString(),
+      refreshToken: 'novo-obnavljanje',
     });
 
     expectAllCachesEmpty('pri prijavi');
     expect(localStorage.getItem('strength-planner.token')).toBe('novi-token');
+    expect(localStorage.getItem('strength-planner.refresh-token')).toBe('novo-obnavljanje');
   });
 
   it('registracija takođe prazni keševe prethodnog korisnika', () => {
@@ -157,6 +216,7 @@ describe('AuthService — čišćenje keševa pri promeni identiteta', () => {
       email: 'treci@primer.com',
       token: 'token-trojke',
       expiresAt: new Date().toISOString(),
+      refreshToken: 'obnavljanje-trojke',
     });
 
     expectAllCachesEmpty('pri registraciji');

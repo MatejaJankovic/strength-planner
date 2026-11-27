@@ -70,8 +70,8 @@ Tri reda nisu „urađeno" i to je namerno — pisati da jesu bilo bi netačno:
 *(stavke 4, 6, 7)*
 
 Svaki upit u servisima ograničen je na `userId` iz `sub` claim-a tokena. Nijedan kontroler
-ne prima identitet korisnika iz tela zahteva, rute ni query stringa. Od 30 endpoint-a samo
-`register` i `login` su anonimni; globalna `FallbackPolicy` traži autentifikaciju svuda gde
+ne prima identitet korisnika iz tela zahteva, rute ni query stringa. Anonimni su samo
+`register`, `login`, `refresh` i `logout`; globalna `FallbackPolicy` traži autentifikaciju svuda gde
 atribut nedostaje.
 
 **Provereno nad pokrenutom aplikacijom**, a ne čitanjem koda: napravljena su dva naloga i
@@ -99,7 +99,9 @@ jedan nalog.
 
 Sada `AppDbContext` svakoj tabeli sa korisničkim podacima dodaje filter vlasništva na nivou
 modela. Tabele bez svoje `UserId` kolone (nedelje, treninzi, planovi vežbi, serije) dobijaju
-isto pravilo preko navigacije do vlasnika.
+isto pravilo preko navigacije do vlasnika. Izuzetak su Identity tabele i `LoginSessions`: one se
+čitaju dok zahtev još nema korisnika, jer se iz njih tek utvrđuje ko je, pa im se pristupa samo
+kroz `LoginSessionService`, po oznaci prijave i dokazanom tokenu.
 
 Da filter zaista nosi odbranu, izmereno je tako što je uslov po `userId` uklonjen iz jednog
 servisa, pa je filter ostao jedino što stoji između korisnika B i tuđeg mezociklusa:
@@ -160,16 +162,34 @@ iteracija upisan u sam heš.
 
 ### Tokeni, i zašto nema kolačića
 
-JWT, HS256, važenje 60 minuta. Token nosi `sub`, `email`, `jti` i **security stamp** iz
-Identity-ja, koji se proverava pri svakom zahtevu. Zato promena lozinke **odmah poništava
-sve ranije izdate tokene** — provereno: stari token pređe sa 200 na 401 preko promene.
+Dva tokena. **Pristupni** je JWT (HS256) koji važi 60 minuta i ide uz svaki zahtev. **Token za
+obnavljanje** je nasumična tajna od 256 bita kojom se po isteku dobija nov par; prijava traje
+30 dana od poslednjeg obnavljanja.
+
+Pristupni token nosi `sub`, `email`, `jti`, **security stamp** iz Identity-ja i oznaku
+prijave (`sid`). Stamp i prijava proveravaju se pri svakom zahtevu, pa **odjava važi odmah**
+na tom uređaju, a **promena lozinke odmah odjavljuje sve uređaje** — provereno: stari token
+pređe sa 200 na 401.
+
+Token za obnavljanje:
+
+- U bazi stoji samo njegov SHA-256 heš, pa kopija baze nikoga ne prijavljuje.
+- Nosi i potpis (HMAC) ključem izvedenim iz `Jwt:Key`. Bez ispravnog potpisa token ne utiče ni
+  na jednu prijavu, pa oznaka prijave iz pristupnog tokena nije dovoljna da se neko odjavi.
+  Promena `Jwt:Key` odjavljuje sve.
+- **Menja se pri svakoj upotrebi.** Zamenjen token koji se vrati gasi celu prijavu, jer ga
+  tada drži još neko. Jedini izuzetak je token čiji naslednik još nije potvrđen: odgovor koji
+  se na telefonu izgubi ne sme da odjavi vlasnika.
+- Odjava briše prijavu na serveru, i kada se šalje već zamenjen token, a brisanje naloga sve
+  njegove prijave.
+- Zaključavanje naloga posle pogrešnih lozinki ne gasi postojeće prijave, da ko zna tuđ email
+  ne bi mogao da odjavljuje vlasnika.
 
 **Aplikacija ne izdaje nijedan kolačić.** Identity je uključen preko `AddIdentityCore`, koji
-namerno ne registruje kolačić-šeme; sesija ne postoji kao pojam, jer je token bez stanja.
-Zato pitanje „da li su kolačići sesije bezbedno podešeni" ovde nema predmet: nema šta da se
-podesi, a i ne može da procuri ono čega nema.
+namerno ne registruje kolačić-šeme. Zato pitanje „da li su kolačići sesije bezbedno
+podešeni" ovde nema predmet.
 
-Token stoji u `localStorage`. To je uobičajen kompromis za SPA: kolačić sa `httpOnly` bi
+Oba tokena stoje u `localStorage`. To je uobičajen kompromis za SPA: kolačić sa `httpOnly` bi
 tražio i zaštitu od CSRF-a. Ono što ovde nosi odbranu jeste CSP, jer bi bez njega jedna XSS
 rupa odmah postala krađa tokena — a XSS-a nema, vidi [Prikaz sadržaja](#prikaz-sadrzaja).
 
@@ -336,6 +356,9 @@ prijava ostane upotrebljiva kada nekoliko ljudi deli izlaznu adresu; za registra
 previše, jer se nalog pravi jednom. Registracija je i jedino mesto gde neko ko nije
 prijavljen može da pravi zapise. Provereno da su budžeti odvojeni: posle iscrpljene
 registracije prijava i dalje vraća 200.
+
+Obnavljanje i odjava imaju treću, širu granicu, **60 u minutu po adresi**: token se ne može
+pogoditi, a svaki uređaj obnavlja prijavu otprilike jednom na sat.
 
 Uz to postoji **zamka (honeypot)**: skriveno polje koje čovek ne vidi, ne može da tabuje do
 njega, ne može mu doći ni čitačem ekrana, i koje pregledač ne popunjava. Automat koji redom

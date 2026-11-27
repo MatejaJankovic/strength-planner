@@ -10,6 +10,8 @@ public interface ITokenService
     /// <paramref name="securityStamp"/> se upisuje kao claim i proverava pri svakom
     /// zahtevu. Identity ga menja pri promeni lozinke, čime ranije izdati tokeni odmah
     /// prestaju da važe — bez toga bi ukradeni token preživeo i promenu lozinke.
+    /// <paramref name="sessionId"/> imenuje prijavu; kada se ona završi, token prestaje da
+    /// važi i pre isteka.
     /// </summary>
-    string CreateToken(Guid userId, string email, string securityStamp);
+    string CreateToken(Guid userId, string email, string securityStamp, Guid sessionId);
 }

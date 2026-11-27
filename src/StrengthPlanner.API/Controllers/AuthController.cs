@@ -13,8 +13,8 @@ namespace StrengthPlanner.API.Controllers;
 ///
 /// Nasleđuje <see cref="AuthorizedControllerBase"/> kao i svaki drugi kontroler, pa id
 /// korisnika dolazi iz tokena kroz <c>GetUserId()</c> — nigde se ne čita iz tela ni iz
-/// query stringa. Registracija i prijava su izuzeci označeni sa <c>[AllowAnonymous]</c>,
-/// koji nadjačava <c>[Authorize]</c> sa bazne klase.
+/// query stringa. Registracija, prijava, obnavljanje i odjava su izuzeci označeni sa
+/// <c>[AllowAnonymous]</c>, koji nadjačava <c>[Authorize]</c> sa bazne klase.
 ///
 /// Čitanje <c>sub</c> claim-a je ranije bilo prepisano u svakoj akciji ovog fajla; sa
 /// svakim novim endpointom to je bila još jedna kopija istog parsiranja tokena.
@@ -60,6 +60,34 @@ public class AuthController : AuthorizedControllerBase
         {
             return Unauthorized(new { errors = ex.Errors });
         }
+    }
+
+    /// <summary>
+    /// Zamenjuje token za obnavljanje za nov par. Anoniman je jer se poziva upravo kada je
+    /// pristupni token istekao; nalog dokazuje sam token iz tela zahteva.
+    /// </summary>
+    [AllowAnonymous]
+    [EnableRateLimiting("session")]
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh(RefreshTokenDto dto, CancellationToken cancellationToken)
+    {
+        var result = await _authService.RefreshAsync(dto.RefreshToken, cancellationToken);
+
+        return result is null
+            ? Unauthorized(new { errors = new[] { "Prijava je istekla. Prijavi se ponovo." } })
+            : Ok(result);
+    }
+
+    /// <summary>
+    /// Odjavljuje ovaj uređaj. Odgovor je isti i za nepoznat token: odjava nema šta da odbije.
+    /// </summary>
+    [AllowAnonymous]
+    [EnableRateLimiting("session")]
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout(RefreshTokenDto dto, CancellationToken cancellationToken)
+    {
+        await _authService.LogoutAsync(dto.RefreshToken, cancellationToken);
+        return NoContent();
     }
 
     /// <summary>Zaštićeni test endpoint: vraća trenutnog korisnika iz JWT-a.</summary>

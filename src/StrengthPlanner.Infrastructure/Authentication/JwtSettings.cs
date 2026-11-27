@@ -1,3 +1,5 @@
+using StrengthPlanner.Application.Security;
+
 namespace StrengthPlanner.Infrastructure.Authentication;
 
 /// <summary>
@@ -12,4 +14,7 @@ public class JwtSettings
     public string Audience { get; set; } = string.Empty;
     public string Key { get; set; } = string.Empty;
     public int ExpiryMinutes { get; set; } = 60;
+
+    /// <summary>Koliko dana prijava traje bez ijednog obnavljanja.</summary>
+    public int RefreshExpiryDays { get; set; } = RefreshTokenPolicy.DefaultIdleDays;
 }

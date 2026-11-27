@@ -322,3 +322,23 @@ mestom gde je svaki upotrebljen:
 Ime fajla beleške je u `docs/features/`. Pre unosa u tezu svaki izvor treba proveriti u
 originalu (godina, časopis, strana), jer su beleške pisane za pregled koda, a ne kao
 bibliografija.
+
+## 15. Prijava i tokeni
+
+**Gde:** 3.4 (JWT), slučaj korišćenja prijave, 6.4 uz listinge 6.7 i 6.9, 7 uz sliku 7.2.
+
+**Teza:** „Пошто сервер не чува стање сесије, овај приступ је природан избор за REST API“ (3.4);
+„систем проверава креденцијале и издаје потписани JWT токен“ (slučaj korišćenja); „пресретач
+централизовано реагује на одговор 401: корисник се аутоматски одјављује“ (uz listing 6.9); „По
+успешној пријави сервер издаје JWT токен“ (7).
+
+**Danas:** uz pristupni JWT (60 minuta) server izdaje token za obnavljanje i čuva prijavu u bazi
+(`LoginSessions`), 30 dana od poslednjeg obnavljanja. Na 401 klijent prvo obnovi prijavu i ponovi
+zahtev; odjavljuje samo kada obnavljanje bude odbijeno. Listinzi 6.7 i 6.9 prikazuju stari kod.
+
+**Predlog (3.4):** „Приступни токен је JWT са ограниченим трајањем. Уз њега сервер издаје и токен
+за обнављање пријаве, чији отисак чува у бази, тако да се пријава на уређају може поништити, а
+корисник остаје пријављен док користи апликацију.“
+
+**Predlog (uz listing 6.9):** „... на одговор 401 пресретач обнавља пријаву и понавља захтев, а
+корисника одјављује тек када обнављање буде одбијено.“

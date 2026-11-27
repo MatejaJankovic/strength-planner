@@ -69,6 +69,8 @@ public static class DependencyInjection
         // JWT postavke + servisi.
         services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
         services.AddScoped<ITokenService, JwtTokenService>();
+        services.AddSingleton(TimeProvider.System);
+        services.AddScoped<ILoginSessionService, LoginSessionService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IExerciseService, ExerciseService>();
         services.AddScoped<ITemplateService, TemplateService>();

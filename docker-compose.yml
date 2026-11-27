@@ -50,6 +50,7 @@ services:
       Jwt__Audience: ${JWT_AUDIENCE:-StrengthPlanner.Client}
       Jwt__Key: ${JWT_KEY:?Postavi jak JWT_KEY u .env (min. 32 bajta, vidi .env.example)}
       Jwt__ExpiryMinutes: ${JWT_EXPIRY_MINUTES:-60}
+      Jwt__RefreshExpiryDays: ${JWT_REFRESH_EXPIRY_DAYS:-30}
     # Vezan za petlju: spolja se do API-ja dolazi samo kroz nginx. To je i ono što čini
     # da se X-Forwarded-For sme uzeti zdravo za gotovo — inače bi svako mogao da ga
     # postavi i time zaobiđe ograničenje broja zahteva.

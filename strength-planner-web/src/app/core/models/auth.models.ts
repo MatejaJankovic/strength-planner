@@ -74,6 +74,8 @@ export interface AuthResponseDto {
   email: string;
   token: string;
   expiresAt: string;
+  /** Renews `token` once it expires. Replaced by the server on every use. */
+  refreshToken: string;
 }
 
 export interface ChangePasswordDto {
