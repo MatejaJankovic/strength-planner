@@ -73,6 +73,16 @@ jobs:
       - name: Kontrast i tokeni teme
         run: python3 scripts/check-theme-contrast.py
 
+  deployment:
+    name: Compose konfiguracija
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Šta je izloženo spolja, restart politika i rotacija zapisa. Vidi scripts/check-compose.py.
+      - name: Provera razrešene compose konfiguracije
+        run: python3 scripts/check-compose.py
+
   dependencies:
     name: Ranjive zavisnosti
     runs-on: ubuntu-latest

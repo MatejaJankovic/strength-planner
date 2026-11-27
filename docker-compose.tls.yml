@@ -11,7 +11,20 @@
 # Uslovi koje Let's Encrypt traži: domen mora da pokazuje na ovu mašinu, a portovi 80 i 443
 # moraju da budu dostupni sa interneta.
 
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
+  # Jedini ulaz spolja je Caddy. Port 8080 iz osnovnog fajla bi uz TLS bio put mimo njega:
+  # lozinka bi preko njega otišla čitljiva pre nego što API stigne da preusmeri na HTTPS.
+  # Compose liste portova iz dva fajla spaja, pa prazna lista ne bi ništa uklonila;
+  # `!reset` briše ono što je osnovni fajl dodao.
+  web:
+    ports: !reset []
+
   # Tek sada API sme da traži HTTPS: šemu pravog zahteva čita iz X-Forwarded-Proto, koje
   # Caddy postavlja a nginx prosleđuje dalje umesto da ga prepiše. Bez TLS-a bi ovo pravilo
   # petlju preusmeravanja, pa stoji ovde a ne u osnovnom fajlu.
@@ -28,6 +41,7 @@ services:
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
+    logging: *logging
     depends_on:
       - web
     ports:
