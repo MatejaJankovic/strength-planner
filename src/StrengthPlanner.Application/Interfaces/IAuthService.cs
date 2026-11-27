@@ -10,6 +10,15 @@ public interface IAuthService
     /// <summary>Proverava kredencijale i vraća JWT.</summary>
     Task<AuthResponseDto> LoginAsync(LoginDto dto);
 
+    /// <summary>
+    /// Zamenjuje token za obnavljanje za nov par tokena. <c>null</c> kada više nikoga ne
+    /// prijavljuje: nepoznat, istekao, već zamenjen ili izdat pre promene lozinke.
+    /// </summary>
+    Task<AuthResponseDto?> RefreshAsync(string refreshToken, CancellationToken cancellationToken = default);
+
+    /// <summary>Odjavljuje uređaj koji drži ovaj token. Nepoznat token se zanemaruje.</summary>
+    Task LogoutAsync(string refreshToken, CancellationToken cancellationToken = default);
+
     /// <summary>Vraća trenutnog korisnika po Id-u iz tokena (null ako ne postoji).</summary>
     Task<CurrentUserDto?> GetCurrentUserAsync(Guid userId);
 
@@ -17,8 +26,8 @@ public interface IAuthService
     Task<CurrentUserDto> UpdateProfileAsync(Guid userId, UpdateProfileDto dto);
 
     /// <summary>
-    /// Menja lozinku ulogovanog korisnika i vraća nov token. Svi ranije izdati tokeni
-    /// prestaju da važe.
+    /// Menja lozinku ulogovanog korisnika i vraća nove tokene. Svi ranije izdati prestaju da
+    /// važe, na svim uređajima.
     /// </summary>
     Task<AuthResponseDto> ChangePasswordAsync(Guid userId, ChangePasswordDto dto);
 

@@ -2,13 +2,11 @@ using System.Text;
 using System.Reflection;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using StrengthPlanner.API.Security;
@@ -16,7 +14,6 @@ using StrengthPlanner.Application.Exceptions;
 using StrengthPlanner.Application.Interfaces;
 using StrengthPlanner.Infrastructure;
 using StrengthPlanner.Infrastructure.Authentication;
-using StrengthPlanner.Infrastructure.Identity;
 using StrengthPlanner.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -68,6 +65,7 @@ if (requireHttps)
 const string AllowAngular = "AllowAngular";
 const string AuthRateLimitPolicy = "auth";
 const string RegistrationRateLimitPolicy = "registration";
+const string SessionRateLimitPolicy = "session";
 
 // Zahtev bez adrese pošiljaoca ne sme da deli budžet sa svima ostalima; preko TCP-a se
 // ne dešava, ali ime govori šta je u pitanju ako se ikad desi.
@@ -129,6 +127,20 @@ builder.Services.AddRateLimiter(options =>
             {
                 PermitLimit = 5,
                 Window = TimeSpan.FromHours(1),
+                QueueLimit = 0
+            }));
+
+    // Obnavljanje i odjava ne pogađaju ništa: token ima 256 nasumičnih bita. Granica je tu
+    // samo protiv zatrpavanja, i šira je od auth granice jer svaki uređaj obnavlja prijavu
+    // jednom na sat, a više njih deli izlaznu adresu.
+    options.AddPolicy(SessionRateLimitPolicy, httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString()
+                          ?? UnknownClientPartition,
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 60,
+                Window = TimeSpan.FromMinutes(1),
                 QueueLimit = 0
             }));
 
@@ -205,6 +217,7 @@ builder.Services.AddSwaggerGen(options =>
 // ---------------------------------------------------------------------------
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, HttpContextCurrentUser>();
+builder.Services.AddScoped<AccessTokenCheck>();
 
 // ---------------------------------------------------------------------------
 // Infrastruktura: EF Core (PostgreSQL / Npgsql), Identity, auth servisi.
@@ -264,30 +277,17 @@ builder.Services.AddAuthentication(options =>
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
         };
 
-        // JWT je bez stanja, pa odjava na klijentu ne poništava token — ukraden token je
-        // do sada važio do isteka, čak i posle promene lozinke. Security stamp iz
-        // Identity-ja se menja pri promeni lozinke, pa poređenje ovde daje pravo
-        // poništavanje sesija po ceni jednog čitanja po zahtevu.
+        // Potpis i rok ne vide ni odjavu ni promenu lozinke; to proverava AccessTokenCheck.
         options.Events = new JwtBearerEvents
         {
             OnTokenValidated = async context =>
             {
-                var stampInToken = context.Principal?.FindFirst(JwtTokenService.SecurityStampClaim)?.Value;
-                var subject = context.Principal?.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+                var check = context.HttpContext.RequestServices.GetRequiredService<AccessTokenCheck>();
+                var refusal = await check.RefusalAsync(context.Principal, context.HttpContext.RequestAborted);
 
-                if (string.IsNullOrEmpty(stampInToken) || !Guid.TryParse(subject, out var userId))
+                if (refusal is not null)
                 {
-                    context.Fail("Token ne nosi podatke potrebne za proveru.");
-                    return;
-                }
-
-                var users = context.HttpContext.RequestServices
-                    .GetRequiredService<UserManager<ApplicationUser>>();
-                var user = await users.FindByIdAsync(userId.ToString());
-
-                if (user is null || !string.Equals(user.SecurityStamp, stampInToken, StringComparison.Ordinal))
-                {
-                    context.Fail("Token više ne važi.");
+                    context.Fail(refusal);
                 }
             }
         };

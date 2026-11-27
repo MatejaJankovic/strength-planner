@@ -38,6 +38,9 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
         _currentUser = currentUser;
     }
 
+    /// <summary>Prijavljeni uređaji. Bez filtera vlasništva, vidi <see cref="LoginSession"/>.</summary>
+    public DbSet<LoginSession> LoginSessions => Set<LoginSession>();
+
     public DbSet<Profile> Profiles => Set<Profile>();
     public DbSet<MuscleGroup> MuscleGroups => Set<MuscleGroup>();
     public DbSet<Exercise> Exercises => Set<Exercise>();

@@ -22,17 +22,20 @@ public class AuthService : IAuthService
     private readonly ITokenService _tokenService;
     private readonly AppDbContext _db;
     private readonly JwtSettings _jwtSettings;
+    private readonly ILoginSessionService _sessions;
 
     public AuthService(
         UserManager<ApplicationUser> userManager,
         ITokenService tokenService,
         AppDbContext db,
-        IOptions<JwtSettings> jwtSettings)
+        IOptions<JwtSettings> jwtSettings,
+        ILoginSessionService sessions)
     {
         _userManager = userManager;
         _tokenService = tokenService;
         _db = db;
         _jwtSettings = jwtSettings.Value;
+        _sessions = sessions;
     }
 
     /// <summary>
@@ -93,7 +96,7 @@ public class AuthService : IAuthService
         if (!result.Succeeded)
             throw new AuthException(result.Errors.Select(e => e.Description));
 
-        return BuildResponse(user);
+        return await SignInAsync(user);
     }
 
     public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
@@ -122,7 +125,26 @@ public class AuthService : IAuthService
 
         await _userManager.ResetAccessFailedCountAsync(user);
 
-        return BuildResponse(user);
+        return await SignInAsync(user);
+    }
+
+    public async Task<AuthResponseDto?> RefreshAsync(
+        string refreshToken,
+        CancellationToken cancellationToken = default)
+    {
+        var ticket = await _sessions.RefreshAsync(refreshToken, cancellationToken);
+        if (ticket is null)
+            return null;
+
+        // Zaključavanje se ovde namerno ne proverava: ono usporava pogađanje lozinke, a
+        // kada bi gasilo i postojeće prijave, ko zna tuđ email mogao bi da odjavljuje vlasnika.
+        var user = await _userManager.FindByIdAsync(ticket.UserId.ToString());
+        return user is null ? null : BuildResponse(user, ticket);
+    }
+
+    public Task LogoutAsync(string refreshToken, CancellationToken cancellationToken = default)
+    {
+        return _sessions.EndAsync(refreshToken, cancellationToken);
     }
 
     public async Task<CurrentUserDto?> GetCurrentUserAsync(Guid userId)
@@ -300,8 +322,10 @@ public class AuthService : IAuthService
             throw new AuthException(result.Errors.Select(e => e.Description));
 
         // Identity menja security stamp pri promeni lozinke, pa svi ranije izdati tokeni
-        // prestaju da važe. Korisnik dobija nov token da ga izmena ne izbaci iz aplikacije.
-        return BuildResponse(user);
+        // prestaju da važe. Prijave se i brišu, da ne ostanu u tabeli do sledećeg obnavljanja.
+        // Korisnik dobija novu, da ga izmena ne izbaci iz aplikacije.
+        await _sessions.EndAllAsync(user.Id);
+        return await SignInAsync(user);
     }
 
     /// <summary>
@@ -408,7 +432,14 @@ public class AuthService : IAuthService
         _userManager.PasswordHasher.HashPassword(new ApplicationUser(), password ?? string.Empty);
     }
 
-    private AuthResponseDto BuildResponse(ApplicationUser user)
+    /// <summary>Otvara novu prijavu za nalog koji je upravo dokazao lozinku.</summary>
+    private async Task<AuthResponseDto> SignInAsync(ApplicationUser user)
+    {
+        var ticket = await _sessions.StartAsync(user.Id, RequireSecurityStamp(user));
+        return BuildResponse(user, ticket);
+    }
+
+    private AuthResponseDto BuildResponse(ApplicationUser user, LoginSessionTicket ticket)
     {
         var email = user.Email ?? string.Empty;
         return new AuthResponseDto
@@ -417,8 +448,9 @@ public class AuthService : IAuthService
             Email = email,
             // Prazan stamp bi značio token koji prolazi prijavu a pada na svakom
             // narednom zahtevu — bolje odmah pasti, uz jasan razlog.
-            Token = _tokenService.CreateToken(user.Id, email, RequireSecurityStamp(user)),
-            ExpiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryMinutes)
+            Token = _tokenService.CreateToken(user.Id, email, RequireSecurityStamp(user), ticket.SessionId),
+            ExpiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryMinutes),
+            RefreshToken = ticket.RefreshToken
         };
     }
 }
