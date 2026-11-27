@@ -99,7 +99,9 @@ jedan nalog.
 
 Sada `AppDbContext` svakoj tabeli sa korisničkim podacima dodaje filter vlasništva na nivou
 modela. Tabele bez svoje `UserId` kolone (nedelje, treninzi, planovi vežbi, serije) dobijaju
-isto pravilo preko navigacije do vlasnika.
+isto pravilo preko navigacije do vlasnika. Izuzetak su Identity tabele i `LoginSessions`: one se
+čitaju dok zahtev još nema korisnika, jer se iz njih tek utvrđuje ko je, pa im se pristupa samo
+kroz `LoginSessionService`, po oznaci prijave i dokazanom tokenu.
 
 Da filter zaista nosi odbranu, izmereno je tako što je uslov po `userId` uklonjen iz jednog
 servisa, pa je filter ostao jedino što stoji između korisnika B i tuđeg mezociklusa:
@@ -172,10 +174,14 @@ pređe sa 200 na 401.
 Token za obnavljanje:
 
 - U bazi stoji samo njegov SHA-256 heš, pa kopija baze nikoga ne prijavljuje.
+- Nosi i potpis (HMAC) ključem izvedenim iz `Jwt:Key`. Bez ispravnog potpisa token ne utiče ni
+  na jednu prijavu, pa oznaka prijave iz pristupnog tokena nije dovoljna da se neko odjavi.
+  Promena `Jwt:Key` odjavljuje sve.
 - **Menja se pri svakoj upotrebi.** Zamenjen token koji se vrati gasi celu prijavu, jer ga
   tada drži još neko. Jedini izuzetak je token čiji naslednik još nije potvrđen: odgovor koji
   se na telefonu izgubi ne sme da odjavi vlasnika.
-- Odjava briše prijavu na serveru, a brisanje naloga sve njegove prijave.
+- Odjava briše prijavu na serveru, i kada se šalje već zamenjen token, a brisanje naloga sve
+  njegove prijave.
 - Zaključavanje naloga posle pogrešnih lozinki ne gasi postojeće prijave, da ko zna tuđ email
   ne bi mogao da odjavljuje vlasnika.
 
@@ -350,6 +356,9 @@ prijava ostane upotrebljiva kada nekoliko ljudi deli izlaznu adresu; za registra
 previše, jer se nalog pravi jednom. Registracija je i jedino mesto gde neko ko nije
 prijavljen može da pravi zapise. Provereno da su budžeti odvojeni: posle iscrpljene
 registracije prijava i dalje vraća 200.
+
+Obnavljanje i odjava imaju treću, širu granicu, **60 u minutu po adresi**: token se ne može
+pogoditi, a svaki uređaj obnavlja prijavu otprilike jednom na sat.
 
 Uz to postoji **zamka (honeypot)**: skriveno polje koje čovek ne vidi, ne može da tabuje do
 njega, ne može mu doći ni čitačem ekrana, i koje pregledač ne popunjava. Automat koji redom
