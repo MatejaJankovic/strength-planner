@@ -415,8 +415,8 @@ napravljene pre prepisivanja (`backup-*`), koje nikada nisu bile poslate. Obrisa
 jedan `git push --all` bio dovoljan da ih vrati u opticaj. Posle brisanja pretraga po svim
 dostupnim ref-ovima vraća nula pogodaka.
 
-Da se ne oslanja na to da neko pazi, **gitleaks radi nad celom istorijom pri svakoj izmeni**
-— vidi ispod.
+Da se ne oslanja na to da neko pazi, **gitleaks u CI-ju skenira pri izmenama, a celu
+istoriju po rasporedu** — vidi ispod.
 
 ---
 
@@ -430,27 +430,29 @@ Da se ne oslanja na to da neko pazi, **gitleaks radi nad celom istorijom pri sva
 | `npm audit --omit=dev` (isporučeno) | **0** |
 | `npm audit` (uključujući razvojne) | **0** |
 
-Razvojne zavisnosti su ranije imale tri niske ranjivosti u lancu Angular alata
-(`@babel/core`, `esbuild`). Nisu se isporučivale, ali su držale skener crvenim. Rešene su
-`overrides` blokom koji podiže razrešene verzije unutar postojećeg lanca — provereno da
-produkcijski build i svih 7 frontend testova i dalje prolaze.
+Brojevi važe za dan provere; sve tri naredbe pokreće i CI.
 
-> **Kada `overrides` ukloniti.** Blok nameće verziju svakom paketu koji od nje zavisi, bez
-> obzira na opseg koji je taj paket tražio. Kad Angular objavi alat koji traži drugi
-> `esbuild`, npm će i dalje forsirati ovaj, a greška će izaći daleko od uzroka.
-> `package.json` ne trpi komentare, pa je uslov ovde: **obrisati oba unosa čim `npm audit`
-> bude nula i bez njih** (najlakše posle ručne nadogradnje `@angular/build`).
+`package.json` više nema `overrides` blok. Služio je da podigne `@babel/core` i `esbuild`
+unutar starog lanca Angular alata, ali takav blok nameće verziju bez obzira na opseg koji
+paket traži: `@angular/build` 22.3 traži `@babel/core` 8, a blok ga je držao na 7. Ako ikad
+zatreba ponovo, ukloniti ga čim `npm audit` bude nula i bez njega.
 
 **Bitnije od trenutnog nula je što se sada proverava samo.** Nalaz iz skeniranja stari sam od
 sebe: paket koji je danas čist objavi ranjivost sledeće nedelje, bez ijedne izmene u ovom
 repozitorijumu. Zato:
 
 - **CI** (`.github/workflows/ci.yml`) na svaku izmenu i **ponedeljkom ujutru po rasporedu**
-  radi build, testove, `dotnet list package --vulnerable`, `npm audit` i gitleaks nad celom
-  istorijom. Korak sa NuGet-om čita ispis, jer ta naredba uvek izlazi sa nulom — bez toga bi
-  bio zelen i kada nešto nađe. `npm audit --omit=dev` obara build; nalaz u razvojnim
-  zavisnostima samo prijavljuje, da ranjivost u alatu ne zaustavi rad na aplikaciji.
-- **gitleaks je zakačen za commit, a ne za oznaku `v2`.** Oznakom upravlja tuđi
+  radi build, testove, `dotnet list package --vulnerable`, `npm audit` i gitleaks. Korak sa
+  NuGet-om čita ispis, jer ta naredba uvek izlazi sa nulom — bez toga bi bio zelen i kada
+  nešto nađe. `npm audit --omit=dev` obara build; nalaz u razvojnim zavisnostima samo
+  prijavljuje, da ranjivost u alatu ne zaustavi rad na aplikaciji.
+- **gitleaks na push i pull request skenira samo opseg koji akcija sama odredi.** Potpuna
+  provera je skeniranje cele istorije, po rasporedu i pri ručnom pokretanju
+  (`gh workflow run CI`).
+- **Izmišljene lozinke iz testova** izuzete su u `.gitleaks.toml` samo kada su i fajl
+  klijentski test i vrednost baš jedna od navedenih. Izuzetak ne sakriva druge vrednosti;
+  da li će neka biti prijavljena zavisi od pravila skenera.
+- **gitleaks je zakačen za commit, a ne za oznaku `v3`.** Oznakom upravlja tuđi
   repozitorijum i može da se pomeri, a taj korak radi sa tokenom ovog repozitorijuma.
 
 **Dependabot je probno bio uključen pa isključen.** Za jedan dan je otvorio sedamnaest
@@ -510,5 +512,5 @@ Nekoliko puta je merenje oborilo očekivanje, i to je zabeleženo tamo gde stoji
 preusmeravanje na HTTPS koje nije preusmeravalo, i duga lozinka koja nije bila trošenje
 procesora.
 
-Testova ima **267** (`dotnet test` 260, `npm test` 7), od kojih dvadesetak čuva upravo
-bezbednosna pravila opisana ovde.
+Deo testova na serveru i klijentu čuva upravo bezbednosna pravila opisana ovde, a CI ih
+pokreće uz ostale.

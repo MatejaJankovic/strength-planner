@@ -10,6 +10,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Ručno pokretanje. Skener tajni tada, kao i po rasporedu, prolazi celu istoriju.
+  workflow_dispatch:
   schedule:
     # Ponedeljkom ujutru: hvata ranjivosti objavljene u međuvremenu, bez ijednog commita.
     - cron: "0 6 * * 1"
@@ -28,9 +30,9 @@ jobs:
     name: .NET build i testovi
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           # global.json drži verziju; ovde se ne ponavlja da se ne bi razišle.
           global-json-file: global.json
@@ -45,9 +47,9 @@ jobs:
     name: Angular build i testovi
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: npm
@@ -77,7 +79,7 @@ jobs:
     name: Compose konfiguracija
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Šta je izloženo spolja, restart politika i rotacija zapisa. Vidi scripts/check-compose.py.
       - name: Provera razrešene compose konfiguracije
@@ -87,13 +89,13 @@ jobs:
     name: Ranjive zavisnosti
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: npm
@@ -155,16 +157,16 @@ jobs:
       # tamo gde ga autor izmene ne vidi, a to je jedino mesto gde bi mu koristio.
       pull-requests: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # Cela istorija: smisao je da se uhvati i tajna koja je ušla ranije pa je
           # kasnije uklonjena iz radnog stabla — u istoriji ostaje.
           fetch-depth: 0
 
-      # Zakačeno za commit, ne za `v2` oznaku. Oznakom upravlja tuđi repozitorijum i može
+      # Zakačeno za commit, ne za `v3` oznaku. Oznakom upravlja tuđi repozitorijum i može
       # da se pomeri; ovaj korak radi sa tokenom ovog repozitorijuma, pa bi pomerena
       # oznaka značila tuđi kod sa našim pravima. Verziju treba dizati ručno, povremeno.
-      - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
+      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_CONFIG: .gitleaks.toml

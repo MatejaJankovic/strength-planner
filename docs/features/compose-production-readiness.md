@@ -56,8 +56,8 @@ Isti sklop, napravljen iznova od praznog volumena:
   fragment: baza se podigne, nalog postoji i nije superkorisnik.
 
 Nove provere: `ProxyUploadLimitTests` (granica otpremanja i razrešavanje adrese API-ja),
-`ContentSecurityPolicyImageTests` i `scripts/check-compose.py`, koji se pokreće ručno pre
-isporuke i ima svoj korak u `ci.yml`.
+`ContentSecurityPolicyImageTests` i `scripts/check-compose.py`, koji ima svoj korak u
+`ci.yml`.
 
 ## Šta je pregled našao
 

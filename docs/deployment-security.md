@@ -74,8 +74,8 @@ Firewall** u konzoli (stoji ispred mašine, pa ga Docker ne zaobilazi) i dozvoli
 80, 443 i 22.
 
 `scripts/check-compose.py` proverava razrešenu compose konfiguraciju: šta je objavljeno,
-restart politiku, rotaciju zapisa i postavke TLS varijante. Pokreni ga pre isporuke
-(`python scripts/check-compose.py`); isti korak stoji i u `.github/workflows/ci.yml`.
+restart politiku, rotaciju zapisa i postavke TLS varijante. Pokreće se u CI-ju, a ručno sa
+`python scripts/check-compose.py`.
 
 ## Rad bez nadzora
 
