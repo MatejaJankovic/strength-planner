@@ -51,7 +51,14 @@ describe('obnavljanje prijave', () => {
     storage.save(stale, 'refresh-1');
   });
 
-  afterEach(() => http.verify());
+  afterEach(() => {
+    try {
+      http.verify();
+    } finally {
+      // Zahtev koji ostane da visi inače obori i sve testove posle ovog.
+      TestBed.resetTestingModule();
+    }
+  });
 
   /** Pušta obećanja iza `firstValueFrom` da se razreše, pa zahtev koji sledi bude poslat. */
   const settle = () => new Promise<void>((resolve) => setTimeout(resolve));
