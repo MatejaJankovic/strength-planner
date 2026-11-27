@@ -340,6 +340,34 @@ public class LoginSessionServiceTests
         Assert.NotNull(await Refresh(database, clock, delayed.RefreshToken));
     }
 
+    /// <summary>
+    /// The overtaking request moves the session past the token the delayed one brought. Writing what
+    /// was decided before would make that replaced token good again and throw out whoever holds the
+    /// newest one; decided on the new state it is a replaced token, which ends the session.
+    /// </summary>
+    [Fact]
+    public async Task ADelayedRequest_CannotBringBackATokenReplacedInTheMeantime()
+    {
+        using var database = NewDatabase();
+        var clock = new SettableClock();
+        var older = await SignIn(database, clock);
+        var newer = await Refresh(database, clock, older.RefreshToken);
+        LoginSessionTicket? overtaking = null;
+        var interceptor = new BeforeFirstUpdate(async () =>
+            overtaking = await Refresh(database, clock, newer!.RefreshToken));
+
+        LoginSessionTicket? delayed;
+        await using (var db = database.NewContext(interceptor))
+        {
+            delayed = await Service(db, clock).RefreshAsync(older.RefreshToken);
+        }
+
+        Assert.NotNull(overtaking);
+        Assert.Null(delayed);
+        await using var context = database.NewContext();
+        Assert.Empty(context.LoginSessions);
+    }
+
     /// <summary>The session is signed out while its refresh is on the way: the refresh must not revive it.</summary>
     [Fact]
     public async Task ARefreshOvertakenBySigningOut_Fails()
