@@ -39,7 +39,10 @@ export function extractErrorMessage(error: unknown, fallback: string): string {
   const body = error.error;
 
   if (typeof body === 'string' && body.trim()) {
-    return body.trim();
+    const text = body.trim();
+    // Stranica greške proxy-ja ispred API-ja (nginx dok se API ponovo podiže, ili prevelik
+    // zahtev) nije poruka za vežbača, i ne sme se ispisati na ekranu.
+    return error.status >= 500 || text.startsWith('<') ? fallback : text;
   }
 
   if (body && typeof body === 'object') {

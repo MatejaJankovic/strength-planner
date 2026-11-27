@@ -6,7 +6,7 @@ import { RELOAD_APP } from './app-reload';
 import { authInterceptor } from './auth.interceptor';
 import { AuthService } from './auth.service';
 import { AuthTokenStorage } from './auth-token-storage';
-import { REFRESH_TIMEOUT_MS } from './session-refresher';
+import { REFRESH_LOCK_WAIT_MS, REFRESH_TIMEOUT_MS, SessionRefresher } from './session-refresher';
 
 /**
  * Pristupni token traje sat vremena, a trening duže. Ovi testovi drže ono zbog čega obnavljanje
@@ -82,6 +82,12 @@ describe('obnavljanje prijave', () => {
 
   function grant(request: TestRequest, token = renewed, refreshToken = 'refresh-2'): void {
     request.flush({ userId: 'lifter', email: 'a@primer.com', token, expiresAt: '', refreshToken });
+  }
+
+  /** Ono što uradi drugi tab: piše pravo u skladište, a ovaj tab o tome još ništa ne zna. */
+  function otherTabStored(token: string, refreshToken: string): void {
+    localStorage.setItem('strength-planner.refresh-token', refreshToken);
+    localStorage.setItem('strength-planner.token', token);
   }
 
   function signedIn(): boolean {
@@ -235,7 +241,7 @@ describe('obnavljanje prijave', () => {
   it('token koji je drugi tab već obnovio koristi se bez novog obnavljanja', async () => {
     send();
     const first = http.expectOne('/api/sessions');
-    storage.save(renewed, 'refresh-2');
+    otherTabStored(renewed, 'refresh-2');
     refuse(first);
     await settle();
 
@@ -247,7 +253,7 @@ describe('obnavljanje prijave', () => {
   it('zahtev se ne ponavlja tuđim tokenom kada se u međuvremenu prijavio drugi nalog', async () => {
     const outcome = send();
     const first = http.expectOne('/api/sessions');
-    storage.save(tokenFor('neko-drugi', 1), 'refresh-drugog');
+    otherTabStored(tokenFor('neko-drugi', 1), 'refresh-drugog');
     refuse(first);
     await settle();
 
@@ -277,6 +283,192 @@ describe('obnavljanje prijave', () => {
 
     expect(errors).toEqual([401]);
     expect(signedIn()).toBe(true);
+  });
+
+  it.each([500, 0])(
+    'ponovljen zahtev koji padne iz drugog razloga (%s) ne odjavljuje',
+    async (status) => {
+      const outcome = send();
+      refuse(http.expectOne('/api/sessions'));
+      grant(expectRefresh());
+      await settle();
+      const repeated = http.expectOne('/api/sessions');
+      if (status === 0) {
+        repeated.error(new ProgressEvent('error'));
+      } else {
+        repeated.flush(null, { status, statusText: 'x' });
+      }
+
+      expect(signedIn()).toBe(true);
+      expect(outcome.errors.map((error) => error.status)).toEqual([status]);
+    },
+  );
+
+  it('zakasneo 401 na ponovljen zahtev ne gasi noviju prijavu', async () => {
+    send();
+    refuse(http.expectOne('/api/sessions'));
+    grant(expectRefresh());
+    await settle();
+    const repeated = http.expectOne('/api/sessions');
+
+    otherTabStored(tokenFor('lifter', 3), 'refresh-3');
+    refuse(repeated);
+
+    expect(storage.refreshToken()).toBe('refresh-3');
+  });
+
+  it('odbijeno obnavljanje posle kog već postoji nov par ponavlja zahtev njime', async () => {
+    send();
+    refuse(http.expectOne('/api/sessions'));
+    const refresh = expectRefresh();
+
+    // Na primer promena lozinke u drugom tabu: stara prijava je ugašena, nova već sačuvana.
+    otherTabStored(tokenFor('lifter', 3), 'refresh-3');
+    refuse(refresh);
+    await settle();
+
+    const repeated = http.expectOne('/api/sessions');
+    expect(repeated.request.headers.get('Authorization')).toBe(`Bearer ${tokenFor('lifter', 3)}`);
+    repeated.flush([]);
+    expect(signedIn()).toBe(true);
+  });
+
+  it('odbijeno staro obnavljanje ne odjavljuje nalog koji se u međuvremenu prijavio', async () => {
+    send();
+    refuse(http.expectOne('/api/sessions'));
+    const refresh = expectRefresh();
+
+    otherTabStored(tokenFor('neko-drugi', 1), 'refresh-drugog');
+    refuse(refresh);
+    await settle();
+
+    expect(storage.refreshToken()).toBe('refresh-drugog');
+  });
+
+  it('401 na zahtev poslat bez tokena vodi na prijavu', async () => {
+    storage.clear();
+
+    send();
+    refuse(http.expectOne('/api/sessions'));
+    await settle();
+
+    expect(router.url).toBe('/login');
+  });
+
+  // --- brava među tabovima ---------------------------------------------------
+
+  /**
+   * jsdom nema Web Locks, pa se podmeće brava koja radi ono što prava: jedan po jedan, a čekanje
+   * se može prekinuti signalom.
+   */
+  function fakeLocks() {
+    const names: string[] = [];
+    let queue: Promise<unknown> = Promise.resolve();
+    const request = (
+      name: string,
+      options: { signal: AbortSignal },
+      work: () => Promise<string>,
+    ): Promise<string> => {
+      names.push(name);
+      const ahead = queue;
+      const turn = new Promise<string>((resolve, reject) => {
+        options.signal.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));
+        void ahead.then(() => {
+          if (!options.signal.aborted) {
+            work().then(resolve, reject);
+          }
+        });
+      });
+      // Ko odustane od čekanja ne oslobađa bravu: sledeći i dalje čeka one ispred.
+      queue = Promise.all([ahead, turn.catch(() => undefined)]);
+      return turn;
+    };
+
+    Object.defineProperty(navigator, 'locks', { configurable: true, value: { request } });
+
+    return {
+      names,
+      /** Drži bravu kao drugi tab, dok se ne pusti. */
+      holdByAnotherTab(): () => void {
+        let release!: () => void;
+        const held = new Promise<void>((resolve) => (release = resolve));
+        queue = queue.then(() => held);
+        return release;
+      },
+      remove: () => delete (navigator as { locks?: unknown }).locks,
+    };
+  }
+
+  describe('sa Web Locks', () => {
+    let locks: ReturnType<typeof fakeLocks>;
+
+    beforeEach(() => (locks = fakeLocks()));
+    afterEach(() => locks.remove());
+
+    it('obnavljanje čeka bravu i ne šalje ništa ako je drugi tab već obnovio', async () => {
+      const release = locks.holdByAnotherTab();
+      send();
+      refuse(http.expectOne('/api/sessions'));
+      await settle();
+      http.expectNone((request) => request.url.endsWith('/auth/refresh'));
+
+      otherTabStored(renewed, 'refresh-2');
+      release();
+      await settle();
+
+      const repeated = http.expectOne('/api/sessions');
+      expect(repeated.request.headers.get('Authorization')).toBe(`Bearer ${renewed}`);
+      repeated.flush([]);
+      expect(locks.names).toEqual(['strength-planner.session-refresh']);
+    });
+
+    it('obnavljanje pod bravom šalje se i čuva kao i bez nje', async () => {
+      send();
+      refuse(http.expectOne('/api/sessions'));
+      await settle();
+      grant(expectRefresh());
+      await settle();
+
+      http.expectOne('/api/sessions').flush([]);
+      expect(storage.refreshToken()).toBe('refresh-2');
+      expect(locks.names).toHaveLength(1);
+    });
+
+    it('brava koja se ne oslobađa napušta se posle roka, bez odjave', async () => {
+      vi.useFakeTimers();
+      try {
+        locks.holdByAnotherTab();
+        const outcome = send();
+        refuse(http.expectOne('/api/sessions'));
+
+        await vi.advanceTimersByTimeAsync(REFRESH_LOCK_WAIT_MS + 1);
+
+        expect(outcome.errors.map((error) => error.status)).toEqual([0]);
+        expect(signedIn()).toBe(true);
+        // Sledeći pokušaj ne nasleđuje napušteno čekanje.
+        const again = send();
+        refuse(http.expectOne('/api/sessions'));
+        await vi.advanceTimersByTimeAsync(REFRESH_LOCK_WAIT_MS + 1);
+        expect(again.errors).toHaveLength(1);
+        expect(locks.names).toHaveLength(2);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('dva obnavljača, kao dva taba, šalju jedan zahtev', async () => {
+      const first = TestBed.inject(SessionRefresher);
+      const second = TestBed.runInInjectionContext(() => new SessionRefresher());
+      const tokens: string[] = [];
+
+      first.refresh(stale).subscribe((token) => tokens.push(token));
+      second.refresh(stale).subscribe((token) => tokens.push(token));
+      await settle();
+      grant(expectRefresh());
+      await settle();
+
+      expect(tokens).toEqual([renewed, renewed]);
+    });
   });
 
   // --- drugi tabovi ----------------------------------------------------------

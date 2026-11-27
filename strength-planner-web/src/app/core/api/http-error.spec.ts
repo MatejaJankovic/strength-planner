@@ -42,6 +42,19 @@ describe('extractErrorMessage', () => {
     ).toBe('Greška polja.');
   });
 
+  it.each([
+    [502, '<html>\r\n<head><title>502 Bad Gateway</title></head></html>'],
+    [504, 'upstream timed out'],
+    [413, '<html><body>413 Request Entity Too Large</body></html>'],
+  ])('stranica greške proxy-ja (%s) ne ide na ekran', (status, body) => {
+    expect(extractErrorMessage(new HttpErrorResponse({ status, error: body }), 'rezerva')).toBe('rezerva');
+  });
+
+  it('običan tekst uz grešku zahteva ostaje poruka', () => {
+    expect(extractErrorMessage(new HttpErrorResponse({ status: 400, error: 'Poruka servera.' }), 'rezerva'))
+      .toBe('Poruka servera.');
+  });
+
   it('bez odgovora (mreža) vraća rezervu', () => {
     expect(extractErrorMessage(new HttpErrorResponse({ status: 0 }), 'rezerva')).toBe('rezerva');
   });

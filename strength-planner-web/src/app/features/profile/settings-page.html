@@ -95,7 +95,7 @@
   <p class="card__hint">
     Podaci ostaju na nalogu. Prijavi se ponovo istim emailom i lozinkom.
   </p>
-  <button class="btn btn--ghost" type="button" (click)="logout()">
+  <button class="btn btn--ghost" type="button" (click)="logout()" [disabled]="savingPassword()">
     <mat-icon aria-hidden="true">logout</mat-icon>
     Odjavi se
   </button>

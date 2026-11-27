@@ -102,7 +102,18 @@ export class AuthService {
   changePassword(dto: ChangePasswordDto): Observable<AuthResponseDto> {
     return this.http
       .post<AuthResponseDto>(`${this.apiUrl}/auth/change-password`, dto)
-      .pipe(tap((response) => this.tokenStorage.save(response.token, response.refreshToken)));
+      .pipe(
+        tap((response) => {
+          // Odjava dok je odgovor bio na putu ne sme da se poništi: tokeni se čuvaju samo ako je
+          // uređaj i dalje prijavljen, i to istim nalogom.
+          if (
+            this.tokenStorage.refreshToken() &&
+            accountOf(this.tokenStorage.accessToken()) === response.userId
+          ) {
+            this.tokenStorage.save(response.token, response.refreshToken);
+          }
+        }),
+      );
   }
 
   /**

@@ -15,6 +15,13 @@ export class SessionEndedError extends Error {
 /** How long a renewal may hang before the requests waiting on it are given up. */
 export const REFRESH_TIMEOUT_MS = 15_000;
 
+/**
+ * How long to wait for another tab to finish renewing. Longer than its own deadline, but not without
+ * one: a tab the phone has put to sleep while it holds the lock would otherwise leave every request
+ * of this one waiting, with nothing on the screen to say so.
+ */
+export const REFRESH_LOCK_WAIT_MS = REFRESH_TIMEOUT_MS + 5_000;
+
 const REFRESH_LOCK = 'strength-planner.session-refresh';
 
 /**
@@ -30,6 +37,8 @@ export class SessionRefresher {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = inject(API_BASE_URL);
   private readonly storage = inject(AuthTokenStorage);
+
+  private readonly refreshUrl = `${this.apiUrl}/auth/refresh`;
 
   private pending: { rejected: string; token: Promise<string> } | null = null;
 
@@ -58,9 +67,32 @@ export class SessionRefresher {
     });
   }
 
-  private exclusively(work: () => Promise<string>): Promise<string> {
+  private async exclusively(work: () => Promise<string>): Promise<string> {
     const locks: LockManager | undefined = globalThis.navigator?.locks;
-    return locks ? locks.request(REFRESH_LOCK, work) : work();
+    if (!locks) {
+      return work();
+    }
+
+    // An AbortController and a timer, not `AbortSignal.timeout`, which older Safari lacks.
+    const waiting = new AbortController();
+    const deadline = setTimeout(() => waiting.abort(), REFRESH_LOCK_WAIT_MS);
+
+    try {
+      return await locks.request(REFRESH_LOCK, { signal: waiting.signal }, () => {
+        clearTimeout(deadline);
+        return work();
+      });
+    } catch (error) {
+      // The signal can only end the wait, and the timer is stopped once the lock is granted.
+      throw waiting.signal.aborted ? this.noAnswer() : error;
+    } finally {
+      clearTimeout(deadline);
+    }
+  }
+
+  /** A renewal that got nowhere, reported like any other request without an answer. */
+  private noAnswer(): HttpErrorResponse {
+    return new HttpErrorResponse({ status: 0, url: this.refreshUrl });
   }
 
   private async exchange(rejected: string): Promise<string> {
@@ -74,17 +106,13 @@ export class SessionRefresher {
       throw new SessionEndedError();
     }
 
-    const url = `${this.apiUrl}/auth/refresh`;
-
     try {
       const response = await firstValueFrom(
-        this.http.post<AuthResponseDto>(url, { refreshToken }).pipe(
+        this.http.post<AuthResponseDto>(this.refreshUrl, { refreshToken }).pipe(
           timeout(REFRESH_TIMEOUT_MS),
-          // Reported like any other request that got no answer, so screens show their usual message.
+          // So that screens show their usual message.
           catchError((error: unknown) =>
-            throwError(() =>
-              error instanceof TimeoutError ? new HttpErrorResponse({ status: 0, url }) : error,
-            ),
+            throwError(() => (error instanceof TimeoutError ? this.noAnswer() : error)),
           ),
         ),
       );
