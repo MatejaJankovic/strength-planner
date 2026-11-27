@@ -1,5 +1,5 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { computed, inject, Injectable, signal } from '@angular/core';
+import { computed, DestroyRef, DOCUMENT, inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, map, Observable, of, tap } from 'rxjs';
 import { API_BASE_URL } from '../api/api-base';
@@ -16,7 +16,8 @@ import {
   RegisterDto,
   UpdateProfileDto,
 } from '../models/auth.models';
-import { AuthTokenStorage } from './auth-token-storage';
+import { RELOAD_APP } from './app-reload';
+import { accountOf, AuthTokenStorage, TOKEN_KEY } from './auth-token-storage';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -61,6 +62,15 @@ export class AuthService {
 
   readonly isAuthenticated = computed(() => this.token() !== null);
 
+  private readonly reloadApp = inject(RELOAD_APP);
+
+  constructor() {
+    const view = inject(DOCUMENT).defaultView;
+    const listener = (event: StorageEvent) => this.followOtherTab(event);
+    view?.addEventListener('storage', listener);
+    inject(DestroyRef).onDestroy(() => view?.removeEventListener('storage', listener));
+  }
+
   login(dto: LoginDto): Observable<AuthResponseDto> {
     return this.http
       .post<AuthResponseDto>(`${this.apiUrl}/auth/login`, dto)
@@ -86,13 +96,13 @@ export class AuthService {
   }
 
   /**
-   * Menja lozinku. Server pri tome poništava sve ranije izdate tokene, pa u odgovoru
-   * stiže nov — bez njega bi korisnik promenom lozinke izbacio sam sebe.
+   * Menja lozinku. Server pri tome poništava sve ranije prijave, na svim uređajima, pa u
+   * odgovoru stižu novi tokeni — bez njih bi korisnik promenom lozinke izbacio sam sebe.
    */
   changePassword(dto: ChangePasswordDto): Observable<AuthResponseDto> {
     return this.http
       .post<AuthResponseDto>(`${this.apiUrl}/auth/change-password`, dto)
-      .pipe(tap((response) => this.tokenStorage.setToken(response.token)));
+      .pipe(tap((response) => this.tokenStorage.save(response.token, response.refreshToken)));
   }
 
   /**
@@ -160,17 +170,35 @@ export class AuthService {
   /**
    * Nepovratno briše nalog, pa odjavljuje.
    *
-   * Odjava ide kroz isti `logout()` kao i obična: token, keširani podaci i slika
-   * prethodnog naloga moraju da odu istim putem, jer je taj put jedini koji je pokriven
-   * testovima.
+   * Lokalno se prijava gasi kroz isti `endSession()` kao i pri običnoj odjavi: tokeni,
+   * keširani podaci i slika prethodnog naloga moraju da odu istim putem, jer je taj put
+   * jedini koji je pokriven testovima. Serveru nema šta da se javlja: prijave su obrisane
+   * zajedno sa nalogom.
    */
   deleteAccount(dto: DeleteAccountDto): Observable<void> {
     return this.http
       .post<void>(`${this.apiUrl}/auth/delete-account`, dto)
-      .pipe(tap(() => this.logout()));
+      .pipe(tap(() => this.endSession()));
   }
 
+  /**
+   * Odjava na zahtev korisnika: gasi prijavu na serveru, pa na uređaju.
+   *
+   * Uređaj se ne čeka: bez mreže se odjavljuje odmah, a prijava na serveru tada ističe sama.
+   */
   logout(): void {
+    const refreshToken = this.tokenStorage.refreshToken();
+    if (refreshToken) {
+      this.http
+        .post<void>(`${this.apiUrl}/auth/logout`, { refreshToken })
+        .subscribe({ error: () => undefined });
+    }
+
+    this.endSession();
+  }
+
+  /** Briše prijavu sa ovog uređaja, kada je server više ne priznaje ili je već ugašena. */
+  endSession(): void {
     this.tokenStorage.clear();
     this.currentUserSignal.set(null);
     this.resetUserCaches();
@@ -203,8 +231,32 @@ export class AuthService {
     this.avatarUrlSignal.set(null);
   }
 
+  /**
+   * Prati prijavu iz drugih tabova. Isti nalog sa novim tokenom se samo preuzima; odjava
+   * odjavljuje i ovaj tab; drugi nalog ponovo učitava aplikaciju, da ništa od prethodnog ne
+   * ostane na ekranu.
+   */
+  private followOtherTab(event: StorageEvent): void {
+    // `key` je null kada je skladište ispražnjeno celo.
+    if (event.key !== null && event.key !== TOKEN_KEY) {
+      return;
+    }
+
+    const before = this.tokenStorage.token();
+    this.tokenStorage.sync();
+    const after = this.tokenStorage.token();
+
+    if (!after) {
+      if (before) {
+        this.endSession();
+      }
+    } else if (accountOf(before) !== accountOf(after)) {
+      this.reloadApp();
+    }
+  }
+
   private handleAuthenticated(response: AuthResponseDto): void {
-    this.tokenStorage.setToken(response.token);
+    this.tokenStorage.save(response.token, response.refreshToken);
     this.currentUserSignal.set({ id: response.userId, email: response.email });
     // Novi identitet — keširani podaci prethodnog korisnika ne smeju da procure.
     this.resetUserCaches();
