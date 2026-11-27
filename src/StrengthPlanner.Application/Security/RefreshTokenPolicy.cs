@@ -25,8 +25,11 @@ public enum RefreshTokenUse
 /// <summary>
 /// Rules of the refresh token, which keeps a lifter signed in between workouts.
 ///
-/// A token is <c>{session id}.{secret}</c>. The session id finds the row, and only a hash of the
-/// secret is stored, so a copy of the database signs nobody in.
+/// A token is <c>{session id}.{secret}.{mac}</c>. The session id finds the row, and only a hash of the
+/// secret is stored, so a copy of the database signs nobody in. The MAC, made with a key only the
+/// server has, tells a token this application issued from a string that merely names a session: the id
+/// is also in every access token, and knowing it must not be enough to end the session. It also lets a
+/// replaced token be recognised as ours without keeping every one of them.
 ///
 /// Each use hands out a new token. The old one is not dropped at that moment, because a phone in a
 /// gym loses answers: the server would rotate, the client would never learn the new token, and the
@@ -40,27 +43,28 @@ public static class RefreshTokenPolicy
     /// <summary>How long a session lasts without being refreshed. Every refresh starts it again.</summary>
     public const int DefaultIdleDays = 30;
 
-    /// <summary>Longest accepted token: 32 characters of id, a dot and 43 characters of secret.</summary>
+    /// <summary>
+    /// Longest accepted token. An issued one has 120 characters: 32 of id, 43 of secret, 43 of MAC
+    /// and two dots.
+    /// </summary>
     public const int MaximumTokenLength = 128;
 
     private const int SecretSizeBytes = 32;
 
     /// <summary>A new token for the session, and the hash of it that is stored.</summary>
-    public static (string Token, string Hash) Issue(Guid sessionId)
+    public static (string Token, string Hash) Issue(Guid sessionId, byte[] macKey)
     {
-        var secret = Convert.ToBase64String(RandomNumberGenerator.GetBytes(SecretSizeBytes))
-            .TrimEnd('=')
-            .Replace('+', '-')
-            .Replace('/', '_');
+        var secret = Encode(RandomNumberGenerator.GetBytes(SecretSizeBytes));
+        var body = $"{sessionId:N}.{secret}";
 
-        return ($"{sessionId:N}.{secret}", Hash(secret));
+        return ($"{body}.{Mac(body, macKey)}", Hash(secret));
     }
 
     /// <summary>
-    /// Splits a presented token into the session it claims and the hash of its secret. False for
-    /// anything that is not shaped like a token this application issued.
+    /// Splits a presented token into the session it names and the hash of its secret. False for
+    /// anything this application did not issue with this key.
     /// </summary>
-    public static bool TryRead(string? token, out Guid sessionId, out string secretHash)
+    public static bool TryRead(string? token, byte[] macKey, out Guid sessionId, out string secretHash)
     {
         sessionId = Guid.Empty;
         secretHash = string.Empty;
@@ -70,14 +74,16 @@ public static class RefreshTokenPolicy
             return false;
         }
 
-        var separator = token.IndexOf('.');
-        if (separator <= 0 || separator == token.Length - 1
-            || !Guid.TryParseExact(token.AsSpan(0, separator), "N", out sessionId))
+        var parts = token.Split('.');
+        if (parts.Length != 3
+            || !Guid.TryParseExact(parts[0], "N", out var id)
+            || !Matches(Mac($"{parts[0]}.{parts[1]}", macKey), parts[2]))
         {
             return false;
         }
 
-        secretHash = Hash(token[(separator + 1)..]);
+        sessionId = id;
+        secretHash = Hash(parts[1]);
         return true;
     }
 
@@ -97,10 +103,24 @@ public static class RefreshTokenPolicy
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(secret)));
     }
 
+    private static string Mac(string body, byte[] key)
+    {
+        return Encode(HMACSHA256.HashData(key, Encoding.UTF8.GetBytes(body)));
+    }
+
+    /// <summary>Base64 safe in a URL and without padding.</summary>
+    private static string Encode(byte[] bytes)
+    {
+        return Convert.ToBase64String(bytes)
+            .TrimEnd('=')
+            .Replace('+', '-')
+            .Replace('/', '_');
+    }
+
     private static bool Matches(string first, string second)
     {
         return CryptographicOperations.FixedTimeEquals(
-            Encoding.ASCII.GetBytes(first),
-            Encoding.ASCII.GetBytes(second));
+            Encoding.UTF8.GetBytes(first),
+            Encoding.UTF8.GetBytes(second));
     }
 }

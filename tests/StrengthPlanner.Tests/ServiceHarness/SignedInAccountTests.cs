@@ -175,6 +175,31 @@ public class SignedInAccountTests : IDisposable
         Assert.True(await IsAccepted(registered.Token));
     }
 
+    /// <summary>
+    /// The stamp can change without the sessions being deleted, for example by a later password
+    /// reset. Access tokens issued before must stop working at once, not when they expire.
+    /// </summary>
+    [Fact]
+    public async Task ANewSecurityStamp_RefusesIssuedAccessTokens_WhileTheirSessionStillExists()
+    {
+        var registered = await Register();
+
+        await InRequest(async services =>
+        {
+            var users = services.GetRequiredService<UserManager<ApplicationUser>>();
+            var user = await users.FindByIdAsync(registered.UserId.ToString());
+            await users.UpdateSecurityStampAsync(user!);
+            return true;
+        });
+
+        await using (var db = _database.NewContext())
+        {
+            Assert.Single(db.LoginSessions);
+        }
+
+        Assert.False(await IsAccepted(registered.Token));
+    }
+
     /// <summary>Tokens issued before sessions existed name none, and are refused.</summary>
     [Fact]
     public async Task AnAccessTokenWithoutASession_IsRefused()

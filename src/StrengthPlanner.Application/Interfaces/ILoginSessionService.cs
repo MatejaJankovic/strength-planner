@@ -25,7 +25,10 @@ public interface ILoginSessionService
     /// </summary>
     Task<LoginSessionTicket?> RefreshAsync(string refreshToken, CancellationToken cancellationToken = default);
 
-    /// <summary>Signs out the device that holds this token. A token that matches nothing is ignored.</summary>
+    /// <summary>
+    /// Ends the session this token was issued for, whether the token is current or already replaced.
+    /// Anything the application did not issue is ignored.
+    /// </summary>
     Task EndAsync(string refreshToken, CancellationToken cancellationToken = default);
 
     /// <summary>Signs out every device of the account.</summary>

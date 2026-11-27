@@ -42,7 +42,7 @@ public class LoginSessionServiceTests
     {
         return new LoginSessionService(
             db,
-            Options.Create(new JwtSettings()),
+            Options.Create(new JwtSettings { Key = new string('k', 48) }),
             clock,
             NullLogger<LoginSessionService>.Instance);
     }
@@ -230,18 +230,49 @@ public class LoginSessionServiceTests
 
     /// <summary>The session id travels in the access token, so it alone must not sign anyone out.</summary>
     [Fact]
-    public async Task SigningOut_WithTheSessionIdAndAWrongSecret_ChangesNothing()
+    public async Task TheSessionIdWithAMadeUpSecret_EndsNothing()
     {
         using var database = NewDatabase();
         var clock = new SettableClock();
         var ticket = await SignIn(database, clock);
+        var parts = ticket.RefreshToken.Split('.');
 
-        await using (var db = database.NewContext())
+        foreach (var forged in new[]
+                 {
+                     $"{ticket.SessionId:N}.guessed",
+                     $"{ticket.SessionId:N}.guessed.{parts[2]}",
+                     $"{ticket.SessionId:N}.{parts[1]}.guessed"
+                 })
         {
-            await Service(db, clock).EndAsync($"{ticket.SessionId:N}.guessed");
+            Assert.Null(await Refresh(database, clock, forged));
+            await using var db = database.NewContext();
+            await Service(db, clock).EndAsync(forged);
         }
 
         Assert.True(await IsActive(database, clock, ticket.SessionId, database.UserId));
+        Assert.NotNull(await Refresh(database, clock, ticket.RefreshToken));
+    }
+
+    /// <summary>
+    /// Someone copied the token and renewed it twice. The owner, who only has the old one, signs out
+    /// before any request of theirs forced a renewal: the copy must stop working all the same.
+    /// </summary>
+    [Fact]
+    public async Task SigningOut_WithAReplacedToken_EndsTheSession()
+    {
+        using var database = NewDatabase();
+        var clock = new SettableClock();
+        var owned = await SignIn(database, clock);
+        var thiefs = await Refresh(database, clock, owned.RefreshToken);
+        var thiefsNext = await Refresh(database, clock, thiefs!.RefreshToken);
+
+        await using (var db = database.NewContext())
+        {
+            await Service(db, clock).EndAsync(owned.RefreshToken);
+        }
+
+        Assert.False(await IsActive(database, clock, owned.SessionId, database.UserId));
+        Assert.Null(await Refresh(database, clock, thiefsNext!.RefreshToken));
     }
 
     [Fact]
@@ -314,9 +345,8 @@ public class LoginSessionServiceTests
     }
 
     /// <summary>
-    /// A second request for the same session writes between the read and the write of the first. The
-    /// first must notice and start over: writing blindly would leave one of the two clients with a
-    /// token the session no longer knows.
+    /// A second request with the same token writes between the read and the write of the first. The
+    /// first starts over and both are answered; the token of whoever wrote last is the one that goes on.
     /// </summary>
     [Fact]
     public async Task ARotationOvertakenByAnotherRequest_IsRepeatedOnTheNewState()
@@ -360,6 +390,34 @@ public class LoginSessionServiceTests
         await using (var db = database.NewContext(interceptor))
         {
             delayed = await Service(db, clock).RefreshAsync(older.RefreshToken);
+        }
+
+        Assert.NotNull(overtaking);
+        Assert.Null(delayed);
+        await using var context = database.NewContext();
+        Assert.Empty(context.LoginSessions);
+    }
+
+    /// <summary>
+    /// The mirror of the case above: the delayed request brings the newest token, and a retry with the
+    /// older one replaces it in the meantime. Only the issued hash changes, so the write has to look at
+    /// it too, or the replaced token becomes the one the session holds.
+    /// </summary>
+    [Fact]
+    public async Task ADelayedRequest_CannotOverwriteANewerSuccessor()
+    {
+        using var database = NewDatabase();
+        var clock = new SettableClock();
+        var older = await SignIn(database, clock);
+        var replaced = await Refresh(database, clock, older.RefreshToken);
+        LoginSessionTicket? overtaking = null;
+        var interceptor = new BeforeFirstUpdate(async () =>
+            overtaking = await Refresh(database, clock, older.RefreshToken));
+
+        LoginSessionTicket? delayed;
+        await using (var db = database.NewContext(interceptor))
+        {
+            delayed = await Service(db, clock).RefreshAsync(replaced!.RefreshToken);
         }
 
         Assert.NotNull(overtaking);

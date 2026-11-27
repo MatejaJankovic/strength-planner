@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -17,10 +19,17 @@ public class LoginSessionService : ILoginSessionService
     /// </summary>
     private const int RotationAttempts = 3;
 
+    /// <summary>
+    /// Names what the key derived from the signing key is for, so that it is not the same key that
+    /// signs access tokens. Changing the signing key therefore signs everyone out.
+    /// </summary>
+    private const string MacKeyPurpose = "StrengthPlanner.RefreshToken";
+
     private readonly AppDbContext _db;
     private readonly JwtSettings _settings;
     private readonly TimeProvider _clock;
     private readonly ILogger<LoginSessionService> _logger;
+    private readonly byte[] _macKey;
 
     public LoginSessionService(
         AppDbContext db,
@@ -32,6 +41,9 @@ public class LoginSessionService : ILoginSessionService
         _settings = settings.Value;
         _clock = clock;
         _logger = logger;
+        _macKey = HMACSHA256.HashData(
+            Encoding.UTF8.GetBytes(_settings.Key),
+            Encoding.UTF8.GetBytes(MacKeyPurpose));
     }
 
     public async Task<LoginSessionTicket> StartAsync(
@@ -48,7 +60,7 @@ public class LoginSessionService : ILoginSessionService
             .ExecuteDeleteAsync(cancellationToken);
 
         var id = Guid.NewGuid();
-        var (token, hash) = RefreshTokenPolicy.Issue(id);
+        var (token, hash) = RefreshTokenPolicy.Issue(id, _macKey);
         var session = new LoginSession
         {
             Id = id,
@@ -69,7 +81,7 @@ public class LoginSessionService : ILoginSessionService
         string refreshToken,
         CancellationToken cancellationToken = default)
     {
-        if (!RefreshTokenPolicy.TryRead(refreshToken, out var sessionId, out var presentedHash))
+        if (!RefreshTokenPolicy.TryRead(refreshToken, _macKey, out var sessionId, out var presentedHash))
         {
             return null;
         }
@@ -110,7 +122,7 @@ public class LoginSessionService : ILoginSessionService
 
             // Token koji je upravo stigao je onaj za koji se zna da ga klijent ima.
             var held = presentedHash;
-            var (token, issued) = RefreshTokenPolicy.Issue(sessionId);
+            var (token, issued) = RefreshTokenPolicy.Issue(sessionId, _macKey);
             var expires = ExpiryFrom(now);
             var previousHeld = session.HeldTokenHash;
             var previousIssued = session.IssuedTokenHash;
@@ -138,25 +150,14 @@ public class LoginSessionService : ILoginSessionService
         return null;
     }
 
-    public async Task EndAsync(string refreshToken, CancellationToken cancellationToken = default)
+    public Task EndAsync(string refreshToken, CancellationToken cancellationToken = default)
     {
-        if (!RefreshTokenPolicy.TryRead(refreshToken, out var sessionId, out var presentedHash))
-        {
-            return;
-        }
-
-        var session = await _db.LoginSessions.AsNoTracking()
-            .FirstOrDefaultAsync(candidate => candidate.Id == sessionId, cancellationToken);
-
-        // Bez tajne se ne odjavljuje: id sesije stoji i u pristupnom tokenu.
-        if (session is null
-            || RefreshTokenPolicy.Classify(presentedHash, session.HeldTokenHash, session.IssuedTokenHash)
-                == RefreshTokenUse.Reused)
-        {
-            return;
-        }
-
-        await DeleteAsync(sessionId, cancellationToken);
+        // Gasi i već zamenjen token: ko se odjavljuje njime drži token koji je neko drugi
+        // obnovio, pa bi bez ovoga taj drugi ostao prijavljen. Dovoljno je da smo ga mi izdali;
+        // sam id sesije, koji stoji i u pristupnom tokenu, ne prolazi proveru potpisa.
+        return RefreshTokenPolicy.TryRead(refreshToken, _macKey, out var sessionId, out _)
+            ? DeleteAsync(sessionId, cancellationToken)
+            : Task.CompletedTask;
     }
 
     public Task EndAllAsync(Guid userId, CancellationToken cancellationToken = default)
