@@ -81,7 +81,8 @@ Iz korena projekta pokreni:
 docker compose up --build
 ```
 
-Zatim otvori `http://localhost:8080`.
+Zatim otvori `http://localhost:8080`. Port je vezan za petlju, pa se aplikacija preko čistog
+HTTP-a otvara samo sa iste mašine; za server vidi `docs/deployment-security.md`.
 
 Pri prvom pokretanju PostgreSQL kontejner inicijalizuje bazu, API sačeka da baza
 postane dostupna, automatski primeni EF migracije i izvrši seed podataka. Primer

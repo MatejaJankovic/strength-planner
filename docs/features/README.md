@@ -198,6 +198,12 @@ počela.
 | [Leđa po glavama](back-heads.md) | Latovi i gornja leđa umesto jedne grupe; naučene granice se prevode, ne kopiraju | #128 |
 | [Održavanje kao treći cilj](maintenance-goal.md) | Volumen oko MEV-a, težine se drže, granice se ne uče; svako pravilo koje čita cilj provereno sa trećom vrednošću | #129 |
 
+## Pred objavljivanje
+
+| Grana | O čemu je | PR |
+|---|---|---|
+| [Isporuka na serveru](compose-production-readiness.md) | Port mimo HTTPS-a, restart, rotacija zapisa, otpremanje i prikaz slike profila iza nginx-a | |
+
 ## Ako čitaš samo jedno
 
 [Periodizacija po nedeljama](periodization-models.md) — to je bio najveći raskorak između
