@@ -55,7 +55,8 @@ dotnet dotnet-ef database update --project src/StrengthPlanner.Infrastructure --
 - .NET SDK 8.0.x (pinned by `global.json`), Node ≥ 22, PostgreSQL 18 running locally.
 - Local dev connection string and JWT key live in **user-secrets** for
   `StrengthPlanner.API` — not in `appsettings.json`, and never committed.
-- Frontend JWT is stored under the `strength-planner.token` key.
+- Frontend stores the access JWT under `strength-planner.token` and the refresh token under
+  `strength-planner.refresh-token`.
 - Dev DB: `Host=localhost;Port=5432;Database=strengthplanner`.
 
 ## Language conventions

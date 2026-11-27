@@ -70,8 +70,8 @@ Tri reda nisu „urađeno" i to je namerno — pisati da jesu bilo bi netačno:
 *(stavke 4, 6, 7)*
 
 Svaki upit u servisima ograničen je na `userId` iz `sub` claim-a tokena. Nijedan kontroler
-ne prima identitet korisnika iz tela zahteva, rute ni query stringa. Od 30 endpoint-a samo
-`register` i `login` su anonimni; globalna `FallbackPolicy` traži autentifikaciju svuda gde
+ne prima identitet korisnika iz tela zahteva, rute ni query stringa. Anonimni su samo
+`register`, `login`, `refresh` i `logout`; globalna `FallbackPolicy` traži autentifikaciju svuda gde
 atribut nedostaje.
 
 **Provereno nad pokrenutom aplikacijom**, a ne čitanjem koda: napravljena su dva naloga i
@@ -160,16 +160,30 @@ iteracija upisan u sam heš.
 
 ### Tokeni, i zašto nema kolačića
 
-JWT, HS256, važenje 60 minuta. Token nosi `sub`, `email`, `jti` i **security stamp** iz
-Identity-ja, koji se proverava pri svakom zahtevu. Zato promena lozinke **odmah poništava
-sve ranije izdate tokene** — provereno: stari token pređe sa 200 na 401 preko promene.
+Dva tokena. **Pristupni** je JWT (HS256) koji važi 60 minuta i ide uz svaki zahtev. **Token za
+obnavljanje** je nasumična tajna od 256 bita kojom se po isteku dobija nov par; prijava traje
+30 dana od poslednjeg obnavljanja.
+
+Pristupni token nosi `sub`, `email`, `jti`, **security stamp** iz Identity-ja i oznaku
+prijave (`sid`). Stamp i prijava proveravaju se pri svakom zahtevu, pa **odjava važi odmah**
+na tom uređaju, a **promena lozinke odmah odjavljuje sve uređaje** — provereno: stari token
+pređe sa 200 na 401.
+
+Token za obnavljanje:
+
+- U bazi stoji samo njegov SHA-256 heš, pa kopija baze nikoga ne prijavljuje.
+- **Menja se pri svakoj upotrebi.** Zamenjen token koji se vrati gasi celu prijavu, jer ga
+  tada drži još neko. Jedini izuzetak je token čiji naslednik još nije potvrđen: odgovor koji
+  se na telefonu izgubi ne sme da odjavi vlasnika.
+- Odjava briše prijavu na serveru, a brisanje naloga sve njegove prijave.
+- Zaključavanje naloga posle pogrešnih lozinki ne gasi postojeće prijave, da ko zna tuđ email
+  ne bi mogao da odjavljuje vlasnika.
 
 **Aplikacija ne izdaje nijedan kolačić.** Identity je uključen preko `AddIdentityCore`, koji
-namerno ne registruje kolačić-šeme; sesija ne postoji kao pojam, jer je token bez stanja.
-Zato pitanje „da li su kolačići sesije bezbedno podešeni" ovde nema predmet: nema šta da se
-podesi, a i ne može da procuri ono čega nema.
+namerno ne registruje kolačić-šeme. Zato pitanje „da li su kolačići sesije bezbedno
+podešeni" ovde nema predmet.
 
-Token stoji u `localStorage`. To je uobičajen kompromis za SPA: kolačić sa `httpOnly` bi
+Oba tokena stoje u `localStorage`. To je uobičajen kompromis za SPA: kolačić sa `httpOnly` bi
 tražio i zaštitu od CSRF-a. Ono što ovde nosi odbranu jeste CSP, jer bi bez njega jedna XSS
 rupa odmah postala krađa tokena — a XSS-a nema, vidi [Prikaz sadržaja](#prikaz-sadrzaja).
 

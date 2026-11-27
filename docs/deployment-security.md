@@ -215,7 +215,7 @@ openssl rand -base64 48
   (kućni ruter, teretana, fakultet) deli 20 zahteva u minutu na auth rutama, i 5 na sat na
   registraciji. Za prijavu je to prihvatljivo; ako postane smetnja, obe granice su na
   jednom mestu u `Program.cs`.
-- **JWT stoji u `localStorage`.** Uobičajen kompromis za SPA — kolačić sa `httpOnly` bi tražio
+- **Tokeni stoje u `localStorage`.** Uobičajen kompromis za SPA — kolačić sa `httpOnly` bi tražio
   zaštitu od CSRF-a. CSP je ono što ovde nosi odbranu.
-- **Odjava je i dalje bez stanja.** Token važi do isteka (60 minuta). Promena lozinke ga
-  poništava odmah, ali „odjavi me svuda" kao zasebna radnja ne postoji.
+- **Odjava bez mreže** odjavljuje uređaj; prijava na serveru tada ističe sama, posle 30 dana.
+  „Odjavi me svuda" postoji samo kao promena lozinke.

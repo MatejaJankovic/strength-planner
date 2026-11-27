@@ -896,7 +896,11 @@ nije samo obrnuta svetla: tekstovi i pozadine su birani i izmereni da ostanu či
 Potvrda nije formalnost — pošto nema oporavka lozinke, greška u kucanju znači trajan gubitak
 naloga.
 
-**Odjava.** Briše token iz pregledača. Podaci ostaju na nalogu.
+**Odjava.** Gasi prijavu na ovom uređaju. Podaci ostaju na nalogu.
+
+**Koliko traje prijava.** Ostaješ prijavljen dok koristiš aplikaciju: nova prijava treba tek
+posle 30 dana bez ijednog otvaranja, posle odjave ili posle promene lozinke. Istek usred
+treninga ne postoji; aplikacija sama obnovi prijavu i upiše seriju.
 
 **Brisanje naloga.** Nepovratno. Traži **trenutnu lozinku i otkucanu reč `OBRIŠI`** —
 lozinka štiti od nekoga kome je telefon ostao otključan, otkucana reč od tebe samog. Briše
