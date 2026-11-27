@@ -23,6 +23,13 @@ public static class ImageFormat
     /// </remarks>
     public const int MaximumSizeBytes = 2 * 1024 * 1024;
 
+    /// <summary>
+    /// Najveće telo zahteva za otpremanje slike: sama slika i multipart omotač oko nje. Proxy
+    /// ispred API-ja (<c>client_max_body_size</c> u nginx konfiguraciji) mora da primi bar
+    /// toliko, inače korisnik dobije njegovu stranicu greške umesto poruke aplikacije.
+    /// </summary>
+    public const int MaximumRequestSizeBytes = MaximumSizeBytes + 4096;
+
     /// <summary>Tipovi koje prepoznajemo, za poruku o grešci i za dokumentaciju.</summary>
     public const string SupportedFormats = "JPEG, PNG ili WebP";
 

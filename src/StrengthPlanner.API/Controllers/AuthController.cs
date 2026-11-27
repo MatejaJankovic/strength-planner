@@ -108,7 +108,7 @@ public class AuthController : AuthorizedControllerBase
     /// Prima multipart, ne base64 u JSON-u: base64 uveća sadržaj za trećinu i tera ceo
     /// zahtev u memoriju kao string pre nego što se veličina uopšte proveri.
     /// </summary>
-    [RequestSizeLimit(ImageFormat.MaximumSizeBytes + 4096)]
+    [RequestSizeLimit(ImageFormat.MaximumRequestSizeBytes)]
     [HttpPut("avatar")]
     public async Task<IActionResult> SetAvatar(IFormFile file)
     {
