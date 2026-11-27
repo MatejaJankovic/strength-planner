@@ -37,4 +37,12 @@ regexes = [
     # Lozinka korišćena u testovima skripte za bazu, navedena u dokumentaciji kao dokaz da
     # se apostrof više ne prosleđuje u SQL.
     '''ab'c;DROP ROLE postgres;--''',
+    # Izmišljene lozinke koje testovi na klijentu upisuju u obrasce. Ni jedan nalog van testa ih
+    # ne koristi. Navedene su po vrednosti i usidrene, a ne izuzimanjem svih `*.spec.ts`
+    # fajlova: prava tajna zalepljena u test i dalje se prijavljuje. Novi test koji uvede drugu
+    # lozinku dodaje je ovde, ili uzme neku od postojećih.
+    '''^DovoljnoDugaLozinka1$''',
+    '''^DiplomskiRad2026$''',
+    '''^StaraLozinka1234$''',
+    '''^NovaLozinka1234$''',
 ]
