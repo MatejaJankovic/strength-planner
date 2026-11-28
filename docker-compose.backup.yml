@@ -1,0 +1,61 @@
+# Rezervne kopije baze, kao dopuna osnovnom compose fajlu.
+#
+# Svake noći pravi dump, šifruje ga i šalje u skladište van servera (restic), a jednom nedeljno
+# ga probno vraća. Podešavanje Storage Box-a i vraćanje: docs/deployment-security.md, odeljak
+# „Rezervne kopije“.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.backup.yml up -d
+#
+# Na serveru se dodaje u COMPOSE_FILE uz TLS fajl.
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  backup:
+    build: ./deploy/backup
+    restart: unless-stopped
+    logging: *logging
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-strengthplanner}
+      POSTGRES_USER: ${POSTGRES_USER:-strengthplanner}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Postavi POSTGRES_PASSWORD u .env (vidi .env.example)}
+      APP_DB_USER: ${APP_DB_USER:-strengthplanner_app}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?Postavi APP_DB_PASSWORD u .env (vidi .env.example)}
+      # Bez lozinke se kopije ne mogu pročitati. Čuvaj je i van ovog servera.
+      RESTIC_REPOSITORY: ${RESTIC_REPOSITORY:?Postavi RESTIC_REPOSITORY u .env (vidi .env.example)}
+      RESTIC_PASSWORD: ${RESTIC_PASSWORD:?Postavi RESTIC_PASSWORD u .env (vidi .env.example)}
+      # Samo za S3 skladište.
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      BACKUP_HOUR: ${BACKUP_HOUR:-2}
+      KEEP_DAILY: ${KEEP_DAILY:-14}
+      KEEP_WEEKLY: ${KEEP_WEEKLY:-8}
+      KEEP_MONTHLY: ${KEEP_MONTHLY:-6}
+      VERIFY_EVERY_DAYS: ${VERIFY_EVERY_DAYS:-7}
+      BACKUP_PING_URL: ${BACKUP_PING_URL:-}
+    volumes:
+      # SSH ključ, config i known_hosts za SFTP skladište. Folder je u .gitignore.
+      - ${BACKUP_SSH_DIR:-./secrets/backup-ssh}:/ssh-src:ro
+      - backup_cache:/cache
+      - backup_state:/state
+    # Imidž postgres-a deklariše volumen za podatke koji ovde niko ne koristi.
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "/usr/local/lib/backup/healthcheck.sh"]
+      interval: 5m
+      timeout: 30s
+      start_period: 15m
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  backup_cache:
+  backup_state:
