@@ -1,0 +1,11 @@
+# Dodatak koji koristi samo scripts/test-backup.py: server koji glumi Storage Box.
+# Putanje se računaju od foldera prvog compose fajla, dakle od korena repozitorijuma.
+services:
+  storagebox:
+    build: ./scripts/backup-test/storagebox
+    volumes:
+      - ./scripts/backup-test/.work/server:/keys:ro
+      - storagebox_data:/home/box
+
+volumes:
+  storagebox_data:

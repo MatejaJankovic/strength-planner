@@ -22,6 +22,8 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 BASE = ["docker-compose.yml"]
 TLS = ["docker-compose.yml", "docker-compose.tls.yml"]
+# Ovako stoji na serveru.
+SERVER = TLS + ["docker-compose.backup.yml"]
 
 # Vrednosti koje compose traži da bi razrešio fajlove. Ništa se ne pokreće.
 ENVIRONMENT = {
@@ -30,6 +32,8 @@ ENVIRONMENT = {
     "JWT_KEY": "check",
     "APP_DOMAIN": "example.test",
     "TLS_EMAIL": "check@example.test",
+    "RESTIC_REPOSITORY": "sftp:check:check",
+    "RESTIC_PASSWORD": "check",
 }
 
 LOOPBACK = {"127.0.0.1", "::1"}
@@ -108,12 +112,25 @@ def check_tls(config: dict) -> list[str]:
     return problems
 
 
+def check_server(config: dict) -> list[str]:
+    problems = check_tls(config)
+
+    backup = config["services"].get("backup") or {}
+    if not (backup.get("healthcheck") or {}).get("test"):
+        problems.append("backup: bez healthcheck-a se neuspele kopije ne vide")
+    if backup.get("ports"):
+        problems.append("backup: ne sme da objavljuje nijedan port")
+
+    return problems
+
+
 def main() -> int:
     # Poruke imaju slova van Windows kodne strane; preusmeren ispis bi inače pukao na njima.
     sys.stdout.reconfigure(encoding="utf-8")
 
     problems = [f"[bez TLS-a] {problem}" for problem in check_base(resolve(BASE))]
     problems += [f"[uz TLS] {problem}" for problem in check_tls(resolve(TLS))]
+    problems += [f"[uz TLS i kopije] {problem}" for problem in check_server(resolve(SERVER))]
 
     for problem in problems:
         print(f"::error::{problem}" if os.environ.get("GITHUB_ACTIONS") else problem)
