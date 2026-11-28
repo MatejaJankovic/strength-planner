@@ -30,12 +30,13 @@
     <h2>Koji se podaci čuvaju</h2>
     <ul>
       <li>
-        <strong>Nalog:</strong> email adresa i lozinka. Lozinka se ne čuva u čitljivom obliku, već samo
-        kao heš sa solju.
+        <strong>Nalog:</strong> email adresa i lozinka, vreme kada je dat pristanak i verzija politike
+        na koju je dat. Lozinka se ne čuva u čitljivom obliku, već samo kao heš sa solju.
       </li>
       <li>
         <strong>Profil:</strong> ime koje upišeš, uzrast, telesna masa i nivo iskustva; po želji pol,
-        visina i slika.
+        visina i slika. Slika se čuva onakva kakvu pošalješ, zajedno sa podacima koje telefon upiše u
+        fajl, na primer vreme i mesto snimanja.
       </li>
       <li>
         <strong>Trening:</strong> planovi i treninzi, upisane serije (težina, ponavljanja, ponavljanja u
@@ -83,6 +84,11 @@
       Srbije. Rezervne kopije su šifrovane. Podaci se ne prodaju, ne koriste za oglašavanje i ne dele ni
       sa kim drugim, osim kada to nalaže zakon.
     </p>
+    <p>
+      Po članu 64 Zakona o zaštiti podataka o ličnosti smatra se da države članice Konvencije Saveta
+      Evrope o zaštiti lica u odnosu na automatsku obradu ličnih podataka, među kojima su države Evropske
+      unije, obezbeđuju primereni nivo zaštite, pa za ovaj prenos nije potrebno posebno odobrenje.
+    </p>
     <p>Stranice aplikacije ne učitavaju ništa sa tuđih servera: nema analitike, oglasa ni spoljnih fontova.</p>
   </section>
 
@@ -90,7 +96,8 @@
     <h2>Šta ostaje na tvom uređaju</h2>
     <p>
       Aplikacija ne koristi kolačiće. U memoriji pregledača čuva samo podatke o prijavi, koji se brišu
-      kada se odjaviš, i izabranu temu.
+      kada se odjaviš, i dva podešavanja koja ostaju i posle odjave: izabranu temu i izabranu dužinu
+      pauze između serija.
     </p>
   </section>
 
@@ -99,8 +106,14 @@
     <ul>
       <li>Nalog, profil i trening: dok ne obrišeš nalog.</li>
       <li>
-        Rezervne kopije: obrisani podaci ostaju u njima dok kopije ne isteknu, oko šest meseci. Kopije
-        napravljene pred veću izmenu servisa čuvaju se dok ih rukovalac ne obriše.
+        Rezervne kopije: obrisani podaci ostaju u njima dok kopije ne isteknu, oko šest meseci, a najviše
+        sedam. Kopiju koju rukovalac sam napravi pred novu verziju servisa briše najkasnije 30 dana posle
+        nje.
+      </li>
+      <li>
+        Ako se baza posle kvara ili greške vrati iz kopije, prethodno stanje baze ostaje na serveru
+        najviše 7 dana. Nalog obrisan posle te kopije tada može ponovo da se pojavi; rukovalac ga ponovo
+        briše. Ako to primetiš, javi se.
       </li>
       <li>
         Prijave: do odjave. Prijava ističe posle 30 dana bez korišćenja, a istekli zapisi se brišu pri
@@ -127,8 +140,9 @@
     </ul>
     <p>
       Pritužbu možeš da podneseš Povereniku za informacije od javnog značaja i zaštitu podataka o ličnosti
-      (<a href="https://www.poverenik.rs" target="_blank" rel="noopener noreferrer">poverenik.rs</a>), a
-      ako živiš u Evropskoj uniji i nadzornom organu svoje države. Imaš pravo i na sudsku zaštitu.
+      (<a href="https://www.poverenik.rs" target="_blank" rel="noopener noreferrer">poverenik.rs</a>). Ako
+      živiš u Evropskoj uniji, možeš da je podneseš i nadzornom organu svoje države. Imaš pravo i na
+      sudsku zaštitu.
     </p>
   </section>
 

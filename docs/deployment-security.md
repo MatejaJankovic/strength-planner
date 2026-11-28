@@ -53,8 +53,9 @@ docker compose up -d
 ```
 
 `build --pull` osvežava samo imidže koji se prave ovde (API, web i backup); `postgres` i
-`caddy` se dobijaju sa `pull`. Prva naredba pravi kopiju baze koja se ne briše, da pre nove
-verzije, a naročito one sa migracijom, postoji stanje na koje se može vratiti.
+`caddy` se dobijaju sa `pull`. Prva naredba pravi kopiju baze koja se ne briše sama, da pre nove
+verzije, a naročito one sa migracijom, postoji stanje na koje se može vratiti. Kada nova verzija
+proradi, obriši je najkasnije za 30 dana (vidi „Politika privatnosti“).
 
 > **Pokrenuto lokalno**, sa `APP_DOMAIN=localhost`, gde Caddy izdaje sertifikat iz sopstvenog
 > lokalnog autoriteta: odgovor nosi `Strict-Transport-Security`, a `http://` preusmerava na
@@ -111,8 +112,9 @@ skripte ga **ne** dozvoljava, a to je deo koji zaista štiti.
 
 Nijedan tuđi izvor nije dozvoljen. Fontovi (Inter, Space Grotesk, Material Icons) dolaze iz
 npm paketa i build ih smešta uz ostale fajlove aplikacije, pa pregledač posetioca ne kontaktira
-Google niti bilo koga drugog. Dodavanje spoljnog izvora hvataju test `NoThirdPartyResourcesTests`
-(izvorni fajlovi i CSP) i `scripts/check-production-index.py` (izgrađena aplikacija).
+Google niti bilo koga drugog. Spoljni izvor napisan u CSP-u, stranici, šablonu ili stilu hvataju
+test `NoThirdPartyResourcesTests` (izvorni fajlovi) i `scripts/check-production-index.py` (izgrađena
+stranica i stilovi). Adresu sastavljenu u kodu ne vidi nijedan, ali je CSP u isporuci odbije.
 
 ### Keširanje
 
@@ -192,13 +194,22 @@ Stranica `/privacy` otvorena je i bez naloga. Pre puštanja:
    Helsinki). Tekst to navodi; Hetzner ima i lokacije van EU.
 3. **Pročitaj ceo tekst.** On opisuje ovu aplikaciju i ovakvu isporuku, ali nije pravni savet. Ako
    promeniš šta se čuva, koliko dugo ili ko to dobija (na primer dodaš slanje mejlova, analitiku,
-   `JWT_REFRESH_EXPIRY_DAYS` ili broj kopija), izmeni tekst
+   promeniš `JWT_REFRESH_EXPIRY_DAYS`, broj kopija ili broj snapshot-ova), izmeni tekst
    (`features/privacy/privacy-page.html`) i datum u `PrivacyPolicy.Version`.
-4. **Kopije napravljene sa `backup.sh keep` ne brišu se same**, a tekst kaže da ih brišeš kada ne
-   budu potrebne. Kada nova verzija proradi, obriši takvu kopiju:
-   `docker compose run --rm backup restic forget <id> --prune`.
-5. **Zahtev za kopiju podataka** aplikacija ne ume sama da ispuni: izvezi redove tog naloga iz baze.
-6. **Posle vraćanja baze iz kopije** ponovo obriši naloge koji su obrisani posle te kopije.
+4. **Tekst obećava da obrisani podaci nestaju iz kopija za najviše sedam meseci.** Zato na Storage
+   Box-u i u Hetzner „Backups“ opciji servera drži najviše **7 dnevnih** snapshot-ova.
+5. **Kopije napravljene sa `backup.sh keep` ne brišu se same**, a tekst obećava da ih brišeš
+   najkasnije 30 dana posle nove verzije:
+
+   ```bash
+   docker compose run --rm backup restic snapshots --tag keep
+   docker compose run --rm backup restic forget <id> --prune
+   ```
+6. **Posle vraćanja baze iz kopije** obriši bazu `..._before_restore_...` najkasnije za 7 dana i
+   ponovo obriši naloge koji su obrisani posle te kopije (vidiš ih poređenjem sa tom bazom, dok
+   postoji). Ako je stari server izgubljen, to ne možeš da saznaš iz kopije: tekst zato kaže da se
+   takav korisnik javi.
+7. **Zahtev za kopiju podataka** aplikacija ne ume sama da ispuni: izvezi redove tog naloga iz baze.
 
 ## Rezervne kopije
 
@@ -259,8 +270,9 @@ ceo `.env` u menadžer lozinki, a naročito `RESTIC_PASSWORD`: bez nje kopije ne
 niko, pa ni ti. SSH ključ se na novom serveru napravi ponovo, a TLS sertifikat Caddy sam
 pribavi.
 
-Na Storage Box-u uz to uključi automatske **snapshot-ove**: njima se upravlja iz Hetzner
-konzole, pa su dodatna zaštita ako neko sa servera obriše kopije.
+Na Storage Box-u uz to uključi automatske **snapshot-ove**, dnevne i najviše 7: njima se upravlja
+iz Hetzner konzole, pa su dodatna zaštita ako neko sa servera obriše kopije. Više od toga bi obrisane
+podatke čuvalo duže nego što politika privatnosti kaže.
 
 ### Nadzor
 
@@ -308,7 +320,7 @@ docker compose stop api web backup
 
 - Vraća se stanje iz trenutka kopije; sve posle nje se gubi, a **svi se prijavljuju ponovo**.
 - Dotadašnja baza se ne briše, nego dobija ime `..._before_restore_<vreme>`. Kad proveriš da je
-  sve u redu: `docker compose exec db dropdb -U strengthplanner <ime>`.
+  sve u redu, a najkasnije za 7 dana: `docker compose exec db dropdb -U strengthplanner <ime>`.
 - Vraćanje se odbija dok API odgovara ili je neko povezan na bazu.
 - Na novom serveru, pre vraćanja, servis namerno **ne** pravi kopiju prazne baze, da ne bi
   potisnuo pravu. Ako se aplikacija ipak pokrene pre vraćanja i neko se registruje, ta baza

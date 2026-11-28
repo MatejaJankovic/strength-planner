@@ -61,13 +61,18 @@ def check(html: str) -> list[str]:
 
 def check_external(html: str, styles: dict[str, str]) -> list[str]:
     body = re.sub(r"<!--.*?-->", "", html, flags=re.S)
-    problems = [
-        f"index.html učitava sa tuđeg servera: {address}"
-        for address in re.findall(r"""<(?:link|script|img)\b[^>]*?\s(?:href|src)=["']((?:https?:)?//[^"']+)""", body)
-    ]
+    # Elementi koji sami povlače ono na šta pokazuju. Običan link (`<a href>`) ne učitava ništa dok ga posetilac
+    # ne otvori. Adresa sme da bude i bez navodnika.
+    element = (r"""<(?:link|script|img|iframe|source|video|audio|embed|object|track|input)\b[^>]*?"""
+               r"""\s(?:href|src|srcset|data|poster)\s*=\s*["']?\s*((?:https?:)?//[^"'\s>]+)""")
+    stylesheet = r"""(?:url\(|@import\s*)\s*["']?\s*((?:https?:)?//[\w-]+\.[^"')\s;<]*)"""
 
-    for name, css in styles.items():
-        for address in re.findall(r"""(?:url\(|@import\s*)\s*["']?((?:https?:)?//[^"')\s;]+)""", css):
+    problems = [f"index.html učitava sa tuđeg servera: {address}"
+                for address in re.findall(element, body, flags=re.I)]
+
+    # I stil umetnut u samu stranicu, pa tek onda posebni fajlovi.
+    for name, css in {"index.html": body, **styles}.items():
+        for address in re.findall(stylesheet, css, flags=re.I):
             problems.append(f"{name} učitava sa tuđeg servera: {address}")
 
     return problems

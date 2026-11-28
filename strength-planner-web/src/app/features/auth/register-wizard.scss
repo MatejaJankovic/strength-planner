@@ -86,6 +86,19 @@
   width: 1.35rem;
 }
 
+// Sporedna radnja koraka: izgleda kao tekst, ali je meta za prst iste visine kao ostala dugmad.
+.wizard-skip {
+  background: none;
+  border: 0;
+  color: var(--color-primary);
+  cursor: pointer;
+  display: block;
+  font-weight: 700;
+  margin: 0.8rem auto 0;
+  min-height: 44px;
+  padding: 0 0.8rem;
+}
+
 .wizard-link {
   color: var(--color-primary);
   font-weight: 700;

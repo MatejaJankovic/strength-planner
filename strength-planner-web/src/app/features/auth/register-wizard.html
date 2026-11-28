@@ -173,6 +173,7 @@
           [value]="form.controls.heightCm.value"
           (valueChange)="setHeight($event)"
         />
+        <button class="wizard-skip" type="button" (click)="skipHeight()">Ne želim da navedem</button>
       }
 
       @case (Step.Age) {
@@ -180,12 +181,15 @@
           inputId="wz-age"
           label="Uzrast u godinama"
           unit="god."
-          [min]="ageMin"
+          [min]="ageInputMin"
           [max]="ageMax"
           [step]="1"
           [value]="form.controls.age.value"
           (valueChange)="setAge($event)"
         />
+        @if (tooYoung()) {
+          <p class="field__error" role="alert">Za nalog treba da imaš bar {{ ageMin }} godina.</p>
+        }
       }
 
       @case (Step.Experience) {
@@ -199,9 +203,9 @@
         <label class="consent">
           <input type="checkbox" formControlName="privacyConsent" />
           <span>
-            Pristajem da aplikacija obrađuje podatke koje unosim o telu i treningu, uključujući odgovor
-            o tome kako se osećam i beleške, koji mogu da otkriju zdravstveno stanje, kako opisuje
-            politika privatnosti.
+            Imam najmanje {{ ageMin }} godina i pristajem da aplikacija obrađuje podatke koje unosim o
+            telu i treningu, uključujući odgovor o tome kako se osećam i beleške, koji mogu da otkriju
+            zdravstveno stanje, kako opisuje politika privatnosti.
           </span>
         </label>
         <!-- Van oznake, da dodir na link ne bi čekirao polje; u novoj kartici, da se odgovori ne izgube. -->

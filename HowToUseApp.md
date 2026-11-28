@@ -74,8 +74,8 @@ ispraviš prethodni odgovor. Osam koraka:
 | 2 | **Email i lozinka** | email do 256 karaktera; lozinka **bar 10**, najviše 128 | prijava |
 | 3 | **Pol** | opciono — ima i „Ne želim da navedem" | evidencija |
 | 4 | **Telesna masa (kg)** | 30–300 | evidencija; drži je ažurnom |
-| 5 | **Visina (cm)** | 100–250, opciono | evidencija |
-| 6 | **Uzrast** | 16–100 | evidencija |
+| 5 | **Visina (cm)** | 100–250, opciono — ima i „Ne želim da navedem" | evidencija |
+| 6 | **Uzrast** | nalog od navršenih 16 godina | evidencija |
 | 7 | **Nivo iskustva** i pristanak na obradu podataka | Početnik / Srednji nivo / Napredni | **bitno** — menja ceo program |
 | 8 | **Poznati maksimumi (1RM)** | vidi sledeći korak | početna opterećenja |
 

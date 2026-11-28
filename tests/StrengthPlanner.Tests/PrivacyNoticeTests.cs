@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Reflection;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
@@ -56,7 +57,15 @@ public class PrivacyNoticeTests
     [Fact]
     public void Registration_ThatLeavesConsentOut_IsRefused()
     {
-        Assert.False(new RegisterDto().PrivacyConsent);
+        var body = $$"""
+            {"email":"lifter@example.test","password":"{{new string('x', PasswordPolicy.MinimumLength)}}",
+             "displayName":"Lifter","age":30,"bodyweightKg":80,"experienceLevel":1}
+            """;
+
+        var registration = JsonSerializer.Deserialize<RegisterDto>(
+            body, new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
+
+        Assert.Equal(new[] { nameof(RegisterDto.PrivacyConsent) }, RefusedFields(registration));
     }
 
     [Theory]
