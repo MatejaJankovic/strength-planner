@@ -21,6 +21,12 @@ export const HEIGHT_MIN_CM = 100;
 /** Mora da prati ProfilePolicy.MaximumHeightCm na serveru. */
 export const HEIGHT_MAX_CM = 250;
 
+/** Mora da prati ProfilePolicy.MinimumAge na serveru. */
+export const AGE_MIN = 16;
+
+/** Mora da prati ProfilePolicy.MaximumAge na serveru. */
+export const AGE_MAX = 100;
+
 /**
  * Ukupan broj koraka registracije: sedam pitanja u čarobnjaku plus unos maksimuma.
  *
@@ -57,6 +63,8 @@ export interface RegisterDto {
   bodyweightKg: number;
   heightCm?: number | null;
   experienceLevel: ExperienceLevel;
+  /** Izričit pristanak na obradu podataka; server bez njega ne pravi nalog. */
+  privacyConsent: boolean;
   /**
    * Zamka za automate — vidi RegisterDto.Website na serveru. Polje je sakriveno, pa je
    * kod čoveka uvek prazno; popunjeno znači da formular nije popunio čovek.

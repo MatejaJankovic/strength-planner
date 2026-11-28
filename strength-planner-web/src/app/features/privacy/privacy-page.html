@@ -1,0 +1,153 @@
+<app-subscreen-header title="Privatnost" backLabel="Nazad" (back)="back()" />
+
+<article class="policy">
+  <p class="policy__version numeric">
+    Politika privatnosti@if (versionDate(); as date) {, verzija od {{ date }}}
+  </p>
+
+  <section>
+    <h2>Ko obrađuje podatke</h2>
+    @if (notice(); as data) {
+      @if (data.controllerName && data.contactEmail) {
+        <p>Rukovalac podacima: <strong>{{ data.controllerName }}</strong>.</p>
+        <p>
+          Kontakt:
+          <a [href]="'mailto:' + data.contactEmail">{{ data.contactEmail }}</a>
+        </p>
+      } @else {
+        <p class="policy__missing">Rukovalac i kontakt nisu podešeni na ovom serveru.</p>
+      }
+    } @else if (loadFailed()) {
+      <p class="policy__missing" role="alert">
+        Podaci o rukovaocu trenutno nisu dostupni. Otvori stranicu ponovo kasnije.
+      </p>
+    } @else {
+      <p>Učitavam…</p>
+    }
+  </section>
+
+  <section>
+    <h2>Koji se podaci čuvaju</h2>
+    <ul>
+      <li>
+        <strong>Nalog:</strong> email adresa i lozinka. Lozinka se ne čuva u čitljivom obliku, već samo
+        kao heš sa solju.
+      </li>
+      <li>
+        <strong>Profil:</strong> ime koje upišeš, uzrast, telesna masa i nivo iskustva; po želji pol,
+        visina i slika.
+      </li>
+      <li>
+        <strong>Trening:</strong> planovi i treninzi, upisane serije (težina, ponavljanja, ponavljanja u
+        rezervi, otkaz), maksimumi, sopstvene vežbe i šabloni, beleške, odgovor o tome kako se osećaš
+        posle treninga i ono što aplikacija iz toga računa (predlozi opterećenja i granice volumena).
+      </li>
+      <li>
+        <strong>Tehnički podaci:</strong> zapis o svakoj prijavi na nekom uređaju (bez IP adrese) i
+        zapisi servera sa IP adresom, vremenom zahteva, traženom adresom i vrstom pregledača.
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Zašto i po kom osnovu</h2>
+    <ul>
+      <li>
+        Nalog, profil i trening obrađuju se da bi aplikacija radila ono zbog čega nalog postoji: da
+        pravi plan i prilagođava ga tvojim treninzima (izvršenje ugovora o korišćenju).
+      </li>
+      <li>
+        Podaci koji mogu da otkriju zdravstveno stanje, kao što su telesne mere, odgovor o tome kako se
+        osećaš i beleške (na primer o povredi), obrađuju se na osnovu tvog izričitog pristanka datog pri
+        registraciji.
+      </li>
+      <li>
+        Tehnički zapisi služe da servis ostane bezbedan i dostupan: zaštita od zloupotrebe i otklanjanje
+        grešaka (legitimni interes).
+      </li>
+    </ul>
+    <p>
+      Email, lozinka, ime, uzrast, telesna masa i nivo iskustva su obavezni: bez njih nalog ne može da se
+      napravi. Pol, visinu, sliku, beleške i odgovor o tome kako se osećaš ne moraš da uneseš.
+    </p>
+    <p>
+      Aplikacija iz tvojih unosa sama predlaže opterećenja, broj serija i nedelje rasterećenja. To su
+      predlozi: ti odlučuješ da li ćeš ih slediti i oni ne proizvode pravne posledice.
+    </p>
+  </section>
+
+  <section>
+    <h2>Ko još ima pristup</h2>
+    <p>
+      Server i rezervne kopije nalaze se kod kompanije Hetzner Online GmbH, u Evropskoj uniji, dakle van
+      Srbije. Rezervne kopije su šifrovane. Podaci se ne prodaju, ne koriste za oglašavanje i ne dele ni
+      sa kim drugim, osim kada to nalaže zakon.
+    </p>
+    <p>Stranice aplikacije ne učitavaju ništa sa tuđih servera: nema analitike, oglasa ni spoljnih fontova.</p>
+  </section>
+
+  <section>
+    <h2>Šta ostaje na tvom uređaju</h2>
+    <p>
+      Aplikacija ne koristi kolačiće. U memoriji pregledača čuva samo podatke o prijavi, koji se brišu
+      kada se odjaviš, i izabranu temu.
+    </p>
+  </section>
+
+  <section>
+    <h2>Koliko dugo</h2>
+    <ul>
+      <li>Nalog, profil i trening: dok ne obrišeš nalog.</li>
+      <li>
+        Rezervne kopije: obrisani podaci ostaju u njima dok kopije ne isteknu, oko šest meseci. Kopije
+        napravljene pred veću izmenu servisa čuvaju se dok ih rukovalac ne obriše.
+      </li>
+      <li>
+        Prijave: do odjave. Prijava ističe posle 30 dana bez korišćenja, a istekli zapisi se brišu pri
+        sledećoj prijavi na isti nalog.
+      </li>
+      <li>Zapisi servera: čuva se ograničena količina, pa najstariji nestaju kada stignu novi.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Tvoja prava</h2>
+    <p>
+      Imaš pravo da vidiš svoje podatke i dobiješ njihovu kopiju, da ih ispraviš i obrišeš, da ograničiš
+      obradu, da joj prigovoriš, da podatke preneseš drugom servisu i da povučeš pristanak u svakom
+      trenutku. Povlačenje ne menja ono što je obrađeno pre njega.
+    </p>
+    <ul>
+      <li>Profil menjaš na ekranu za izmenu profila.</li>
+      <li>Nalog i sve u njemu brišeš u Podešavanjima; time povlačiš i pristanak.</li>
+      <li>
+        Za sve ostalo piši na kontakt adresu. Odgovor stiže najkasnije za 30 dana; kod složenih zahteva
+        rok može da se produži za još 60 dana, o čemu ćeš dobiti obaveštenje.
+      </li>
+    </ul>
+    <p>
+      Pritužbu možeš da podneseš Povereniku za informacije od javnog značaja i zaštitu podataka o ličnosti
+      (<a href="https://www.poverenik.rs" target="_blank" rel="noopener noreferrer">poverenik.rs</a>), a
+      ako živiš u Evropskoj uniji i nadzornom organu svoje države. Imaš pravo i na sudsku zaštitu.
+    </p>
+  </section>
+
+  <section>
+    <h2>Uzrast</h2>
+    <p>Nalog mogu da imaju osobe sa navršenih {{ minimumAge }} godina.</p>
+  </section>
+
+  <section>
+    <h2>Nije zdravstveni savet</h2>
+    <p>
+      Aplikacija ne zamenjuje trenera ni lekara. Predlozi opterećenja računaju se iz onoga što uneseš i iz
+      procena, pa mogu da pogreše. Ako imaš zdravstvenih tegoba ili povredu, posavetuj se sa lekarom pre
+      treninga. Prekini vežbu ako osetiš bol. O težini koju dižeš odlučuješ ti.
+    </p>
+  </section>
+
+  <section>
+    <h2>Izmene</h2>
+    <p>Kada se politika promeni, ovde će stajati nov tekst i nov datum verzije.</p>
+  </section>
+</article>

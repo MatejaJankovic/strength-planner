@@ -27,7 +27,8 @@ public class SecurityPolicyTests
         Password = password,
         DisplayName = "Mateja",
         Age = 30,
-        BodyweightKg = 80
+        BodyweightKg = 80,
+        PrivacyConsent = true
     };
 
     [Fact]

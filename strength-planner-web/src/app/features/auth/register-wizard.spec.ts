@@ -110,6 +110,7 @@ describe('RegisterWizard — zamka za automate', () => {
       email: 'ja@primer.com',
       password: 'DovoljnoDugaLozinka1',
       experienceLevel: '1',
+      privacyConsent: true,
     });
 
     (component() as any).step.set(6);
@@ -138,6 +139,7 @@ describe('RegisterWizard — zamka za automate', () => {
       email: 'zauzet@primer.com',
       password: 'DovoljnoDugaLozinka1',
       experienceLevel: '1',
+      privacyConsent: true,
     });
     (component() as any).step.set(6);
     component().next();
@@ -160,6 +162,7 @@ describe('RegisterWizard — zamka za automate', () => {
       email: 'nov@primer.com',
       password: 'DovoljnoDugaLozinka1',
       experienceLevel: '1',
+      privacyConsent: true,
     });
     (component() as any).step.set(6);
     component().next();

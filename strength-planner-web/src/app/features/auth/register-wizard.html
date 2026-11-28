@@ -180,8 +180,8 @@
           inputId="wz-age"
           label="Uzrast u godinama"
           unit="god."
-          [min]="14"
-          [max]="90"
+          [min]="ageMin"
+          [max]="ageMax"
           [step]="1"
           [value]="form.controls.age.value"
           (valueChange)="setAge($event)"
@@ -195,6 +195,20 @@
           [value]="form.controls.experienceLevel.value || null"
           (valueChange)="setExperience($event)"
         />
+
+        <label class="consent">
+          <input type="checkbox" formControlName="privacyConsent" />
+          <span>
+            Pristajem da aplikacija obrađuje podatke koje unosim o telu i treningu, uključujući odgovor
+            o tome kako se osećam i beleške, koji mogu da otkriju zdravstveno stanje, kako opisuje
+            politika privatnosti.
+          </span>
+        </label>
+        <!-- Van oznake, da dodir na link ne bi čekirao polje; u novoj kartici, da se odgovori ne izgube. -->
+        <p class="wizard-note">
+          <a class="wizard-link" routerLink="/privacy" target="_blank">Pročitaj politiku privatnosti</a>
+        </p>
+        <p class="wizard-note">Aplikacija ne zamenjuje trenera ni lekara.</p>
       }
     }
   </app-wizard-shell>

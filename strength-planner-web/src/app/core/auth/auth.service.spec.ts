@@ -1,7 +1,8 @@
+import { Location } from '@angular/common';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting, TestRequest } from '@angular/common/http/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { AuthService } from './auth.service';
 import { AuthTokenStorage } from './auth-token-storage';
 import { ExerciseService } from '../api/exercise.service';
@@ -209,6 +210,7 @@ describe('AuthService — čišćenje keševa pri promeni identiteta', () => {
         age: 30,
         bodyweightKg: 80,
         experienceLevel: 1,
+        privacyConsent: true,
       })
       .subscribe();
     http.expectOne((request) => request.url.endsWith('/auth/register')).flush({
@@ -359,3 +361,29 @@ function setSignal(service: object, field: string, value: unknown): void {
   const signal = (service as Record<string, { set(next: unknown): void }>)[field];
   signal.set(value);
 }
+
+describe('AuthService — kraj prijave i javna stranica', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
+    });
+  });
+
+  function endSessionAt(path: string) {
+    vi.spyOn(TestBed.inject(Location), 'path').mockReturnValue(path);
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+
+    TestBed.inject(AuthService).endSession();
+
+    return navigate;
+  }
+
+  it('sa ekrana iza prijave vodi na prijavu', () => {
+    expect(endSessionAt('/workout')).toHaveBeenCalledWith(['/login']);
+  });
+
+  it('politiku privatnosti ne napušta', () => {
+    expect(endSessionAt('/privacy')).not.toHaveBeenCalled();
+  });
+});

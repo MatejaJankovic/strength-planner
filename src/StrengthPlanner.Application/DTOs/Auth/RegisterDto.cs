@@ -35,7 +35,7 @@ public class RegisterDto
     [DefinedEnum]
     public Sex? Sex { get; set; }
 
-    [Range(10, 100)]
+    [Range(ProfilePolicy.MinimumAge, ProfilePolicy.MaximumAge)]
     public int Age { get; set; }
 
     [Range(20, 400)]
@@ -50,6 +50,14 @@ public class RegisterDto
     [Required]
     [DefinedEnum]
     public ExperienceLevel ExperienceLevel { get; set; }
+
+    /// <summary>
+    /// Izričit pristanak na obradu podataka o telu i treningu, među kojima su odgovor o umoru i
+    /// beleške koje mogu da otkriju zdravstveno stanje. Bez njega nalog ne nastaje; izostavljeno
+    /// polje je <c>false</c>, pa važi isto kao odbijen pristanak.
+    /// </summary>
+    [Range(typeof(bool), "true", "true", ErrorMessage = "Pristanak na obradu podataka je obavezan.")]
+    public bool PrivacyConsent { get; set; }
 
     /// <summary>
     /// Zamka za automate. Polje je u formularu sakriveno i označeno kao „ne popunjavaj";

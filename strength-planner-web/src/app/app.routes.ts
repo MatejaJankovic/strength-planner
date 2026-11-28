@@ -13,6 +13,11 @@ export const routes: Routes = [
     canActivate: [guestGuard],
     loadComponent: () => import('./features/auth/register-wizard').then((m) => m.RegisterWizard),
   },
+  // Bez guard-a: politika privatnosti mora da se otvori i pre registracije i posle prijave.
+  {
+    path: 'privacy',
+    loadComponent: () => import('./features/privacy/privacy-page').then((m) => m.PrivacyPage),
+  },
   {
     path: '',
     pathMatch: 'full',

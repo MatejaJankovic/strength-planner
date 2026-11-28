@@ -13,6 +13,7 @@ na putanji (isti Wi-Fi, kompromitovan ruter, provajder) čita ih i preuzima nalo
 
 ```bash
 APP_DOMAIN=tvoj-domen.rs TLS_EMAIL=ti@primer.com \
+PRIVACY_CONTROLLER_NAME="Ime Prezime" PRIVACY_CONTACT_EMAIL=ti@primer.com \
   docker compose -f docker-compose.yml -f docker-compose.tls.yml up -d
 ```
 
@@ -179,6 +180,25 @@ razvoja liči na placeholder. Napravi pravi ključ:
 ```bash
 openssl rand -base64 48
 ```
+
+## Politika privatnosti
+
+Stranica `/privacy` otvorena je i bez naloga. Pre puštanja:
+
+1. **Upiši u `.env` `PRIVACY_CONTROLLER_NAME` i `PRIVACY_CONTACT_EMAIL`.** To su ime onoga ko
+   odgovara za podatke i adresa za pitanja i zahteve; oboje je javno. TLS varijanta se bez njih ne
+   diže. Na adresu mora neko da odgovara: rok za odgovor na zahtev je 30 dana.
+2. **Server i Storage Box napravi na lokaciji u Evropskoj uniji** (Falkenstein, Nuremberg ili
+   Helsinki). Tekst to navodi; Hetzner ima i lokacije van EU.
+3. **Pročitaj ceo tekst.** On opisuje ovu aplikaciju i ovakvu isporuku, ali nije pravni savet. Ako
+   promeniš šta se čuva, koliko dugo ili ko to dobija (na primer dodaš slanje mejlova, analitiku,
+   `JWT_REFRESH_EXPIRY_DAYS` ili broj kopija), izmeni tekst
+   (`features/privacy/privacy-page.html`) i datum u `PrivacyPolicy.Version`.
+4. **Kopije napravljene sa `backup.sh keep` ne brišu se same**, a tekst kaže da ih brišeš kada ne
+   budu potrebne. Kada nova verzija proradi, obriši takvu kopiju:
+   `docker compose run --rm backup restic forget <id> --prune`.
+5. **Zahtev za kopiju podataka** aplikacija ne ume sama da ispuni: izvezi redove tog naloga iz baze.
+6. **Posle vraćanja baze iz kopije** ponovo obriši naloge koji su obrisani posle te kopije.
 
 ## Rezervne kopije
 

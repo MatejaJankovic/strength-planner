@@ -1,3 +1,4 @@
+import { Location } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { computed, DestroyRef, DOCUMENT, inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
@@ -25,6 +26,7 @@ export class AuthService {
   private readonly apiUrl = inject(API_BASE_URL);
   private readonly tokenStorage = inject(AuthTokenStorage);
   private readonly router = inject(Router);
+  private readonly location = inject(Location);
   private readonly exerciseService = inject(ExerciseService);
   private readonly mesocycleService = inject(MesocycleService);
   private readonly macrocycleService = inject(MacrocycleService);
@@ -213,7 +215,12 @@ export class AuthService {
     this.tokenStorage.clear();
     this.currentUserSignal.set(null);
     this.resetUserCaches();
-    void this.router.navigate(['/login']);
+
+    // Politika privatnosti je javna: ko je čita ne prebacuje se na prijavu zato što mu je stara
+    // prijava istekla. Adresa se čita iz pregledača, jer pri pokretanju ruter još nije stigao do nje.
+    if (!this.location.path().startsWith('/privacy')) {
+      void this.router.navigate(['/login']);
+    }
   }
 
   /** Pravi lokalni URL za sliku i pušta prethodni. */

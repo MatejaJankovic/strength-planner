@@ -123,6 +123,14 @@ i visinu, ime za prikaz i sliku (#49, #50).
 узраст и ниво искуства); налог се креира тек после последњег одговора, а корисник се преусмерава на
 унос почетних максимума, осми корак." Iz `Profile` izbaciti „жељени број тренинга недељно".
 
+**Pristanak i uzrast:** na sedmom koraku korisnik mora da pristane na obradu podataka o telu i
+treningu; server bez pristanka ne pravi nalog i uz nalog pamti vreme i verziju politike. Nalog može
+da ima osoba sa navršenih 16 godina. Postoji javna stranica sa politikom privatnosti.
+
+**Predlog (dopuna slučaja korišćenja 1):** „Пре креирања налога корисник даје изричит пристанак на
+обраду података о телу и тренингу, уз увид у политику приватности. Налог могу да имају особе са
+навршених 16 година."
+
 ## 6. Šabloni
 
 **Gde:** slučaj korišćenja 4 (¶265), poglavlje 6 (¶399), opis slike 7.5 (¶557).

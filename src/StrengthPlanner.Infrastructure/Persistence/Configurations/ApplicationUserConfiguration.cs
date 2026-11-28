@@ -9,6 +9,9 @@ public class ApplicationUserConfiguration : IEntityTypeConfiguration<Application
 {
     public void Configure(EntityTypeBuilder<ApplicationUser> builder)
     {
+        // Verzija je datum (`2026-11-28`); kolona nema razloga da bude neograničena.
+        builder.Property(u => u.PrivacyPolicyVersion).HasMaxLength(32);
+
         // 1:1 sa Profile — FK je Profile.UserId (ujedno PK profila).
         builder.HasOne(u => u.Profile)
             .WithOne()

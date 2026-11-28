@@ -123,7 +123,7 @@
             [class.control--invalid]="form.controls.age.invalid && form.controls.age.touched"
           />
           @if (form.controls.age.touched && form.controls.age.invalid) {
-            <p class="field__error">Unesi uzrast (14–90).</p>
+            <p class="field__error">Unesi uzrast ({{ ageMin }}–{{ ageMax }}).</p>
           }
         </div>
 

@@ -12,6 +12,8 @@ import {
   DISPLAY_NAME_MAX_LENGTH,
   ExperienceLevel,
   HEIGHT_MAX_CM,
+  AGE_MAX,
+  AGE_MIN,
   HEIGHT_MIN_CM,
   profileInitial,
   Sex,
@@ -59,6 +61,8 @@ export class ProfileEdit {
   protected readonly displayNameMaxLength = DISPLAY_NAME_MAX_LENGTH;
   protected readonly heightMin = HEIGHT_MIN_CM;
   protected readonly heightMax = HEIGHT_MAX_CM;
+  protected readonly ageMin = AGE_MIN;
+  protected readonly ageMax = AGE_MAX;
 
   protected readonly sexOptions = SEX_OPTIONS;
 
@@ -74,7 +78,7 @@ export class ProfileEdit {
   protected readonly form = this.fb.nonNullable.group({
     displayName: ['', [Validators.maxLength(DISPLAY_NAME_MAX_LENGTH)]],
     sex: [''],
-    age: ['', [Validators.required, Validators.min(14), Validators.max(90)]],
+    age: ['', [Validators.required, Validators.min(AGE_MIN), Validators.max(AGE_MAX)]],
     bodyweightKg: ['', [Validators.required, Validators.min(30), Validators.max(300)]],
     heightCm: ['', [Validators.min(HEIGHT_MIN_CM), Validators.max(HEIGHT_MAX_CM)]],
     experienceLevel: ['', [Validators.required]],

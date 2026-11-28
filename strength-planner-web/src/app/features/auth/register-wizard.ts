@@ -6,6 +6,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { extractErrorMessage } from '../../core/api/http-error';
 import { AuthService } from '../../core/auth/auth.service';
 import {
+  AGE_MAX,
+  AGE_MIN,
   DISPLAY_NAME_MAX_LENGTH,
   EMAIL_MAX_LENGTH,
   ExperienceLevel,
@@ -89,6 +91,8 @@ export class RegisterWizard {
   protected readonly displayNameMaxLength = DISPLAY_NAME_MAX_LENGTH;
   protected readonly heightMin = HEIGHT_MIN_CM;
   protected readonly heightMax = HEIGHT_MAX_CM;
+  protected readonly ageMin = AGE_MIN;
+  protected readonly ageMax = AGE_MAX;
 
   /**
    * Poslednja ponuda je izričito odbijanje odgovora.
@@ -135,6 +139,8 @@ export class RegisterWizard {
     heightCm: [DEFAULT_HEIGHT_CM],
     age: [DEFAULT_AGE],
     experienceLevel: ['', [Validators.required]],
+    // Nikad unapred čekirano: pristanak mora da bude radnja korisnika.
+    privacyConsent: [false, [Validators.requiredTrue]],
     // Zamka za automate: sakrivena je u prikazu, pa je kod čoveka uvek prazna.
     website: [''],
   });
@@ -210,7 +216,7 @@ export class RegisterWizard {
       case Step.Credentials:
         return controls.email.valid && controls.password.valid;
       case Step.Experience:
-        return controls.experienceLevel.valid;
+        return controls.experienceLevel.valid && controls.privacyConsent.valid;
       case Step.Sex:
       case Step.Bodyweight:
       case Step.Height:
@@ -292,6 +298,7 @@ export class RegisterWizard {
       bodyweightKg: raw.bodyweightKg,
       heightCm: raw.heightCm,
       experienceLevel: Number(raw.experienceLevel) as ExperienceLevel,
+      privacyConsent: raw.privacyConsent,
       website: raw.website ? raw.website : null,
     };
 
@@ -345,6 +352,7 @@ export class RegisterWizard {
         break;
       case Step.Experience:
         controls.experienceLevel.markAsTouched();
+        controls.privacyConsent.markAsTouched();
         break;
       default:
         break;

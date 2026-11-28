@@ -22,7 +22,7 @@ public class UpdateProfileDto
     [DefinedEnum]
     public Sex? Sex { get; set; }
 
-    [Range(10, 100)]
+    [Range(ProfilePolicy.MinimumAge, ProfilePolicy.MaximumAge)]
     public int Age { get; set; }
 
     [Range(20, 400)]

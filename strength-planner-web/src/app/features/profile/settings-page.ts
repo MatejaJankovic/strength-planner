@@ -8,7 +8,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { extractErrorMessage } from '../../core/api/http-error';
 import { AuthService } from '../../core/auth/auth.service';
 import {
@@ -28,7 +28,7 @@ import { ThemePicker } from '../../shared/components/theme-picker/theme-picker';
  */
 @Component({
   selector: 'app-settings-page',
-  imports: [ReactiveFormsModule, MatIconModule, SubscreenHeader, ThemePicker],
+  imports: [ReactiveFormsModule, RouterLink, MatIconModule, SubscreenHeader, ThemePicker],
   templateUrl: './settings-page.html',
   styleUrl: './settings-page.scss',
 })
