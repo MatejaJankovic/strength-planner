@@ -204,6 +204,7 @@ počela.
 |---|---|---|
 | [Isporuka na serveru](compose-production-readiness.md) | Port mimo HTTPS-a, restart, rotacija zapisa, otpremanje i prikaz slike profila iza nginx-a | #133 |
 | [CI i zavisnosti](ci-and-dependencies.md) | Angular 22.3, bez `overrides` bloka, noviji akcijski koraci i izuzeci za lozinke iz testova | #134 |
+| [Rezervne kopije](database-backup.md) | Noćna šifrovana kopija van servera, nedeljna proba vraćanja, oporavak jednom naredbom | #136 |
 | [Prijava koja traje](refresh-sessions.md) | Token za obnavljanje u bazi, 30 dana; istek više ne izbacuje usred treninga | |
 
 ## Ako čitaš samo jedno

@@ -34,24 +34,26 @@ stižu preko IPv6 i vrti preusmeravanje na samog sebe.
 Na serveru u `.env` upiši, uz `APP_DOMAIN` i `TLS_EMAIL`:
 
 ```bash
-COMPOSE_FILE=docker-compose.yml:docker-compose.tls.yml
+COMPOSE_FILE=docker-compose.yml:docker-compose.tls.yml:docker-compose.backup.yml
 ```
 
-Tada svaka `docker compose` naredba koristi oba fajla. Bez toga obično `docker compose up -d`
+Tada svaka `docker compose` naredba koristi sve navedene fajlove. Bez toga obično `docker compose up -d`
 napravi API ponovo **bez** postavki za TLS, dok stari Caddy nastavi da radi, pa se na prvi
 pogled ništa ne vidi.
 
 ### Nova verzija
 
 ```bash
+docker compose run --rm backup backup.sh keep
 git pull
 docker compose pull db caddy
 docker compose build --pull
 docker compose up -d
 ```
 
-`build --pull` osvežava samo imidže koji se prave ovde (API i web); `postgres` i `caddy` se
-dobijaju sa `pull`. Pre verzije koja nosi migraciju prvo napravi `pg_dump` baze.
+`build --pull` osvežava samo imidže koji se prave ovde (API, web i backup); `postgres` i
+`caddy` se dobijaju sa `pull`. Prva naredba pravi kopiju baze koja se ne briše, da pre nove
+verzije, a naročito one sa migracijom, postoji stanje na koje se može vratiti.
 
 > **Pokrenuto lokalno**, sa `APP_DOMAIN=localhost`, gde Caddy izdaje sertifikat iz sopstvenog
 > lokalnog autoriteta: odgovor nosi `Strict-Transport-Security`, a `http://` preusmerava na
@@ -185,10 +187,130 @@ razvoja liči na placeholder. Napravi pravi ključ:
 openssl rand -base64 48
 ```
 
+## Rezervne kopije
+
+`docker-compose.backup.yml` dodaje servis `backup`. Svake noći pravi dump baze, šifruje ga i
+šalje van servera alatom [restic](https://restic.net), čuva 14 dnevnih, 8 nedeljnih i 6
+mesečnih kopija, a jednom nedeljno poslednju probno vrati u privremenu bazu.
+
+### Podešavanje sa Hetzner Storage Box-om
+
+1. U Hetzner konzoli napravi Storage Box i u „Change settings“ uključi **SSH support**.
+2. Na serveru, iz korena repozitorijuma, napravi ključ i upiši ga na Storage Box:
+
+   ```bash
+   mkdir -p secrets/backup-ssh && chmod 700 secrets secrets/backup-ssh
+   ssh-keygen -t ed25519 -N '' -f secrets/backup-ssh/id_ed25519
+   cat secrets/backup-ssh/id_ed25519.pub | ssh -p23 uXXXXXX@uXXXXXX.your-storagebox.de install-ssh-key
+   ssh-keyscan -p 23 -t ed25519 uXXXXXX.your-storagebox.de > secrets/backup-ssh/known_hosts
+   ```
+
+   `ssh-keyscan` veruje onome što prvi put dobije. Pre nego što mu poveruješ, uporedi otisak
+   (`ssh-keygen -lf secrets/backup-ssh/known_hosts`) sa onim koji isti Storage Box pokaže tvom
+   računaru, sa druge mreže.
+3. Napravi fajl `secrets/backup-ssh/config`:
+
+   ```
+   Host storagebox
+     HostName uXXXXXX.your-storagebox.de
+     Port 23
+     User uXXXXXX
+     IdentityFile ~/.ssh/id_ed25519
+     ConnectTimeout 30
+     ServerAliveInterval 60
+     ServerAliveCountMax 3
+   ```
+4. U `.env` upiši `RESTIC_PASSWORD`, ostavi `RESTIC_REPOSITORY=sftp:storagebox:strengthplanner`
+   i dopuni red `COMPOSE_FILE` fajlom `docker-compose.backup.yml`.
+5. `docker compose up -d --build`, pa `docker compose logs backup`. Na novoj instalaciji piše
+   „Baza još nema nijedan nalog“. Kada napraviš svoj nalog, ne čekaj noć:
+
+   ```bash
+   docker compose run --rm backup backup.sh
+   docker compose run --rm backup verify.sh
+   ```
+
+   Treba da pišu „Kopija je sačuvana“ i „Proba vraćanja uspela“.
+
+U jedno skladište piše samo jedan server. Skripte pre svakog posla uklanjaju katance koje je
+ostavio prekinut posao, pa drugi server ili tvoj računar ne smeju da menjaju skladište dok
+ovaj radi.
+
+Umesto Storage Box-a može svako restic skladište; za S3 se upiše `RESTIC_REPOSITORY=s3:...` i
+dva `AWS_` ključa.
+
+### Šta čuvaš sam
+
+Kopija sadrži bazu: naloge, planove, treninge i slike profila. **Ne sadrži** `.env`. Prepiši
+ceo `.env` u menadžer lozinki, a naročito `RESTIC_PASSWORD`: bez nje kopije ne može da pročita
+niko, pa ni ti. SSH ključ se na novom serveru napravi ponovo, a TLS sertifikat Caddy sam
+pribavi.
+
+Na Storage Box-u uz to uključi automatske **snapshot-ove**: njima se upravlja iz Hetzner
+konzole, pa su dodatna zaštita ako neko sa servera obriše kopije.
+
+### Nadzor
+
+`docker compose ps` prikazuje `backup` kao *unhealthy* ako poslednja uspešna kopija ima više
+od 26 sati ili je poslednja proba vraćanja pala. To niko neće primetiti ako ne gleda, pa u
+`BACKUP_PING_URL` upiši adresu nekog nadzora koji javlja kada javljanje izostane (na primer
+Healthchecks.io). Poziva se bez ikakvih podataka, posle uspešne kopije ili probe vraćanja i
+samo dok je servis zdrav; na instalaciji bez ijednog naloga javlja se i bez kopije.
+Posao koji traje duže od `BACKUP_TIMEOUT` (3 sata) prekida se i ponavlja.
+
+### Svakodnevne naredbe
+
+```bash
+docker compose run --rm backup restic snapshots   # spisak kopija
+docker compose run --rm backup backup.sh          # kopija odmah
+docker compose run --rm backup backup.sh keep     # kopija koja se ne briše
+docker compose run --rm backup verify.sh          # proba vraćanja odmah
+```
+
+### Vraćanje
+
+**Na novom serveru redosled je bitan: aplikacija se pokreće tek posle vraćanja.**
+
+1. Postavi repozitorijum i `.env` sa **istim** `RESTIC_REPOSITORY` i `RESTIC_PASSWORD`, pa
+   ponovi korake 2 i 3 iz podešavanja (nov SSH ključ). Korak 5 preskoči.
+2. Pokreni samo bazu i pogledaj kopije:
+
+   ```bash
+   docker compose build
+   docker compose up -d db
+   docker compose run --rm backup restic snapshots
+   ```
+3. Izaberi kopiju po datumu i veličini i vrati je:
+
+   ```bash
+   docker compose run --rm backup restore.sh <id>
+   ```
+4. `docker compose up -d`
+
+Na serveru koji već radi prvo zaustavi aplikaciju i raspored, pa nastavi od koraka 2:
+
+```bash
+docker compose stop api web backup
+```
+
+- Vraća se stanje iz trenutka kopije; sve posle nje se gubi, a **svi se prijavljuju ponovo**.
+- Dotadašnja baza se ne briše, nego dobija ime `..._before_restore_<vreme>`. Kad proveriš da je
+  sve u redu: `docker compose exec db dropdb -U strengthplanner <ime>`.
+- Vraćanje se odbija dok API odgovara ili je neko povezan na bazu.
+- Na novom serveru, pre vraćanja, servis namerno **ne** pravi kopiju prazne baze, da ne bi
+  potisnuo pravu. Ako se aplikacija ipak pokrene pre vraćanja i neko se registruje, ta baza
+  može postati poslednja kopija: zato se kopija bira po datumu, a ne uzima naslepo poslednja.
+- Za vraćanje i probu vraćanja treba slobodnog prostora na disku za još jednu bazu i njen dump.
+
+Servis `backup` ima i superkorisnički nalog baze, jer probno i pravo vraćanje prave i
+preimenuju baze. Sadržaj kopije ipak upisuje aplikacijski nalog, a superkorisnik izvršava samo
+naredbe zapisane u skriptama. Servis ne objavljuje nijedan port.
+
+Ceo ciklus proverava `scripts/test-backup.py` (i CI), sa probnim SSH serverom umesto Storage
+Box-a.
+
 ## Šta ostaje na tebi
 
-- **Rezervne kopije baze.** Volumen `strengthplanner_pgdata` je jedino mesto gde podaci
-  postoje.
 - **Nadogradnja osnovnih imidža.** `postgres:16`, `caddy:2-alpine`, `aspnet:8.0` i
   `nginx-unprivileged:1.27` dobijaju bezbednosne ispravke; povremeno prođi kroz korake iz
   odeljka „Nova verzija“.

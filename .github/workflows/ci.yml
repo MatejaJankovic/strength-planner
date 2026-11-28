@@ -85,6 +85,17 @@ jobs:
       - name: Provera razrešene compose konfiguracije
         run: python3 scripts/check-compose.py
 
+  backup:
+    name: Rezervne kopije i vraćanje
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Kopija, gubitak baze i vraćanje na pravim kontejnerima, sa probnim SSH serverom umesto
+      # Storage Box-a. Nova migracija koja pokvari vraćanje pada ovde, a ne na dan kada zatreba.
+      - name: Ceo ciklus rezervnih kopija
+        run: python3 scripts/test-backup.py
+
   dependencies:
     name: Ranjive zavisnosti
     runs-on: ubuntu-latest
