@@ -6,6 +6,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { extractErrorMessage } from '../../core/api/http-error';
 import { AuthService } from '../../core/auth/auth.service';
 import {
+  AGE_MAX,
+  AGE_MIN,
   DISPLAY_NAME_MAX_LENGTH,
   EMAIL_MAX_LENGTH,
   ExperienceLevel,
@@ -44,6 +46,13 @@ const DECLINED_SEX = 'declined';
 const DEFAULT_BODYWEIGHT_KG = 75;
 const DEFAULT_HEIGHT_CM = 175;
 const DEFAULT_AGE = 25;
+
+/**
+ * Donja granica klizača za uzrast, namerno ispod najmanjeg uzrasta za nalog. Kada bi klizač stao na
+ * toj granici, upisanih 14 bi se bez reči pretvorilo u 16 i nalog bi nastao; ovako odgovor ostaje
+ * kakav jeste, a korak ne pušta dalje i kaže zašto.
+ */
+const AGE_INPUT_MIN = 10;
 
 /**
  * Registracija kao niz ekrana, po jedno pitanje na svakom.
@@ -89,6 +98,21 @@ export class RegisterWizard {
   protected readonly displayNameMaxLength = DISPLAY_NAME_MAX_LENGTH;
   protected readonly heightMin = HEIGHT_MIN_CM;
   protected readonly heightMax = HEIGHT_MAX_CM;
+  protected readonly ageMin = AGE_MIN;
+  protected readonly ageMax = AGE_MAX;
+  protected readonly ageInputMin = AGE_INPUT_MIN;
+
+  /**
+   * Klizač uvek ima vrednost, pa se „ne želim da navedem" za visinu pamti odvojeno. Ostaje i kada se
+   * kroz korak prođe ponovo (povratak unazad ili odbijen email); gasi ga samo korisnik, istim dugmetom
+   * ili pomeranjem visine.
+   */
+  protected readonly heightDeclined = signal(false);
+
+  protected readonly tooYoung = computed(() => {
+    this.formValue();
+    return this.form.controls.age.value < AGE_MIN;
+  });
 
   /**
    * Poslednja ponuda je izričito odbijanje odgovora.
@@ -135,6 +159,8 @@ export class RegisterWizard {
     heightCm: [DEFAULT_HEIGHT_CM],
     age: [DEFAULT_AGE],
     experienceLevel: ['', [Validators.required]],
+    // Nikad unapred čekirano: pristanak mora da bude radnja korisnika.
+    privacyConsent: [false, [Validators.requiredTrue]],
     // Zamka za automate: sakrivena je u prikazu, pa je kod čoveka uvek prazna.
     website: [''],
   });
@@ -187,7 +213,7 @@ export class RegisterWizard {
       case Step.Height:
         return null;
       case Step.Age:
-        return null;
+        return `Nalog mogu da imaju osobe sa navršenih ${AGE_MIN} godina.`;
       case Step.Experience:
         return 'Ovo bira koliko serija i koliko težak plan dobijaš na početku.';
     }
@@ -210,11 +236,12 @@ export class RegisterWizard {
       case Step.Credentials:
         return controls.email.valid && controls.password.valid;
       case Step.Experience:
-        return controls.experienceLevel.valid;
+        return controls.experienceLevel.valid && controls.privacyConsent.valid;
+      case Step.Age:
+        return !this.tooYoung();
       case Step.Sex:
       case Step.Bodyweight:
       case Step.Height:
-      case Step.Age:
         return true;
     }
   });
@@ -244,6 +271,7 @@ export class RegisterWizard {
   }
 
   protected setHeight(value: number): void {
+    this.heightDeclined.set(false);
     this.form.controls.heightCm.setValue(value);
   }
 
@@ -277,6 +305,20 @@ export class RegisterWizard {
       return;
     }
 
+    this.advance();
+  }
+
+  protected toggleHeightSkip(): void {
+    if (this.heightDeclined()) {
+      this.heightDeclined.set(false);
+      return;
+    }
+
+    this.heightDeclined.set(true);
+    this.advance();
+  }
+
+  private advance(): void {
     this.error.set(null);
     this.step.update((step) => step + 1);
   }
@@ -290,8 +332,9 @@ export class RegisterWizard {
       sex: raw.sex === '' || raw.sex === DECLINED_SEX ? null : (Number(raw.sex) as Sex),
       age: raw.age,
       bodyweightKg: raw.bodyweightKg,
-      heightCm: raw.heightCm,
+      heightCm: this.heightDeclined() ? null : raw.heightCm,
       experienceLevel: Number(raw.experienceLevel) as ExperienceLevel,
+      privacyConsent: raw.privacyConsent,
       website: raw.website ? raw.website : null,
     };
 
@@ -345,6 +388,7 @@ export class RegisterWizard {
         break;
       case Step.Experience:
         controls.experienceLevel.markAsTouched();
+        controls.privacyConsent.markAsTouched();
         break;
       default:
         break;

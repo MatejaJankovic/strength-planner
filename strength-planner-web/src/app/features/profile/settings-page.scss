@@ -34,6 +34,11 @@
   opacity: 0.5;
 }
 
+// Politika privatnosti je link koji izgleda kao ostala dugmad.
+a.btn {
+  text-decoration: none;
+}
+
 .danger-actions {
   display: grid;
   gap: 0.5rem;

@@ -6,6 +6,7 @@
 # ceo posao jedna promenljiva okruženja i jedna naredba.
 #
 #   APP_DOMAIN=tvoj-domen.rs TLS_EMAIL=ti@primer.com \
+#   PRIVACY_CONTROLLER_NAME="Ime Prezime" PRIVACY_CONTACT_EMAIL=ti@primer.com \
 #     docker compose -f docker-compose.yml -f docker-compose.tls.yml up -d
 #
 # Uslovi koje Let's Encrypt traži: domen mora da pokazuje na ovu mašinu, a portovi 80 i 443
@@ -37,6 +38,10 @@ services:
     environment:
       Security__RequireHttps: "true"
       Security__ProxyCount: "2"
+      # Javno dostupna aplikacija prikuplja lične podatke, pa ne sme da se digne bez imena i adrese
+      # onoga ko za njih odgovara.
+      Privacy__ControllerName: ${PRIVACY_CONTROLLER_NAME:?Postavi PRIVACY_CONTROLLER_NAME (ko odgovara za podatke korisnika)}
+      Privacy__ContactEmail: ${PRIVACY_CONTACT_EMAIL:?Postavi PRIVACY_CONTACT_EMAIL (adresa za pitanja o podacima)}
 
   caddy:
     image: caddy:2-alpine

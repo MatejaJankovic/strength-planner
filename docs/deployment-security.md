@@ -13,6 +13,7 @@ na putanji (isti Wi-Fi, kompromitovan ruter, provajder) čita ih i preuzima nalo
 
 ```bash
 APP_DOMAIN=tvoj-domen.rs TLS_EMAIL=ti@primer.com \
+PRIVACY_CONTROLLER_NAME="Ime Prezime" PRIVACY_CONTACT_EMAIL=ti@primer.com \
   docker compose -f docker-compose.yml -f docker-compose.tls.yml up -d
 ```
 
@@ -52,8 +53,9 @@ docker compose up -d
 ```
 
 `build --pull` osvežava samo imidže koji se prave ovde (API, web i backup); `postgres` i
-`caddy` se dobijaju sa `pull`. Prva naredba pravi kopiju baze koja se ne briše, da pre nove
-verzije, a naročito one sa migracijom, postoji stanje na koje se može vratiti.
+`caddy` se dobijaju sa `pull`. Prva naredba pravi kopiju baze koja se ne briše sama, da pre nove
+verzije, a naročito one sa migracijom, postoji stanje na koje se može vratiti. Kada nova verzija
+proradi, obriši je najkasnije za 30 dana (vidi „Politika privatnosti“).
 
 > **Pokrenuto lokalno**, sa `APP_DOMAIN=localhost`, gde Caddy izdaje sertifikat iz sopstvenog
 > lokalnog autoriteta: odgovor nosi `Strict-Transport-Security`, a `http://` preusmerava na
@@ -108,17 +110,11 @@ granice od 2 MB koju za sliku drži sam API.
 CSP dozvoljava `'unsafe-inline'` za stilove, jer ih Angular Material ubacuje inline. Za
 skripte ga **ne** dozvoljava, a to je deo koji zaista štiti.
 
-Pravilo propušta i `fonts.gstatic.com`, i to nije propust. Angular pri build-u pretvara
-`<link>` ka Google Fonts u ugrađene `@font-face` blokove, ali **sami fajlovi fontova i dalje
-dolaze sa gstatic-a**. Provereno tako što je produkcijski build posluzen sa strožim
-pravilom: Inter, Space Grotesk i Material Icons svi završe sa `status: error`, a
-`document.fonts.check('24px "Material Icons"')` vrati `false` — dakle ikone bi nestale sa
-ekrana.
-
-Jače rešenje je **posluživanje fontova sa istog porekla**: tada oba Google izvora ispadaju
-iz pravila, aplikacija radi bez interneta, a IP adresa korisnika ne odlazi trećoj strani pri
-svakom otvaranju stranice. To je izmena u build-u, ne u konfiguraciji nginx-a, pa ovde nije
-urađena.
+Nijedan tuđi izvor nije dozvoljen. Fontovi (Inter, Space Grotesk, Material Icons) dolaze iz
+npm paketa i build ih smešta uz ostale fajlove aplikacije, pa pregledač posetioca ne kontaktira
+Google niti bilo koga drugog. Spoljni izvor napisan u CSP-u, stranici, šablonu ili stilu hvataju
+test `NoThirdPartyResourcesTests` (izvorni fajlovi) i `scripts/check-production-index.py` (izgrađena
+stranica i stilovi). Adresu sastavljenu u kodu ne vidi nijedan, ali je CSP u isporuci odbija.
 
 ### Keširanje
 
@@ -169,8 +165,14 @@ superkorisničkih prava. Ranije se aplikacija povezivala nalogom iz `POSTGRES_US
 > Grantovi iznad daju pravo na *podatke*, ne na izmenu strukture:
 >
 > ```bash
-> docker compose exec db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" >   -c "REASSIGN OWNED BY $POSTGRES_USER TO strengthplanner_app;"
+> docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 -v app="$APP_DB_USER"' <<'SQL'
+> SELECT format('ALTER TABLE public.%I OWNER TO %I', tablename, :'app') FROM pg_tables WHERE schemaname = 'public'
+> \gexec
+> SQL
 > ```
+>
+> `REASSIGN OWNED BY` ovde ne radi: stari nalog je onaj kojim je baza napravljena, a PostgreSQL njegove
+> objekte ne da prepisati u celini.
 >
 > Na novoj instalaciji ovo ne treba: tabele od početka pravi sam aplikacijski nalog.
 
@@ -186,6 +188,43 @@ razvoja liči na placeholder. Napravi pravi ključ:
 ```bash
 openssl rand -base64 48
 ```
+
+## Politika privatnosti
+
+Stranica `/privacy` otvorena je i bez naloga. Pre puštanja:
+
+1. **Upiši u `.env` `PRIVACY_CONTROLLER_NAME` i `PRIVACY_CONTACT_EMAIL`.** To su ime onoga ko
+   odgovara za podatke i adresa za pitanja i zahteve; oboje je javno. TLS varijanta se bez njih ne
+   diže. Na adresu mora neko da odgovara: rok za odgovor na zahtev je 30 dana.
+2. **Server i Storage Box napravi na lokaciji u Evropskoj uniji** (Falkenstein, Nuremberg ili
+   Helsinki). Tekst to navodi; Hetzner ima i lokacije van EU.
+3. **Pročitaj ceo tekst.** On opisuje ovu aplikaciju i ovakvu isporuku, ali nije pravni savet. Ako
+   promeniš šta se čuva, koliko dugo ili ko to dobija (na primer dodaš slanje mejlova, analitiku,
+   promeniš `JWT_REFRESH_EXPIRY_DAYS`, broj kopija ili broj snapshot-ova), izmeni tekst
+   (`features/privacy/privacy-page.html`) i datum u `PrivacyPolicy.Version`.
+4. **Tekst obećava šifrovane kopije iz kojih obrisani podaci nestaju za najviše sedam meseci.** Zato:
+   - na Storage Box-u drži najviše **7 dnevnih** snapshot-ova;
+   - opciju „Backups“ i snapshot-ove samog servera nemoj uključivati: to su nešifrovane slike celog
+     diska, sa bazom i sa `.env` u kom je lozinka kopija;
+   - stare kopije se brišu samo kada se napravi nova. Ako kopije prestanu da se prave (kvar, ugašen
+     server ili baza u kojoj više nema nijednog naloga), obriši ih ručno.
+5. **Kopije napravljene sa `backup.sh keep` ne brišu se same**, a tekst obećava da ih brišeš
+   najkasnije 30 dana posle nove verzije:
+
+   ```bash
+   docker compose run --rm backup restic snapshots --tag keep
+   docker compose run --rm backup restic forget <id> --prune
+   ```
+6. **Posle vraćanja baze iz kopije** obriši bazu `..._before_restore_...` najkasnije za 7 dana i
+   ponovo obriši naloge koji su obrisani posle te kopije (vidiš ih poređenjem sa tom bazom, dok
+   postoji). Ako je stari server izgubljen, to ne možeš da saznaš iz kopije: tekst zato kaže da se
+   takav korisnik javi. Nalog se briše skriptom, koja uklanja i ono što samo brisanje reda naloga
+   ostavlja:
+
+   ```bash
+   docker compose exec -T db sh -c 'psql -U "$APP_DB_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 -v email="$0"' adresa@primer.rs < deploy/delete-account.sql
+   ```
+7. **Zahtev za kopiju podataka** aplikacija ne ume sama da ispuni: izvezi redove tog naloga iz baze.
 
 ## Rezervne kopije
 
@@ -246,8 +285,9 @@ ceo `.env` u menadžer lozinki, a naročito `RESTIC_PASSWORD`: bez nje kopije ne
 niko, pa ni ti. SSH ključ se na novom serveru napravi ponovo, a TLS sertifikat Caddy sam
 pribavi.
 
-Na Storage Box-u uz to uključi automatske **snapshot-ove**: njima se upravlja iz Hetzner
-konzole, pa su dodatna zaštita ako neko sa servera obriše kopije.
+Na Storage Box-u uz to uključi automatske **snapshot-ove**, dnevne i najviše 7: njima se upravlja
+iz Hetzner konzole, pa su dodatna zaštita ako neko sa servera obriše kopije. Više od toga bi obrisane
+podatke čuvalo duže nego što politika privatnosti kaže.
 
 ### Nadzor
 
@@ -263,7 +303,7 @@ Posao koji traje duže od `BACKUP_TIMEOUT` (3 sata) prekida se i ponavlja.
 ```bash
 docker compose run --rm backup restic snapshots   # spisak kopija
 docker compose run --rm backup backup.sh          # kopija odmah
-docker compose run --rm backup backup.sh keep     # kopija koja se ne briše
+docker compose run --rm backup backup.sh keep     # ne briše se sama: obriši je za 30 dana
 docker compose run --rm backup verify.sh          # proba vraćanja odmah
 ```
 
@@ -295,7 +335,7 @@ docker compose stop api web backup
 
 - Vraća se stanje iz trenutka kopije; sve posle nje se gubi, a **svi se prijavljuju ponovo**.
 - Dotadašnja baza se ne briše, nego dobija ime `..._before_restore_<vreme>`. Kad proveriš da je
-  sve u redu: `docker compose exec db dropdb -U strengthplanner <ime>`.
+  sve u redu, a najkasnije za 7 dana: `docker compose exec db dropdb -U strengthplanner <ime>`.
 - Vraćanje se odbija dok API odgovara ili je neko povezan na bazu.
 - Na novom serveru, pre vraćanja, servis namerno **ne** pravi kopiju prazne baze, da ne bi
   potisnuo pravu. Ako se aplikacija ipak pokrene pre vraćanja i neko se registruje, ta baza
@@ -321,7 +361,8 @@ Box-a.
   može da izvrši migraciju koja je pisana kao SQL nad PostgreSQL-om (poslednja takva je `SplitBackHeads`, koja
   prevodi naučene granice leđa na dve grupe). Uzmi `pg_dump`, vrati ga u zasebnu bazu, primeni migracije i uporedi
   broj redova i naučene granice pre i posle; tek onda u pravu bazu. Razvojna baza je do sada bila jedina na kojoj su
-  takve migracije izvršene.
+  takve migracije izvršene. Kad uporediš, obriši i dump i probnu bazu: to su kopije ličnih podataka koje nijedno
+  pravilo čuvanja ne briše.
 
 ## Poznata ograničenja
 

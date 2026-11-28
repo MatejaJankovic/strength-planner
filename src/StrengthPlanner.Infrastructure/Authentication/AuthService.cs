@@ -23,19 +23,22 @@ public class AuthService : IAuthService
     private readonly AppDbContext _db;
     private readonly JwtSettings _jwtSettings;
     private readonly ILoginSessionService _sessions;
+    private readonly TimeProvider _clock;
 
     public AuthService(
         UserManager<ApplicationUser> userManager,
         ITokenService tokenService,
         AppDbContext db,
         IOptions<JwtSettings> jwtSettings,
-        ILoginSessionService sessions)
+        ILoginSessionService sessions,
+        TimeProvider clock)
     {
         _userManager = userManager;
         _tokenService = tokenService;
         _db = db;
         _jwtSettings = jwtSettings.Value;
         _sessions = sessions;
+        _clock = clock;
     }
 
     /// <summary>
@@ -81,6 +84,9 @@ public class AuthService : IAuthService
             Id = Guid.NewGuid(),
             UserName = dto.Email,
             Email = dto.Email,
+            // Validacija zahteva ne propušta registraciju bez pristanka; ovde se samo beleži.
+            PrivacyConsentAtUtc = _clock.GetUtcNow().UtcDateTime,
+            PrivacyPolicyVersion = PrivacyPolicy.Version,
             Profile = new Profile
             {
                 DisplayName = dto.DisplayName.Trim(),

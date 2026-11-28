@@ -34,12 +34,18 @@ ENVIRONMENT = {
     "TLS_EMAIL": "check@example.test",
     "RESTIC_REPOSITORY": "sftp:check:check",
     "RESTIC_PASSWORD": "check",
+    "PRIVACY_CONTROLLER_NAME": "Check Person",
+    "PRIVACY_CONTACT_EMAIL": "privacy@example.test",
 }
+
+# Bez ovih javna (TLS) varijanta ne sme ni da se razreši: aplikacija bi prikupljala lične podatke, a
+# stranica o privatnosti ne bi govorila ko za njih odgovara.
+PRIVACY_VARIABLES = ("PRIVACY_CONTROLLER_NAME", "PRIVACY_CONTACT_EMAIL")
 
 LOOPBACK = {"127.0.0.1", "::1"}
 
 
-def resolve(files: list[str]) -> dict:
+def run_config(files: list[str], environment: dict) -> tuple[list[str], subprocess.CompletedProcess]:
     # `--env-file` na prazan fajl: lokalni `.env` ne sme da promeni ishod provere.
     # `--profile *`: servis iza profila se inače izostavlja iz ispisa, a može da se pokrene.
     command = ["docker", "compose", "--env-file", os.devnull, "--profile", "*"]
@@ -47,7 +53,25 @@ def resolve(files: list[str]) -> dict:
         command += ["-f", name]
     command += ["config", "--format", "json"]
     result = subprocess.run(
-        command, cwd=ROOT, env={**os.environ, **ENVIRONMENT}, capture_output=True, text=True, encoding="utf-8")
+        command, cwd=ROOT, env=environment, capture_output=True, text=True, encoding="utf-8")
+    return command, result
+
+
+def check_required(files: list[str], variables: tuple[str, ...]) -> list[str]:
+    """Svaka od zadatih promenljivih mora da bude obavezna: prazna ne sme da prođe."""
+    problems: list[str] = []
+    for variable in variables:
+        environment = {**os.environ, **ENVIRONMENT, variable: ""}
+        _, result = run_config(files, environment)
+        if result.returncode == 0:
+            problems.append(f"{variable}: sme da ostane prazno, a mora biti obavezno")
+        elif variable not in result.stderr:
+            problems.append(f"{variable}: razrešavanje je palo iz drugog razloga:\n{result.stderr}")
+    return problems
+
+
+def resolve(files: list[str]) -> dict:
+    command, result = run_config(files, {**os.environ, **ENVIRONMENT})
     if result.returncode != 0:
         sys.exit(f"`{' '.join(command)}` nije uspeo:\n{result.stderr}")
     return json.loads(result.stdout)
@@ -105,7 +129,11 @@ def check_tls(config: dict) -> list[str]:
         problems.append("caddy: /data mora biti trajan volumen, inače se sertifikat traži pri svakom pravljenju")
 
     environment = services["api"].get("environment") or {}
-    for key, expected in (("Security__RequireHttps", "true"), ("Security__ProxyCount", "2")):
+    for key, expected in (
+            ("Security__RequireHttps", "true"),
+            ("Security__ProxyCount", "2"),
+            ("Privacy__ControllerName", ENVIRONMENT["PRIVACY_CONTROLLER_NAME"]),
+            ("Privacy__ContactEmail", ENVIRONMENT["PRIVACY_CONTACT_EMAIL"])):
         if str(environment.get(key)) != expected:
             problems.append(f"api: {key} mora biti {expected}, a jeste {environment.get(key)}")
 
@@ -131,6 +159,7 @@ def main() -> int:
     problems = [f"[bez TLS-a] {problem}" for problem in check_base(resolve(BASE))]
     problems += [f"[uz TLS] {problem}" for problem in check_tls(resolve(TLS))]
     problems += [f"[uz TLS i kopije] {problem}" for problem in check_server(resolve(SERVER))]
+    problems += [f"[uz TLS] {problem}" for problem in check_required(TLS, PRIVACY_VARIABLES)]
 
     for problem in problems:
         print(f"::error::{problem}" if os.environ.get("GITHUB_ACTIONS") else problem)

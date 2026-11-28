@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using StrengthPlanner.API.Security;
 using StrengthPlanner.Application.DTOs.Auth;
 using StrengthPlanner.Application.Interfaces;
+using StrengthPlanner.Application.Security;
 using StrengthPlanner.Domain.Enums;
 using StrengthPlanner.Infrastructure.Authentication;
 using StrengthPlanner.Infrastructure.Identity;
@@ -74,7 +75,8 @@ public class SignedInAccountTests : IDisposable
             DisplayName = "Lifter",
             Age = 30,
             BodyweightKg = 80,
-            ExperienceLevel = ExperienceLevel.Intermediate
+            ExperienceLevel = ExperienceLevel.Intermediate,
+            PrivacyConsent = true
         }));
 
     private Task<AuthResponseDto> Login(string password) => InRequest(services =>
@@ -102,6 +104,20 @@ public class SignedInAccountTests : IDisposable
         Assert.True(await IsAccepted(loggedIn.Token));
         Assert.NotEmpty(registered.RefreshToken);
         Assert.NotEqual(SessionOf(registered.Token), SessionOf(loggedIn.Token));
+    }
+
+    /// <summary>The controller has to be able to show that consent was given, when and to what.</summary>
+    [Fact]
+    public async Task Registering_RecordsWhenAndToWhichNoticeTheAccountConsented()
+    {
+        var before = DateTime.UtcNow;
+
+        var registered = await Register();
+
+        await using var db = _database.NewContext();
+        var account = db.Users.Single(user => user.Id == registered.UserId);
+        Assert.InRange(account.PrivacyConsentAtUtc!.Value, before.AddSeconds(-1), DateTime.UtcNow.AddSeconds(1));
+        Assert.Equal(PrivacyPolicy.Version, account.PrivacyPolicyVersion);
     }
 
     [Fact]

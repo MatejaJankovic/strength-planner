@@ -101,12 +101,20 @@
   </button>
 </section>
 
+<section class="card">
+  <h2 class="card__title">Privatnost</h2>
+  <p class="card__hint">
+    Koji se podaci čuvaju, zašto i koliko dugo. Aplikacija ne zamenjuje trenera ni lekara.
+  </p>
+  <a class="btn btn--ghost" routerLink="/privacy">Politika privatnosti</a>
+</section>
+
 <section class="card card--danger">
   <h2 class="card__title">Brisanje naloga</h2>
   <p class="card__hint">
     Briše nalog i <strong>sve</strong> u njemu: planove, odrađene treninge, maksimume,
-    sopstvene vežbe i šablone. Ovo se ne može vratiti - nema rezervne kopije i nema drugog
-    naloga sa istim podacima.
+    sopstvene vežbe i šablone. Ovo se ne može vratiti. Obrisani podaci ostaju još neko vreme u
+    šifrovanim rezervnim kopijama, dok one ne isteknu.
   </p>
 
   @if (!deleteOpen()) {

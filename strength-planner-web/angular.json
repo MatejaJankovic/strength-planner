@@ -31,6 +31,13 @@
               }
             ],
             "styles": [
+              "node_modules/@fontsource/inter/400.css",
+              "node_modules/@fontsource/inter/500.css",
+              "node_modules/@fontsource/inter/700.css",
+              "node_modules/@fontsource/inter/800.css",
+              "node_modules/@fontsource/space-grotesk/500.css",
+              "node_modules/@fontsource/space-grotesk/700.css",
+              "node_modules/material-icons/iconfont/filled.css",
               "src/styles.scss"
             ]
           },
@@ -61,9 +68,7 @@
                   "minify": true,
                   "inlineCritical": false
                 },
-                "fonts": {
-                  "inline": true
-                }
+                "fonts": false
               }
             },
             "development": {

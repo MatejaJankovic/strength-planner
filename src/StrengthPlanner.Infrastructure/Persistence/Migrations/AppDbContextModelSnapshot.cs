@@ -887,6 +887,13 @@ namespace StrengthPlanner.Infrastructure.Persistence.Migrations
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("boolean");
 
+                    b.Property<DateTime?>("PrivacyConsentAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PrivacyPolicyVersion")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("text");
 

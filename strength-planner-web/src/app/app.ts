@@ -33,7 +33,8 @@ export class App {
    * Screens that carry their own chrome and must not get the app frame around it.
    *
    * Login and registration are standalone: a bottom nav to protected routes would be
-   * pointing at screens the visitor cannot open yet. The 1RM screen belongs here too, but
+   * pointing at screens the visitor cannot open yet. The privacy notice is read by the same
+   * visitor, so it is bare as well. The 1RM screen belongs here too, but
    * only while it is the last step of registration (`?wizard=1`) — it then supplies its
    * own progress bar and continue button, and the app topbar plus a bottom nav would frame
    * a step of a flow the user has not finished. Opened from the profile the same screen is
@@ -45,6 +46,7 @@ export class App {
     return (
       url.startsWith('/login') ||
       url.startsWith('/register') ||
+      url.startsWith('/privacy') ||
       (url.startsWith('/onboarding') && url.includes('wizard=1'))
     );
   });

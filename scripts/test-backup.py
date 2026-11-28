@@ -141,7 +141,7 @@ def healthy() -> bool:
 def register(name: str) -> dict:
     status, account = call("POST", "/auth/register", {
         "email": f"{name}@example.test", "password": PASSWORD, "displayName": name, "age": 30,
-        "bodyweightKg": 80, "experienceLevel": 1})
+        "bodyweightKg": 80, "experienceLevel": 1, "privacyConsent": True})
     assert status == 200, f"registracija {name}: {status}"
     return account
 

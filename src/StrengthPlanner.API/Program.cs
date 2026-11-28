@@ -218,6 +218,7 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, HttpContextCurrentUser>();
 builder.Services.AddScoped<AccessTokenCheck>();
+builder.Services.Configure<PrivacySettings>(builder.Configuration.GetSection(PrivacySettings.SectionName));
 
 // ---------------------------------------------------------------------------
 // Infrastruktura: EF Core (PostgreSQL / Npgsql), Identity, auth servisi.

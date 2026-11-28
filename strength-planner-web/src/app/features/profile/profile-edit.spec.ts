@@ -185,6 +185,40 @@ describe('ProfileEdit', () => {
     request.flush({ id: 'u1', email: 'ja@primer.com', sex: Sex.Male, age: 23, bodyweightKg: 120 });
   });
 
+  it.each(['15', '101'])('uzrast %s ne šalje', (age) => {
+    load(Sex.Male);
+
+    form().controls.age.setValue(age);
+    save();
+
+    http.expectNone((request) => request.method === 'PUT');
+  });
+
+  it.each([16, 100])('uzrast %i šalje', (age) => {
+    load(Sex.Male);
+
+    form().controls.age.setValue(String(age));
+    save();
+
+    const request = expectProfilePut();
+    expect(request.request.body.age).toBe(age);
+    request.flush({ id: 'u1', email: 'ja@primer.com', sex: Sex.Male, age, bodyweightKg: 120 });
+  });
+
+  it('visina obrisana u polju se šalje kao null', () => {
+    load(Sex.Male, { heightCm: 183 });
+    fixture.detectChanges();
+
+    const field: HTMLInputElement = fixture.nativeElement.querySelector('#pe-height');
+    field.value = '';
+    field.dispatchEvent(new Event('input'));
+    save();
+
+    const request = expectProfilePut();
+    expect(request.request.body.heightCm).toBeNull();
+    request.flush({ id: 'u1', email: 'ja@primer.com', sex: Sex.Male, age: 23, bodyweightKg: 120 });
+  });
+
   it('nalog bez slike ne obara ekran', () => {
     // `forkJoin` pada na prvoj grešci, pa bi 404 na slici oborio i učitavanje profila.
     load(Sex.Male);

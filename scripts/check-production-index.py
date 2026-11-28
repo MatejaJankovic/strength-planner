@@ -1,4 +1,4 @@
-"""Proverava izgrađen `index.html` protiv pravila koje aplikacija sama sebi postavlja: bez umetnutog koda.
+"""Proverava izgrađenu aplikaciju protiv pravila koja sama sebi postavlja: bez umetnutog koda i bez tuđih servera.
 
 Pokretanje (iz korena repozitorijuma, posle `npm --prefix strength-planner-web run build`):
 
@@ -15,6 +15,9 @@ zaglavljem; ispravljeno sa `optimization.styles.inlineCritical: false` u `angula
 Ova provera hvata tu klasu greške u samom izgrađenom fajlu, bez pregledača: pada ako u njemu ima rukovaoca
 događaja (`onload=`, `onclick=` ...), umetnute skripte, glavnog CSS-a na `media="print"`, ili ako skripta za temu
 (`theme-init.js`) ne stoji pre prvog stila.
+
+Pada i ako izgrađen `index.html` ili neki izgrađen stil učitava nešto sa tuđeg servera (font, stil, skriptu):
+tom serveru bi tako stigla IP adresa korisnika, a CSP bi taj zahtev u isporučenoj slici ionako odbio.
 """
 from __future__ import annotations
 
@@ -56,6 +59,25 @@ def check(html: str) -> list[str]:
     return problems
 
 
+def check_external(html: str, styles: dict[str, str]) -> list[str]:
+    body = re.sub(r"<!--.*?-->", "", html, flags=re.S)
+    # Elementi koji sami povlače ono na šta pokazuju. Običan link (`<a href>`) ne učitava ništa dok ga posetilac
+    # ne otvori. Adresa sme da bude i bez navodnika.
+    element = (r"""<(?:link|script|img|iframe|source|video|audio|embed|object|track|input)\b[^>]*?"""
+               r"""\s(?:href|src|srcset|data|poster)\s*=\s*["']?\s*((?:https?:)?//[^"'\s>]+)""")
+    stylesheet = r"""(?:url\(|@import\s*)\s*["']?\s*((?:https?:)?//[\w-]+\.[^"')\s;<]*)"""
+
+    problems = [f"index.html učitava sa tuđeg servera: {address}"
+                for address in re.findall(element, body, flags=re.I)]
+
+    # I stil umetnut u samu stranicu, pa tek onda posebni fajlovi.
+    for name, css in {"index.html": body, **styles}.items():
+        for address in re.findall(stylesheet, css, flags=re.I):
+            problems.append(f"{name} učitava sa tuđeg servera: {address}")
+
+    return problems
+
+
 def main() -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
@@ -65,7 +87,9 @@ def main() -> int:
         print(f"Nema {path}: prvo izgradi aplikaciju (npm --prefix strength-planner-web run build).")
         return 2
 
-    problems = check(path.read_text(encoding="utf-8"))
+    html = path.read_text(encoding="utf-8")
+    styles = {sheet.name: sheet.read_text(encoding="utf-8") for sheet in path.parent.glob("*.css")}
+    problems = check(html) + check_external(html, styles)
     print(f"{path.name}: {'u redu' if not problems else str(len(problems)) + ' problema'}")
     for problem in problems:
         print("  " + problem)

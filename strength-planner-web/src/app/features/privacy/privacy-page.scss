@@ -1,0 +1,58 @@
+:host {
+  display: grid;
+  gap: 1rem;
+  margin: 0 auto;
+  padding-bottom: 1.5rem;
+  width: min(100%, 38rem);
+}
+
+.policy {
+  background: var(--color-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  display: grid;
+  gap: 1.25rem;
+  line-height: 1.55;
+  // Duga email adresa ne sme da raširi stranicu preko ekrana telefona.
+  overflow-wrap: anywhere;
+  padding: 1.1rem 1rem;
+}
+
+.policy h2 {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  line-height: 1.25;
+  margin: 0 0 0.4rem;
+}
+
+.policy p,
+.policy ul {
+  margin: 0;
+}
+
+.policy ul {
+  display: grid;
+  gap: 0.4rem;
+  padding-left: 1.2rem;
+}
+
+.policy p + p,
+.policy p + ul,
+.policy ul + p {
+  margin-top: 0.6rem;
+}
+
+.policy a {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.policy__version {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+.policy__missing {
+  color: var(--color-danger-ink);
+  font-weight: 600;
+}

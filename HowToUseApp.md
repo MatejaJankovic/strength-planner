@@ -74,9 +74,9 @@ ispraviš prethodni odgovor. Osam koraka:
 | 2 | **Email i lozinka** | email do 256 karaktera; lozinka **bar 10**, najviše 128 | prijava |
 | 3 | **Pol** | opciono — ima i „Ne želim da navedem" | evidencija |
 | 4 | **Telesna masa (kg)** | 30–300 | evidencija; drži je ažurnom |
-| 5 | **Visina (cm)** | 100–250, opciono | evidencija |
-| 6 | **Uzrast** | 14–90 | evidencija |
-| 7 | **Nivo iskustva** | Početnik / Srednji nivo / Napredni | **bitno** — menja ceo program |
+| 5 | **Visina (cm)** | 100–250, opciono — ima i „Ne želim da navedem" | evidencija |
+| 6 | **Uzrast** | nalog od navršenih 16 godina | evidencija |
+| 7 | **Nivo iskustva** i pristanak na obradu podataka | Početnik / Srednji nivo / Napredni | **bitno** — menja ceo program |
 | 8 | **Poznati maksimumi (1RM)** | vidi sledeći korak | početna opterećenja |
 
 Masa, visina i uzrast unose se klizačem sa velikim brojem, a ispod njega stoji i polje za
@@ -85,6 +85,12 @@ ako nije tačna, jer se ono što ostaviš upisuje u profil.
 
 Nalog nastaje tek posle sedmog koraka, kada pritisneš **„Napravi nalog"**. Ako odustaneš na
 petom ekranu, ništa nije napravljeno.
+
+**Pristanak.** Na sedmom koraku stoji polje kojim pristaješ da aplikacija obrađuje podatke o tvom
+telu i treningu, među kojima su odgovor o tome kako se osećaš i beleške. Bez njega dugme za nalog
+ostaje ugašeno. Link **„Pročitaj politiku privatnosti"** otvara se u novoj kartici, pa uneti odgovori
+ostaju. Ista stranica je dostupna sa ekrana za prijavu i iz Podešavanja. Aplikacija ne zamenjuje
+trenera ni lekara.
 
 Jedno polje zaista menja plan, pa ga popuni iskreno.
 
@@ -898,6 +904,9 @@ naloga.
 
 **Odjava.** Gasi prijavu na ovom uređaju. Podaci ostaju na nalogu.
 
+**Privatnost.** Otvara politiku privatnosti: koji se podaci čuvaju, zašto, koliko dugo, ko ih drži i
+kome se pišeš sa zahtevom.
+
 **Koliko traje prijava.** Ostaješ prijavljen dok koristiš aplikaciju: nova prijava treba tek
 posle 30 dana bez ijednog otvaranja, posle odjave ili posle promene lozinke. Istek usred
 treninga ne postoji; aplikacija sama obnovi prijavu i upiše seriju.
@@ -905,7 +914,8 @@ treninga ne postoji; aplikacija sama obnovi prijavu i upiše seriju.
 **Brisanje naloga.** Nepovratno. Traži **trenutnu lozinku i otkucanu reč `OBRIŠI`** —
 lozinka štiti od nekoga kome je telefon ostao otključan, otkucana reč od tebe samog. Briše
 nalog, profil, sve planove i odrađene treninge, maksimume, sopstvene vežbe i šablone. Nema
-rezervne kopije i nema načina da se to vrati.
+načina da se to vrati. Na serveru koji pravi rezervne kopije obrisani podaci ostaju u šifrovanim
+kopijama dok one ne isteknu.
 
 ### Istorija (dugme na dashboardu)
 

@@ -514,9 +514,6 @@ Navedeno svesno, da ne izgleda kao da je pokriveno, i na nivou posla koji treba 
   `APP_DOMAIN=localhost`, gde Caddy koristi sopstveni lokalni autoritet): `http://` preusmerava
   na `https://`, a odgovor nosi `Strict-Transport-Security`. Posle prvog dizanja na serveru isto
   proveriti na svom domenu.
-- **Fontovi se povlače sa gstatic-a**, pa IP adresa korisnika odlazi trećoj strani pri
-  svakom otvaranju stranice. Posluživanje sa istog porekla je jače i po privatnosti i po
-  CSP-u.
 - **Ograničenje broja zahteva deli budžet po IP adresi.** Više korisnika iza istog NAT-a
   deli isti budžet.
 
