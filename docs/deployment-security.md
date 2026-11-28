@@ -37,13 +37,14 @@ Na serveru u `.env` upiši, uz `APP_DOMAIN` i `TLS_EMAIL`:
 COMPOSE_FILE=docker-compose.yml:docker-compose.tls.yml:docker-compose.backup.yml
 ```
 
-Tada svaka `docker compose` naredba koristi oba fajla. Bez toga obično `docker compose up -d`
+Tada svaka `docker compose` naredba koristi sve navedene fajlove. Bez toga obično `docker compose up -d`
 napravi API ponovo **bez** postavki za TLS, dok stari Caddy nastavi da radi, pa se na prvi
 pogled ništa ne vidi.
 
 ### Nova verzija
 
 ```bash
+docker compose run --rm backup backup.sh keep
 git pull
 docker compose pull db caddy
 docker compose build --pull
@@ -51,8 +52,8 @@ docker compose up -d
 ```
 
 `build --pull` osvežava samo imidže koji se prave ovde (API, web i backup); `postgres` i
-`caddy` se dobijaju sa `pull`. Pre verzije koja nosi migraciju prvo napravi kopiju baze
-(`docker compose run --rm backup backup.sh`).
+`caddy` se dobijaju sa `pull`. Prva naredba pravi kopiju baze koja se ne briše, da pre nove
+verzije, a naročito one sa migracijom, postoji stanje na koje se može vratiti.
 
 > **Pokrenuto lokalno**, sa `APP_DOMAIN=localhost`, gde Caddy izdaje sertifikat iz sopstvenog
 > lokalnog autoriteta: odgovor nosi `Strict-Transport-Security`, a `http://` preusmerava na
@@ -215,11 +216,25 @@ mesečnih kopija, a jednom nedeljno poslednju probno vrati u privremenu bazu.
      Port 23
      User uXXXXXX
      IdentityFile ~/.ssh/id_ed25519
+     ConnectTimeout 30
+     ServerAliveInterval 60
+     ServerAliveCountMax 3
    ```
 4. U `.env` upiši `RESTIC_PASSWORD`, ostavi `RESTIC_REPOSITORY=sftp:storagebox:strengthplanner`
    i dopuni red `COMPOSE_FILE` fajlom `docker-compose.backup.yml`.
-5. `docker compose up -d --build`, pa `docker compose logs backup`. Treba da pišu „Kopija je
-   sačuvana“ i, kada postoji bar jedan nalog, „Proba vraćanja uspela“.
+5. `docker compose up -d --build`, pa `docker compose logs backup`. Na novoj instalaciji piše
+   „Baza još nema nijedan nalog“. Kada napraviš svoj nalog, ne čekaj noć:
+
+   ```bash
+   docker compose run --rm backup backup.sh
+   docker compose run --rm backup verify.sh
+   ```
+
+   Treba da pišu „Kopija je sačuvana“ i „Proba vraćanja uspela“.
+
+U jedno skladište piše samo jedan server. Skripte pre svakog posla uklanjaju katance koje je
+ostavio prekinut posao, pa drugi server ili tvoj računar ne smeju da menjaju skladište dok
+ovaj radi.
 
 Umesto Storage Box-a može svako restic skladište; za S3 se upiše `RESTIC_REPOSITORY=s3:...` i
 dva `AWS_` ključa.
@@ -239,36 +254,57 @@ konzole, pa su dodatna zaštita ako neko sa servera obriše kopije.
 `docker compose ps` prikazuje `backup` kao *unhealthy* ako poslednja uspešna kopija ima više
 od 26 sati ili je poslednja proba vraćanja pala. To niko neće primetiti ako ne gleda, pa u
 `BACKUP_PING_URL` upiši adresu nekog nadzora koji javlja kada javljanje izostane (na primer
-Healthchecks.io). Poziva se bez ikakvih podataka, samo posle uspešne kopije.
+Healthchecks.io). Poziva se bez ikakvih podataka, posle uspešne kopije ili probe vraćanja i
+samo dok je servis zdrav; na instalaciji bez ijednog naloga javlja se i bez kopije.
+Posao koji traje duže od `BACKUP_TIMEOUT` (3 sata) prekida se i ponavlja.
 
 ### Svakodnevne naredbe
 
 ```bash
 docker compose run --rm backup restic snapshots   # spisak kopija
-docker compose run --rm backup backup.sh          # kopija odmah, npr. pre nove verzije
+docker compose run --rm backup backup.sh          # kopija odmah
+docker compose run --rm backup backup.sh keep     # kopija koja se ne briše
 docker compose run --rm backup verify.sh          # proba vraćanja odmah
 ```
 
 ### Vraćanje
 
-Na novom serveru prvo ponovi podešavanje iznad, sa **istim** `RESTIC_REPOSITORY` i
-`RESTIC_PASSWORD`. Zatim:
+**Na novom serveru redosled je bitan: aplikacija se pokreće tek posle vraćanja.**
+
+1. Postavi repozitorijum i `.env` sa **istim** `RESTIC_REPOSITORY` i `RESTIC_PASSWORD`, pa
+   ponovi korake 2 i 3 iz podešavanja (nov SSH ključ). Korak 5 preskoči.
+2. Pokreni samo bazu i pogledaj kopije:
+
+   ```bash
+   docker compose build
+   docker compose up -d db
+   docker compose run --rm backup restic snapshots
+   ```
+3. Izaberi kopiju po datumu i veličini i vrati je:
+
+   ```bash
+   docker compose run --rm backup restore.sh <id>
+   ```
+4. `docker compose up -d`
+
+Na serveru koji već radi prvo zaustavi aplikaciju i raspored, pa nastavi od koraka 2:
 
 ```bash
-docker compose stop api backup
-docker compose up -d db
-docker compose run --rm backup restore.sh latest   # ili id iz spiska kopija
-docker compose up -d
+docker compose stop api web backup
 ```
 
 - Vraća se stanje iz trenutka kopije; sve posle nje se gubi, a **svi se prijavljuju ponovo**.
 - Dotadašnja baza se ne briše, nego dobija ime `..._before_restore_<vreme>`. Kad proveriš da je
   sve u redu: `docker compose exec db dropdb -U strengthplanner <ime>`.
+- Vraćanje se odbija dok API odgovara ili je neko povezan na bazu.
 - Na novom serveru, pre vraćanja, servis namerno **ne** pravi kopiju prazne baze, da ne bi
-  potisnuo pravu, i do tada je *unhealthy*.
+  potisnuo pravu. Ako se aplikacija ipak pokrene pre vraćanja i neko se registruje, ta baza
+  može postati poslednja kopija: zato se kopija bira po datumu, a ne uzima naslepo poslednja.
+- Za vraćanje i probu vraćanja treba slobodnog prostora na disku za još jednu bazu i njen dump.
 
 Servis `backup` ima i superkorisnički nalog baze, jer probno i pravo vraćanje prave i
-preimenuju baze. Ne objavljuje nijedan port.
+preimenuju baze. Sadržaj kopije ipak upisuje aplikacijski nalog, a superkorisnik izvršava samo
+naredbe zapisane u skriptama. Servis ne objavljuje nijedan port.
 
 Ceo ciklus proverava `scripts/test-backup.py` (i CI), sa probnim SSH serverom umesto Storage
 Box-a.
