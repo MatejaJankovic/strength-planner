@@ -12,9 +12,11 @@ briše sa svim volumenima. Postojeće kontejnere i volumene ne dira.
 """
 from __future__ import annotations
 
+import datetime
 import json
 import os
 import pathlib
+import re
 import secrets
 import shutil
 import subprocess
@@ -29,6 +31,10 @@ PROJECT = "sp-backup-test"
 API_PORT = 15999
 API = f"http://127.0.0.1:{API_PORT}/api"
 PASSWORD = "backup-test-" + secrets.token_urlsafe(12)
+APP_ROLE = "strengthplanner_app"
+# Adresa koja ne postoji: javljanje nadzoru se vidi po upozorenju da nije stiglo.
+PING_ATTEMPT = "nadzor nije primio javljanje"
+SECRETS: dict[str, str] = {}
 
 
 def compose(*arguments: str, check: bool = True) -> subprocess.CompletedProcess:
@@ -48,9 +54,23 @@ def tool(*command: str, check: bool = True, environment: dict | None = None) -> 
     return compose("run", "--rm", "-T", *overrides, "backup", *command, check=check)
 
 
-def snapshots() -> list[dict]:
-    output = tool("restic", "snapshots", "--json", "--host", "strengthplanner", "--tag", "db").stdout
+def output_of(result: subprocess.CompletedProcess) -> str:
+    return result.stdout + result.stderr
+
+
+def snapshots(environment: dict | None = None) -> list[dict]:
+    output = tool("restic", "snapshots", "--no-lock", "--json", "--host", "strengthplanner", "--tag", "db",
+                  environment=environment).stdout
     return json.loads(output[output.index("["):])
+
+
+def refused(name: str, expected: str, *command: str, environment: dict | None = None) -> str:
+    """Komanda koja mora da padne sa zadatom porukom."""
+    result = tool(*command, check=False, environment=environment)
+    output = output_of(result)
+    assert result.returncode != 0, f"{name}: komanda je uspela\n{output[-2000:]}"
+    assert expected in output, f"{name}: nema poruke „{expected}“\n{output[-2000:]}"
+    return output
 
 
 def sql(database: str, statement: str) -> str:
@@ -70,6 +90,28 @@ def call(method: str, path: str, body: dict | None = None, token: str | None = N
             return response.status, json.loads(raw) if raw else None
     except urllib.error.HTTPError as error:
         return error.code, None
+
+
+def as_app(database: str, statement: str) -> str:
+    return compose("exec", "-T", "-e", f"PGPASSWORD={SECRETS['APP_DB_PASSWORD']}", "db", "psql", "-h", "127.0.0.1",
+                   "-U", APP_ROLE, "-d", database, "-v", "ON_ERROR_STOP=1", "-tAc", statement).stdout.strip()
+
+
+def hold_connection(statements: str) -> None:
+    """Veza koja stoji otvorena u pozadini, dok je `release_connections` ne prekine."""
+    compose("exec", "-d", "db", "psql", "-U", "strengthplanner", "-d", "strengthplanner",
+            "-c", f"{statements} SELECT pg_sleep(600);")
+    wait_until("veza u pozadini", lambda: sql(
+        "postgres", "SELECT count(*) FROM pg_stat_activity WHERE query LIKE '%pg_sleep(600)%' "
+                    "AND state = 'active' AND pid <> pg_backend_pid() AND wait_event = 'PgSleep'") == "1")
+
+
+def release_connections() -> None:
+    sql("postgres", "SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
+                    "WHERE query LIKE '%pg_sleep(600)%' AND pid <> pg_backend_pid()")
+    wait_until("prekid veze u pozadini", lambda: sql(
+        "postgres", "SELECT count(*) FROM pg_stat_activity WHERE datname = 'strengthplanner' "
+                    "AND query LIKE '%pg_sleep(600)%' AND pid <> pg_backend_pid()") == "0")
 
 
 def wait_until(description: str, condition, seconds: int = 180) -> None:
@@ -123,8 +165,10 @@ def prepare() -> None:
         "RESTIC_PASSWORD": secrets.token_hex(16),
         "RESTIC_REPOSITORY": "sftp:storagebox:backups",
         "BACKUP_SSH_DIR": "./scripts/backup-test/.work/client",
+        "BACKUP_PING_URL": "http://nadzor.invalid/javljanje",
         "API_PORT": str(API_PORT),
     }
+    SECRETS.update(values)
     (WORK / "env").write_text("".join(f"{key}={value}\n" for key, value in values.items()), encoding="utf-8")
 
     compose("build", "api", "backup", "storagebox")
@@ -143,7 +187,8 @@ def prepare() -> None:
         "client/id_ed25519": client_private,
         # Isti oblik koji uputstvo traži na serveru.
         "client/config": "Host storagebox\n  HostName storagebox\n  Port 23\n  User box\n"
-                         "  IdentityFile ~/.ssh/id_ed25519\n",
+                         "  IdentityFile ~/.ssh/id_ed25519\n  ConnectTimeout 30\n"
+                         "  ServerAliveInterval 60\n  ServerAliveCountMax 3\n",
         "client/known_hosts": f"[storagebox]:23 {host_public}\n",
         "server/authorized_keys": client_public + "\n",
         "server/host_key": host_private,
@@ -152,59 +197,159 @@ def prepare() -> None:
         (WORK / name).write_bytes(content.replace("\r\n", "\n").encode("utf-8"))
 
 
+def expected_retention(times: list[datetime.datetime], kept_by_tag: set) -> set:
+    """Pravilo čuvanja zapisano drugi put, nezavisno od skripte: 3 dana, 14/8/6, i oznaka keep."""
+    newest_first = sorted(times, reverse=True)
+    keep = set(kept_by_tag)
+    keep |= {moment for moment in times if moment > newest_first[0] - datetime.timedelta(days=3)}
+    for count, bucket in ((14, lambda moment: moment.date()),
+                          (8, lambda moment: moment.isocalendar()[:2]),
+                          (6, lambda moment: (moment.year, moment.month))):
+        seen: list = []
+        for moment in newest_first:
+            key = bucket(moment)
+            if key not in seen and len(seen) < count:
+                seen.append(key)
+                keep.add(moment)
+    return keep
+
+
+def check_retention() -> None:
+    """Stalni datumi u zasebnom skladištu, da ishod ne zavisi od dana kada se test pokreće."""
+    day = lambda year, month, date, hour=2: datetime.datetime(year, month, date, hour)
+    last = day(2026, 3, 31)
+    times = [last - datetime.timedelta(days=back) for back in range(0, 20)]
+    times += [day(2026, 3, 30, 9), day(2026, 3, 29, 15), day(2026, 3, 29, 9)]
+    times += [day(2026, 3, 8) - datetime.timedelta(weeks=week) for week in range(0, 10)]
+    times += [day(year, month, date) for year, month in
+              ((2025, 8), (2025, 9), (2025, 10), (2025, 11), (2025, 12), (2026, 1)) for date in (3, 17)]
+    times = sorted(set(times))
+    marked = day(2025, 2, 1)
+    repository = {"RESTIC_REPOSITORY": "sftp:storagebox:retention"}
+
+    def seed(moment: datetime.datetime, extra: str = "") -> str:
+        return (f"restic backup --quiet --host strengthplanner --tag db {extra} --time '{moment:%Y-%m-%d %H:%M:%S}' "
+                "--stdin-filename strengthplanner.dump --stdin-from-command -- echo stara")
+
+    script = ["set -e", "restic init >/dev/null", seed(marked, "--tag keep")] + [seed(moment) for moment in times]
+    script.append("source /usr/local/lib/backup/common.sh; apply_retention")
+    tool("bash", "-c", "\n".join(script), environment=repository)
+
+    kept = {datetime.datetime.strptime(snapshot["time"][:19], "%Y-%m-%dT%H:%M:%S")
+            for snapshot in snapshots(repository)}
+    expected = expected_retention(times + [marked], {marked})
+    assert kept == expected, (f"višak: {sorted(kept - expected)}\nmanjak: {sorted(expected - kept)}")
+    passed(f"pravilo čuvanja: od {len(times) + 1} kopija ostalo tačno {len(kept)}, među njima označena iz 2025.")
+
+
 def run() -> None:
     compose("up", "-d", "db", "api", "storagebox")
     wait_for_api()
 
-    assert "nema šta da se kopira" in tool("backup.sh").stdout
+    output = tool("backup.sh").stdout
+    assert "nema šta da se kopira" in output and PING_ATTEMPT in output, output
     assert snapshots() == []
-    passed("prazna baza na novoj instalaciji se ne kopira")
+    passed("prazna baza na novoj instalaciji se ne kopira, a nadzoru se javlja da je sve u redu")
+
+    output = refused("nedostupna baza", "baza nije dostupna", "backup.sh", environment={"APP_DB_PASSWORD": "pogresna"})
+    assert "nema šta da se kopira" not in output and PING_ATTEMPT not in output, output
+    passed("baza koja ne odgovara je greška, a ne prazna baza")
 
     anna = register("anna")
     status, _ = call("POST", "/macrocycles", {
         "name": "Plan pre kopije", "startDate": "2026-01-05T00:00:00Z",
         "blocks": [{"goal": 1, "templateKey": "full-body", "periodizationModel": 0}]}, anna["token"])
     assert status == 201, f"plan: {status}"
-    tool("backup.sh")
+    output = tool("backup.sh").stdout
+    assert "Kopija je sačuvana: nalozi 1." in output and PING_ATTEMPT in output, output
     assert len(snapshots()) == 1
     passed("kopija stiže u skladište preko SFTP-a na portu 23")
 
+    hold_connection('BEGIN; LOCK TABLE "SetLogs" IN ACCESS EXCLUSIVE MODE;')
+    refused("pg_dump koji padne", "canceling statement due to", "backup.sh", environment={"DUMP_LOCK_WAIT": "3s"})
+    release_connections()
+    assert len(snapshots()) == 1
+    passed("pg_dump koji padne ne upisuje kopiju, i ne čeka katanac u nedogled")
+
     for name, environment, expected in (
-            ("pg_dump koji padne", {"APP_DB_PASSWORD": "pogresna"}, "password authentication failed"),
             ("pogrešna lozinka skladišta", {"RESTIC_PASSWORD": "pogresna"}, "restic je izašao sa 12"),
             ("nedostupno skladište", {"RESTIC_REPOSITORY": "sftp:box@ne-postoji:kopije"}, "skladište nije dostupno")):
-        result = tool("backup.sh", check=False, environment=environment)
-        output = result.stdout + result.stderr
-        assert result.returncode != 0, f"{name}: skripta je uspela"
-        assert expected in output, f"{name}: nema poruke „{expected}“\n{output[-2000:]}"
+        refused(name, expected, "backup.sh", environment=environment)
         assert len(snapshots()) == 1, f"{name}: nastala je nova kopija"
         passed(f"{name}: greška, bez nove kopije")
 
-    # Po jedna stara kopija za 57 dana, pa pravilo čuvanja.
-    tool("bash", "-c",
-         "for day in $(seq 4 60); do restic backup --quiet --host strengthplanner --tag db "
-         "--time \"$(date -u -d \"$day days ago\" '+%Y-%m-%d 02:00:00')\" "
-         "--stdin-filename strengthplanner.dump --stdin-from-command -- echo stara; done")
-    assert len(snapshots()) == 58
-    tool("backup.sh")
-    kept = sorted(snapshot["time"][:10] for snapshot in snapshots())
-    age = lambda day: (time.time() - time.mktime(time.strptime(day, "%Y-%m-%d"))) / 86400
-    assert 17 <= len(kept) <= 30, f"ostalo je {len(kept)} kopija: {kept}"
-    assert age(kept[0]) > 45, f"najstarija zadržana je od {kept[0]}"
-    assert all(any(abs(age(day) - wanted) < 1.5 for day in kept) for wanted in range(4, 14)), kept
-    passed(f"pravilo čuvanja: od 59 kopija ostalo {len(kept)}, najstarija {kept[0]}")
+    check_retention()
 
+    tool("backup.sh", "keep")
+    assert sum("keep" in snapshot["tags"] for snapshot in snapshots()) == 1
+    passed("`backup.sh keep` pravi kopiju koju pravilo čuvanja ne briše")
+
+    # Proba vraćanja koja padne: nezdravo, bez javljanja, i bez zaostalog dumpa.
+    output = tool("bash", "-c", "verify.sh; verify.sh; echo ostaci=$(ls /tmp | grep -c '^restore')",
+                  environment={"APP_DB_PASSWORD": "pogresna"}, check=False).stdout
+    assert "ostaci=0" in output and PING_ATTEMPT not in output, output
+    assert tool("/usr/local/lib/backup/healthcheck.sh", check=False).returncode != 0
+    output = tool("backup.sh").stdout
+    assert "Kopija je sačuvana" in output and PING_ATTEMPT not in output, output
+    output = tool("verify.sh").stdout
+    assert "Proba vraćanja uspela" in output and PING_ATTEMPT in output, output
+    assert tool("/usr/local/lib/backup/healthcheck.sh", check=False).returncode == 0
+    passed("neuspela proba vraćanja čini servis nezdravim i ućutkuje javljanje, dok neka ne uspe")
+
+    # Aplikacijski nalog podmeće funkciju koja bi ga, izvršena pod superkorisnikom, uzdigla.
+    as_app("strengthplanner", """CREATE FUNCTION public.escalate() RETURNS boolean LANGUAGE plpgsql AS $f$
+        BEGIN IF current_setting('is_superuser') = 'on' THEN EXECUTE 'ALTER ROLE strengthplanner_app SUPERUSER'; END IF;
+        RETURN true; END $f$; CREATE TABLE public.probe (x int CHECK (public.escalate())); INSERT INTO probe VALUES (1);""")
+    tool("backup.sh")
+    tool("verify.sh")
+    assert sql("postgres", f"SELECT rolsuper FROM pg_roles WHERE rolname = '{APP_ROLE}'") == "f"
+    as_app("strengthplanner", "DROP TABLE public.probe; DROP FUNCTION public.escalate();")
+    tool("backup.sh")
+    passed("sadržaj kopije se pri vraćanju ne izvršava pod superkorisnikom")
+
+    # Posao ubijen dok drži katanac na skladištu.
+    name = f"{PROJECT}-slow"
+    compose("run", "-d", "--name", name, "backup", "restic", "check", "--read-data", "--limit-download", "1")
+    wait_until("katanac na skladištu", lambda: tool("restic", "list", "locks", "--no-lock").stdout.strip() != "")
+    subprocess.run(["docker", "kill", name], check=True, capture_output=True)
+    subprocess.run(["docker", "rm", "-f", name], check=True, capture_output=True)
+    assert tool("restic", "list", "locks", "--no-lock").stdout.strip() != ""
+    assert "Kopija je sačuvana" in tool("backup.sh").stdout
+    passed("katanac koji ostane posle ubijenog posla ne zaustavlja naredne kopije")
+
+    # Skladište koje primi vezu pa ćuti.
+    name = f"{PROJECT}-hung"
+    compose("pause", "storagebox")
+    compose("run", "-d", "--no-deps", "--name", name, "-e", "BACKUP_TIMEOUT=20s", "backup")
+    try:
+        wait_until("prekid zaglavljenog posla", lambda: "Kopija nije uspela" in output_of(
+            subprocess.run(["docker", "logs", name], capture_output=True, text=True, encoding="utf-8")), 120)
+    finally:
+        subprocess.run(["docker", "rm", "-f", name], check=True, capture_output=True)
+        compose("unpause", "storagebox")
+    passed("zaglavljeno skladište ne zaustavlja raspored: posao se prekida i ponavlja")
+
+    refused("pogrešan sat", "BACKUP_HOUR", "/usr/local/lib/backup/schedule.sh", environment={"BACKUP_HOUR": "24"})
+    passed("neispravan BACKUP_HOUR se odbija pre prve kopije")
+
+    compose("exec", "-T", "backup", "true", check=False)
+    tool("bash", "-c", "rm -f /state/last-verify")
     compose("up", "-d", "backup")
     wait_until("proba vraćanja pri pokretanju", lambda: "Proba vraćanja uspela: nalozi 1" in logs("backup"))
+    wait_until("brisanje privremene baze", lambda: sql(
+        "postgres", "SELECT count(*) FROM pg_database WHERE datname LIKE '%_verify'") == "0", 60)
     assert healthy()
-    assert sql("postgres", "SELECT count(*) FROM pg_database WHERE datname LIKE '%_verify'") == "0"
     passed("servis pri pokretanju pravi kopiju, probno je vraća i briše privremenu bazu")
 
     compose("exec", "-T", "backup", "touch", "-d", "30 hours ago", "/state/last-success")
     assert not healthy()
     passed("bez uspešne kopije duže od 26 sati kontejner nije zdrav")
 
+    started = time.monotonic()
     compose("stop", "backup")
+    assert time.monotonic() - started < 30, "servis se nije zaustavio na signal"
+    passed("zaustavljanje servisa ne čeka da ga Docker ubije")
+
     register("bojan")
     before = len(snapshots())
 
@@ -218,14 +363,26 @@ def run() -> None:
     assert len(snapshots()) == before and not healthy()
     passed("prazan nov server ne pravi kopiju preko postojećih i nije zdrav")
 
-    refused = tool("restore.sh", "latest", check=False)
-    assert refused.returncode != 0 and "na bazu je neko povezan" in refused.stdout + refused.stderr
-    assert sql("strengthplanner", 'SELECT count(*) FROM "AspNetUsers"') == "0"
-    passed("vraćanje se odbija dok API radi")
-
+    refused("vraćanje dok API radi", "API radi", "restore.sh", "latest")
     compose("stop", "api", "backup")
-    missing = tool("restore.sh", check=False)
-    assert missing.returncode != 0 and "navedi koju kopiju" in missing.stdout + missing.stderr
+    hold_connection("")
+    refused("vraćanje dok je neko povezan", "na bazu je neko povezan", "restore.sh", "latest")
+    release_connections()
+    assert sql("strengthplanner", 'SELECT count(*) FROM "AspNetUsers"') == "0"
+    passed("vraćanje se odbija dok API radi ili je neko povezan na bazu")
+
+    refused("bez izabrane kopije", "navedi koju kopiju", "restore.sh")
+    output = tool("bash", "-c",
+                  "PGPASSWORD=$APP_DB_PASSWORD restic backup --host strengthplanner --tag db "
+                  "--stdin-filename strengthplanner.dump --stdin-from-command -- "
+                  "pg_dump --format=custom -U $APP_DB_USER -h db postgres").stdout
+    # restic uz to pomene i prethodnu kopiju, pa se čita red o upravo sačuvanoj.
+    empty = re.search(r"snapshot ([0-9a-f]+) saved", output).group(1)
+    refused("kopija bez naloga", "kopija nema nijedan nalog", "restore.sh", empty)
+    tool("restic", "forget", empty)
+    assert sql("postgres", "SELECT count(*) FROM pg_database WHERE datname LIKE '%\\_restore'") == "0"
+    passed("kopija bez naloga se ne vraća na mesto baze")
+
     output = tool("restore.sh", "latest").stdout
     assert "Vraćeno: nalozi 1" in output, output
     compose("up", "-d", "api")
@@ -236,18 +393,21 @@ def run() -> None:
     status, plan = call("GET", "/macrocycles/active", token=account["token"])
     assert status == 200 and plan["name"] == "Plan pre kopije", (status, plan)
     assert login("bojan") == 401
-    assert call("POST", "/auth/refresh", {"refreshToken": anna["refreshToken"]})[0] == 401
+    status = call("POST", "/auth/refresh", {"refreshToken": anna["refreshToken"]})[0]
+    assert status == 401, f"stara prijava posle vraćanja: {status}"
     passed("posle vraćanja postoje nalog i plan iz kopije, kasniji nalog ne, stara prijava ne važi")
 
-    # Aplikacijski nalog i dalje sme da upisuje, i migracije prolaze nad vraćenom bazom.
+    # Aplikacijski nalog i dalje sme da upisuje i da menja šemu, što migracije traže.
     register("ceca")
     api_log = logs("api")
     assert "42501" not in api_log and "permission denied" not in api_log, api_log[-3000:]
     owners = sql("strengthplanner",
                  "SELECT string_agg(DISTINCT tableowner, ',') FROM pg_tables WHERE schemaname = 'public'")
-    assert owners == "strengthplanner_app", owners
+    assert owners == APP_ROLE, owners
+    assert sql("strengthplanner", f"SELECT has_schema_privilege('{APP_ROLE}', 'public', 'CREATE')") == "t"
+    as_app("strengthplanner", "CREATE TABLE public.next_migration (x int); DROP TABLE public.next_migration;")
     assert sql("postgres", "SELECT count(*) FROM pg_database WHERE datname LIKE '%_before_restore_%'") == "1"
-    passed("aplikacija piše u vraćenu bazu, vlasnik tabela je isti, prethodna baza je sačuvana")
+    passed("aplikacija piše i menja šemu vraćene baze, a prethodna baza je sačuvana")
 
     compose("restart", "api")
     wait_for_api()
