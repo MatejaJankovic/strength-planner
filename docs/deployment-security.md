@@ -108,17 +108,10 @@ granice od 2 MB koju za sliku drži sam API.
 CSP dozvoljava `'unsafe-inline'` za stilove, jer ih Angular Material ubacuje inline. Za
 skripte ga **ne** dozvoljava, a to je deo koji zaista štiti.
 
-Pravilo propušta i `fonts.gstatic.com`, i to nije propust. Angular pri build-u pretvara
-`<link>` ka Google Fonts u ugrađene `@font-face` blokove, ali **sami fajlovi fontova i dalje
-dolaze sa gstatic-a**. Provereno tako što je produkcijski build posluzen sa strožim
-pravilom: Inter, Space Grotesk i Material Icons svi završe sa `status: error`, a
-`document.fonts.check('24px "Material Icons"')` vrati `false` — dakle ikone bi nestale sa
-ekrana.
-
-Jače rešenje je **posluživanje fontova sa istog porekla**: tada oba Google izvora ispadaju
-iz pravila, aplikacija radi bez interneta, a IP adresa korisnika ne odlazi trećoj strani pri
-svakom otvaranju stranice. To je izmena u build-u, ne u konfiguraciji nginx-a, pa ovde nije
-urađena.
+Nijedan tuđi izvor nije dozvoljen. Fontovi (Inter, Space Grotesk, Material Icons) dolaze iz
+npm paketa i build ih smešta uz ostale fajlove aplikacije, pa pregledač posetioca ne kontaktira
+Google niti bilo koga drugog. Dodavanje spoljnog izvora hvataju test `NoThirdPartyResourcesTests`
+(izvorni fajlovi i CSP) i `scripts/check-production-index.py` (izgrađena aplikacija).
 
 ### Keširanje
 

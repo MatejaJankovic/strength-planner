@@ -47,7 +47,7 @@ export class ProfileHome {
    * ne dira raspored.
    */
   protected readonly dashboard = [
-    { label: 'Statistika', icon: 'monitoring', route: '/analytics' },
+    { label: 'Statistika', icon: 'insights', route: '/analytics' },
     { label: 'Istorija', icon: 'history', route: '/history' },
     { label: 'Vežbe', icon: 'fitness_center', route: '/exercises' },
     { label: 'Šabloni', icon: 'assignment', route: '/templates' },

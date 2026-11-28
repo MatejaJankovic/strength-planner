@@ -66,9 +66,14 @@ jobs:
 
       # Izgrađen index.html mora da prođe CSP aplikacije (`script-src 'self'`): umetnuti rukovalac, koji Angular
       # sam dodaje za asinhroni glavni CSS, bio bi blokiran, pa bi glavni CSS (i tamna tema) ostao nepunjen.
-      # U razvojnom serveru se to ne vidi, jer tamo nema optimizacije. Vidi scripts/check-production-index.py.
-      - name: Izgrađen index.html bez umetnutog koda (CSP)
+      # U razvojnom serveru se to ne vidi, jer tamo nema optimizacije. Ista skripta pada i ako izgrađena stranica
+      # ili stil učitava nešto sa tuđeg servera. Vidi scripts/check-production-index.py.
+      - name: Izgrađena aplikacija bez umetnutog koda i tuđih servera
         run: python3 scripts/check-production-index.py
+
+      # Ikonica koje nema u fontu ne ruši ništa: na ekranu ostane njeno ime. Vidi scripts/check-icons.py.
+      - name: Ikonice postoje u fontu
+        run: python3 scripts/check-icons.py
 
       # Kontrast tekst/pozadina u obe teme, usklađenost skripte za temu sa servisom, i boje napisane u
       # komponentama (takva ostaje svetla u tamnoj temi). Vidi scripts/check-theme-contrast.py.
