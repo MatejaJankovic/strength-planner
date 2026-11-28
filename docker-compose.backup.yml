@@ -40,6 +40,8 @@ services:
       KEEP_MONTHLY: ${KEEP_MONTHLY:-6}
       VERIFY_EVERY_DAYS: ${VERIFY_EVERY_DAYS:-7}
       BACKUP_PING_URL: ${BACKUP_PING_URL:-}
+      # Koliko najduže sme da traje jedna kopija ili proba vraćanja.
+      BACKUP_TIMEOUT: ${BACKUP_TIMEOUT:-3h}
     volumes:
       # SSH ključ, config i known_hosts za SFTP skladište. Folder je u .gitignore.
       - ${BACKUP_SSH_DIR:-./secrets/backup-ssh}:/ssh-src:ro
@@ -53,6 +55,8 @@ services:
       interval: 5m
       timeout: 30s
       start_period: 15m
+    # Dovoljno da prekinut restic ukloni svoj katanac pre nego što ga Docker ubije.
+    stop_grace_period: 60s
     security_opt:
       - no-new-privileges:true
 
