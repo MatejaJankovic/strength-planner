@@ -192,7 +192,9 @@ export class ProfileEdit {
       sex: raw.sex === '' ? null : (Number(raw.sex) as Sex),
       age: Number(raw.age),
       bodyweightKg: Number(raw.bodyweightKg),
-      heightCm: raw.heightCm === '' ? null : Number(raw.heightCm),
+      // Obrisano brojčano polje Angular daje kao null, a nenapunjeno kao prazan string; Number od oba
+      // je nula, koju server odbija.
+      heightCm: raw.heightCm === '' || raw.heightCm === null ? null : Number(raw.heightCm),
       experienceLevel: Number(raw.experienceLevel) as ExperienceLevel,
     };
 

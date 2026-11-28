@@ -102,8 +102,12 @@ export class RegisterWizard {
   protected readonly ageMax = AGE_MAX;
   protected readonly ageInputMin = AGE_INPUT_MIN;
 
-  /** Klizač uvek ima vrednost, pa se „ne želim da navedem" za visinu pamti odvojeno. */
-  private readonly heightDeclined = signal(false);
+  /**
+   * Klizač uvek ima vrednost, pa se „ne želim da navedem" za visinu pamti odvojeno. Ostaje i kada se
+   * kroz korak prođe ponovo (povratak unazad ili odbijen email); gasi ga samo korisnik, istim dugmetom
+   * ili pomeranjem visine.
+   */
+  protected readonly heightDeclined = signal(false);
 
   protected readonly tooYoung = computed(() => {
     this.formValue();
@@ -267,6 +271,7 @@ export class RegisterWizard {
   }
 
   protected setHeight(value: number): void {
+    this.heightDeclined.set(false);
     this.form.controls.heightCm.setValue(value);
   }
 
@@ -300,15 +305,15 @@ export class RegisterWizard {
       return;
     }
 
-    if (this.step() === Step.Height) {
-      // „Nastavi" potvrđuje prikazanu vrednost, i posle ranijeg preskakanja.
-      this.heightDeclined.set(false);
-    }
-
     this.advance();
   }
 
-  protected skipHeight(): void {
+  protected toggleHeightSkip(): void {
+    if (this.heightDeclined()) {
+      this.heightDeclined.set(false);
+      return;
+    }
+
     this.heightDeclined.set(true);
     this.advance();
   }

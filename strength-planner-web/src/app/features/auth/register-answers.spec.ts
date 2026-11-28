@@ -103,12 +103,43 @@ describe('RegisterWizard — uzrast i visina', () => {
     expect(sentAfterLastStep().heightCm).toBeNull();
   });
 
-  it('potvrđena visina se šalje, i posle ranijeg preskakanja', () => {
-    open(HEIGHT_STEP);
-    press('.wizard-skip');
+  it('visina koju korisnik potvrdi dugmetom „Nastavi" se šalje', () => {
     open(HEIGHT_STEP);
     press('.wiz__next');
 
     expect(sentAfterLastStep().heightCm).toBe(175);
+  });
+
+  // Povratak unazad ili odbijen email vode ponovo kroz korak; „Nastavi" tada ne sme da poništi odbijanje.
+  it('preskakanje ostaje i kada se kroz korak prođe ponovo', () => {
+    open(HEIGHT_STEP);
+    press('.wizard-skip');
+    open(HEIGHT_STEP);
+
+    expect(element('.wizard-skip').getAttribute('aria-pressed')).toBe('true');
+    expect(element('[role="status"]').textContent).toContain('neće biti upisana');
+    press('.wiz__next');
+    expect(sentAfterLastStep().heightCm).toBeNull();
+  });
+
+  it('isto dugme poništava preskakanje i ostaje na koraku', () => {
+    open(HEIGHT_STEP);
+    press('.wizard-skip');
+    open(HEIGHT_STEP);
+    press('.wizard-skip');
+
+    expect(component().step()).toBe(HEIGHT_STEP);
+    expect(sentAfterLastStep().heightCm).toBe(175);
+  });
+
+  it('upisana visina poništava preskakanje', () => {
+    open(HEIGHT_STEP);
+    press('.wizard-skip');
+    open(HEIGHT_STEP);
+    const field = element<HTMLInputElement>('#wz-height');
+    field.value = '181';
+    field.dispatchEvent(new Event('change'));
+
+    expect(sentAfterLastStep().heightCm).toBe(181);
   });
 });

@@ -173,7 +173,19 @@
           [value]="form.controls.heightCm.value"
           (valueChange)="setHeight($event)"
         />
-        <button class="wizard-skip" type="button" (click)="skipHeight()">Ne želim da navedem</button>
+        <button
+          class="wizard-skip"
+          type="button"
+          [attr.aria-pressed]="heightDeclined()"
+          (click)="toggleHeightSkip()"
+        >
+          Ne želim da navedem
+        </button>
+        @if (heightDeclined()) {
+          <p class="wizard-note" role="status">
+            Visina neće biti upisana. Dodirni dugme ponovo ili pomeri klizač ako želiš da je upišeš.
+          </p>
+        }
       }
 
       @case (Step.Age) {

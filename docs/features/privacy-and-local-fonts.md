@@ -68,5 +68,11 @@ nije tačno, pa sada piše da obrisani podaci ostaju u šifrovanim kopijama dok 
 - Slika profila se čuva sa podacima koje telefon upiše u fajl (politika to kaže); aplikacija ih ne
   uklanja.
 - Rokovi za ručne kopije (30 dana) i za bazu posle vraćanja (7 dana) važe samo ako ih rukovalac
-  poštuje; ništa ih ne sprovodi samo.
+  poštuje; ništa ih ne sprovodi samo. Isto važi za stare kopije kada nove prestanu da se prave.
+- Nalog koji se posle vraćanja ponovo pojavi briše se skriptom `deploy/delete-account.sql`.
+
+## Usput ispravljeno
+
+- Visina obrisana na ekranu za izmenu profila slala se kao nula, pa se ceo profil nije mogao sačuvati.
+- Naredba za prepis vlasništva nad tabelama u uputstvu za server bila je pokvarena i nije mogla da radi.
 - Šta uraditi na serveru: [deployment-security.md](../deployment-security.md), „Politika privatnosti“.

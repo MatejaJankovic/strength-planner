@@ -99,6 +99,12 @@
   padding: 0 0.8rem;
 }
 
+.wizard-skip[aria-pressed='true'] {
+  background: var(--color-primary-container);
+  border-radius: 0.6rem;
+  color: var(--color-on-primary-container);
+}
+
 .wizard-link {
   color: var(--color-primary);
   font-weight: 700;

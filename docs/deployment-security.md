@@ -114,7 +114,7 @@ Nijedan tuđi izvor nije dozvoljen. Fontovi (Inter, Space Grotesk, Material Icon
 npm paketa i build ih smešta uz ostale fajlove aplikacije, pa pregledač posetioca ne kontaktira
 Google niti bilo koga drugog. Spoljni izvor napisan u CSP-u, stranici, šablonu ili stilu hvataju
 test `NoThirdPartyResourcesTests` (izvorni fajlovi) i `scripts/check-production-index.py` (izgrađena
-stranica i stilovi). Adresu sastavljenu u kodu ne vidi nijedan, ali je CSP u isporuci odbije.
+stranica i stilovi). Adresu sastavljenu u kodu ne vidi nijedan, ali je CSP u isporuci odbija.
 
 ### Keširanje
 
@@ -165,8 +165,14 @@ superkorisničkih prava. Ranije se aplikacija povezivala nalogom iz `POSTGRES_US
 > Grantovi iznad daju pravo na *podatke*, ne na izmenu strukture:
 >
 > ```bash
-> docker compose exec db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" >   -c "REASSIGN OWNED BY $POSTGRES_USER TO strengthplanner_app;"
+> docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 -v app="$APP_DB_USER"' <<'SQL'
+> SELECT format('ALTER TABLE public.%I OWNER TO %I', tablename, :'app') FROM pg_tables WHERE schemaname = 'public'
+> \gexec
+> SQL
 > ```
+>
+> `REASSIGN OWNED BY` ovde ne radi: stari nalog je onaj kojim je baza napravljena, a PostgreSQL njegove
+> objekte ne da prepisati u celini.
 >
 > Na novoj instalaciji ovo ne treba: tabele od početka pravi sam aplikacijski nalog.
 
@@ -196,8 +202,12 @@ Stranica `/privacy` otvorena je i bez naloga. Pre puštanja:
    promeniš šta se čuva, koliko dugo ili ko to dobija (na primer dodaš slanje mejlova, analitiku,
    promeniš `JWT_REFRESH_EXPIRY_DAYS`, broj kopija ili broj snapshot-ova), izmeni tekst
    (`features/privacy/privacy-page.html`) i datum u `PrivacyPolicy.Version`.
-4. **Tekst obećava da obrisani podaci nestaju iz kopija za najviše sedam meseci.** Zato na Storage
-   Box-u i u Hetzner „Backups“ opciji servera drži najviše **7 dnevnih** snapshot-ova.
+4. **Tekst obećava šifrovane kopije iz kojih obrisani podaci nestaju za najviše sedam meseci.** Zato:
+   - na Storage Box-u drži najviše **7 dnevnih** snapshot-ova;
+   - opciju „Backups“ i snapshot-ove samog servera nemoj uključivati: to su nešifrovane slike celog
+     diska, sa bazom i sa `.env` u kom je lozinka kopija;
+   - stare kopije se brišu samo kada se napravi nova. Ako kopije prestanu da se prave (kvar, ugašen
+     server ili baza u kojoj više nema nijednog naloga), obriši ih ručno.
 5. **Kopije napravljene sa `backup.sh keep` ne brišu se same**, a tekst obećava da ih brišeš
    najkasnije 30 dana posle nove verzije:
 
@@ -208,7 +218,12 @@ Stranica `/privacy` otvorena je i bez naloga. Pre puštanja:
 6. **Posle vraćanja baze iz kopije** obriši bazu `..._before_restore_...` najkasnije za 7 dana i
    ponovo obriši naloge koji su obrisani posle te kopije (vidiš ih poređenjem sa tom bazom, dok
    postoji). Ako je stari server izgubljen, to ne možeš da saznaš iz kopije: tekst zato kaže da se
-   takav korisnik javi.
+   takav korisnik javi. Nalog se briše skriptom, koja uklanja i ono što samo brisanje reda naloga
+   ostavlja:
+
+   ```bash
+   docker compose exec -T db sh -c 'psql -U "$APP_DB_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 -v email="$0"' adresa@primer.rs < deploy/delete-account.sql
+   ```
 7. **Zahtev za kopiju podataka** aplikacija ne ume sama da ispuni: izvezi redove tog naloga iz baze.
 
 ## Rezervne kopije
@@ -288,7 +303,7 @@ Posao koji traje duže od `BACKUP_TIMEOUT` (3 sata) prekida se i ponavlja.
 ```bash
 docker compose run --rm backup restic snapshots   # spisak kopija
 docker compose run --rm backup backup.sh          # kopija odmah
-docker compose run --rm backup backup.sh keep     # kopija koja se ne briše
+docker compose run --rm backup backup.sh keep     # ne briše se sama: obriši je za 30 dana
 docker compose run --rm backup verify.sh          # proba vraćanja odmah
 ```
 
@@ -346,7 +361,8 @@ Box-a.
   može da izvrši migraciju koja je pisana kao SQL nad PostgreSQL-om (poslednja takva je `SplitBackHeads`, koja
   prevodi naučene granice leđa na dve grupe). Uzmi `pg_dump`, vrati ga u zasebnu bazu, primeni migracije i uporedi
   broj redova i naučene granice pre i posle; tek onda u pravu bazu. Razvojna baza je do sada bila jedina na kojoj su
-  takve migracije izvršene.
+  takve migracije izvršene. Kad uporediš, obriši i dump i probnu bazu: to su kopije ličnih podataka koje nijedno
+  pravilo čuvanja ne briše.
 
 ## Poznata ograničenja
 
