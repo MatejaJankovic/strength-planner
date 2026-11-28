@@ -188,7 +188,10 @@ def prepare() -> None:
         # Isti oblik koji uputstvo traži na serveru.
         "client/config": "Host storagebox\n  HostName storagebox\n  Port 23\n  User box\n"
                          "  IdentityFile ~/.ssh/id_ed25519\n  ConnectTimeout 30\n"
-                         "  ServerAliveInterval 60\n  ServerAliveCountMax 3\n",
+                         "  ServerAliveInterval 60\n  ServerAliveCountMax 3\n"
+                         # Isti server bez SSH rokova: posao nad njim može da prekine samo rok posla.
+                         "Host storagebox-bez-roka\n  HostName storagebox\n  Port 23\n  User box\n"
+                         "  IdentityFile ~/.ssh/id_ed25519\n",
         "client/known_hosts": f"[storagebox]:23 {host_public}\n",
         "server/authorized_keys": client_public + "\n",
         "server/host_key": host_private,
@@ -320,7 +323,8 @@ def run() -> None:
     # Skladište koje primi vezu pa ćuti.
     name = f"{PROJECT}-hung"
     compose("pause", "storagebox")
-    compose("run", "-d", "--no-deps", "--name", name, "-e", "BACKUP_TIMEOUT=20s", "backup")
+    compose("run", "-d", "--no-deps", "--name", name, "-e", "BACKUP_TIMEOUT=20s",
+            "-e", "RESTIC_REPOSITORY=sftp:storagebox-bez-roka:backups", "backup")
     try:
         wait_until("prekid zaglavljenog posla", lambda: "Kopija nije uspela" in output_of(
             subprocess.run(["docker", "logs", name], capture_output=True, text=True, encoding="utf-8")), 120)
